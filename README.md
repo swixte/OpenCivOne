@@ -1,3 +1,21 @@
+# Important Project Participation Rules
+<p>All participants must agree to the <a href="https://codeberg.org/rhorvat/OpenCivOne/src/branch/master/CONTRIBUTING/code_of_conduct.md">Code of Conduct</a>
+before submitting any Issues or Pull Requests.</p>
+<p><b>Please note:</b> Not all participants in this project are native speakers of English. 
+If you perceive any response as insulting or derogatory, please let the author know so they 
+can adjust their approach in accordance with the aforementioned Code of Conduct.</p>
+<p>Publishing private information disclosed in the Issues section &mdash; such as personal contact details, 
+excerpts from private correspondence, or content from access-restricted threads &mdash; without the explicit permission of all affected parties will be treated as an 
+invasion of privacy. This offense may result in enforcement up to 
+and including a permanent ban, in accordance with the Code of Conduct.</p>
+<p>Arguing in bad faith, repeatedly asserting claims without supporting evidence, being disrespectful of differing opinions, 
+viewpoints, and experiences of the other participants &mdash; especially project leaders &mdash; will also be 
+treated as inappropriate behavior that may result in enforcement up to and including a permanent ban, 
+in accordance with the Code of Conduct.</p>
+<p>The project leaders reserve the right, as stated in the aforementioned Code of Conduct, to remove, edit, 
+or reject comments, commits, code, wiki edits, Issues, and other contributions that are not aligned with it, 
+and will communicate reasons for moderation decisions when appropriate.</p>
+
 ## About
 
 <p>OpenCivOne (OpenCiv1) project is a Free and Open Source (<a href="https://www.gnu.org/philosophy/free-sw.html" target="_blank_">FOSS</a>) preservation effort and rewrite of the iconic <a href="https://en.wikipedia.org/wiki/Civilization_(video_game)" target="_blank">Civilization game</a> designed by Sid Meier and Bruce Shelley in year 1991.</p>
