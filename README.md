@@ -16,9 +16,14 @@ in accordance with the Code of Conduct.</p>
 or reject comments, commits, code, wiki edits, Issues, and other contributions that are not aligned with it, 
 and will communicate reasons for moderation decisions when appropriate.</p>
 
-## About
+## About the project
 
 <p>OpenCivOne (OpenCiv1) project is a Free and Open Source (<a href="https://www.gnu.org/philosophy/free-sw.html" target="_blank_">FOSS</a>) preservation effort and rewrite of the iconic <a href="https://en.wikipedia.org/wiki/Civilization_(video_game)" target="_blank">Civilization game</a> designed by Sid Meier and Bruce Shelley in year 1991.</p>
+<p>This project was never intended to be an exact replica of the original Civilization game. The goal is to preserve the spirit of the original &mdash; its pace, its systems, its overall feel &mdash; while addressing issues that have accumulated over the years and making deliberate design decisions where we believe the original fell short.</p>
+<p>As a result, we've introduced bug fixes and gameplay adjustments that won't be to everyone's taste. Some of these changes address long-standing problems. Others are intentional departures from the original design, made with full awareness that they diverge from how the game once behaved.</p>
+<p>Purists who expect the game to behave exactly as it did back in the day may find these deviations unwelcome. That is a fair position to hold &mdash; it simply isn't the position this project is built for.</p>
+<p><b>If you're after a totally faithful replica of the game, you're in the wrong place.</b></p>
+<p>If, on the other hand, you're open to a version that keeps the spirit of the original while smoothing out some of its rougher edges, you're very much in the right one.</p>
 <p>If you like games, and want to preserve our gaming heritage, please support: <a href="https://www.stopkillinggames.com/en" target="_blank">The Stop Killing Games Campaign</a></p>
 <p><b>The final source code for the game, according to the sources from MicroProse Software, Inc. is lost forever.</b> The only copy that remains is the game prototype source code on Sid Meier's own IBM PC on which he designed the game (<a href="https://www.youtube.com/watch?v=XwUM33VJRbY" target="_blank">Video in which Sid Meier talks about his IBM PCs</a>).
 <ul>
