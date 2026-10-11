@@ -23,7 +23,7 @@ and will communicate reasons for moderation decisions when appropriate.</p>
 <p>As a result, we've introduced bug fixes and gameplay adjustments that won't be to everyone's taste. Some of these changes address long-standing problems. Others are intentional departures from the original design, made with full awareness that they diverge from how the game once behaved.</p>
 <p>Purists who expect the game to behave exactly as it did back in the day may find these deviations unwelcome. That is a fair position to hold &mdash; it simply isn't the position this project is built for.</p>
 <p><b>If you're after a totally faithful replica of the game, you're in the wrong place.</b></p>
-<p>If, on the other hand, you're open to a version that keeps the spirit of the original while smoothing out some of its rougher edges, you're very much in the right one.</p>
+<p>If, on the other hand, you're open to a version that keeps the spirit of the original while smoothing out some of its rougher edges, you're very much in the right place.</p>
 <p>If you like games, and want to preserve our gaming heritage, please support: <a href="https://www.stopkillinggames.com/en" target="_blank">The Stop Killing Games Campaign</a></p>
 <p><b>The final source code for the game, according to the sources from MicroProse Software, Inc. is lost forever.</b> The only copy that remains is the game prototype source code on Sid Meier's own IBM PC on which he designed the game (<a href="https://www.youtube.com/watch?v=XwUM33VJRbY" target="_blank">Video in which Sid Meier talks about his IBM PCs</a>).
 <ul>
@@ -42,10 +42,10 @@ Microprose, Firaxis Games or Take-Two Interactive Software.</li>
 ## Project reviews
 
 <ul>
-<li><a href="https://gigazine.net/gsc_news/en/20240129-openciv1/" target="_blank">OpenCiv1 is a project that disassembles the first 'Civilization' and makes it open source, by logu_ii (from Jan 29, 2024)</a></li>
-<li><a href="https://thepixelspulse.com/posts/openciv1-rewrite-modernizing-civilization-1/" target="_blank">OpenCiv1 Rewrite: A Blueprint for Modernizing Civilization 1, by gaming-insider (from March 28, 2026)</a></li>
-<li><a href="https://github.com/yo-yo-yo-jbo/civ_ace/" target="_blank">Civilization 1 arbitrary code execution - A fun weekend project on how to hack Civilization 1 PIC files.</a> From <a href="https://jonathanbaror.com/" target="_blank">Jonathan Bar Or</a> (Security Researcher, Hacker and Public Speaker)</li>
-<li><a href="https://www.thestackstories.com/blog/openciv1" target="_blank">OpenCiv1 - Explore OpenCiv1, an open-source rewrite of the classic Civ1, part of the legendary Sid Meier's Civilization series</a> From William Clark on March 28, 2026</li>
+<li><a href="https://gigazine.net/gsc_news/en/20240129-openciv1/" target="_blank">OpenCiv1 is a project that disassembles the first 'Civilization' and makes it open source</a>, by logu_ii (from Jan 29, 2024)</li>
+<li><a href="https://thepixelspulse.com/posts/openciv1-rewrite-modernizing-civilization-1/" target="_blank">OpenCiv1 Rewrite: A Blueprint for Modernizing Civilization 1</a>, by gaming-insider (from March 28, 2026)</li>
+<li><a href="https://github.com/yo-yo-yo-jbo/civ_ace/" target="_blank">Civilization 1 arbitrary code execution - A fun weekend project on how to hack Civilization 1 PIC files.</a>, by <a href="https://jonathanbaror.com/" target="_blank">Jonathan Bar Or</a> (Security Researcher, Hacker and Public Speaker)</li>
+<li><a href="https://www.thestackstories.com/blog/openciv1" target="_blank">OpenCiv1 - Explore OpenCiv1, an open-source rewrite of the classic Civ1, part of the legendary Sid Meier's Civilization series</a>, by William Clark on March 28, 2026</li>
 </ul>
 
 ## Copyright considerations
