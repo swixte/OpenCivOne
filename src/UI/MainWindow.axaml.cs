@@ -733,19 +733,18 @@ namespace OpenCivOne.UI
 				this.gameException = ex;
 				savePreferences = false;
 			}
-
-			if (savePreferences)
-			{
-				this.game.GlobalPreferences.SerializeToJSON(this.game, this.game.MainPath);
-			}
-
 #if !DEBUG
 			catch (Exception ex)
 			{
 				// Show exceptions on UI Thread
-				this.oGameException = ex;
+				this.gameException = ex;
+				savePreferences = false;
 			}
 #endif
+			if (savePreferences)
+			{
+				this.game.GlobalPreferences.SerializeToJSON(this.game, this.game.MainPath);
+			}
 		}
 	}
 }

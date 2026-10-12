@@ -5,6 +5,7 @@ using OpenCivOne.Graphics;
 using OpenCivOne.Resources;
 using SkiaSharp;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace OpenCivOne
 {
