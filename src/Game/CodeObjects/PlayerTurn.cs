@@ -593,9 +593,6 @@ namespace OpenCivOne
 				}
 			}
 
-			int nearestCityID;
-			int newMoveDirection = 0;
-
 			switch (command)
 			{
 				// Change government
@@ -832,36 +829,7 @@ namespace OpenCivOne
 				case 'h':
 					if (unit == null || unitID >= 128) break;
 
-					nearestCityID = this.parent.MapManagement.FindNearestCity(unit.Position);
-
-					if (nearestCityID != -1 && this.parent.MapManagement.GetDistance(unit.Position, this.parent.GameData.Cities[nearestCityID].Position) == 0)
-					{
-						unit.HomeCityID = (short)nearestCityID;
-					}
-					else if (this.parent.GameData.Units[(int)unit.UnitType].MovementType == UnitMovementTypeEnum.Water)
-					{
-						// Instruction address 0x1403:0x1118, size: 5
-						int nearestCityDirection = this.parent.UnitManagement.F0_1866_226d_GetNearestCityDirection(playerID, unitID);
-
-						if (nearestCityDirection != 0)
-						{
-							unit.Status |= UnitStatusEnum.SettlerBuildRoadOrRail;
-							MoveUnit(playerID, unit, newMoveDirection, ref unitMoveRetryCount);
-							break;
-						}
-						else
-						{
-							if (playerID == this.parent.GameData.HumanPlayerID)
-							{
-								unit.ClearStatusFlags(UnitStatusEnum.SettlerBuildRoadOrRail);
-							}
-							else
-							{
-								// Instruction address 0x1403:0x1175, size: 5
-								this.parent.UnitManagement.F0_1866_0f10_DeleteUnit(playerID, unitID);
-							}
-						}
-					}
+					HomeCityCommand(playerID, unitID, ref unitMoveRetryCount);
 					break;
 
 				// Build irrigation
@@ -2481,6 +2449,46 @@ namespace OpenCivOne
 			{
 				// Instruction address 0x1403:0x3f09, size: 5
 				this.parent.MapManagement.F0_2aea_11d4_DrawCellWithUnit(x, y);
+			}
+		}
+
+		/// <summary>
+		/// The 'h' command. A unit in a city makes it its home city. An aircraft outside a city flies one square
+		/// towards the nearest city or Carrier; a computer player's aircraft with nowhere to go is lost.
+		/// </summary>
+		/// <param name="playerID"></param>
+		/// <param name="unitID"></param>
+		/// <param name="unitMoveRetryCount"></param>
+		internal void HomeCityCommand(int playerID, int unitID, ref int unitMoveRetryCount)
+		{
+			Unit unit = this.parent.GameData.Players[playerID].Units[unitID];
+			int nearestCityID = this.parent.MapManagement.FindNearestCity(unit.Position);
+
+			if (nearestCityID != -1 && this.parent.MapManagement.GetDistance(unit.Position, this.parent.GameData.Cities[nearestCityID].Position) == 0)
+			{
+				unit.HomeCityID = (short)nearestCityID;
+			}
+			else if (this.parent.GameData.Units[(int)unit.UnitType].MovementType == UnitMovementTypeEnum.Air)
+			{
+				// Instruction address 0x1403:0x1118, size: 5
+				int nearestCityDirection = this.parent.UnitManagement.F0_1866_226d_GetNearestCityDirection(playerID, unitID);
+
+				if (nearestCityDirection != 0)
+				{
+					unit.Status |= UnitStatusEnum.SettlerBuildRoadOrRail;
+					MoveUnit(playerID, unit, nearestCityDirection, ref unitMoveRetryCount);
+				}
+				else if (playerID == this.parent.GameData.HumanPlayerID)
+				{
+					unit.ClearStatusFlags(UnitStatusEnum.SettlerBuildRoadOrRail);
+				}
+				else
+				{
+					unit.RemainingMoves = 0;
+
+					// Instruction address 0x1403:0x1175, size: 5
+					this.parent.UnitManagement.F0_1866_0f10_DeleteUnit(playerID, unitID);
+				}
 			}
 		}
 
