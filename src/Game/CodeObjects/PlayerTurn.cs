@@ -2772,7 +2772,8 @@ namespace OpenCivOne
 
 				for (int i = 0; i < 16; i++)
 				{
-					if (this.parent.GameData.Units[(int)this.parent.GameData.Players[playerID].Units[nextUnitID].UnitType].MovementType != UnitMovementTypeEnum.Air)
+					// Skip ships
+					if (this.parent.GameData.Units[(int)this.parent.GameData.Players[playerID].Units[nextUnitID].UnitType].MovementType != UnitMovementTypeEnum.Water)
 					{
 						int idRange;
 
