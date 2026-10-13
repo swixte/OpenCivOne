@@ -562,7 +562,7 @@ namespace OpenCivOne
 
 			for (int i = 0; i < 72; i++)
 			{
-				if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(this.parent.GameData.HumanPlayerID, (TechnologyAdvanceEnum)i))
+				if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(this.parent.GameData.HumanPlayerID, (TechnologyAdvanceEnum)i))
 				{
 					// Instruction address 0x0000:0x1617, size: 5
 					this.parent.Array_30b8[3] = this.parent.GameData.TechnologyAdvances[i].Name;

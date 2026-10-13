@@ -181,7 +181,7 @@ namespace OpenCivOne
 			for(int i = 0; i < this.oParent.GameData.TechnologyAdvances.Length; i++)
 			{
 				// Instruction address 0x0000:0x0361, size: 5
-				if (this.oParent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, this.oParent.GameData.TechnologyAdvances[i].Value))
+				if (this.oParent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, this.oParent.GameData.TechnologyAdvances[i].Value))
 				{
 					// Instruction address 0x0000:0x037b, size: 5
 					this.oParent.CAPI.strcpy(0xba06, this.oParent.GameData.TechnologyAdvances[i].Name);
@@ -507,7 +507,7 @@ namespace OpenCivOne
 			this.oCPU.WriteUInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0x3e), this.oCPU.AX.UInt16);
 
 			// Instruction address 0x0000:0x080b, size: 5
-			this.oCPU.AX.UInt16 = (ushort)(this.oParent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Gunpowder) ? 1 : 0);
+			this.oCPU.AX.UInt16 = (ushort)(this.oParent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Gunpowder) ? 1 : 0);
 			this.oCPU.AX.UInt16 = this.oCPU.OR_UInt16(this.oCPU.AX.UInt16, this.oCPU.AX.UInt16);
 			if (this.oCPU.Flags.NE)
 			{
@@ -515,7 +515,7 @@ namespace OpenCivOne
 			}
 
 			// Instruction address 0x0000:0x0821, size: 5
-			this.oCPU.AX.UInt16 = (ushort)(this.oParent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Combustion) ? 1 : 0);
+			this.oCPU.AX.UInt16 = (ushort)(this.oParent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Combustion) ? 1 : 0);
 			this.oCPU.AX.UInt16 = this.oCPU.OR_UInt16(this.oCPU.AX.UInt16, this.oCPU.AX.UInt16);
 			if (this.oCPU.Flags.NE)
 			{
@@ -1487,7 +1487,7 @@ namespace OpenCivOne
 
 		L15ac:
 			// Instruction address 0x0000:0x15b2, size: 5
-			this.oCPU.AX.UInt16 = (ushort)(this.oParent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID,
+			this.oCPU.AX.UInt16 = (ushort)(this.oParent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID,
 				(TechnologyAdvanceEnum)this.oCPU.ReadInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0x6))) ? 1 : 0);
 			this.oCPU.AX.UInt16 = this.oCPU.OR_UInt16(this.oCPU.AX.UInt16, this.oCPU.AX.UInt16);
 			if (this.oCPU.Flags.E)

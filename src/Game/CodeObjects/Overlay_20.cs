@@ -35,7 +35,7 @@ namespace OpenCivOne
 
 			// Instruction address 0x0000:0x0017, size: 5
 			
-			this.oParent.AIEngine.F0_25fb_3401_PlayerClearContinentPolicies(playerID, UnitRoleTypeEnum.Settler, x, y, 4);
+			this.oParent.AIEngine.F0_25fb_3401_PlayerClearContinentPolicies(playerID, UnitStrategyTypeEnum.Settle, x, y, 4);
 
 			this.oCPU.WriteUInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0x8), 0x0);
 			goto L0029;
@@ -164,7 +164,7 @@ namespace OpenCivOne
 			this.oParent.GameData.Cities[this.oCPU.ReadUInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0x8))].CurrentProductionID = 1;
 
 			// Instruction address 0x0000:0x021d, size: 5
-			this.oCPU.AX.UInt16 = (ushort)(this.oParent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Gunpowder) ? 1 : 0);
+			this.oCPU.AX.UInt16 = (ushort)(this.oParent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Gunpowder) ? 1 : 0);
 			this.oCPU.AX.UInt16 = this.oCPU.OR_UInt16(this.oCPU.AX.UInt16, this.oCPU.AX.UInt16);
 			if (this.oCPU.Flags.NE)
 			{
@@ -172,7 +172,7 @@ namespace OpenCivOne
 			}
 
 			// Instruction address 0x0000:0x0235, size: 5
-			this.oCPU.AX.UInt16 = (ushort)(this.oParent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Conscription) ? 1 : 0);
+			this.oCPU.AX.UInt16 = (ushort)(this.oParent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Conscription) ? 1 : 0);
 			this.oCPU.AX.UInt16 = this.oCPU.OR_UInt16(this.oCPU.AX.UInt16, this.oCPU.AX.UInt16);
 			if (this.oCPU.Flags.NE)
 			{
@@ -269,7 +269,7 @@ namespace OpenCivOne
 			this.oCPU.AX.UInt16 = 0x1c;
 			this.oCPU.IMUL_UInt16(this.oCPU.AX, this.oCPU.DX, this.oCPU.ReadUInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0x8)));
 			this.oCPU.BX.UInt16 = this.oCPU.AX.UInt16;
-			this.oParent.GameData.Cities[this.oCPU.ReadUInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0x8))].Status |= CityStatusEnum.OceanAccess;
+			this.oParent.GameData.Cities[this.oCPU.ReadUInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0x8))].Status |= CityStatusEnum.WaterAccess;
 
 		L0349:
 			this.oCPU.CMP_UInt16(this.oCPU.ReadUInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0xe)), 0xb);
@@ -380,7 +380,7 @@ namespace OpenCivOne
 
 		L0484:
 			// Instruction address 0x0000:0x048a, size: 5
-			this.oParent.Segment_1ade.F0_1ade_03ea(this.oCPU.ReadInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0x8)));
+			this.oParent.GameEngine.F0_1ade_03ea_ProcessCityState1AndRefreshMap(this.oCPU.ReadInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0x8)));
 
 			// Instruction address 0x0000:0x0492, size: 5
 			this.oParent.GameEngine.F0_1238_1b44_RedrawMapWithBlankingEffect();
@@ -393,10 +393,8 @@ namespace OpenCivOne
 			this.oCPU.SI.UInt16 = this.oCPU.AX.UInt16;
 
 			// Instruction address 0x0000:0x04a7, size: 5
-			this.oParent.Segment_1ade.F0_1ade_0421(playerID,
-				this.oCPU.ReadInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0x8)));
-			
-			this.oParent.GameData.Cities[this.oCPU.ReadUInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0x8))].CurrentProductionID = (sbyte)this.oCPU.AX.LowUInt8;
+			this.oParent.GameData.Cities[this.oCPU.ReadUInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0x8))].CurrentProductionID = 
+				(sbyte)this.oParent.GameEngine.F0_1ade_0421_SelectCityProduction(playerID, this.oCPU.ReadInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0x8)));
 
 			// Instruction address 0x0000:0x04bb, size: 5
 			this.oCPU.AX.UInt16 = (ushort)(this.oParent.CityWorker.F0_1d12_6c97_PlayerHasWonder(this.oParent.GameData.HumanPlayerID, WonderEnum.ApolloProgram) ? 1 : 0);
@@ -596,7 +594,7 @@ namespace OpenCivOne
 			this.oCPU.SI.UInt16 = this.oCPU.AX.UInt16;
 
 			// Instruction address 0x0000:0x06aa, size: 5
-			this.oCPU.AX.UInt16 = (ushort)(this.oParent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(this.oParent.GameData.Cities[cityID].PlayerID, TechnologyAdvanceEnum.Medicine) ? 1 : 0);
+			this.oCPU.AX.UInt16 = (ushort)(this.oParent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(this.oParent.GameData.Cities[cityID].PlayerID, TechnologyAdvanceEnum.Medicine) ? 1 : 0);
 			this.oCPU.AX.UInt16 = this.oCPU.OR_UInt16(this.oCPU.AX.UInt16, this.oCPU.AX.UInt16);
 			if (this.oCPU.Flags.E)
 				goto L06b9;
@@ -610,7 +608,7 @@ namespace OpenCivOne
 
 		L06c4:
 			// Instruction address 0x0000:0x06ce, size: 5
-			this.oCPU.AX.UInt16 = (ushort)(this.oParent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(this.oParent.GameData.Cities[cityID].PlayerID,
+			this.oCPU.AX.UInt16 = (ushort)(this.oParent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(this.oParent.GameData.Cities[cityID].PlayerID,
 				(TechnologyAdvanceEnum)this.oCPU.ReadInt16(this.oCPU.DS.UInt16, 0xcc4)) ? 1 : 0);
 			this.oCPU.AX.UInt16 = this.oCPU.OR_UInt16(this.oCPU.AX.UInt16, this.oCPU.AX.UInt16);
 			if (this.oCPU.Flags.NE)
@@ -651,7 +649,7 @@ namespace OpenCivOne
 
 		L071f:
 			// Instruction address 0x0000:0x0729, size: 5
-			this.oCPU.AX.UInt16 = (ushort)(this.oParent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(this.oParent.GameData.Cities[cityID].PlayerID,
+			this.oCPU.AX.UInt16 = (ushort)(this.oParent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(this.oParent.GameData.Cities[cityID].PlayerID,
 				(TechnologyAdvanceEnum)this.oCPU.ReadInt16(this.oCPU.DS.UInt16, 0xca6)) ? 1 : 0);
 			this.oCPU.AX.UInt16 = this.oCPU.OR_UInt16(this.oCPU.AX.UInt16, this.oCPU.AX.UInt16);
 			if (this.oCPU.Flags.NE)
@@ -683,7 +681,7 @@ namespace OpenCivOne
 
 		L076b:
 			// Instruction address 0x0000:0x0775, size: 5
-			this.oCPU.AX.UInt16 = (ushort)(this.oParent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(this.oParent.GameData.Cities[cityID].PlayerID,
+			this.oCPU.AX.UInt16 = (ushort)(this.oParent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(this.oParent.GameData.Cities[cityID].PlayerID,
 				(TechnologyAdvanceEnum)this.oCPU.ReadInt16(this.oCPU.DS.UInt16, 0xc2e)) ? 1 : 0);
 			this.oCPU.AX.UInt16 = this.oCPU.OR_UInt16(this.oCPU.AX.UInt16, this.oCPU.AX.UInt16);
 			if (this.oCPU.Flags.NE)
@@ -721,7 +719,7 @@ namespace OpenCivOne
 
 		L07c0:
 			// Instruction address 0x0000:0x07ca, size: 5
-			this.oCPU.AX.UInt16 = (ushort)(this.oParent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(this.oParent.GameData.Cities[cityID].PlayerID,
+			this.oCPU.AX.UInt16 = (ushort)(this.oParent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(this.oParent.GameData.Cities[cityID].PlayerID,
 				(TechnologyAdvanceEnum)this.oCPU.ReadInt16(this.oCPU.DS.UInt16, 0xc10)) ? 1 : 0);
 			this.oCPU.AX.UInt16 = this.oCPU.OR_UInt16(this.oCPU.AX.UInt16, this.oCPU.AX.UInt16);
 			if (this.oCPU.Flags.NE)
@@ -760,7 +758,7 @@ namespace OpenCivOne
 
 		L081c:
 			// Instruction address 0x0000:0x0826, size: 5
-			this.oCPU.AX.UInt16 = (ushort)(this.oParent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(this.oParent.GameData.Cities[cityID].PlayerID,
+			this.oCPU.AX.UInt16 = (ushort)(this.oParent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(this.oParent.GameData.Cities[cityID].PlayerID,
 				(TechnologyAdvanceEnum)this.oCPU.ReadInt16(this.oCPU.DS.UInt16, 0xcc4)) ? 1 : 0);
 			this.oCPU.AX.UInt16 = this.oCPU.OR_UInt16(this.oCPU.AX.UInt16, this.oCPU.AX.UInt16);
 			if (this.oCPU.Flags.NE)
@@ -918,7 +916,7 @@ namespace OpenCivOne
 			this.oCPU.IMUL_UInt16(this.oCPU.AX, this.oCPU.DX, (ushort)cityID);
 			this.oCPU.SI.UInt16 = this.oCPU.AX.UInt16;
 
-			if (this.oParent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(this.oParent.GameData.Cities[cityID].PlayerID, TechnologyAdvanceEnum.Religion) &&
+			if (this.oParent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(this.oParent.GameData.Cities[cityID].PlayerID, TechnologyAdvanceEnum.Religion) &&
 				!this.oParent.GameData.Cities[cityID].HasImprovement(ImprovementEnum.Cathedral))
 			{
 				// Instruction address 0x0000:0x09c8, size: 5

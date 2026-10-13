@@ -33,7 +33,6 @@ namespace OpenCivOne
 		private UnitGoTo unitGoTo;
 		private Actions oSegment_2459;
 		private AIEngine aiEngine;
-		private Segment_1ade oSegment_1ade;
 		private CityWorker cityWorker;
 		private AttackActions oSegment_29f3;
 		private Diplomacy diplomacy;
@@ -157,7 +156,6 @@ namespace OpenCivOne
 			this.unitGoTo = new UnitGoTo(this);
 			this.oSegment_2459 = new Actions(this);
 			this.aiEngine = new AIEngine(this);
-			this.oSegment_1ade = new Segment_1ade(this);
 			this.cityWorker = new CityWorker(this);
 			this.oSegment_29f3 = new AttackActions(this);
 			this.diplomacy = new Diplomacy(this);
@@ -579,11 +577,6 @@ namespace OpenCivOne
 		public AIEngine AIEngine
 		{
 			get { return this.aiEngine; }
-		}
-
-		public Segment_1ade Segment_1ade
-		{
-			get { return this.oSegment_1ade; }
 		}
 
 		public CityWorker CityWorker

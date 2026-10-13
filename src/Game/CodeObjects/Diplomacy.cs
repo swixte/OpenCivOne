@@ -230,7 +230,7 @@ namespace OpenCivOne
 								switch (i)
 								{
 									case 2:
-										if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Monarchy))
+										if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Monarchy))
 										{
 											governments.Add((GovernmentTypeEnum)i);
 											governmentMenu.Append($" {this.parent.Array_1966_GovernmentNames[i]}\n");
@@ -238,7 +238,7 @@ namespace OpenCivOne
 										break;
 
 									case 3:
-										if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Communism))
+										if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Communism))
 										{
 											governments.Add((GovernmentTypeEnum)i);
 											governmentMenu.Append($" {this.parent.Array_1966_GovernmentNames[i]}\n");
@@ -246,7 +246,7 @@ namespace OpenCivOne
 										break;
 
 									case 4:
-										if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.TheRepublic))
+										if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.TheRepublic))
 										{
 											governments.Add((GovernmentTypeEnum)i);
 											governmentMenu.Append($" {this.parent.Array_1966_GovernmentNames[i]}\n");
@@ -254,7 +254,7 @@ namespace OpenCivOne
 										break;
 
 									case 5:
-										if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Democracy))
+										if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Democracy))
 										{
 											governments.Add((GovernmentTypeEnum)i);
 											governmentMenu.Append($" {this.parent.Array_1966_GovernmentNames[i]}\n");
@@ -616,14 +616,14 @@ namespace OpenCivOne
 
 			for (int i = 0; i < 72; i++)
 			{
-				if (!this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID1, (TechnologyAdvanceEnum)i) &&
-					this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID2, (TechnologyAdvanceEnum)i))
+				if (!this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID1, (TechnologyAdvanceEnum)i) &&
+					this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID2, (TechnologyAdvanceEnum)i))
 				{
 					missingTechnologyPlayer1 = i;
 				}
 
-				if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID1, (TechnologyAdvanceEnum)i) &&
-					!this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID2, (TechnologyAdvanceEnum)i))
+				if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID1, (TechnologyAdvanceEnum)i) &&
+					!this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID2, (TechnologyAdvanceEnum)i))
 				{
 					missingTechnologyPlayer2 = i;
 				}
@@ -632,10 +632,10 @@ namespace OpenCivOne
 			if (missingTechnologyPlayer1 != -1 && missingTechnologyPlayer2 != -1)
 			{
 				// Instruction address 0x2517:0x0d73, size: 5
-				this.parent.Segment_1ade.F0_1ade_1d2e(playerID1, playerID2, (TechnologyAdvanceEnum)missingTechnologyPlayer1);
+				this.parent.GameEngine.F0_1ade_1d2e_ResearchFinished(playerID1, playerID2, (TechnologyAdvanceEnum)missingTechnologyPlayer1);
 
 				// Instruction address 0x2517:0x0d84, size: 5
-				this.parent.Segment_1ade.F0_1ade_1d2e(playerID2, playerID1, (TechnologyAdvanceEnum)missingTechnologyPlayer2);
+				this.parent.GameEngine.F0_1ade_1d2e_ResearchFinished(playerID2, playerID1, (TechnologyAdvanceEnum)missingTechnologyPlayer2);
 			}
 		}
 

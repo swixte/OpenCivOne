@@ -303,7 +303,7 @@ namespace OpenCivOne
 					else
 					{
 						// Instruction address 0x2c84:0x02bb, size: 5
-						if (!improvements.HasFlag(TerrainImprovementFlagsEnum.RailRoad) && this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Railroad))
+						if (!improvements.HasFlag(TerrainImprovementFlagsEnum.RailRoad) && this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Railroad))
 						{
 							// Instruction address 0x2c84:0x02cf, size: 5
 							menuText.Append(" Build RailRoad \x008fr\n");
@@ -383,7 +383,7 @@ namespace OpenCivOne
 					menuText.Append(" Build Fortress \x008ff\n");
 
 					// Instruction address 0x2c84:0x045b, size: 5
-					if (!this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Construction))
+					if (!this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Construction))
 					{
 						// Disable 'Build Fortress' option
 						this.parent.Var_b276_MenuBoxDisabledOptions |= 0x1 << orderCount;
@@ -421,7 +421,7 @@ namespace OpenCivOne
 				}
 
 				// Instruction address 0x2c84:0x05a4, size: 5
-				if ((this.parent.GameData.Units[(int)unit.UnitType].UnitRoleType == UnitRoleTypeEnum.SeaTransport || unit.UnitType == UnitTypeEnum.Carrier) && unit.NextUnitID != -1)
+				if ((this.parent.GameData.Units[(int)unit.UnitType].UnitRoleType == UnitStrategyTypeEnum.SeaTransport || unit.UnitType == UnitTypeEnum.Carrier) && unit.NextUnitID != -1)
 				{
 					// Instruction address 0x2c84:0x05a4, size: 5
 					menuText.Append(" Unload \x008fu\n");

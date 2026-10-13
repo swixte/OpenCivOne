@@ -5,7 +5,7 @@ namespace OpenCivOne
 {
 	public class ContinentPolicy
 	{
-		public UnitRoleTypeEnum UnitRoleType = UnitRoleTypeEnum.Settler;
+		public UnitStrategyTypeEnum UnitRoleType = UnitStrategyTypeEnum.Settle;
 		/// <summary>
 		/// !!! This setting appears not to be used anywhere. Perhaps we should join PlayerContinent with ContinentPolicy objects?
 		/// </summary>

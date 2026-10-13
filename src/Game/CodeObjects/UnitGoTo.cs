@@ -345,11 +345,11 @@ namespace OpenCivOne
 					}
 				}
 
-				bool startIsTransportUnit = this.parent.UnitManagement.F0_1866_1380_GetStackUnitCount(unit.PlayerID, unit.ID, UnitRoleTypeEnum.SeaTransport) > 0;
+				bool startIsTransportUnit = this.parent.UnitManagement.F0_1866_1380_GetStackUnitCount(unit.PlayerID, unit.ID, UnitStrategyTypeEnum.SeaTransport) > 0;
 				int destinationPlayerID = map.F0_2aea_14e0_GetCellActiveUnitPlayerID(unit.GoToDestination.X, unit.GoToDestination.Y);
 				int destinationUnitID = map.F0_2aea_1458_GetCellActiveUnitID(unit.GoToDestination.X, unit.GoToDestination.Y);
 				bool destinationIsTransportUnit = (destinationPlayerID >= 0 && destinationUnitID >= 0 && 
-					this.parent.UnitManagement.F0_1866_1380_GetStackUnitCount(destinationPlayerID, destinationUnitID, UnitRoleTypeEnum.SeaTransport) > 0);
+					this.parent.UnitManagement.F0_1866_1380_GetStackUnitCount(destinationPlayerID, destinationUnitID, UnitStrategyTypeEnum.SeaTransport) > 0);
 				int goToDistance = map.GetDistance(unit.Position, unit.GoToDestination);
 
 				int startCityID = this.parent.MapManagement.GetCityByLocation(unit.Position.X, unit.Position.Y);

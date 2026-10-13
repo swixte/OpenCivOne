@@ -314,7 +314,7 @@ namespace OpenCivOne
 				{
 					for (int j = 0; j < this.parent.GameData.Players[i].Continents.Length; j++)
 					{
-						this.parent.GameData.Players[i].Continents[j].Strategy = (PlayerContinentStrategyEnum)ReadInt16(reader);
+						this.parent.GameData.Players[i].Continents[j].Strategy = (UnitStrategyTypeEnum)ReadInt16(reader);
 					}
 				}
 
@@ -467,7 +467,7 @@ namespace OpenCivOne
 				{
 					for (int j = 0; j < 16; j++)
 					{
-						this.parent.GameData.Players[i].ContinentPolicies[j].UnitRoleType = (UnitRoleTypeEnum)((sbyte)ReadUInt8(reader));
+						this.parent.GameData.Players[i].ContinentPolicies[j].UnitRoleType = (UnitStrategyTypeEnum)((sbyte)ReadUInt8(reader));
 					}
 				}
 

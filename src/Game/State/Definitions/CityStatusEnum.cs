@@ -17,7 +17,7 @@ namespace OpenCivOne
 		/// Set when the city is founded. For the AI players the adjacent water area must be
 		/// larger than 256 cells, while for the human player any adjacent water cell counts.
 		/// </summary>
-		OceanAccess = 0x2,
+		WaterAccess = 0x2,
 
 		/// <summary>
 		/// The two resource free fortified units of the city are currently present on the map.

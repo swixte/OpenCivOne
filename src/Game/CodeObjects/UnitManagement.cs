@@ -217,10 +217,10 @@ namespace OpenCivOne
 							if (!this.parent.GameData.Players[playerID].Diplomacy[cityOwnerPlayerID].HasFlag(DiplomacyFlagsEnum.Peace))
 							{
 								// Instruction address 0x1866:0x049f, size: 5
-								this.parent.AIEngine.PlayerAddUnitPolicy(cityOwnerPlayerID, newX, newY, UnitRoleTypeEnum.LandAttack, 4);
+								this.parent.AIEngine.PlayerAddUnitPolicy(cityOwnerPlayerID, newX, newY, UnitStrategyTypeEnum.LandAttack, 4);
 
 								// Instruction address 0x1866:0x04b5, size: 5
-								this.parent.AIEngine.PlayerAddUnitPolicy(cityOwnerPlayerID, newX, newY, UnitRoleTypeEnum.Defense, 2);
+								this.parent.AIEngine.PlayerAddUnitPolicy(cityOwnerPlayerID, newX, newY, UnitStrategyTypeEnum.Defense, 2);
 							}
 						}
 					}
@@ -274,13 +274,13 @@ namespace OpenCivOne
 							if (activeUnitPlayerID != 0 &&
 								this.parent.GameData.Players[activeUnitPlayerID].Units[activeUnitID].UnitType != UnitTypeEnum.Diplomat &&
 								((this.parent.GameData.Players[activeUnitPlayerID].Units[activeUnitID].Status & UnitStatusEnum.Fortified) == UnitStatusEnum.None ||
-									this.parent.GameData.Units[(int)this.parent.GameData.Players[activeUnitPlayerID].Units[activeUnitID].UnitType].UnitRoleType != UnitRoleTypeEnum.Defense))
+									this.parent.GameData.Units[(int)this.parent.GameData.Players[activeUnitPlayerID].Units[activeUnitID].UnitType].UnitRoleType != UnitStrategyTypeEnum.Defense))
 							{
 								local_6 = 3;
 							}
 
 							// Instruction address 0x1866:0x069b, size: 5
-							this.parent.AIEngine.PlayerAddUnitPolicy(playerID, newX, newY, UnitRoleTypeEnum.LandAttack, (short)local_6);
+							this.parent.AIEngine.PlayerAddUnitPolicy(playerID, newX, newY, UnitStrategyTypeEnum.LandAttack, (short)local_6);
 						}
 
 						if (this.parent.GameData.Players[playerID].Units[unitID].UnitType != UnitTypeEnum.Diplomat)
@@ -288,12 +288,12 @@ namespace OpenCivOne
 							if (playerID == 0)
 							{
 								// Instruction address 0x1866:0x02da, size: 5
-								this.parent.AIEngine.PlayerAddUnitPolicy(activeUnitPlayerID, x, y, UnitRoleTypeEnum.Defense, 1);
+								this.parent.AIEngine.PlayerAddUnitPolicy(activeUnitPlayerID, x, y, UnitStrategyTypeEnum.Defense, 1);
 							}
 							else
 							{
 								// Instruction address 0x1866:0x02da, size: 5
-								this.parent.AIEngine.PlayerAddUnitPolicy(activeUnitPlayerID, x, y, UnitRoleTypeEnum.Defense, 2);
+								this.parent.AIEngine.PlayerAddUnitPolicy(activeUnitPlayerID, x, y, UnitStrategyTypeEnum.Defense, 2);
 							}
 						}
 					}
@@ -304,7 +304,7 @@ namespace OpenCivOne
 						!this.parent.GameData.Players[playerID].Diplomacy[activeUnitPlayerID].HasFlag(DiplomacyFlagsEnum.Peace))
 					{
 						// Instruction address 0x1866:0x0321, size: 5
-						this.parent.AIEngine.PlayerAddUnitPolicy(playerID, newX, newY, UnitRoleTypeEnum.SeaAttack, 2);
+						this.parent.AIEngine.PlayerAddUnitPolicy(playerID, newX, newY, UnitStrategyTypeEnum.SeaAttack, 2);
 					}
 				}
 
@@ -367,7 +367,7 @@ namespace OpenCivOne
 								!this.parent.GameData.Players[playerID].Diplomacy[activeUnitPlayerID].HasFlag(DiplomacyFlagsEnum.Peace))
 							{
 								// Instruction address 0x1866:0x09f1, size: 5
-								this.parent.AIEngine.PlayerAddUnitPolicy(playerID, newX, newY, UnitRoleTypeEnum.SeaAttack, 2);
+								this.parent.AIEngine.PlayerAddUnitPolicy(playerID, newX, newY, UnitStrategyTypeEnum.SeaAttack, 2);
 							}
 						}
 
@@ -412,7 +412,7 @@ namespace OpenCivOne
 									!this.parent.GameData.Players[playerID].Diplomacy[activeUnitPlayerID].HasFlag(DiplomacyFlagsEnum.Peace))
 								{
 									// Instruction address 0x1866:0x07e6, size: 5
-									this.parent.AIEngine.PlayerAddUnitPolicy(activeUnitPlayerID, x, y, UnitRoleTypeEnum.SeaAttack, 2);
+									this.parent.AIEngine.PlayerAddUnitPolicy(activeUnitPlayerID, x, y, UnitStrategyTypeEnum.SeaAttack, 2);
 								}
 							}
 							else if (activeUnitPlayerID == this.parent.GameData.HumanPlayerID &&
@@ -967,7 +967,7 @@ namespace OpenCivOne
 					// !!! To Check: This makes no sense, why would unitID and mainUnitID matter at all?
 				case UnitStackValueTypeEnum.DefenseUnitCount:
 					if (unitID < mainUnitID && 
-						this.parent.GameData.Units[(int)this.parent.GameData.Players[playerID].Units[unitID].UnitType].UnitRoleType == UnitRoleTypeEnum.Defense)
+						this.parent.GameData.Units[(int)this.parent.GameData.Players[playerID].Units[unitID].UnitType].UnitRoleType == UnitStrategyTypeEnum.Defense)
 					{
 						value++;
 					}
@@ -1017,7 +1017,7 @@ namespace OpenCivOne
 		/// <param name="unitID"></param>
 		/// <param name="unitRole"></param>
 		/// <returns></returns>
-		public int F0_1866_1380_GetStackUnitCount(int playerID, int unitID, UnitRoleTypeEnum unitRole)
+		public int F0_1866_1380_GetStackUnitCount(int playerID, int unitID, UnitStrategyTypeEnum unitRole)
 		{
 			//this.oCPU.Log.EnterBlock($"F0_1866_1380({playerID}, {unitID}, {aiRole})");
 
@@ -1068,7 +1068,7 @@ namespace OpenCivOne
 					count--;
 				}
 
-				if (this.parent.GameData.Units[(int)this.parent.GameData.Players[playerID].Units[oldUnitID].UnitType].UnitRoleType == UnitRoleTypeEnum.SeaTransport)
+				if (this.parent.GameData.Units[(int)this.parent.GameData.Players[playerID].Units[oldUnitID].UnitType].UnitRoleType == UnitStrategyTypeEnum.SeaTransport)
 				{
 					count += this.parent.GameData.Units[(int)this.parent.GameData.Players[playerID].Units[oldUnitID].UnitType].TransportCapacity;
 				}
@@ -1688,9 +1688,9 @@ namespace OpenCivOne
 			foreach (TechnologyAdvanceEnum technology in Enum.GetValues(typeof(TechnologyAdvanceEnum)))
 			{
 				if (technology != TechnologyAdvanceEnum.None && technology != TechnologyAdvanceEnum.NewFutureTechnology &&
-					!this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, technology) &&
-					this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, this.parent.GameData.TechnologyAdvances[(int)technology].RequiresTechnologyAdvance1) &&
-					this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, this.parent.GameData.TechnologyAdvances[(int)technology].RequiresTechnologyAdvance2))
+					!this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, technology) &&
+					this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, this.parent.GameData.TechnologyAdvances[(int)technology].RequiresTechnologyAdvance1) &&
+					this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, this.parent.GameData.TechnologyAdvances[(int)technology].RequiresTechnologyAdvance2))
 				{
 					undiscoveredTech.Add(technology);
 				}
@@ -1700,7 +1700,7 @@ namespace OpenCivOne
 			{
 				int index = this.parent.CAPI.RNG.Next(undiscoveredTech.Count);
 
-				this.parent.Segment_1ade.F0_1ade_1d2e(playerID, 0, undiscoveredTech[index]);
+				this.parent.GameEngine.F0_1ade_1d2e_ResearchFinished(playerID, 0, undiscoveredTech[index]);
 			}
 			else
 			{

@@ -430,7 +430,7 @@ namespace OpenCivOne
 
 						for (int j = 0; j < 72; j++)
 						{
-							if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(i, (TechnologyAdvanceEnum)j))
+							if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(i, (TechnologyAdvanceEnum)j))
 							{
 								playerGrades[i]++;
 							}
@@ -716,22 +716,22 @@ namespace OpenCivOne
 			{
 				rankData[i] = ((citySizes[i] * 2 + educationCounts[i]) * 2) / citySizes[i];
 
-				if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(i, TechnologyAdvanceEnum.Alphabet))
+				if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(i, TechnologyAdvanceEnum.Alphabet))
 				{
 					rankData[i] *= 2;
 				}
 
-				if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(i, TechnologyAdvanceEnum.Writing))
+				if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(i, TechnologyAdvanceEnum.Writing))
 				{
 					rankData[i] *= 2;
 				}
 
-				if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(i, TechnologyAdvanceEnum.Literacy))
+				if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(i, TechnologyAdvanceEnum.Literacy))
 				{
 					rankData[i] *= 2;
 				}
 
-				if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(i, TechnologyAdvanceEnum.University))
+				if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(i, TechnologyAdvanceEnum.University))
 				{
 					rankData[i] *= 2;
 				}
@@ -756,7 +756,7 @@ namespace OpenCivOne
 			{
 				rankData[i] = (50 * citySizes[i]) / (citySizes[i] + cityGrowthCounts[i]);
 
-				if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(i, TechnologyAdvanceEnum.Medicine))
+				if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(i, TechnologyAdvanceEnum.Medicine))
 				{
 					rankData[i] /= 2;
 				}

@@ -148,7 +148,7 @@ namespace OpenCivOne
 			this.oCPU.WriteUInt8(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0xc), this.oCPU.AX.LowUInt8);
 
 			// Instruction address 0x0000:0x01e0, size: 5
-			this.oCPU.AX.UInt16 = (ushort)(this.oParent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(this.oParent.GameData.HumanPlayerID, TechnologyAdvanceEnum.Invention) ? 1 : 0);
+			this.oCPU.AX.UInt16 = (ushort)(this.oParent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(this.oParent.GameData.HumanPlayerID, TechnologyAdvanceEnum.Invention) ? 1 : 0);
 			this.oCPU.AX.UInt16 = this.oCPU.OR_UInt16(this.oCPU.AX.UInt16, this.oCPU.AX.UInt16);
 			if (this.oCPU.Flags.NE)
 			{
@@ -1152,7 +1152,7 @@ namespace OpenCivOne
 			this.oCPU.IMUL_UInt16(this.oCPU.AX, this.oCPU.DX, (ushort)param2);
 			this.oCPU.BX.UInt16 = this.oCPU.AX.UInt16;
 			// Instruction address 0x0000:0x0e59, size: 5
-			this.oCPU.AX.UInt16 = (ushort)(this.oParent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID,
+			this.oCPU.AX.UInt16 = (ushort)(this.oParent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID,
 				(TechnologyAdvanceEnum)this.oCPU.ReadInt16(this.oCPU.DS.UInt16, (ushort)(this.oCPU.BX.UInt16 + 0xe68))) ? 1 : 0);
 			this.oCPU.AX.UInt16 = this.oCPU.OR_UInt16(this.oCPU.AX.UInt16, this.oCPU.AX.UInt16);
 			if (this.oCPU.Flags.NE)

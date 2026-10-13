@@ -33,7 +33,7 @@ public partial class EditBox : Window
 		this.txtInput.KeyDown += this.TxtInput_KeyDown;
 
 		this.lblDescription.Text = title;
-		this.txtInput.Watermark = placeholderText;
+		this.txtInput.PlaceholderText = placeholderText;
 		this.defaultText = defaultText;
 		this.txtInput.Text = defaultText;
 		this.maxTextLength = maxTextLength;

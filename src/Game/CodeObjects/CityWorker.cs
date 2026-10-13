@@ -141,25 +141,25 @@ namespace OpenCivOne
 				if (!city.HasImprovement(ImprovementEnum.MassTransit))
 				{
 					// Instruction address 0x1d12:0x035e, size: 5
-					if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(this.Var_6548_PlayerID, TechnologyAdvanceEnum.Industrialization))
+					if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(this.Var_6548_PlayerID, TechnologyAdvanceEnum.Industrialization))
 					{
 						this.parent.Var_b882++;
 					}
 
 					// Instruction address 0x1d12:0x037a, size: 5
-					if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(this.Var_6548_PlayerID, TechnologyAdvanceEnum.Automobile))
+					if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(this.Var_6548_PlayerID, TechnologyAdvanceEnum.Automobile))
 					{
 						this.parent.Var_b882++;
 					}
 
 					// Instruction address 0x1d12:0x0396, size: 5
-					if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(this.Var_6548_PlayerID, TechnologyAdvanceEnum.MassProduction))
+					if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(this.Var_6548_PlayerID, TechnologyAdvanceEnum.MassProduction))
 					{
 						this.parent.Var_b882++;
 					}
 
 					// Instruction address 0x1d12:0x03b2, size: 5
-					if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(this.Var_6548_PlayerID, TechnologyAdvanceEnum.Plastics))
+					if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(this.Var_6548_PlayerID, TechnologyAdvanceEnum.Plastics))
 					{
 						this.parent.Var_b882++;
 					}
@@ -265,7 +265,7 @@ namespace OpenCivOne
 				if (flag == 0)
 				{
 					// !!! This is to prevent corruption, we should remove this
-					city.Status &= (CityStatusEnum.CivilDisorder | CityStatusEnum.OceanAccess | CityStatusEnum.FortifiedUnitsRestored | CityStatusEnum.NearRiverOrMountains |
+					city.Status &= (CityStatusEnum.CivilDisorder | CityStatusEnum.WaterAccess | CityStatusEnum.FortifiedUnitsRestored | CityStatusEnum.NearRiverOrMountains |
 						 CityStatusEnum.AutoProduction | CityStatusEnum.TechnologyStolen | CityStatusEnum.Celebrating);
 
 					if (city.FoodCount < 0)
@@ -306,7 +306,7 @@ namespace OpenCivOne
 							if (city.ActualSize <= 0)
 							{
 								// Instruction address 0x1d12:0x0843, size: 5
-								this.parent.Segment_1ade.F0_1ade_018e(cityID, city.Position.X, city.Position.Y);
+								this.parent.GameEngine.F0_1ade_018e_DeleteCity(cityID, city.Position.X, city.Position.Y);
 
 								this.parent.StartGameMenu.F5_0000_0e6c_TestIfAIPlayerIsDestroyed(this.Var_6548_PlayerID, -1);
 
@@ -768,7 +768,7 @@ namespace OpenCivOne
 									if (city.ActualSize == 0)
 									{
 										// Instruction address 0x1d12:0x16ff, size: 5
-										this.parent.Segment_1ade.F0_1ade_018e(cityID, city.Position.X, city.Position.Y);
+										this.parent.GameEngine.F0_1ade_018e_DeleteCity(cityID, city.Position.X, city.Position.Y);
 
 										// Instruction address 0x1d12:0x1727, size: 5
 										this.parent.UnitManagement.F0_1866_0cf5_CreateUnit(this.Var_6548_PlayerID, (UnitTypeEnum)city.CurrentProductionID, city.Position.X, city.Position.Y);
@@ -979,7 +979,7 @@ namespace OpenCivOne
 									}
 
 									// Instruction address 0x1d12:0x1e1a, size: 5
-									city.CurrentProductionID = (sbyte)((short)this.parent.Segment_1ade.F0_1ade_0421(this.Var_6548_PlayerID, cityID));
+									city.CurrentProductionID = (sbyte)this.parent.GameEngine.F0_1ade_0421_SelectCityProduction(this.Var_6548_PlayerID, cityID);
 
 									if (city.CurrentProductionID >= 0)
 									{
@@ -1015,7 +1015,7 @@ namespace OpenCivOne
 											{
 												this.parent.Overlay_18.F18_0000_15c3(this.Var_6548_PlayerID);
 											}
-											else if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(this.parent.GameData.HumanPlayerID, TechnologyAdvanceEnum.SpaceFlight))
+											else if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(this.parent.GameData.HumanPlayerID, TechnologyAdvanceEnum.SpaceFlight))
 											{
 												if (this.parent.GameData.AISpaceshipSuccessRate > 75)
 												{
@@ -1085,10 +1085,10 @@ namespace OpenCivOne
 								if (newShields == 38)
 								{
 									// Instruction address 0x1d12:0x2143, size: 5
-									this.parent.Segment_1ade.F0_1ade_1584(this.Var_6548_PlayerID, 0);
+									this.parent.GameEngine.F0_1ade_1584_SelectNextResearchField(this.Var_6548_PlayerID, 0);
 
 									// Instruction address 0x1d12:0x2153, size: 5
-									this.parent.Segment_1ade.F0_1ade_1584(this.Var_6548_PlayerID, 0);
+									this.parent.GameEngine.F0_1ade_1584_SelectNextResearchField(this.Var_6548_PlayerID, 0);
 								}
 
 								if (newShields == 43 && this.Var_6548_PlayerID == this.parent.GameData.HumanPlayerID)
@@ -1116,7 +1116,7 @@ namespace OpenCivOne
 						(city.ShieldsCount == 0 || (city.CurrentProductionID < 0 && newShields == -1)))
 					{
 						// Instruction address 0x1d12:0x2262, size: 5
-						newShields = (short)this.parent.Segment_1ade.F0_1ade_0421(this.Var_6548_PlayerID, cityID);
+						newShields = this.parent.GameEngine.F0_1ade_0421_SelectCityProduction(this.Var_6548_PlayerID, cityID);
 
 						this.parent.Var_aa_Screen0_Rectangle.FontID = 2;
 
@@ -1154,9 +1154,9 @@ namespace OpenCivOne
 						int cityShieldIncome = 0;
 
 						// Instruction address 0x1d12:0x2344, size: 5
-						PlayerContinentStrategyEnum local_104 = this.parent.GameData.Players[this.Var_6548_PlayerID].Continents[this.parent.MapManagement.F0_2aea_1942_GetGroupID(cityX, cityY)].Strategy;
+						UnitStrategyTypeEnum local_104 = this.parent.GameData.Players[this.Var_6548_PlayerID].Continents[this.parent.MapManagement.F0_2aea_1942_GetGroupID(cityX, cityY)].Strategy;
 
-						if ((local_104 == PlayerContinentStrategyEnum.Attack || local_104 == PlayerContinentStrategyEnum.Defend || local_104 == PlayerContinentStrategyEnum.Transport) && 
+						if ((local_104 == UnitStrategyTypeEnum.LandAttack || local_104 == UnitStrategyTypeEnum.Defense || local_104 == UnitStrategyTypeEnum.SeaTransport) && 
 							newShields != 0 && city.CurrentProductionID >= 0 &&
 							(int)this.parent.GameData.Units[city.CurrentProductionID].UnitRoleType == (int)local_104)
 						{
@@ -1441,7 +1441,7 @@ namespace OpenCivOne
 				}
 
 				// Instruction address 0x1d12:0x2d27, size: 5
-				if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(this.Var_6548_PlayerID, TechnologyAdvanceEnum.Religion))
+				if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(this.Var_6548_PlayerID, TechnologyAdvanceEnum.Religion))
 				{
 					if (city.HasImprovement(ImprovementEnum.Cathedral))
 					{
@@ -1468,14 +1468,14 @@ namespace OpenCivOne
 				if (city.HasImprovement(ImprovementEnum.Temple))
 				{
 					// Instruction address 0x1d12:0x2dd6, size: 5
-					if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(this.Var_6548_PlayerID, TechnologyAdvanceEnum.Mysticism))
+					if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(this.Var_6548_PlayerID, TechnologyAdvanceEnum.Mysticism))
 					{
 						this.parent.Var_70e4_CityUnhappyCitizenCount -= 2;
 					}
 					else
 					{
 						// Instruction address 0x1d12:0x2df6, size: 5
-						if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(this.Var_6548_PlayerID, TechnologyAdvanceEnum.CeremonialBurial))
+						if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(this.Var_6548_PlayerID, TechnologyAdvanceEnum.CeremonialBurial))
 						{
 							this.parent.Var_70e4_CityUnhappyCitizenCount--;
 						}
@@ -1485,7 +1485,7 @@ namespace OpenCivOne
 					if (F0_1d12_6c97_PlayerHasWonder(this.Var_6548_PlayerID, WonderEnum.Oracle))
 					{
 						// Instruction address 0x1d12:0x2e2a, size: 5
-						if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(this.Var_6548_PlayerID, TechnologyAdvanceEnum.Mysticism))
+						if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(this.Var_6548_PlayerID, TechnologyAdvanceEnum.Mysticism))
 						{
 							this.parent.Var_70e4_CityUnhappyCitizenCount -= 2;
 						}
@@ -2417,7 +2417,7 @@ namespace OpenCivOne
 							if ((city.Status & CityStatusEnum.AutoProduction) != CityStatusEnum.None)
 							{
 								// Instruction address 0x1d12:0x4aef, size: 5
-								int newProductionID = (short)this.parent.Segment_1ade.F0_1ade_0421(this.Var_6548_PlayerID, cityID);
+								int newProductionID = this.parent.GameEngine.F0_1ade_0421_SelectCityProduction(this.Var_6548_PlayerID, cityID);
 
 								this.parent.Var_aa_Screen0_Rectangle.FontID = 2;
 
@@ -2524,7 +2524,7 @@ namespace OpenCivOne
 								}
 
 								// Instruction address 0x1d12:0x4ee9, size: 5
-								city.CurrentProductionID = (sbyte)((short)this.parent.Segment_1ade.F0_1ade_0421(this.Var_6548_PlayerID, cityID));
+								city.CurrentProductionID = (sbyte)this.parent.GameEngine.F0_1ade_0421_SelectCityProduction(this.Var_6548_PlayerID, cityID);
 
 								if (city.CurrentProductionID >= 0)
 								{
@@ -3185,7 +3185,7 @@ namespace OpenCivOne
 									}
 
 									// Instruction address 0x1d12:0x5e5b, size: 5
-									city.CurrentProductionID = (sbyte)((short)this.parent.Segment_1ade.F0_1ade_0421(this.Var_6548_PlayerID, cityID));
+									city.CurrentProductionID = (sbyte)this.parent.GameEngine.F0_1ade_0421_SelectCityProduction(this.Var_6548_PlayerID, cityID);
 
 									if (city.CurrentProductionID >= 0)
 									{
@@ -3237,7 +3237,7 @@ namespace OpenCivOne
 									}
 
 									// Instruction address 0x1d12:0x5ff9, size: 5
-									city.CurrentProductionID = (sbyte)((short)this.parent.Segment_1ade.F0_1ade_0421(this.Var_6548_PlayerID, cityID));
+									city.CurrentProductionID = (sbyte)this.parent.GameEngine.F0_1ade_0421_SelectCityProduction(this.Var_6548_PlayerID, cityID);
 
 									if (city.CurrentProductionID >= 0)
 									{
@@ -3330,7 +3330,7 @@ namespace OpenCivOne
 					{
 
 						if ((this.parent.GameData.Players[this.parent.GameData.HumanPlayerID].ResearchTechnologyID != -1 &&
-							this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(this.Var_6548_PlayerID,
+							this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(this.Var_6548_PlayerID,
 								(TechnologyAdvanceEnum)this.parent.GameData.Players[this.parent.GameData.HumanPlayerID].ResearchTechnologyID)) ||
 							(this.parent.GameData.Players[this.parent.GameData.HumanPlayerID].ResearchTechnologyID == -1 &&
 							this.parent.GameData.Players[this.Var_6548_PlayerID].ResearchProgress != 0))
@@ -3340,7 +3340,7 @@ namespace OpenCivOne
 							if ((this.parent.GameData.DebugFlags & 0x8) != 0)
 							{
 								// Instruction address 0x1d12:0x6344, size: 5
-								this.parent.Segment_1ade.F0_1ade_1584(this.Var_6548_PlayerID, 0);
+								this.parent.GameEngine.F0_1ade_1584_SelectNextResearchField(this.Var_6548_PlayerID, 0);
 							}
 
 							this.parent.GameData.Players[this.Var_6548_PlayerID].ResearchProgress = 0;
@@ -3398,7 +3398,7 @@ namespace OpenCivOne
 							if ((this.parent.GameData.DebugFlags & 0x8) != 0)
 							{
 								// Instruction address 0x1d12:0x64ab, size: 5
-								this.parent.Segment_1ade.F0_1ade_1584(this.Var_6548_PlayerID, 0);
+								this.parent.GameEngine.F0_1ade_1584_SelectNextResearchField(this.Var_6548_PlayerID, 0);
 							}
 						}
 					}
@@ -3442,7 +3442,7 @@ namespace OpenCivOne
 						}
 
 						if ((city.Status & CityStatusEnum.CivilDisorder) != CityStatusEnum.None && city.HasImprovement(ImprovementEnum.NuclearPlant) &&
-							!this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(this.Var_6548_PlayerID, TechnologyAdvanceEnum.FusionPower) && this.parent.CAPI.RNG.Next(3) == 0)
+							!this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(this.Var_6548_PlayerID, TechnologyAdvanceEnum.FusionPower) && this.parent.CAPI.RNG.Next(3) == 0)
 						{
 							// Instruction address 0x1d12:0x66a5, size: 5
 							this.parent.MapManagement.F0_2aea_0008_DrawVisibleMap(this.parent.GameData.HumanPlayerID, cityX - 8, cityY - 6);
@@ -3481,13 +3481,13 @@ namespace OpenCivOne
 									}
 
 									// Instruction address 0x1d12:0x67cf, size: 5
-									if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(this.Var_6548_PlayerID, TechnologyAdvanceEnum.Gunpowder))
+									if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(this.Var_6548_PlayerID, TechnologyAdvanceEnum.Gunpowder))
 									{
 										this.parent.GameData.Players[this.Var_6548_PlayerID].Coins--;
 									}
 
 									// Instruction address 0x1d12:0x67f1, size: 5
-									if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(this.Var_6548_PlayerID, TechnologyAdvanceEnum.Combustion))
+									if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(this.Var_6548_PlayerID, TechnologyAdvanceEnum.Combustion))
 									{
 										this.parent.GameData.Players[this.Var_6548_PlayerID].Coins--;
 									}
@@ -3814,7 +3814,7 @@ namespace OpenCivOne
 				ImprovementDefinition wonder = this.parent.GameData.Wonders[(int)wonderType];
 
 				if (wonder.ObsoletesAfterTechnology != TechnologyAdvanceEnum.None &&
-					this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(i, wonder.ObsoletesAfterTechnology))
+					this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(i, wonder.ObsoletesAfterTechnology))
 				{
 					break;
 				}
@@ -3847,7 +3847,7 @@ namespace OpenCivOne
 			{
 				// Instruction address 0x1d12:0x6d15, size: 5
 				if (this.parent.GameData.Wonders[wonderID].ObsoletesAfterTechnology != TechnologyAdvanceEnum.None &&
-					this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(i, this.parent.GameData.Wonders[wonderID].ObsoletesAfterTechnology))
+					this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(i, this.parent.GameData.Wonders[wonderID].ObsoletesAfterTechnology))
 				{
 					break;
 				}

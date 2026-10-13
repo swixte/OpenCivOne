@@ -1,9 +1,9 @@
 ﻿namespace OpenCivOne
 {
-	public enum UnitRoleTypeEnum
+	public enum UnitStrategyTypeEnum
 	{
 		None = -1,
-		Settler = 0,
+		Settle = 0,
 		LandAttack = 1,
 		Defense = 2,
 		SeaAttack = 3,

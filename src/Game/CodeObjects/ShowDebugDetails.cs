@@ -89,46 +89,46 @@ namespace OpenCivOne
 			{
 				switch (this.parent.GameData.Players[selectedPlayerID].UnitPolicies[i].UnitRoleType)
 				{
-					case UnitRoleTypeEnum.None:
+					case UnitStrategyTypeEnum.None:
 						break;
 
-					case UnitRoleTypeEnum.Settler:
+					case UnitStrategyTypeEnum.Settle:
 						this.parent.DrawTools.DrawStringWithShadow("S",
 							this.parent.GameData.Players[selectedPlayerID].UnitPolicies[i].Position.X * 4,
 							this.parent.GameData.Players[selectedPlayerID].UnitPolicies[i].Position.Y * 4, 13);
 						break;
 
-					case UnitRoleTypeEnum.LandAttack:
+					case UnitStrategyTypeEnum.LandAttack:
 						this.parent.DrawTools.DrawStringWithShadow("LA",
 							this.parent.GameData.Players[selectedPlayerID].UnitPolicies[i].Position.X * 4 - 2,
 							this.parent.GameData.Players[selectedPlayerID].UnitPolicies[i].Position.Y * 4, 13);
 						break;
 
-					case UnitRoleTypeEnum.Defense:
+					case UnitStrategyTypeEnum.Defense:
 						this.parent.DrawTools.DrawStringWithShadow("D",
 							this.parent.GameData.Players[selectedPlayerID].UnitPolicies[i].Position.X * 4,
 							this.parent.GameData.Players[selectedPlayerID].UnitPolicies[i].Position.Y * 4, 13);
 						break;
 
-					case UnitRoleTypeEnum.SeaAttack:
+					case UnitStrategyTypeEnum.SeaAttack:
 						this.parent.DrawTools.DrawStringWithShadow("SA",
 							this.parent.GameData.Players[selectedPlayerID].UnitPolicies[i].Position.X * 4 - 2,
 							this.parent.GameData.Players[selectedPlayerID].UnitPolicies[i].Position.Y * 4, 13);
 						break;
 
-					case UnitRoleTypeEnum.AirAttack:
+					case UnitStrategyTypeEnum.AirAttack:
 						this.parent.DrawTools.DrawStringWithShadow("AA",
 							this.parent.GameData.Players[selectedPlayerID].UnitPolicies[i].Position.X * 4 - 2,
 							this.parent.GameData.Players[selectedPlayerID].UnitPolicies[i].Position.Y * 4, 13);
 						break;
 
-					case UnitRoleTypeEnum.SeaTransport:
+					case UnitStrategyTypeEnum.SeaTransport:
 						this.parent.DrawTools.DrawStringWithShadow("ST",
 							this.parent.GameData.Players[selectedPlayerID].UnitPolicies[i].Position.X * 4 - 2,
 							this.parent.GameData.Players[selectedPlayerID].UnitPolicies[i].Position.Y * 4, 13);
 						break;
 
-					case UnitRoleTypeEnum.Neutral:
+					case UnitStrategyTypeEnum.Neutral:
 						this.parent.DrawTools.DrawStringWithShadow("N",
 							this.parent.GameData.Players[selectedPlayerID].UnitPolicies[i].Position.X * 4,
 							this.parent.GameData.Players[selectedPlayerID].UnitPolicies[i].Position.Y * 4, 13);
@@ -140,49 +140,49 @@ namespace OpenCivOne
 			{
 				switch (this.parent.GameData.Players[selectedPlayerID].ContinentPolicies[i].UnitRoleType)
 				{
-					case UnitRoleTypeEnum.None:
+					case UnitStrategyTypeEnum.None:
 						break;
 
-					case UnitRoleTypeEnum.Settler:
+					case UnitStrategyTypeEnum.Settle:
 						// Settle?
 						this.parent.DrawTools.DrawStringWithShadow("S",
 							this.parent.GameData.Players[selectedPlayerID].ContinentPolicies[i].Position.X * 4,
 							this.parent.GameData.Players[selectedPlayerID].ContinentPolicies[i].Position.Y * 4, 14);
 						break;
 
-					case UnitRoleTypeEnum.LandAttack:
+					case UnitStrategyTypeEnum.LandAttack:
 						// Attack?
 						this.parent.DrawTools.DrawStringWithShadow("LA",
 							this.parent.GameData.Players[selectedPlayerID].ContinentPolicies[i].Position.X * 4 - 2,
 							this.parent.GameData.Players[selectedPlayerID].ContinentPolicies[i].Position.Y * 4, 14);
 						break;
 
-					case UnitRoleTypeEnum.Defense:
+					case UnitStrategyTypeEnum.Defense:
 						// Defend ?
 						this.parent.DrawTools.DrawStringWithShadow("D",
 							this.parent.GameData.Players[selectedPlayerID].ContinentPolicies[i].Position.X * 4,
 							this.parent.GameData.Players[selectedPlayerID].ContinentPolicies[i].Position.Y * 4, 14);
 						break;
 
-					case UnitRoleTypeEnum.SeaAttack:
+					case UnitStrategyTypeEnum.SeaAttack:
 						this.parent.DrawTools.DrawStringWithShadow("SA",
 							this.parent.GameData.Players[selectedPlayerID].ContinentPolicies[i].Position.X * 4 - 2,
 							this.parent.GameData.Players[selectedPlayerID].ContinentPolicies[i].Position.Y * 4, 14);
 						break;
 
-					case UnitRoleTypeEnum.AirAttack:
+					case UnitStrategyTypeEnum.AirAttack:
 						this.parent.DrawTools.DrawStringWithShadow("AA",
 							this.parent.GameData.Players[selectedPlayerID].ContinentPolicies[i].Position.X * 4 - 2,
 							this.parent.GameData.Players[selectedPlayerID].ContinentPolicies[i].Position.Y * 4, 14);
 						break;
 
-					case UnitRoleTypeEnum.SeaTransport:
+					case UnitStrategyTypeEnum.SeaTransport:
 						this.parent.DrawTools.DrawStringWithShadow("ST",
 							this.parent.GameData.Players[selectedPlayerID].ContinentPolicies[i].Position.X * 4 - 2,
 							this.parent.GameData.Players[selectedPlayerID].ContinentPolicies[i].Position.Y * 4, 14);
 						break;
 
-					case UnitRoleTypeEnum.Neutral:
+					case UnitStrategyTypeEnum.Neutral:
 						this.parent.DrawTools.DrawStringWithShadow("N",
 							this.parent.GameData.Players[selectedPlayerID].ContinentPolicies[i].Position.X * 4,
 							this.parent.GameData.Players[selectedPlayerID].ContinentPolicies[i].Position.Y * 4, 14);
@@ -203,19 +203,19 @@ namespace OpenCivOne
 
 					switch (this.parent.GameData.Players[selectedPlayerID].Continents[i].Strategy)
 					{
-						case PlayerContinentStrategyEnum.Settle:
+						case UnitStrategyTypeEnum.Settle:
 							strategyText = "S";
 							break;
 
-						case PlayerContinentStrategyEnum.Attack:
+						case UnitStrategyTypeEnum.LandAttack:
 							strategyText = "A";
 							break;
 
-						case PlayerContinentStrategyEnum.Defend:
+						case UnitStrategyTypeEnum.Defense:
 							strategyText = "D";
 							break;
 
-						case PlayerContinentStrategyEnum.Transport:
+						case UnitStrategyTypeEnum.SeaTransport:
 							strategyText = "T";
 							break;
 
@@ -323,22 +323,22 @@ namespace OpenCivOne
 				{
 					switch (this.parent.GameData.Players[playerID].Continents[i].Strategy)
 					{
-						case PlayerContinentStrategyEnum.Settle:
+						case UnitStrategyTypeEnum.Settle:
 							this.parent.DrawTools.DrawStringToScreen0($"Settle/{i}", 256, yOffset, 7);
 							yOffset += 8;
 							break;
 
-						case PlayerContinentStrategyEnum.Attack:
+						case UnitStrategyTypeEnum.LandAttack:
 							this.parent.DrawTools.DrawStringToScreen0($"Attack/{i}", 256, yOffset, 7);
 							yOffset += 8;
 							break;
 
-						case PlayerContinentStrategyEnum.Defend:
+						case UnitStrategyTypeEnum.Defense:
 							this.parent.DrawTools.DrawStringToScreen0($"Defend/{i}", 256, yOffset, 7);
 							yOffset += 8;
 							break;
 
-						case PlayerContinentStrategyEnum.Transport:
+						case UnitStrategyTypeEnum.SeaTransport:
 							this.parent.DrawTools.DrawStringToScreen0($"Transport/{i}", 256, yOffset, 7);
 							yOffset += 8;
 							break;
@@ -396,7 +396,7 @@ namespace OpenCivOne
 			for (int i = 0; i < 72 && yOffset < 193; i++)
 			{
 				// Instruction address 0x0000:0x04e2, size: 5
-				if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, (TechnologyAdvanceEnum)i))
+				if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, (TechnologyAdvanceEnum)i))
 				{
 					if ((this.parent.GameData.TechnologyFirstDiscoveredBy[i] & 0x7) != playerID)
 					{

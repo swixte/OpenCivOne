@@ -205,6 +205,7 @@ namespace OpenCivOne
 		public int[] Array_d4ce = new int[320];
 		public bool Var_d760_HumanPlayerMessageFlag = false;
 		public bool Var_d76a_EarthMap = false;
+		public int Var_d804 = 0;
 		public int Var_deba = 0;
 
 		public int Var_db38 = 0;

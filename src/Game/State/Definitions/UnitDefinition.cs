@@ -16,7 +16,7 @@ namespace OpenCivOne
 		public short Cost = 0;
 		public short SightRange = 0;
 		public short TransportCapacity = 0;
-		public UnitRoleTypeEnum UnitRoleType = UnitRoleTypeEnum.Settler;
+		public UnitStrategyTypeEnum UnitRoleType = UnitStrategyTypeEnum.Settle;
 		public TechnologyAdvanceEnum RequiredTechnology = TechnologyAdvanceEnum.None;
 
 		public UnitDefinition()
@@ -24,7 +24,7 @@ namespace OpenCivOne
 
 		public UnitDefinition(UnitTypeEnum unitType, string name, TechnologyAdvanceEnum cancelTechnology, UnitMovementTypeEnum movementType,
 			short moveCount, short turnsOutside, short attackStrength, short defenseStrength,
-			short cost, short sightRange, short transportCapacity, UnitRoleTypeEnum aiRole,
+			short cost, short sightRange, short transportCapacity, UnitStrategyTypeEnum aiRole,
 			TechnologyAdvanceEnum requiredTechnology)
 		{
 			this.UnitType= unitType;
@@ -56,7 +56,7 @@ namespace OpenCivOne
 			ud.Cost = LoadAndSave.ReadInt16(stream);
 			ud.SightRange = LoadAndSave.ReadInt16(stream);
 			ud.TransportCapacity = LoadAndSave.ReadInt16(stream);
-			ud.UnitRoleType = (UnitRoleTypeEnum)LoadAndSave.ReadInt16(stream);
+			ud.UnitRoleType = (UnitStrategyTypeEnum)LoadAndSave.ReadInt16(stream);
 			ud.RequiredTechnology = (TechnologyAdvanceEnum)LoadAndSave.ReadInt16(stream);
 
 			return ud;

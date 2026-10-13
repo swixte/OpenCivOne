@@ -122,14 +122,14 @@ namespace OpenCivOne
 										// Instruction address 0x25fb:0x0264, size: 3
 										PlayerAddUnitPolicy(playerID,
 											this.parent.GameData.Cities[i].Position.X, this.parent.GameData.Cities[i].Position.Y,
-											UnitRoleTypeEnum.LandAttack, 3);
+											UnitStrategyTypeEnum.LandAttack, 3);
 									}
 									else
 									{
 										// Instruction address 0x25fb:0x0264, size: 3
 										PlayerAddUnitPolicy(playerID,
 											this.parent.GameData.Cities[i].Position.X, this.parent.GameData.Cities[i].Position.Y,
-											UnitRoleTypeEnum.LandAttack, 5);
+											UnitStrategyTypeEnum.LandAttack, 5);
 									}
 								}
 							}
@@ -180,14 +180,14 @@ namespace OpenCivOne
 							// Instruction address 0x25fb:0x03e4, size: 3
 							PlayerAddUnitPolicy(playerID,
 								this.parent.GameData.Cities[i].Position.X, this.parent.GameData.Cities[i].Position.Y,
-								UnitRoleTypeEnum.Defense, 4);
+								UnitStrategyTypeEnum.Defense, 4);
 						}
 						else
 						{
 							// Instruction address 0x25fb:0x03e4, size: 3
 							PlayerAddUnitPolicy(playerID,
 								this.parent.GameData.Cities[i].Position.X, this.parent.GameData.Cities[i].Position.Y,
-								UnitRoleTypeEnum.Defense, 2);
+								UnitStrategyTypeEnum.Defense, 2);
 						}
 					}
 				}
@@ -207,8 +207,8 @@ namespace OpenCivOne
 			}
 
 			// !!! Should the polar caps have no strategy? They should be unsuitable for settling
-			this.parent.GameData.Players[playerID].Continents[0].Strategy = PlayerContinentStrategyEnum.Settle;
-			this.parent.GameData.Players[playerID].Continents[15].Strategy = PlayerContinentStrategyEnum.Settle;
+			this.parent.GameData.Players[playerID].Continents[0].Strategy = UnitStrategyTypeEnum.Settle;
+			this.parent.GameData.Players[playerID].Continents[15].Strategy = UnitStrategyTypeEnum.Settle;
 
 			this.AIPlayerFlags |= 0x1 << playerID;
 			this.AIPlayerFlags ^= 0x1 << playerID;
@@ -229,7 +229,7 @@ namespace OpenCivOne
 				int diplomacyFlags = 0;
 				int playerCityCount = 0;
 				int playerAttackStrength = 0;
-				PlayerContinentStrategyEnum oldStrategy = this.parent.GameData.Players[playerID].Continents[i].Strategy;
+				UnitStrategyTypeEnum oldStrategy = this.parent.GameData.Players[playerID].Continents[i].Strategy;
 
 				for (int j = 1; j < 8; j++)
 				{
@@ -290,30 +290,30 @@ namespace OpenCivOne
 
 				if (((this.parent.GameData.Players[playerID].Continents[i].Attack + playerAttackStrength) * 2 > this.parent.GameData.Continents[i].Size ||
 						(this.parent.GameData.Players[playerID].Continents[i].CityCount + playerCityCount) * 64 + 2 > this.parent.GameData.Continents[i].BuildSiteCount) &&
-					this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Mapmaking))
+					this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Mapmaking))
 				{
-					this.parent.GameData.Players[playerID].Continents[i].Strategy = PlayerContinentStrategyEnum.Transport;
+					this.parent.GameData.Players[playerID].Continents[i].Strategy = UnitStrategyTypeEnum.SeaTransport;
 				}
 				else
 				{
-					this.parent.GameData.Players[playerID].Continents[i].Strategy = PlayerContinentStrategyEnum.Settle;
+					this.parent.GameData.Players[playerID].Continents[i].Strategy = UnitStrategyTypeEnum.Settle;
 				}
 
 				if (totalStrongContinents != 0)
 				{
-					this.parent.GameData.Players[playerID].Continents[i].Strategy = PlayerContinentStrategyEnum.Attack;
+					this.parent.GameData.Players[playerID].Continents[i].Strategy = UnitStrategyTypeEnum.LandAttack;
 				}
 
 				if (totalWeakContinents != 0)
 				{
-					this.parent.GameData.Players[playerID].Continents[i].Strategy = PlayerContinentStrategyEnum.Defend;
+					this.parent.GameData.Players[playerID].Continents[i].Strategy = UnitStrategyTypeEnum.Defense;
 				}
 
 				if (this.parent.GameData.Players[playerID].Continents[i].Attack == 0 &&
 					this.parent.GameData.Players[playerID].Continents[i].CityCount == 0 &&
 					diplomacyFlags != 1)
 				{
-					this.parent.GameData.Players[playerID].Continents[i].Strategy = PlayerContinentStrategyEnum.Attack;
+					this.parent.GameData.Players[playerID].Continents[i].Strategy = UnitStrategyTypeEnum.LandAttack;
 				}
 
 				if (this.parent.GameData.Players[playerID].Continents[i].Strategy != oldStrategy)
@@ -347,18 +347,18 @@ namespace OpenCivOne
 						// Instruction address 0x25fb:0x08b9, size: 5
 						this.parent.Diplomacy.F0_2517_04a1_ChangeCurrentGovernment(playerID, GovernmentTypeEnum.Despotism);
 					}
-					else if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.TheRepublic) && this.parent.Var_db42 >= 0)
+					else if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.TheRepublic) && this.parent.Var_db42 >= 0)
 					{
 						// Instruction address 0x25fb:0x08b9, size: 5
 						this.parent.Diplomacy.F0_2517_04a1_ChangeCurrentGovernment(playerID, GovernmentTypeEnum.Republic);
 					}
-					else if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Communism) && 
+					else if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Communism) && 
 						this.parent.GameData.Players[playerID].CityCount > 10)
 					{
 						// Instruction address 0x25fb:0x08b9, size: 5
 						this.parent.Diplomacy.F0_2517_04a1_ChangeCurrentGovernment(playerID, GovernmentTypeEnum.Communist);
 					}
-					else if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Monarchy))
+					else if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Monarchy))
 					{
 						// Instruction address 0x25fb:0x08b9, size: 5
 						this.parent.Diplomacy.F0_2517_04a1_ChangeCurrentGovernment(playerID, GovernmentTypeEnum.Monarchy);
@@ -385,29 +385,29 @@ namespace OpenCivOne
 
 						if (((i + this.parent.GameData.TurnCount) & 0xf) != 0 ||
 
-							(!this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID,
+							(!this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID,
 							this.parent.GameData.Units[(int)this.parent.GameData.Players[playerID].Units[i].UnitType].CancelTechnology) &&
 							(((this.parent.GameData.Players[playerID].GovernmentType == GovernmentTypeEnum.Anarchy ||
 								this.parent.GameData.Players[playerID].GovernmentType == GovernmentTypeEnum.Despotism) &&
-							this.parent.GameData.Players[playerID].Continents[groupID].Strategy != PlayerContinentStrategyEnum.Transport) ||
+							this.parent.GameData.Players[playerID].Continents[groupID].Strategy != UnitStrategyTypeEnum.SeaTransport) ||
 							this.parent.GameData.Players[playerID].Units[i].UnitType != UnitTypeEnum.Militia)) ||
 
 							(this.parent.UnitManagement.F0_1866_1750_IsUnitOrCityNear(playerID, x, y) ||
 							(this.parent.MapManagement.F0_2aea_1585_GetVisibleTerrainImprovements(x, y).HasFlag(TerrainImprovementFlagsEnum.City) &&
 							this.parent.GameData.Players[playerID].Units[i].NextUnitID == -1) ||
 							this.parent.MapManagement.GetTerrainType(x, y) == TerrainTypeEnum.Water ||
-							this.parent.GameData.Players[playerID].Continents[groupID].Strategy == PlayerContinentStrategyEnum.Defend))
+							this.parent.GameData.Players[playerID].Continents[groupID].Strategy == UnitStrategyTypeEnum.Defense))
 						{
 							for (int j = 0; j < 32; j++)
 							{
-								UnitRoleTypeEnum unitRoleType = this.parent.GameData.Players[playerID].UnitPolicies[j].UnitRoleType;
+								UnitStrategyTypeEnum unitRoleType = this.parent.GameData.Players[playerID].UnitPolicies[j].UnitRoleType;
 								UnitTypeEnum unitType = this.parent.GameData.Players[playerID].Units[i].UnitType;
 
-								if (unitRoleType == UnitRoleTypeEnum.None ||
+								if (unitRoleType == UnitStrategyTypeEnum.None ||
 									((this.parent.GameData.Units[(int)unitType].UnitRoleType != unitRoleType ||
 									this.parent.MapManagement.F0_2aea_1942_GetGroupID(this.parent.GameData.Players[playerID].UnitPolicies[j].Position.X,
 										this.parent.GameData.Players[playerID].UnitPolicies[j].Position.Y) != groupID) &&
-									(unitType != UnitTypeEnum.Bomber || (unitRoleType != UnitRoleTypeEnum.SeaAttack && this.parent.GameData.Units[(int)unitType].UnitRoleType != unitRoleType)))) continue;
+									(unitType != UnitTypeEnum.Bomber || (unitRoleType != UnitStrategyTypeEnum.SeaAttack && this.parent.GameData.Units[(int)unitType].UnitRoleType != unitRoleType)))) continue;
 
 								int distance = this.parent.MapManagement.GetDistance(x, y, this.parent.GameData.Players[playerID].UnitPolicies[j].Position);
 
@@ -603,7 +603,7 @@ namespace OpenCivOne
 				int unitX = unit.Position.X;
 				int unitY = unit.Position.Y;
 				UnitTypeEnum unitType = unit.UnitType;
-				UnitRoleTypeEnum unitRoleType = this.parent.GameData.Units[(int)unit.UnitType].UnitRoleType;
+				UnitStrategyTypeEnum unitRoleType = this.parent.GameData.Units[(int)unit.UnitType].UnitRoleType;
 
 				bool isUnitNear = this.parent.UnitManagement.F0_1866_1725_IsUnitNear(playerID, unit.Position.X, unit.Position.Y);
 
@@ -616,7 +616,7 @@ namespace OpenCivOne
 
 				TerrainTypeEnum terrainType = this.parent.MapManagement.GetTerrainType(unitX, unitY);
 				int groupID = this.parent.MapManagement.F0_2aea_1942_GetGroupID(unitX, unitY);
-				PlayerContinentStrategyEnum continentStrategy = this.parent.GameData.Players[playerID].Continents[groupID].Strategy;
+				UnitStrategyTypeEnum continentStrategy = this.parent.GameData.Players[playerID].Continents[groupID].Strategy;
 				GPoint direction;
 
 				if (unitType == UnitTypeEnum.Nuclear)
@@ -766,10 +766,10 @@ namespace OpenCivOne
 					return '\x0';
 				}
 
-				if (unitRoleType == UnitRoleTypeEnum.Settler)
+				if (unitRoleType == UnitStrategyTypeEnum.Settle)
 				{
 					// Instruction address 0x25fb:0x131b, size: 3
-					F0_25fb_3401_PlayerClearContinentPolicies(playerID, UnitRoleTypeEnum.Settler, unitX, unitY, 0);
+					F0_25fb_3401_PlayerClearContinentPolicies(playerID, UnitStrategyTypeEnum.Settle, unitX, unitY, 0);
 				}
 			
 				// Instruction address 0x25fb:0x132f, size: 5
@@ -777,8 +777,8 @@ namespace OpenCivOne
 
 				if (ownerPlayerID != 0)
 				{
-					if (unitRoleType == UnitRoleTypeEnum.None || unitRoleType == UnitRoleTypeEnum.Settler ||
-						unitRoleType == UnitRoleTypeEnum.LandAttack || unitRoleType == UnitRoleTypeEnum.Defense)
+					if (unitRoleType == UnitStrategyTypeEnum.None || unitRoleType == UnitStrategyTypeEnum.Settle ||
+						unitRoleType == UnitStrategyTypeEnum.LandAttack || unitRoleType == UnitStrategyTypeEnum.Defense)
 					{
 						int newUnitDirection = 0;
 
@@ -801,7 +801,7 @@ namespace OpenCivOne
 								}
 
 								if (this.parent.MapManagement.F0_2aea_1894_CellHasMinorTribeHut(newX, newY, this.parent.MapManagement.GetTerrainType(newX, newY)) &&
-									unitRoleType != UnitRoleTypeEnum.Settler)
+									unitRoleType != UnitStrategyTypeEnum.Settle)
 								{
 									return i;
 								}
@@ -816,7 +816,7 @@ namespace OpenCivOne
 
 						if (ownerPlayerID > 9 && (15 - nearestCityDistance) <= ownerPlayerID && !isUnitNear)
 						{
-							if (unitRoleType == UnitRoleTypeEnum.Settler)
+							if (unitRoleType == UnitStrategyTypeEnum.Settle)
 							{
 								if (newUnitDirection != 0)
 								{
@@ -827,7 +827,7 @@ namespace OpenCivOne
 							}
 
 							// Instruction address 0x25fb:0x142e, size: 3
-							AddPlayerContinentPolicy(playerID, unitX, unitY, UnitRoleTypeEnum.Settler, 2);
+							AddPlayerContinentPolicy(playerID, unitX, unitY, UnitStrategyTypeEnum.Settle, 2);
 						}
 					}
 				}
@@ -835,7 +835,7 @@ namespace OpenCivOne
 				// Instruction address 0x25fb:0x148e, size: 5
 				int buildScore = this.parent.MapManagement.GetBuildLocationScore(unitX, unitY);
 
-				if (unitRoleType == UnitRoleTypeEnum.Settler &&
+				if (unitRoleType == UnitStrategyTypeEnum.Settle &&
 					this.parent.GameData.DifficultyLevel != 0 &&
 					this.parent.GameData.HumanPlayerID == ((nearestCityID >= 0 && nearestCityID < 128) ? this.parent.GameData.Cities[nearestCityID].PlayerID : -1) &&
 					!isUnitNear &&
@@ -850,7 +850,7 @@ namespace OpenCivOne
 
 				if (this.parent.MapManagement.F0_2aea_1585_GetVisibleTerrainImprovements(unitX, unitY).HasFlag(TerrainImprovementFlagsEnum.City))
 				{
-					if (unitRoleType == UnitRoleTypeEnum.Defense)
+					if (unitRoleType == UnitStrategyTypeEnum.Defense)
 					{
 						if (unit.NextUnitID != -1)
 						{
@@ -880,19 +880,19 @@ namespace OpenCivOne
 							}
 							else
 							{
-								if (continentStrategy == PlayerContinentStrategyEnum.Settle)
+								if (continentStrategy == UnitStrategyTypeEnum.Settle)
 								{
 									settleCoefficient++;
 								}
 							}
 
 							// Instruction address 0x25fb:0x158c, size: 5
-							int sameUnitRoleCount = this.parent.UnitManagement.F0_1866_1380_GetStackUnitCount(playerID, unitID, UnitRoleTypeEnum.Defense);
+							int sameUnitRoleCount = this.parent.UnitManagement.F0_1866_1380_GetStackUnitCount(playerID, unitID, UnitStrategyTypeEnum.Defense);
 
 							if ((this.parent.GameData.Cities[nearestCityID].ActualSize / settleCoefficient) + 1 > sameUnitRoleCount)
 							{
 								// Instruction address 0x25fb:0x15bf, size: 3
-								PlayerAddUnitPolicy(playerID, unitX, unitY, UnitRoleTypeEnum.Defense, 2);
+								PlayerAddUnitPolicy(playerID, unitX, unitY, UnitStrategyTypeEnum.Defense, 2);
 							}
 
 							if ((this.parent.GameData.Cities[nearestCityID].ActualSize / settleCoefficient) + 1 >= sameUnitRoleCount)
@@ -924,16 +924,16 @@ namespace OpenCivOne
 							return 'f';
 						}
 					}
-					else if (nearestUnitDistance > 0 && unitRoleType != UnitRoleTypeEnum.Settler)
+					else if (nearestUnitDistance > 0 && unitRoleType != UnitStrategyTypeEnum.Settle)
 					{
 						// Instruction address 0x25fb:0x16ad, size: 3
-						PlayerAddUnitPolicy(playerID, unitX, unitY, UnitRoleTypeEnum.Defense, 4);
+						PlayerAddUnitPolicy(playerID, unitX, unitY, UnitStrategyTypeEnum.Defense, 4);
 
 						return ' ';
 					}
 				}
 
-				if (unitRoleType == UnitRoleTypeEnum.SeaTransport || unitRoleType == UnitRoleTypeEnum.SeaAttack)
+				if (unitRoleType == UnitStrategyTypeEnum.SeaTransport || unitRoleType == UnitStrategyTypeEnum.SeaAttack)
 				{
 					int newUnitDirection = 0;
 					int unitRoleBits = 0;
@@ -954,7 +954,7 @@ namespace OpenCivOne
 						}
 						else
 						{
-							if (continentStrategy == PlayerContinentStrategyEnum.Transport &&
+							if (continentStrategy == UnitStrategyTypeEnum.SeaTransport &&
 								(nearestCityID >= 0 && nearestCityID < 128 && this.parent.GameData.Cities[nearestCityID].ActualSize / 5 < (newUnitDirection++)))
 							{
 								this.parent.GameData.Players[playerID].Units[nextUnitID].ClearStatusFlags(UnitStatusEnum.Fortified);
@@ -966,15 +966,15 @@ namespace OpenCivOne
 						nextUnitID = this.parent.GameData.Players[playerID].Units[nextUnitID].NextUnitID;
 					}
 
-					if ((((nearestCityDistance != 0) ? 1 : 3) > unitCount || unitRoleBits == 1) && unitRoleType == UnitRoleTypeEnum.SeaTransport)
+					if ((((nearestCityDistance != 0) ? 1 : 3) > unitCount || unitRoleBits == 1) && unitRoleType == UnitStrategyTypeEnum.SeaTransport)
 					{
 						int minimumDistance = 999;
-						PlayerContinentStrategyEnum currentContinentStrategy = PlayerContinentStrategyEnum.Settle;
+						UnitStrategyTypeEnum currentContinentStrategy = UnitStrategyTypeEnum.Settle;
 
 						for (int i = 0; i < 128; i++)
 						{
 							if (this.parent.GameData.Cities[i].Status != CityStatusEnum.Invalid && this.parent.GameData.Cities[i].PlayerID == playerID &&
-								(this.parent.GameData.Cities[i].Status & CityStatusEnum.OceanAccess) != CityStatusEnum.None)
+								(this.parent.GameData.Cities[i].Status & CityStatusEnum.WaterAccess) != CityStatusEnum.None)
 							{
 								// Instruction address 0x25fb:0x179d, size: 5
 								int distance = this.parent.MapManagement.GetDistance(unitX, unitY, this.parent.GameData.Cities[i].Position);
@@ -989,12 +989,12 @@ namespace OpenCivOne
 										this.parent.GameData.Cities[i].Position.X, this.parent.GameData.Cities[i].Position.Y);
 
 									if (activeUnitID != -1 &&
-										((distance < 1) ? 1 : 0) < this.parent.UnitManagement.F0_1866_1380_GetStackUnitCount(playerID, activeUnitID, UnitRoleTypeEnum.SeaTransport))
+										((distance < 1) ? 1 : 0) < this.parent.UnitManagement.F0_1866_1380_GetStackUnitCount(playerID, activeUnitID, UnitStrategyTypeEnum.SeaTransport))
 									{
 										distance += 16;
 									}
 
-									if (this.parent.GameData.Players[playerID].Continents[cityGroupID].Strategy != PlayerContinentStrategyEnum.Transport)
+									if (this.parent.GameData.Players[playerID].Continents[cityGroupID].Strategy != UnitStrategyTypeEnum.SeaTransport)
 									{
 										distance += 16;
 									}
@@ -1015,32 +1015,32 @@ namespace OpenCivOne
 							}
 						}
 
-						int newContinentPolicy = ((currentContinentStrategy == PlayerContinentStrategyEnum.Transport) ? 4 : 2);
+						int newContinentPolicy = ((currentContinentStrategy == UnitStrategyTypeEnum.SeaTransport) ? 4 : 2);
 
 						if (newContinentPolicy * 3 >= minimumDistance)
 						{
-							if (currentContinentStrategy != PlayerContinentStrategyEnum.Settle)
+							if (currentContinentStrategy != UnitStrategyTypeEnum.Settle)
 							{
 								// Instruction address 0x25fb:0x191c, size: 3
-								PlayerAddUnitPolicy(playerID, unit.GoToDestination.X, unit.GoToDestination.Y, UnitRoleTypeEnum.Settler, (short)newContinentPolicy);
+								PlayerAddUnitPolicy(playerID, unit.GoToDestination.X, unit.GoToDestination.Y, UnitStrategyTypeEnum.Settle, (short)newContinentPolicy);
 							}
 
-							if (currentContinentStrategy != PlayerContinentStrategyEnum.Defend)
+							if (currentContinentStrategy != UnitStrategyTypeEnum.Defense)
 							{
 								// Instruction address 0x25fb:0x194f, size: 3
-								PlayerAddUnitPolicy(playerID, unit.GoToDestination.X, unit.GoToDestination.Y, UnitRoleTypeEnum.Defense, (short)newContinentPolicy);
+								PlayerAddUnitPolicy(playerID, unit.GoToDestination.X, unit.GoToDestination.Y, UnitStrategyTypeEnum.Defense, (short)newContinentPolicy);
 							}
 
-							if (currentContinentStrategy != PlayerContinentStrategyEnum.Attack)
+							if (currentContinentStrategy != UnitStrategyTypeEnum.LandAttack)
 							{
 								// Instruction address 0x25fb:0x1985, size: 3
-								PlayerAddUnitPolicy(playerID, unit.GoToDestination.X, unit.GoToDestination.Y, UnitRoleTypeEnum.LandAttack, (short)newContinentPolicy);
+								PlayerAddUnitPolicy(playerID, unit.GoToDestination.X, unit.GoToDestination.Y, UnitStrategyTypeEnum.LandAttack, (short)newContinentPolicy);
 							}
 						}
 					}
 					else
 					{
-						if (unitRoleType == UnitRoleTypeEnum.SeaTransport)
+						if (unitRoleType == UnitStrategyTypeEnum.SeaTransport)
 						{
 							for (int i = 1; i < 9; i++)
 							{
@@ -1069,7 +1069,7 @@ namespace OpenCivOne
 											bool chooseNewDirection = false;
 
 											if ((this.parent.GameData.Players[playerID].Continents[newGroupID].Attack < 16 &&
-												this.parent.GameData.Players[playerID].Continents[newGroupID].Strategy != PlayerContinentStrategyEnum.Transport) ||
+												this.parent.GameData.Players[playerID].Continents[newGroupID].Strategy != UnitStrategyTypeEnum.SeaTransport) ||
 												(((0x1 << (int)this.parent.GameData.Players[playerID].Continents[newGroupID].Strategy) & unitRoleBits) & 0x6) != 0)
 											{
 												chooseNewDirection = true;
@@ -1093,10 +1093,10 @@ namespace OpenCivOne
 													}
 												}
 
-												if (this.parent.GameData.Players[playerID].Continents[newGroupID].Strategy == PlayerContinentStrategyEnum.Attack)
+												if (this.parent.GameData.Players[playerID].Continents[newGroupID].Strategy == UnitStrategyTypeEnum.LandAttack)
 												{
 													// Instruction address 0x25fb:0x19c4, size: 3
-													PlayerAddUnitPolicy(playerID, unitX, unitY, UnitRoleTypeEnum.SeaAttack, 5);
+													PlayerAddUnitPolicy(playerID, unitX, unitY, UnitStrategyTypeEnum.SeaAttack, 5);
 												}
 
 												unit.RemainingMoves = 0;
@@ -1123,12 +1123,12 @@ namespace OpenCivOne
 								if (unit.GoToDestination.X != -1 && this.parent.MapManagement.GetTerrainType(newX, newY) == TerrainTypeEnum.Water)
 								{
 									// Instruction address 0x25fb:0x1c31, size: 3
-									PlayerAddUnitPolicy(playerID, newX, newY, UnitRoleTypeEnum.SeaAttack, 3);
+									PlayerAddUnitPolicy(playerID, newX, newY, UnitStrategyTypeEnum.SeaAttack, 3);
 								}
 							}
 						}
 
-						if (!isUnitNear || unitRoleType == UnitRoleTypeEnum.SeaTransport)
+						if (!isUnitNear || unitRoleType == UnitStrategyTypeEnum.SeaTransport)
 						{
 							if (unit.GoToDestination.X == -1 && ((unitRoleBits & 0x2) != 0 || (unitRoleBits & 0x1) == 0) && unit.UnitType != UnitTypeEnum.Trireme)
 							{
@@ -1178,7 +1178,7 @@ namespace OpenCivOne
 											// Instruction address 0x25fb:0x1df3, size: 5
 											int newGroupID = this.parent.MapManagement.F0_2aea_1942_GetGroupID(this.parent.GameData.Cities[i].Position);
 
-											if (newGroupID != selectedGroupID && this.parent.GameData.Players[playerID].Continents[newGroupID].Strategy != PlayerContinentStrategyEnum.Transport)
+											if (newGroupID != selectedGroupID && this.parent.GameData.Players[playerID].Continents[newGroupID].Strategy != UnitStrategyTypeEnum.SeaTransport)
 											{
 												if ((((0x1 << (int)this.parent.GameData.Players[playerID].Continents[newGroupID].Strategy) & unitRoleBits) & 0x7) == 0)
 												{
@@ -1227,20 +1227,20 @@ namespace OpenCivOne
 					return 'P';
 				}
 
-				if (unitRoleType == UnitRoleTypeEnum.Settler)
+				if (unitRoleType == UnitStrategyTypeEnum.Settle)
 				{
 					if (terrainType != TerrainTypeEnum.Water)
 					{
 						if (nearestUnitDistance > 1)
 						{
 							// Instruction address 0x25fb:0x1fd9, size: 3
-							PlayerAddUnitPolicy(playerID, unitX, unitY, UnitRoleTypeEnum.Defense, 2);
+							PlayerAddUnitPolicy(playerID, unitX, unitY, UnitStrategyTypeEnum.Defense, 2);
 						}
 
-						if ((!this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Monarchy) ?
+						if ((!this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Monarchy) ?
 							this.parent.GameData.TerrainModifications[(int)terrainType].AICanImproveBeforeMonarchy :
 							this.parent.GameData.TerrainModifications[(int)terrainType].AICanImproveAfterMonarchy) ||
-							continentStrategy == PlayerContinentStrategyEnum.Transport)
+							continentStrategy == UnitStrategyTypeEnum.SeaTransport)
 						{
 							if (nearestCityDistance > 0 && nearestCityDistance <= 2 && this.parent.GameData.Cities[nearestCityID].PlayerID == playerID)
 							{
@@ -1283,7 +1283,7 @@ namespace OpenCivOne
 
 										// !!! F0_1d12_6abc_GetCityResourceCount was using uninitialized playerID and cityID from CityWorker class, it now makes sense to use referenced player and unit ID
 										if ((terrainImprovements & (TerrainImprovementFlagsEnum.Road | TerrainImprovementFlagsEnum.RailRoad)) != (TerrainImprovementFlagsEnum.Road | TerrainImprovementFlagsEnum.RailRoad) &&
-											this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Railroad) &&
+											this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Railroad) &&
 											(((terrainImprovements & TerrainImprovementFlagsEnum.Road) == TerrainImprovementFlagsEnum.Road) ? 1 : 2) <=
 											this.parent.CityWorker.F0_1d12_6abc_GetCityResourceCount(playerID, unit.HomeCityID, unitX, unitY, CityResourceTypeEnum.Production))
 										{
@@ -1324,7 +1324,7 @@ namespace OpenCivOne
 
 									if (activeUnitID == -1 || (playerID == activePlayerID && this.parent.UnitManagement.F0_1866_1331_CountUnitTypesInStack(playerID, activeUnitID, UnitTypeEnum.Settler) == 0))
 									{
-										if ((this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Monarchy) ?
+										if ((this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Monarchy) ?
 											this.parent.GameData.TerrainModifications[(int)this.parent.MapManagement.GetTerrainType(newX, newY)].AICanImproveAfterMonarchy :
 												this.parent.GameData.TerrainModifications[(int)this.parent.MapManagement.GetTerrainType(newX, newY)].AICanImproveBeforeMonarchy) &&
 											this.parent.PlayerTurn.F0_1403_3f68_GetPreferredImprovement(newX, newY) != 0)
@@ -1348,7 +1348,7 @@ namespace OpenCivOne
 						}
 
 						if ((this.parent.MapManagement.F0_2aea_1585_GetVisibleTerrainImprovements(unitX, unitY) & TerrainImprovementFlagsEnum.Road) != TerrainImprovementFlagsEnum.Road &&
-							terrainType != TerrainTypeEnum.River || this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.BridgeBuilding))
+							terrainType != TerrainTypeEnum.River || this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.BridgeBuilding))
 						{
 							if (((nearestCityID < 128) ? this.parent.GameData.Cities[nearestCityID].PlayerID : -1) == playerID)
 							{
@@ -1447,13 +1447,13 @@ namespace OpenCivOne
 
 				if (unit.GoToDestination.X != -1)
 				{
-					if (unitRoleType != UnitRoleTypeEnum.SeaAttack || !this.parent.UnitManagement.F0_1866_18d0_IsEnemyUnitNear(playerID, unitX, unitY))
+					if (unitRoleType != UnitStrategyTypeEnum.SeaAttack || !this.parent.UnitManagement.F0_1866_18d0_IsEnemyUnitNear(playerID, unitX, unitY))
 					{
 						return '\x0';
 					}
 				}
 
-				if (unitRoleType == UnitRoleTypeEnum.Defense && terrainType != TerrainTypeEnum.Water)
+				if (unitRoleType == UnitStrategyTypeEnum.Defense && terrainType != TerrainTypeEnum.Water)
 				{
 					if (nearestUnitDistance > 1 && nearestCityDistance < 4 && this.parent.GameData.Cities[nearestCityID].PlayerID == playerID)
 					{
@@ -1466,7 +1466,7 @@ namespace OpenCivOne
 					}
 				}
 
-				if (unitRoleType == UnitRoleTypeEnum.Settler &&
+				if (unitRoleType == UnitStrategyTypeEnum.Settle &&
 					this.parent.GameData.Players[playerID].Continents[groupID].CityCount > this.parent.GameData.Continents[groupID].BuildSiteCount / 8)
 				{
 					if (nearestCityDistance == 0 && this.parent.GameData.Cities[nearestCityID].ActualSize < 10)
@@ -1495,9 +1495,9 @@ namespace OpenCivOne
 					unitOrCityNotNear = true;
 				}
 
-				if (unitType == UnitTypeEnum.Militia && continentStrategy == PlayerContinentStrategyEnum.Attack)
+				if (unitType == UnitTypeEnum.Militia && continentStrategy == UnitStrategyTypeEnum.LandAttack)
 				{
-					unitRoleType = UnitRoleTypeEnum.LandAttack;
+					unitRoleType = UnitStrategyTypeEnum.LandAttack;
 				}
 
 				bool moveToOtherPlayerCity = false;
@@ -1567,7 +1567,7 @@ namespace OpenCivOne
 								{
 									int actionScore = 0;
 
-									if (unitRoleType != UnitRoleTypeEnum.Settler)
+									if (unitRoleType != UnitStrategyTypeEnum.Settle)
 									{
 										if (unit.VisibleByPlayer != 0 || terrainType == TerrainTypeEnum.Water)
 										{
@@ -1575,17 +1575,17 @@ namespace OpenCivOne
 
 											if (selectedActiveUnitID != -1 && newCityPlayerID == playerID)
 											{
-												if (unitRoleType == UnitRoleTypeEnum.LandAttack)
+												if (unitRoleType == UnitStrategyTypeEnum.LandAttack)
 												{
 													actionScore += (this.parent.UnitManagement.F0_1866_1251_GetStackUnitValueSum(playerID, selectedActiveUnitID, UnitStackValueTypeEnum.DefenseStrength) * 4) / (this.parent.UnitManagement.F0_1866_1251_GetStackUnitValueSum(playerID, selectedActiveUnitID, UnitStackValueTypeEnum.UnitCount) + 1);
 												}
 
-												if (unitRoleType == UnitRoleTypeEnum.Settler)
+												if (unitRoleType == UnitStrategyTypeEnum.Settle)
 												{
 													actionScore += (this.parent.GameData.Terrains[(int)newTerrainType].DefenseBonus + this.parent.UnitManagement.F0_1866_1251_GetStackUnitValueSum(playerID, selectedActiveUnitID, UnitStackValueTypeEnum.DefenseStrength)) * 2;
 												}
 
-												if (unitRoleType == UnitRoleTypeEnum.Defense)
+												if (unitRoleType == UnitStrategyTypeEnum.Defense)
 												{
 													actionScore += (this.parent.UnitManagement.F0_1866_1251_GetStackUnitValueSum(playerID, selectedActiveUnitID, UnitStackValueTypeEnum.AttackStrength) * 2) / (this.parent.UnitManagement.F0_1866_1251_GetStackUnitValueSum(playerID, selectedActiveUnitID, UnitStackValueTypeEnum.DefenseStrength) + 1);
 												}
@@ -1597,7 +1597,7 @@ namespace OpenCivOne
 										}
 										else
 										{
-											if (unitRoleType != UnitRoleTypeEnum.LandAttack)
+											if (unitRoleType != UnitStrategyTypeEnum.LandAttack)
 											{
 												actionScore = this.parent.CAPI.RNG.Next(3) - this.parent.GameData.Terrains[(int)newTerrainType].DefenseBonus;
 											}
@@ -1656,13 +1656,13 @@ namespace OpenCivOne
 									{
 										otherPlayerCityIsNear = true;
 
-										if (unitRoleType != UnitRoleTypeEnum.Settler)
+										if (unitRoleType != UnitStrategyTypeEnum.Settle)
 										{
 											if (this.parent.GameData.Players[playerID].Diplomacy[newCityPlayerID].HasFlag(DiplomacyFlagsEnum.Peace))
 											{
-												if (unitRoleType == UnitRoleTypeEnum.LandAttack)
+												if (unitRoleType == UnitStrategyTypeEnum.LandAttack)
 												{
-													if (continentStrategy == PlayerContinentStrategyEnum.Attack)
+													if (continentStrategy == UnitStrategyTypeEnum.LandAttack)
 													{
 														if (this.parent.GameData.Units[(int)unit.UnitType].MovementType == UnitMovementTypeEnum.Land &&
 															(this.parent.GameData.Players[newCityPlayerID].Units[selectedActiveUnitID].Status & UnitStatusEnum.Fortified) != UnitStatusEnum.None &&
@@ -1706,12 +1706,12 @@ namespace OpenCivOne
 														attackScore *= 3;
 													}
 
-													if (unitRoleType == UnitRoleTypeEnum.LandAttack && continentStrategy == PlayerContinentStrategyEnum.Attack)
+													if (unitRoleType == UnitStrategyTypeEnum.LandAttack && continentStrategy == UnitStrategyTypeEnum.LandAttack)
 													{
 														attackScore = attackScore * 3;
 													}
 
-													if (unitRoleType == UnitRoleTypeEnum.LandAttack &&
+													if (unitRoleType == UnitStrategyTypeEnum.LandAttack &&
 														(this.parent.GameData.Units[(int)unit.UnitType].AttackStrength * 2) < this.parent.UnitManagement.F0_1866_1251_GetStackUnitValueSum(playerID, unitID, UnitStackValueTypeEnum.AttackStrength))
 													{
 														attackScore *= 2;
@@ -1721,9 +1721,9 @@ namespace OpenCivOne
 													{
 														actionScore -= 999;
 
-														if (unitRoleType == UnitRoleTypeEnum.LandAttack)
+														if (unitRoleType == UnitStrategyTypeEnum.LandAttack)
 														{
-															if (continentStrategy == PlayerContinentStrategyEnum.Attack)
+															if (continentStrategy == UnitStrategyTypeEnum.LandAttack)
 															{
 																if (this.parent.GameData.Units[(int)unit.UnitType].MovementType == UnitMovementTypeEnum.Land &&
 																	(this.parent.GameData.Players[newCityPlayerID].Units[selectedActiveUnitID].Status & (UnitStatusEnum.Veteran | UnitStatusEnum.Fortified)) != UnitStatusEnum.None &&
@@ -1798,7 +1798,7 @@ namespace OpenCivOne
 													actionScore -= 2;
 												}
 
-												if (unitRoleType == UnitRoleTypeEnum.Settler)
+												if (unitRoleType == UnitStrategyTypeEnum.Settle)
 												{
 													actionScore += this.parent.GameData.Terrains[(int)this.parent.MapManagement.GetTerrainType(neighbourX, neighbourY)].Food;
 												}
@@ -1852,14 +1852,14 @@ namespace OpenCivOne
 			// function body
 			for (int i = 0; i < 32; i++)
 			{
-				this.parent.GameData.Players[playerID].UnitPolicies[i].UnitRoleType = UnitRoleTypeEnum.None;
+				this.parent.GameData.Players[playerID].UnitPolicies[i].UnitRoleType = UnitStrategyTypeEnum.None;
 				this.parent.GameData.Players[playerID].UnitPolicies[i].Policy = 0;
 			}
 
 			for (int i = 0; i < 16; i++)
 			{
-				if (this.parent.GameData.Players[playerID].ContinentPolicies[i].UnitRoleType != UnitRoleTypeEnum.None &&
-					(int)this.parent.GameData.Players[playerID].ContinentPolicies[i].UnitRoleType <= (int)UnitRoleTypeEnum.Defense)
+				if (this.parent.GameData.Players[playerID].ContinentPolicies[i].UnitRoleType != UnitStrategyTypeEnum.None &&
+					(int)this.parent.GameData.Players[playerID].ContinentPolicies[i].UnitRoleType <= (int)UnitStrategyTypeEnum.Defense)
 				{
 					// Instruction address 0x25fb:0x3039, size: 3
 					PlayerAddUnitPolicy(playerID,
@@ -1879,7 +1879,7 @@ namespace OpenCivOne
 		/// <param name="y"></param>
 		/// <param name="unitRoleType"></param>
 		/// <param name="policy"></param>
-		public void PlayerAddUnitPolicy(int playerID, int x, int y, UnitRoleTypeEnum unitRoleType, short policy)
+		public void PlayerAddUnitPolicy(int playerID, int x, int y, UnitStrategyTypeEnum unitRoleType, short policy)
 		{
 			//this.oCPU.Log.EnterBlock($"F0_25fb_304d({playerID}, {x}, {y}, {active}, {policy})");
 
@@ -1896,7 +1896,7 @@ namespace OpenCivOne
 			}
 
 			if (playerID == this.parent.Var_6b90_CurrentPlayer && playerID != this.parent.GameData.HumanPlayerID && 
-				(unitRoleType == UnitRoleTypeEnum.SeaAttack || unitRoleType == UnitRoleTypeEnum.AirAttack))
+				(unitRoleType == UnitStrategyTypeEnum.SeaAttack || unitRoleType == UnitStrategyTypeEnum.AirAttack))
 			{
 				for (int i = 0; i < 128; i++)
 				{
@@ -1921,7 +1921,7 @@ namespace OpenCivOne
 
 			for (int i = 0; i < 32; i++)
 			{
-				if (this.parent.GameData.Players[playerID].UnitPolicies[i].UnitRoleType == UnitRoleTypeEnum.None ||
+				if (this.parent.GameData.Players[playerID].UnitPolicies[i].UnitRoleType == UnitStrategyTypeEnum.None ||
 					this.parent.GameData.Players[playerID].UnitPolicies[i].Policy < policy)
 				{
 					for (int j = 30; j >= i; j--)
@@ -1956,7 +1956,7 @@ namespace OpenCivOne
 		{
 			for (int i = 0; i < 16; i++)
 			{
-				this.parent.GameData.Players[playerID].ContinentPolicies[i].UnitRoleType = UnitRoleTypeEnum.None;
+				this.parent.GameData.Players[playerID].ContinentPolicies[i].UnitRoleType = UnitStrategyTypeEnum.None;
 				this.parent.GameData.Players[playerID].ContinentPolicies[i].Policy = 0;
 			}
 		}
@@ -1969,7 +1969,7 @@ namespace OpenCivOne
 		/// <param name="y"></param>
 		/// <param name="unitRoleType"></param>
 		/// <param name="policy"></param>
-		public void AddPlayerContinentPolicy(int playerID, int x, int y, UnitRoleTypeEnum unitRoleType, sbyte policy)
+		public void AddPlayerContinentPolicy(int playerID, int x, int y, UnitStrategyTypeEnum unitRoleType, sbyte policy)
 		{
 			//this.oCPU.Log.EnterBlock($"F0_25fb_3251_AddStrategicLocation({playerID}, {x}, {y}, {unitRoleType}, {policy})");
 
@@ -1987,7 +1987,7 @@ namespace OpenCivOne
 
 			for (int i = 0; i < 16; i++)
 			{
-				if (this.parent.GameData.Players[playerID].ContinentPolicies[i].UnitRoleType == UnitRoleTypeEnum.None ||
+				if (this.parent.GameData.Players[playerID].ContinentPolicies[i].UnitRoleType == UnitStrategyTypeEnum.None ||
 					this.parent.GameData.Players[playerID].ContinentPolicies[i].Policy < policy)
 				{
 					for (int j = 14; j >= i; j--)
@@ -2021,7 +2021,7 @@ namespace OpenCivOne
 		/// <param name="x"></param>
 		/// <param name="y"></param>
 		/// <param name="maximumDistance"></param>
-		public void F0_25fb_3401_PlayerClearContinentPolicies(int playerID, UnitRoleTypeEnum unitRoleType, int x, int y, int maximumDistance)
+		public void F0_25fb_3401_PlayerClearContinentPolicies(int playerID, UnitStrategyTypeEnum unitRoleType, int x, int y, int maximumDistance)
 		{
 			//this.oCPU.Log.EnterBlock($"F0_25fb_3401({playerID}, {unitRoleType}, {x}, {y}, {maximumDistance})");
 
@@ -2033,7 +2033,7 @@ namespace OpenCivOne
 					// Instruction address 0x25fb:0x3433, size: 5
 					if (this.parent.MapManagement.GetDistance(x, y, this.parent.GameData.Players[playerID].ContinentPolicies[i].Position) <= maximumDistance)
 					{
-						this.parent.GameData.Players[playerID].ContinentPolicies[i].UnitRoleType = UnitRoleTypeEnum.None;
+						this.parent.GameData.Players[playerID].ContinentPolicies[i].UnitRoleType = UnitStrategyTypeEnum.None;
 					}
 				}
 			}
@@ -2080,7 +2080,7 @@ namespace OpenCivOne
 			}
 		
 			// Instruction address 0x25fb:0x34fc, size: 5
-			int productionID = (short)this.parent.Segment_1ade.F0_1ade_0421(playerID, cityID);
+			int productionID = this.parent.GameEngine.F0_1ade_0421_SelectCityProduction(playerID, cityID);
 			
 			this.parent.GameData.Cities[cityID].CurrentProductionID = (sbyte)productionID;
 
@@ -2180,7 +2180,7 @@ namespace OpenCivOne
 				return ' ';
 			}
 
-			if (this.parent.GameData.Units[(int)unit.UnitType].UnitRoleType == UnitRoleTypeEnum.SeaTransport)
+			if (this.parent.GameData.Units[(int)unit.UnitType].UnitRoleType == UnitStrategyTypeEnum.SeaTransport)
 			{
 				if (unit.NextUnitID == -1)
 				{
@@ -2277,7 +2277,7 @@ namespace OpenCivOne
 			int nearestPlayerID = this.parent.GameData.Cities[nearestCityID].PlayerID;
 
 			// For a case where barbarians capture a City
-			if (nearestCityDistance == 0 && (unit.NextUnitID == -1 || this.parent.GameData.Units[(int)unit.UnitType].UnitRoleType == UnitRoleTypeEnum.Defense))
+			if (nearestCityDistance == 0 && (unit.NextUnitID == -1 || this.parent.GameData.Units[(int)unit.UnitType].UnitRoleType == UnitStrategyTypeEnum.Defense))
 			{
 				return 'f';
 			}

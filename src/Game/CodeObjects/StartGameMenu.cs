@@ -309,7 +309,7 @@ namespace OpenCivOne
 			for (int i = 0; i < 72; i++)
 			{
 				// Instruction address 0x0000:0x06bd, size: 5
-				if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(this.parent.GameData.HumanPlayerID, (TechnologyAdvanceEnum)i))
+				if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(this.parent.GameData.HumanPlayerID, (TechnologyAdvanceEnum)i))
 				{
 					// Instruction address 0x0000:0x06d7, size: 5
 					startText.Append($"{this.parent.GameData.TechnologyAdvances[i].Name}, ");
@@ -433,13 +433,13 @@ namespace OpenCivOne
 					for (int i = 0; i < 72; i++)
 					{
 						// Instruction address 0x0000:0x0967, size: 5
-						if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(this.parent.GameData.HumanPlayerID, (TechnologyAdvanceEnum)i) &&
+						if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(this.parent.GameData.HumanPlayerID, (TechnologyAdvanceEnum)i) &&
 							(this.parent.GameData.TechnologyFirstDiscoveredBy[i] & 0x7) != 0 &&
 							(this.parent.GameData.TechnologyFirstDiscoveredBy[i] & 0x7) != this.parent.GameData.HumanPlayerID &&
 							this.parent.CAPI.RNG.Next(2) == 0)
 						{
 							// Instruction address 0x0000:0x09b2, size: 5
-							this.parent.Segment_1ade.F0_1ade_1d2e(playerID, playerID, (TechnologyAdvanceEnum)i);
+							this.parent.GameEngine.F0_1ade_1d2e_ResearchFinished(playerID, playerID, (TechnologyAdvanceEnum)i);
 						}
 					}
 				}
@@ -922,7 +922,7 @@ namespace OpenCivOne
 			else
 			{
 				// Instruction address 0x0000:0x1b48, size: 5
-				if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(parent.GameData.HumanPlayerID, TechnologyAdvanceEnum.Invention))
+				if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(parent.GameData.HumanPlayerID, TechnologyAdvanceEnum.Invention))
 				{
 					ancientGovernment = false;
 				}

@@ -87,7 +87,7 @@ namespace OpenCivOne
 
 					case 1:
 						// Instruction address 0x0000:0x0133, size: 5
-						this.parent.Segment_1ade.F0_1ade_03ea(destinationCityID);
+						this.parent.GameEngine.F0_1ade_03ea_ProcessCityState1AndRefreshMap(destinationCityID);
 
 						// Instruction address 0x0000:0x0141, size: 5
 						this.parent.UnitManagement.F0_1866_0f10_DeleteUnit(diplomatPlayerID, diplomatUnitID);
@@ -110,11 +110,11 @@ namespace OpenCivOne
 									{
 										TechnologyAdvanceEnum selectedTechnology = (TechnologyAdvanceEnum)((technologyIndex + i) % 72);
 
-										if (this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(cityPlayerID, selectedTechnology) &&
-											!this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(diplomatPlayerID, selectedTechnology))
+										if (this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(cityPlayerID, selectedTechnology) &&
+											!this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(diplomatPlayerID, selectedTechnology))
 										{
 											// Instruction address 0x0000:0x0249, size: 5
-											this.parent.Segment_1ade.F0_1ade_1d2e(diplomatPlayerID, cityPlayerID, selectedTechnology);
+											this.parent.GameEngine.F0_1ade_1d2e_ResearchFinished(diplomatPlayerID, cityPlayerID, selectedTechnology);
 
 											this.parent.Var_2f9e_MessageBoxStyle = MenuBoxReportTypeEnum.SpiesReport;
 

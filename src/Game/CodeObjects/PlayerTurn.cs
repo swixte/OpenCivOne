@@ -516,7 +516,7 @@ namespace OpenCivOne
 						int cityID = this.parent.MapManagement.GetCityByLocation(mouseX, mouseY);
 
 						// Instruction address 0x1403:0x0b9a, size: 5
-						this.parent.Segment_1ade.F0_1ade_03ea(cityID);
+						this.parent.GameEngine.F0_1ade_03ea_ProcessCityState1AndRefreshMap(cityID);
 						// Instruction address 0x1403:0x0ba2, size: 5
 						this.parent.GameEngine.F0_1238_107e_ReportHumanTaxAndPopulation();
 
@@ -684,7 +684,7 @@ namespace OpenCivOne
 
 								if (playerID != local_54)
 								{
-									this.parent.AIEngine.PlayerAddUnitPolicy(local_54, unit.Position.X, unit.Position.Y, UnitRoleTypeEnum.LandAttack, 4);
+									this.parent.AIEngine.PlayerAddUnitPolicy(local_54, unit.Position.X, unit.Position.Y, UnitStrategyTypeEnum.LandAttack, 4);
 								}
 
 								unit.RemainingMoves = 0;
@@ -775,7 +775,7 @@ namespace OpenCivOne
 						{
 							if (this.parent.MapManagement.F0_2aea_1585_GetVisibleTerrainImprovements(unit.Position.X, unit.Position.Y).HasFlag(TerrainImprovementFlagsEnum.City) ||
 								this.parent.MapManagement.F0_2aea_1585_GetVisibleTerrainImprovements(unit.Position.X, unit.Position.Y).HasFlag(TerrainImprovementFlagsEnum.Fortress) ||
-								!this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Construction))
+								!this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Construction))
 							{
 								unit.ClearStatusFlags(UnitStatusEnum.SettlerBuildFortress);
 								unit.SpecialMoves = 0;
@@ -1104,7 +1104,7 @@ namespace OpenCivOne
 						TerrainImprovementFlagsEnum terrainImprovements = this.parent.MapManagement.F0_2aea_1585_GetVisibleTerrainImprovements(unit.Position.X, unit.Position.Y);
 
 						if ((terrainImprovements.HasFlag(TerrainImprovementFlagsEnum.Road) &&
-							(!this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Railroad) ||
+							(!this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.Railroad) ||
 							terrainImprovements.HasFlag(TerrainImprovementFlagsEnum.City))) || terrainImprovements.HasFlag(TerrainImprovementFlagsEnum.RailRoad))
 						{
 							unit.ClearStatusFlags(UnitStatusEnum.SettlerBuildRoadOrRail);
@@ -1115,7 +1115,7 @@ namespace OpenCivOne
 						}
 						else
 						{
-							if (terrainType != TerrainTypeEnum.River || this.parent.Segment_1ade.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.BridgeBuilding))
+							if (terrainType != TerrainTypeEnum.River || this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, TechnologyAdvanceEnum.BridgeBuilding))
 							{
 								unit.Status |= UnitStatusEnum.SettlerBuildRoadOrRail;
 								unit.RemainingMoves = 0;
@@ -2029,7 +2029,7 @@ namespace OpenCivOne
 						if (this.parent.GameData.Cities[cityID].ActualSize == 0)
 						{
 							// Instruction address 0x1403:0x2576, size: 5
-							this.parent.Segment_1ade.F0_1ade_018e(cityID, newX, newY);
+							this.parent.GameEngine.F0_1ade_018e_DeleteCity(cityID, newX, newY);
 							this.parent.StartGameMenu.F5_0000_0e6c_TestIfAIPlayerIsDestroyed(newActiveUnitPlayerID, playerID);
 
 							if (playerID == this.parent.GameData.HumanPlayerID)
