@@ -2276,7 +2276,7 @@ namespace OpenCivOne
 					}
 
 					if (currentTerrainType == TerrainTypeEnum.Water && newTerrainType != TerrainTypeEnum.Water &&
-						this.parent.GameData.Units[(int)unit.UnitType].MovementType != UnitMovementTypeEnum.Water)
+						this.parent.GameData.Units[(int)unit.UnitType].MovementType != UnitMovementTypeEnum.Air)
 					{
 						unit.RemainingMoves = 0;
 					}
