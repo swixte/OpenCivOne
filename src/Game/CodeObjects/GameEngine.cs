@@ -1,5 +1,4 @@
 using Avalonia.Media;
-using IRB.VirtualCPU;
 using OpenCivOne.Graphics;
 using System.Text;
 
@@ -1562,26 +1561,27 @@ namespace OpenCivOne
 			//this.CPU.Log.EnterBlock($"F0_1ade_0421({playerID}, {cityID})");
 
 			// function body
-			int local_4 = 0;
-			int[] local_44 = new int[28];
-			int[] local_de = new int[76];
-			int[] local_11a = new int[28];
-			int local_13a = 0;
+			bool firstPass = true;
+			int[] playerUnitBuildCount = new int[28];
+			int[] buildIDList = new int[76];
+			int[] currentUnitBuildCount = new int[28];
+			int buildListSize = 0;
 			UnitStrategyTypeEnum continentStrategy;
-			int local_144 = 0;
+			int buildSelectionIndex = 0;
 
 			// Instruction address 0x1ade:0x043f, size: 5
 			this.parent.CityWorker.F0_1d12_0045_ProcessCityState(cityID, -1);
 
 			while (true)
 			{
-				int local_a = 1;
-				local_de[0] = this.parent.GameData.Cities[cityID].CurrentProductionID;
+				int buildListCount = 1;
+				buildIDList[0] = this.parent.GameData.Cities[cityID].CurrentProductionID;
+				StringBuilder messageText = new();
 
 				// Instruction address 0x1ade:0x0465, size: 5
-				this.parent.CAPI.strcpy(0xba06, $"What shall we build in {this.parent.Segment_2459.F0_2459_08c6_GetCityName(cityID)}?\n ");
+				messageText.Append($"What shall we build in {this.parent.Segment_2459.F0_2459_08c6_GetCityName(cityID)}?\n ");
 
-				if (local_13a != 2)
+				if (buildListSize != 2)
 				{
 					for (int i = 0; i < 28; i++)
 					{
@@ -1591,30 +1591,30 @@ namespace OpenCivOne
 							if (F0_1ade_22b5_PlayerHasTechnology(playerID, this.parent.GameData.Units[i].RequiredTechnology) &&
 								!F0_1ade_22b5_PlayerHasTechnology(playerID, this.parent.GameData.Units[i].CancelTechnology))
 							{
-								if ((this.parent.GameData.Cities[cityID].Status & CityStatusEnum.WaterAccess) != CityStatusEnum.None ||
-									this.parent.GameData.Units[i].MovementType != UnitMovementTypeEnum.Water)
+								if (this.parent.GameData.Units[i].MovementType == UnitMovementTypeEnum.Water && 
+									(this.parent.GameData.Cities[cityID].Status & CityStatusEnum.WaterAccess) != CityStatusEnum.None)
 								{
 									// Instruction address 0x1ade:0x04f8, size: 5
-									this.parent.CAPI.strcat(0xba06, $"{this.parent.GameData.Units[i].Name} " +
+									messageText.Append($"{this.parent.GameData.Units[i].Name} " +
 										$"{F0_1ade_14ed_CostToTurns(cityID, this.parent.GameData.Units[i].Cost)}, " +
 										$"ADM: {this.parent.GameData.Units[i].AttackStrength}/{this.parent.GameData.Units[i].DefenseStrength}/" +
 										$"{this.parent.GameData.Units[i].MoveCount})\n ");
 
-									local_de[local_a] = i;
+									buildIDList[buildListCount] = i;
 
-									local_a++;
+									buildListCount++;
 								}
 							}
 						}
 					}
 				}
 
-				int local_136 = local_a;
+				int currentBuildListCount = buildListCount;
 
 				// Instruction address 0x1ade:0x05ff, size: 5
-				int local_138 = this.parent.CAPI.strlen(0xba06);
+				StringBuilder improvementTextList = new();
 
-				int local_6 = 0;
+				bool hooverDamPresent = false;
 
 				// Instruction address 0x1ade:0x0617, size: 5
 				if (this.parent.CityWorker.F0_1d12_6c97_PlayerHasWonder(playerID, WonderEnum.HooverDam))
@@ -1624,7 +1624,7 @@ namespace OpenCivOne
 						this.parent.MapManagement.F0_2aea_1942_GetGroupID(this.parent.GameData.Cities[this.parent.GameData.WonderCityID[15]].Position.X,
 							this.parent.GameData.Cities[this.parent.GameData.WonderCityID[15]].Position.Y))
 					{
-						local_6 = 1;
+						hooverDamPresent = true;
 					}
 				}
 
@@ -1654,7 +1654,7 @@ namespace OpenCivOne
 
 													if (i == 19 || i == 20 || i == 21)
 													{
-														if (local_6 == 0 && (this.parent.GameData.Cities[cityID].ImprovementFlags & 0x1c0000) == 0)
+														if (!hooverDamPresent && (this.parent.GameData.Cities[cityID].ImprovementFlags & 0x1c0000) == 0)
 														{
 															flag = true;
 														}
@@ -1669,12 +1669,12 @@ namespace OpenCivOne
 														if (i <= 21 || (this.parent.GameData.WonderCityID[19] != -1 && (this.parent.GameData.SpaceshipFlags & (0x1 << playerID)) == 0))
 														{
 															// Instruction address 0x1ade:0x07f4, size: 5
-															this.parent.CAPI.strcat(0xba06, $"{this.parent.GameData.GetImprovementType(i).Name} " +
+															improvementTextList.Append($"{this.parent.GameData.GetImprovementType(i).Name} " +
 																$"{F0_1ade_14ed_CostToTurns(cityID, this.parent.GameData.GetImprovementType(i).Cost)})\n ");
 
-															local_de[local_a] = -i;
+															buildIDList[buildListCount] = -i;
 
-															local_a++;
+															buildListCount++;
 														}
 													}
 												}
@@ -1697,44 +1697,47 @@ namespace OpenCivOne
 							(this.parent.GameData.TechnologyFirstDiscoveredBy[(int)this.parent.GameData.GetImprovementType(i).ObsoletesAfterTechnology] & 7) != 0)
 						{
 							// Instruction address 0x1ade:0x087e, size: 5
-							this.parent.CAPI.strcat(0xba06, "*");
+							improvementTextList.Append("*");
 						}
 
 						// Instruction address 0x1ade:0x0897, size: 5
-						this.parent.CAPI.strcat(0xba06, $"{this.parent.GameData.GetImprovementType(i).Name} " +
+						improvementTextList.Append($"{this.parent.GameData.GetImprovementType(i).Name} " +
 							$"{F0_1ade_14ed_CostToTurns(cityID, this.parent.GameData.GetImprovementType(i).Cost)})\n ");
 
-						local_de[local_a] = -i;
+						buildIDList[buildListCount] = -i;
 
-						local_a++;
+						buildListCount++;
 					}
 				}
 
 				if (playerID == this.parent.GameData.HumanPlayerID &&
-					(this.parent.GameData.Cities[cityID].Status & CityStatusEnum.AutoProduction) == CityStatusEnum.None && local_a > 30)
+					(this.parent.GameData.Cities[cityID].Status & CityStatusEnum.AutoProduction) == CityStatusEnum.None && buildListCount > 30)
 				{
-					if (local_13a != 0)
+					if (buildListSize != 0)
 					{
-						// Instruction address 0x1ade:0x0916, size: 5
-						this.parent.CAPI.strcpy((ushort)(0xba06 + local_138), "more...\n");
+						improvementTextList.Clear();
+						messageText.Append("more...\n");
 
-						local_de[local_136] = 99;
+						buildIDList[currentBuildListCount] = 99;
 					}
 					else
 					{
-						local_13a = 1;
+						messageText.Append(improvementTextList.ToString());
+						buildListSize = 1;
 						continue;
 					}
 				}
 
-				if (local_13a == 2)
+				messageText.Append(improvementTextList.ToString());
+
+				if (buildListSize == 2)
 				{
 					// Instruction address 0x1ade:0x0939, size: 5
-					this.parent.CAPI.strcat(0xba06, "more...\n");
+					messageText.Append("more...\n");
 
-					local_de[local_a] = 98;
+					buildIDList[buildListCount] = 98;
 
-					local_a++;
+					buildListCount++;
 				}
 
 				int local_2;
@@ -1758,7 +1761,8 @@ namespace OpenCivOne
 					local_13c = 1;
 				}
 
-				if (this.parent.GameData.Players[playerID].GovernmentType != GovernmentTypeEnum.Anarchy && this.parent.GameData.Players[playerID].GovernmentType != GovernmentTypeEnum.Despotism)
+				if (this.parent.GameData.Players[playerID].GovernmentType != GovernmentTypeEnum.Anarchy && 
+					this.parent.GameData.Players[playerID].GovernmentType != GovernmentTypeEnum.Despotism)
 				{
 					local_2 = this.parent.Var_70da_Arr[0] - this.parent.Var_e3c6 * 2 - this.parent.GameData.Cities[cityID].ActualSize * 2;
 				}
@@ -1769,11 +1773,11 @@ namespace OpenCivOne
 
 				for (int i = 0; i < 28; i++)
 				{
-					local_11a[i] = 1;
-					local_44[i] = 0;
+					currentUnitBuildCount[i] = 1;
+					playerUnitBuildCount[i] = 0;
 				}
 
-				int local_140 = this.parent.GameData.Players[playerID].UnitCount;
+				int currentUnitCount = this.parent.GameData.Players[playerID].UnitCount;
 				this.parent.GameData.Players[playerID].UnitCount = 0;
 
 				for (int i = 0; i < 128; i++)
@@ -1783,7 +1787,7 @@ namespace OpenCivOne
 					{
 						if (this.parent.GameData.Cities[i].CurrentProductionID >= 0 && i != cityID)
 						{
-							local_11a[this.parent.GameData.Cities[i].CurrentProductionID]++;
+							currentUnitBuildCount[this.parent.GameData.Cities[i].CurrentProductionID]++;
 						}
 
 						for (int local_11c = 0; local_11c < 2; local_11c++)
@@ -1791,7 +1795,7 @@ namespace OpenCivOne
 							if (this.parent.GameData.Cities[i].FirstFortifiedCityUnits[local_11c] != -1)
 							{
 								this.parent.GameData.Players[playerID].UnitCount++;
-								local_44[(this.parent.GameData.Cities[i].FirstFortifiedCityUnits[local_11c] & 0x3f)]++;
+								playerUnitBuildCount[(this.parent.GameData.Cities[i].FirstFortifiedCityUnits[local_11c] & 0x3f)]++;
 							}
 						}
 					}
@@ -1807,7 +1811,7 @@ namespace OpenCivOne
 						if (this.parent.MapManagement.F0_2aea_1942_GetGroupID(this.parent.GameData.Players[playerID].Units[i].Position.X,
 							this.parent.GameData.Players[playerID].Units[i].Position.Y) == local_13e)
 						{
-							local_44[(int)this.parent.GameData.Players[playerID].Units[i].UnitType]++;
+							playerUnitBuildCount[(int)this.parent.GameData.Players[playerID].Units[i].UnitType]++;
 						}
 					}
 				}
@@ -1861,91 +1865,91 @@ namespace OpenCivOne
 				local_c = -1;
 				local_48 = -1;
 
-				for (int i = 1; i < local_a; i++)
+				for (int i = 1; i < buildListCount; i++)
 				{
-					int local_46 = local_de[i];
+					int buidID = buildIDList[i];
 
-					if (local_46 != 23)
+					if (buidID != 23)
 					{
-						if (local_46 >= 0 && local_46 < 26)
+						if (buidID >= 0 && buidID < 26)
 						{
-							if (local_46 != 0 || ((this.parent.GameData.Players[playerID].GovernmentType == GovernmentTypeEnum.Anarchy ||
+							if (buidID != 0 || ((this.parent.GameData.Players[playerID].GovernmentType == GovernmentTypeEnum.Anarchy ||
 								this.parent.GameData.Players[playerID].GovernmentType == GovernmentTypeEnum.Despotism) ? 1 : 2) < local_2 ||
-								(this.parent.GameData.Players[playerID].ActiveUnits[(int)UnitTypeEnum.Settler] == 0 && local_11a[0] <= 1))
+								(this.parent.GameData.Players[playerID].ActiveUnits[(int)UnitTypeEnum.Settler] == 0 && currentUnitBuildCount[0] <= 1))
 							{
-								if (local_46 != 1 || this.parent.GameData.Players[playerID].GovernmentType == GovernmentTypeEnum.Anarchy ||
+								if (buidID != 1 || this.parent.GameData.Players[playerID].GovernmentType == GovernmentTypeEnum.Anarchy ||
 									this.parent.GameData.Players[playerID].GovernmentType == GovernmentTypeEnum.Despotism)
 								{
-									if (local_46 != 25 || (this.parent.GameData.Players[playerID].ActiveUnits[(int)UnitTypeEnum.Nuclear] < 4 &&
+									if (buidID != 25 || (this.parent.GameData.Players[playerID].ActiveUnits[(int)UnitTypeEnum.Nuclear] < 4 &&
 										this.parent.GameData.Players[playerID].UnitsInProduction[(int)UnitTypeEnum.Nuclear] < 2))
 									{
-										if (local_46 != 14 || (this.parent.GameData.Players[playerID].ActiveUnits[local_46] + this.parent.GameData.Players[playerID].UnitsInProduction[local_46] <
+										if (buidID != 14 || (this.parent.GameData.Players[playerID].ActiveUnits[buidID] + this.parent.GameData.Players[playerID].UnitsInProduction[buidID] <
 											this.parent.GameData.Players[this.parent.GameData.HumanPlayerID].ActiveUnits[(int)UnitTypeEnum.Bomber] / 2 &&
 											!this.parent.GameData.Players[playerID].Diplomacy[this.parent.GameData.HumanPlayerID].HasFlag(DiplomacyFlagsEnum.Peace)))
 										{
-											if (this.parent.GameData.Units[local_46].MovementType == UnitMovementTypeEnum.Land ||
+											if (this.parent.GameData.Units[buidID].MovementType == UnitMovementTypeEnum.Land ||
 												this.parent.GameData.Players[playerID].Continents[local_13e].Attack >= 8)
 											{
-												if (this.parent.GameData.Units[local_46].MovementType != UnitMovementTypeEnum.Land)
+												if (this.parent.GameData.Units[buidID].MovementType != UnitMovementTypeEnum.Land)
 												{
 													local_134 = (this.parent.GameData.Players[playerID].Continents[local_13e].Attack *
-														(this.parent.GameData.Players[playerID].UnitsInProduction[local_46] * 2 + this.parent.GameData.Players[playerID].ActiveUnits[local_46])) /
+														(this.parent.GameData.Players[playerID].UnitsInProduction[buidID] * 2 + this.parent.GameData.Players[playerID].ActiveUnits[buidID])) /
 														(this.parent.GameData.Players[playerID].UnitCount + 1);
 												}
 												else
 												{
-													local_134 = local_11a[local_46] * 2 + local_44[local_46];
+													local_134 = currentUnitBuildCount[buidID] * 2 + playerUnitBuildCount[buidID];
 												}
 
-												if (local_8 == 0 || this.parent.GameData.Units[local_46].UnitRoleType == UnitStrategyTypeEnum.Defense)
+												if (local_8 == 0 || this.parent.GameData.Units[buidID].UnitRoleType == UnitStrategyTypeEnum.Defense)
 												{
 													if (local_8 != 0)
 													{
 														local_134 = 2 / local_8;
 													}
 
-													if (this.parent.GameData.Units[local_46].UnitRoleType != UnitStrategyTypeEnum.Defense &&
-														this.parent.GameData.Units[local_46].UnitRoleType != UnitStrategyTypeEnum.Settle)
+													if (this.parent.GameData.Units[buidID].UnitRoleType != UnitStrategyTypeEnum.Defense &&
+														this.parent.GameData.Units[buidID].UnitRoleType != UnitStrategyTypeEnum.Settle)
 													{
 														local_134 *= 2;
 
-														if (continentStrategy != this.parent.GameData.Units[local_46].UnitRoleType)
+														if (continentStrategy != this.parent.GameData.Units[buidID].UnitRoleType)
 														{
 															local_134 *= 2;
 														}
 													}
 
-													if (this.parent.GameData.Units[local_46].UnitRoleType != UnitStrategyTypeEnum.SeaTransport || continentStrategy == UnitStrategyTypeEnum.SeaTransport)
+													if (this.parent.GameData.Units[buidID].UnitRoleType != UnitStrategyTypeEnum.SeaTransport || continentStrategy == UnitStrategyTypeEnum.SeaTransport)
 													{
 														if (continentStrategy == UnitStrategyTypeEnum.SeaTransport)
 														{
 															local_134 = (3 * local_134) / 2;
 														}
 
-														if (local_46 == 0)
+														if (buidID == 0)
 														{
 															if ((this.parent.GameData.Cities[cityID].ImprovementFlags0 & 0x4) != 0)
 															{
 																local_134 = (4 - this.parent.GameData.Nations[this.parent.GameData.Players[playerID].NationalityID].Ideology) *
-																	(this.parent.GameData.Units[local_46].Cost + 2) * local_134;
-																local_134 /= (this.parent.GameData.Units[local_46].AttackStrength + this.parent.GameData.Units[local_46].DefenseStrength) *
-																	(this.parent.GameData.Units[local_46].MoveCount + 1);
+																	(this.parent.GameData.Units[buidID].Cost + 2) * local_134;
+																local_134 /= (this.parent.GameData.Units[buidID].AttackStrength + this.parent.GameData.Units[buidID].DefenseStrength) *
+																	(this.parent.GameData.Units[buidID].MoveCount + 1);
 															}
 															else
 															{
 																local_134 = (6 - this.parent.GameData.Nations[this.parent.GameData.Players[playerID].NationalityID].Ideology) *
-																	(this.parent.GameData.Units[local_46].Cost + 2) * local_134;
-																local_134 /= (this.parent.GameData.Units[local_46].AttackStrength + this.parent.GameData.Units[local_46].DefenseStrength) *
-																	(this.parent.GameData.Units[local_46].MoveCount + 1);
+																	(this.parent.GameData.Units[buidID].Cost + 2) * local_134;
+																local_134 /= (this.parent.GameData.Units[buidID].AttackStrength + this.parent.GameData.Units[buidID].DefenseStrength) *
+																	(this.parent.GameData.Units[buidID].MoveCount + 1);
 															}
 														}
 														else
 														{
-															local_134 = 16 / ((this.parent.GameData.Units[local_46].AttackStrength + this.parent.GameData.Units[local_46].DefenseStrength) *
-																(this.parent.GameData.Units[local_46].MoveCount + 1));
+															local_134 = 16 / ((this.parent.GameData.Units[buidID].AttackStrength + this.parent.GameData.Units[buidID].DefenseStrength) *
+																(this.parent.GameData.Units[buidID].MoveCount + 1));
 														}
 
-														if (this.parent.GameData.Units[local_46].UnitRoleType == UnitStrategyTypeEnum.SeaAttack)
+														if (this.parent.GameData.Units[buidID].UnitRoleType == UnitStrategyTypeEnum.SeaAttack)
 														{
 															if (local_13c != 0)
 															{
@@ -1957,7 +1961,7 @@ namespace OpenCivOne
 															}
 														}
 
-														if (this.parent.GameData.Units[local_46].MovementType == UnitMovementTypeEnum.Air)
+														if (this.parent.GameData.Units[buidID].MovementType == UnitMovementTypeEnum.Air)
 														{
 															local_134 *= 2;
 														}
@@ -1974,11 +1978,11 @@ namespace OpenCivOne
 
 														if (local_134 < local_4c)
 														{
-															local_144 = i;
+															buildSelectionIndex = i;
 															local_4c = local_134;
 														}
 
-														if (local_46 < 0 || local_46 >= 26)
+														if (buidID < 0 || buidID >= 26)
 														{
 															if (local_134 < local_130)
 															{
@@ -2003,9 +2007,9 @@ namespace OpenCivOne
 						{
 							local_134 = 999;
 							local_132 = 0;
-							local_46 = 27 - local_46;
+							buidID = 27 - buidID;
 
-							switch (local_46)
+							switch (buidID)
 							{
 								case 0:
 									if (this.parent.GameData.Cities[cityID].TradeCityIDs[2] == -1)
@@ -2190,11 +2194,11 @@ namespace OpenCivOne
 
 							if (local_134 < local_4c)
 							{
-								local_144 = i;
+								buildSelectionIndex = i;
 								local_4c = local_134;
 							}
 
-							if (local_46 < 0 || local_46 >= 26)
+							if (buidID < 0 || buidID >= 26)
 							{
 								if (local_134 < local_130)
 								{
@@ -2211,7 +2215,7 @@ namespace OpenCivOne
 					}
 				}
 
-				this.parent.GameData.Players[playerID].UnitCount = (short)local_140;
+				this.parent.GameData.Players[playerID].UnitCount = (short)currentUnitCount;
 
 				if ((this.parent.GameData.PlayerFlags & (0x1 << playerID)) != 0)
 				{
@@ -2219,13 +2223,13 @@ namespace OpenCivOne
 					{
 						if (this.parent.GameData.GameSettingFlags.InstantAdvice)
 						{
-							if (local_4 == 0)
+							if (firstPass)
 							{
 								this.parent.Var_aa_Screen0_Rectangle.FontID = 2;
 
 								if (local_c != -1)
 								{
-									local_134 = local_de[local_c];
+									local_134 = buildIDList[local_c];
 
 									if (local_134 >= 0)
 									{
@@ -2250,7 +2254,7 @@ namespace OpenCivOne
 
 								if (local_48 != -1)
 								{
-									local_134 = local_de[local_48];
+									local_134 = buildIDList[local_48];
 
 									if (local_134 >= 0)
 									{
@@ -2272,20 +2276,20 @@ namespace OpenCivOne
 										$"*{this.parent.Array_30b8[3]}")), 50), 164, 160, true, false, true);
 								}
 
-								local_4 = 1;
+								firstPass = false;
 								this.parent.Var_aa_Screen0_Rectangle.FontID = 1;
 
 								continue;
 							}
 						}
 
-						if (local_a > 20 || local_13a != 0)
+						if (buildListCount > 20 || buildListSize != 0)
 						{
 							this.parent.Var_aa_Screen0_Rectangle.FontID = 2;
 						}
 
 						// Instruction address 0x1ade:0x1460, size: 5
-						local_134 = local_de[this.parent.MenuBoxDialog.F0_2d05_0031_ShowMenuBox(0xba06, 80, 8, true, true, true) - 1];
+						local_134 = buildIDList[this.parent.MenuBoxDialog.F0_2d05_0031_ShowMenuBox(messageText.ToString(), 80, 8, true, true, true) - 1];
 
 						if (local_134 != 99)
 						{
@@ -2317,12 +2321,12 @@ namespace OpenCivOne
 							}
 							else
 							{
-								local_13a = 1;
+								buildListSize = 1;
 							}
 						}
 						else
 						{
-							local_13a = 2;
+							buildListSize = 2;
 						}
 						continue;
 					}
@@ -2332,12 +2336,12 @@ namespace OpenCivOne
 						return 99;
 					}
 
-					return local_de[local_48];
+					return buildIDList[local_48];
 				}
 
 				if (this.parent.GameData.Cities[cityID].CurrentProductionID != -1)
 				{
-					return local_de[local_144];
+					return buildIDList[buildSelectionIndex];
 				}
 
 				return -1;
