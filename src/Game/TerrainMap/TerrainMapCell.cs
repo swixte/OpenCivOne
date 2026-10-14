@@ -1,6 +1,5 @@
 ﻿using IRB.Collections.Generic;
 using OpenCivOne.Graphics;
-using System.Text;
 using System.Xml.Serialization;
 
 namespace OpenCivOne
@@ -15,8 +14,8 @@ namespace OpenCivOne
 		private GPoint oPosition = new GPoint(-1);
 
 		private TerrainTypeEnum eTerrainType = TerrainTypeEnum.Water;
-		private TerrainDefinition? oTerrainDefinition = null;
-		private int iTotalCellWorth = 0;
+		//private TerrainDefinition? oTerrainDefinition = null;
+		//private int iTotalCellWorth = 0;
 
 		public bool HasSpecialResources = false;
 		public int Layer2_PlayerOwnership = 0;
@@ -102,8 +101,8 @@ namespace OpenCivOne
 			set
 			{
 				this.eTerrainType = value;
-				this.oTerrainDefinition = null;
-				this.iTotalCellWorth = 0;
+				//this.oTerrainDefinition = null;
+				//this.iTotalCellWorth = 0;
 			}
 			/*{
 				switch (this.Layer1_Terrain)

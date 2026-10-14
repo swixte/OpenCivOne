@@ -1575,8 +1575,9 @@ namespace OpenCivOne
 								this.parent.GameData.Players[playerID].Units[unitID].Position.X,
 								this.parent.GameData.Players[playerID].Units[unitID].Position.Y) & 0x7;
 
-							if (playerID1 > 6)
+							if (playerID1 == 0 && nearestCityDistance < 6)
 							{
+								// only if no player owns this land and the distance is less than 6 moves from the nearest city
 								F0_1866_1931_TribeHutFoundAdvancedTribe(playerID, unitID);
 							}
 							else
