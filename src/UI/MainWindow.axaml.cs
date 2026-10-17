@@ -608,8 +608,11 @@ namespace OpenCivOne.UI
 
 			this.mouseRect = new GRectangle(0, 0, this.screenSize);
 
-			this.bitmaps[0] = new WriteableBitmap(new PixelSize(this.imageSize.Width, this.imageSize.Height), new Vector(96, 96), PixelFormat.Bgra8888);
-			this.bitmaps[1] = new WriteableBitmap(new PixelSize(this.imageSize.Width, this.imageSize.Height), new Vector(96, 96), PixelFormat.Bgra8888);
+			// Bitmaps are rendered at HD scale, the image control keeps the original size, so the mouse mapping is unchanged
+			PixelSize bitmapSize = new PixelSize(this.imageSize.Width * GBitmap.HDScale, this.imageSize.Height * GBitmap.HDScale);
+
+			this.bitmaps[0] = new WriteableBitmap(bitmapSize, new Vector(96, 96), PixelFormat.Bgra8888);
+			this.bitmaps[1] = new WriteableBitmap(bitmapSize, new Vector(96, 96), PixelFormat.Bgra8888);
 		}
 
 		private void ToggleScreen(int screen)
@@ -658,8 +661,9 @@ namespace OpenCivOne.UI
 					if (bNeedsRedraw || forceRedraw)
 					{
 						WriteableBitmap currentBitmap = this.bitmaps[this.bitmapIndex];
+						int scale = GBitmap.HDScale;
 						int iPixelByteSize = 4;
-						int iStride = this.imageSize.Width * iPixelByteSize;
+						int iStride = this.imageSize.Width * scale * iPixelByteSize;
 
 						using (ILockedFramebuffer l = currentBitmap.Lock())
 						{
@@ -669,31 +673,10 @@ namespace OpenCivOne.UI
 
 								if (item.Value.Visible)
 								{
-									int iBitmapAddress0 = ((iRow * this.screenSize.Height) * iStride) +
-										((iColumn * this.screenSize.Width) * iPixelByteSize);
+									int iBitmapAddress0 = ((iRow * this.screenSize.Height * scale) * iStride) +
+										((iColumn * this.screenSize.Width * scale) * iPixelByteSize);
 
-									GBitmap bitmap = item.Value;
-									int iBitmapAddress = iBitmapAddress0;
-									int iGBitmapAddress0 = 0;
-
-									for (int y = 0; y < bitmap.Height; y++)
-									{
-										int iGBitmapAddress = iGBitmapAddress0;
-										iBitmapAddress = iBitmapAddress0;
-
-										for (int x = 0; x < bitmap.Width; x++)
-										{
-											Color color = bitmap.Palette[bitmap.Pixels[iGBitmapAddress]];
-
-											Marshal.WriteInt32(l.Address, iBitmapAddress, (int)color.ToUInt32());
-											iBitmapAddress += iPixelByteSize;
-
-											iGBitmapAddress++;
-										}
-
-										iBitmapAddress0 += iStride;
-										iGBitmapAddress0 += bitmap.Width;
-									}
+									item.Value.WriteScaledPixels(l.Address + iBitmapAddress0, iStride);
 
 									item.Value.Modified = false;
 

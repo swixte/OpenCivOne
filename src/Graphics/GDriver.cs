@@ -296,7 +296,7 @@ namespace OpenCivOne.Graphics
 
 									aPixels[xPos, yPos] = true;
 									iCount++;
-									screen0.SetPixel(xPos, yPos, newScreen.GetPixel(xPos, yPos));
+									screen0.CopyPixel(xPos, yPos, newScreen);
 								}
 							}
 

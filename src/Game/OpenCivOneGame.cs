@@ -137,6 +137,11 @@ namespace OpenCivOne
 
 			this.globalPreferences = GlobalPreferences.DeSerializeFromJSON(this, this.gameMainPath);
 
+			if (this.globalPreferences.Debug.ExportHDTemplates)
+			{
+				GBitmap.HDTemplatePath = $"{this.gameMainPath}{separator}hd-templates";
+			}
+
 			#region Initialize Segments
 			this.CApi = new CAPI(this);
 			this.graphics = new GDriver(this);

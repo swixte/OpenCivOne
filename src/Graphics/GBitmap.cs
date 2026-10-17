@@ -1,13 +1,20 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Avalonia.Media;
 using IRB.Collections.Generic;
 using OpenCivOne.Compression;
+using SkiaSharp;
 
 namespace OpenCivOne.Graphics
 {
 	public class GBitmap
 	{
+		/// <summary>
+		/// Scale of the optional HD layer, relative to the indexed pixels
+		/// </summary>
+		public const int HDScale = 2;
+
 		private int iWidth;
 		private int iHeight;
 		private GSize oSize;
@@ -17,6 +24,16 @@ namespace OpenCivOne.Graphics
 
 		private byte[] aPixels;
 		private GBitmapPalette oPalette;
+
+		// Optional HD layer. Each indexed pixel owns an HDScale x HDScale block of ARGB pixels,
+		// which is shown instead of the indexed pixel while its mask entry is set.
+		// The layer is allocated only when HD content is drawn into this bitmap.
+		private uint[]? _hdPixels = null;
+		private bool[]? _hdMask = null;
+
+		private static readonly object _hdCacheLock = new object();
+		private static readonly Dictionary<string, uint[]?> _hdCache = new Dictionary<string, uint[]?>();
+		private static string? _hdTemplatePath = null;
 
 		#region Palette 1
 		public static Color[] Palette1 = new Color[] {
@@ -105,6 +122,32 @@ namespace OpenCivOne.Graphics
 			get => this.aPixels;
 		}
 
+		/// <summary>
+		/// HD pixels in ARGB format, (Width * HDScale) x (Height * HDScale), or null if this bitmap has no HD content
+		/// </summary>
+		internal uint[]? HDPixels
+		{
+			get => this._hdPixels;
+		}
+
+		/// <summary>
+		/// One entry per indexed pixel, true when that pixel is shown from the HD layer, or null if this bitmap has no HD content
+		/// </summary>
+		internal bool[]? HDMask
+		{
+			get => this._hdMask;
+		}
+
+		/// <summary>
+		/// When set, every loaded PIC file is also written to this folder as a 2x nearest-neighbour PNG,
+		/// which can be used as a starting point for HD art
+		/// </summary>
+		public static string? HDTemplatePath
+		{
+			get => _hdTemplatePath;
+			set => _hdTemplatePath = value;
+		}
+
 		public static Color Color18ToColor(int red, int green, int blue)
 		{
 			return Color.FromArgb(0, (byte)((255 * (red & 0x3f)) / 63), (byte)((255 * (green & 0x3f)) / 63), (byte)((255 * (blue & 0x3f)) / 63));
@@ -190,6 +233,7 @@ namespace OpenCivOne.Graphics
 			if (this.oRectangle.Contains(x, y))
 			{
 				this.aPixels[(y * this.iWidth) + x] = colorIndex;
+				this.ClearHDPixel((y * this.iWidth) + x);
 
 				this.bModified = true;
 			}
@@ -218,6 +262,7 @@ namespace OpenCivOne.Graphics
 						break;
 				}
 
+				this.ClearHDPixel((y * this.iWidth) + x);
 				this.bModified = true;
 			}
 		}
@@ -306,6 +351,7 @@ namespace OpenCivOne.Graphics
 						if (this.aPixels[iPixelAddress + j] == oldColorIndex)
 						{
 							this.aPixels[iPixelAddress + j] = newColorIndex;
+							this.ClearHDPixel(iPixelAddress + j);
 
 							this.bModified = true;
 						}
@@ -347,6 +393,8 @@ namespace OpenCivOne.Graphics
 								this.aPixels[iPixelAddress + j] ^= colorIndex;
 								break;
 						}
+
+						this.ClearHDPixel(iPixelAddress + j);
 					}
 
 					iPixelAddress += this.iWidth;
@@ -398,14 +446,47 @@ namespace OpenCivOne.Graphics
 
 				int iSrcPosition = (srcRect1.Y * srcBitmap.iWidth) + srcRect1.X;
 				int iDestPosition = (destRect.Y * this.iWidth) + destRect.X;
+				bool[]? srcHDMask = srcBitmap._hdMask;
+
+				if (srcHDMask != null)
+				{
+					this.EnsureHDLayer();
+				}
 
 				for (int i = 0; i < destRect.Height; i++)
 				{
 					for (int j = 0; j < destRect.Width; j++)
 					{
-						if (srcBitmap.Pixels[iSrcPosition + j] != 0 || !transparent)
+						byte colorIndex = srcBitmap.Pixels[iSrcPosition + j];
+
+						if (srcHDMask != null && srcHDMask[iSrcPosition + j])
 						{
-							this.aPixels[iDestPosition + j] = srcBitmap.Pixels[iSrcPosition + j];
+							int srcX = srcRect1.X + j;
+							int srcY = srcRect1.Y + i;
+							int destX = destRect.X + j;
+							int destY = destRect.Y + i;
+
+							if (!transparent)
+							{
+								this.aPixels[iDestPosition + j] = colorIndex;
+								this.CopyHDBlock(destX, destY, srcBitmap, srcX, srcY);
+							}
+							else if (colorIndex != 0 || srcBitmap.HDBlockIsVisible(srcX, srcY))
+							{
+								// HD art may cover pixels that are transparent in the original sprite, and the other way around
+								this.MaterializeHDPixel(destX, destY);
+								this.BlendHDBlock(destX, destY, srcBitmap, srcX, srcY);
+
+								if (colorIndex != 0)
+								{
+									this.aPixels[iDestPosition + j] = colorIndex;
+								}
+							}
+						}
+						else if (colorIndex != 0 || !transparent)
+						{
+							this.aPixels[iDestPosition + j] = colorIndex;
+							this.ClearHDPixel(iDestPosition + j);
 						}
 					}
 
@@ -416,6 +497,300 @@ namespace OpenCivOne.Graphics
 				this.bModified = true;
 			}
 		}
+
+		/// <summary>
+		/// Copies a single pixel, together with its HD block, from the same position in another bitmap
+		/// </summary>
+		public void CopyPixel(int x, int y, GBitmap srcBitmap)
+		{
+			if (this.oRectangle.Contains(x, y) && srcBitmap.Rectangle.Contains(x, y))
+			{
+				int pixelAddress = (y * this.iWidth) + x;
+				int srcPixelAddress = (y * srcBitmap.iWidth) + x;
+
+				this.aPixels[pixelAddress] = srcBitmap.aPixels[srcPixelAddress];
+
+				if (srcBitmap._hdMask != null && srcBitmap._hdMask[srcPixelAddress])
+				{
+					this.EnsureHDLayer();
+					this.CopyHDBlock(x, y, srcBitmap, x, y);
+				}
+				else
+				{
+					this.ClearHDPixel(pixelAddress);
+				}
+
+				this.bModified = true;
+			}
+		}
+
+		#region HD layer
+		/// <summary>
+		/// Writes this bitmap, scaled by HDScale, to a 32 bit BGRA buffer.
+		/// Pixels with HD content are taken from the HD layer, all other pixels are scaled with nearest-neighbour.
+		/// </summary>
+		/// <param name="destination">Address of the top left pixel</param>
+		/// <param name="stride">Length of one destination row, in bytes</param>
+		public void WriteScaledPixels(IntPtr destination, int stride)
+		{
+			int hdWidth = this.iWidth * HDScale;
+			int[] rows = new int[hdWidth * HDScale];
+			int pixelAddress = 0;
+
+			for (int i = 0; i < this.iHeight; i++)
+			{
+				for (int j = 0; j < this.iWidth; j++)
+				{
+					uint color = this.oPalette[this.aPixels[pixelAddress]].ToUInt32();
+					bool isHD = this._hdMask != null && this._hdMask[pixelAddress];
+					int hdAddress = this.GetHDAddress(j, i);
+
+					for (int k = 0; k < HDScale; k++)
+					{
+						for (int l = 0; l < HDScale; l++)
+						{
+							uint pixel = color;
+
+							if (isHD)
+							{
+								// keep the alpha of the palette color, so HD pixels are presented the same way as indexed ones
+								pixel = (BlendColor(this._hdPixels![hdAddress + (k * hdWidth) + l], color) & 0xffffff) | (color & 0xff000000);
+							}
+
+							rows[(k * hdWidth) + (j * HDScale) + l] = (int)pixel;
+						}
+					}
+
+					pixelAddress++;
+				}
+
+				for (int k = 0; k < HDScale; k++)
+				{
+					Marshal.Copy(rows, k * hdWidth, destination, hdWidth);
+					destination += stride;
+				}
+			}
+		}
+
+		private void EnsureHDLayer()
+		{
+			if (this._hdMask == null)
+			{
+				this._hdPixels = new uint[this.iWidth * HDScale * this.iHeight * HDScale];
+				this._hdMask = new bool[this.iWidth * this.iHeight];
+			}
+		}
+
+		private void ClearHDPixel(int pixelAddress)
+		{
+			if (this._hdMask != null)
+			{
+				this._hdMask[pixelAddress] = false;
+			}
+		}
+
+		private int GetHDAddress(int x, int y)
+		{
+			return (y * HDScale * this.iWidth * HDScale) + (x * HDScale);
+		}
+
+		/// <summary>
+		/// Fills the HD block of an indexed pixel with its palette color, so HD content can be blended over it
+		/// </summary>
+		private void MaterializeHDPixel(int x, int y)
+		{
+			int pixelAddress = (y * this.iWidth) + x;
+
+			if (!this._hdMask![pixelAddress])
+			{
+				uint color = this.oPalette[this.aPixels[pixelAddress]].ToUInt32() | 0xff000000;
+				int hdAddress = this.GetHDAddress(x, y);
+
+				for (int i = 0; i < HDScale; i++)
+				{
+					for (int j = 0; j < HDScale; j++)
+					{
+						this._hdPixels![hdAddress + j] = color;
+					}
+
+					hdAddress += this.iWidth * HDScale;
+				}
+
+				this._hdMask[pixelAddress] = true;
+			}
+		}
+
+		private void CopyHDBlock(int x, int y, GBitmap srcBitmap, int srcX, int srcY)
+		{
+			int hdAddress = this.GetHDAddress(x, y);
+			int srcHDAddress = srcBitmap.GetHDAddress(srcX, srcY);
+
+			for (int i = 0; i < HDScale; i++)
+			{
+				for (int j = 0; j < HDScale; j++)
+				{
+					this._hdPixels![hdAddress + j] = srcBitmap._hdPixels![srcHDAddress + j];
+				}
+
+				hdAddress += this.iWidth * HDScale;
+				srcHDAddress += srcBitmap.iWidth * HDScale;
+			}
+
+			this._hdMask![(y * this.iWidth) + x] = true;
+		}
+
+		private void BlendHDBlock(int x, int y, GBitmap srcBitmap, int srcX, int srcY)
+		{
+			int hdAddress = this.GetHDAddress(x, y);
+			int srcHDAddress = srcBitmap.GetHDAddress(srcX, srcY);
+
+			for (int i = 0; i < HDScale; i++)
+			{
+				for (int j = 0; j < HDScale; j++)
+				{
+					this._hdPixels![hdAddress + j] = BlendColor(srcBitmap._hdPixels![srcHDAddress + j], this._hdPixels[hdAddress + j]);
+				}
+
+				hdAddress += this.iWidth * HDScale;
+				srcHDAddress += srcBitmap.iWidth * HDScale;
+			}
+		}
+
+		private bool HDBlockIsVisible(int x, int y)
+		{
+			int hdAddress = this.GetHDAddress(x, y);
+
+			for (int i = 0; i < HDScale; i++)
+			{
+				for (int j = 0; j < HDScale; j++)
+				{
+					if ((this._hdPixels![hdAddress + j] & 0xff000000) != 0)
+					{
+						return true;
+					}
+				}
+
+				hdAddress += this.iWidth * HDScale;
+			}
+
+			return false;
+		}
+
+		/// <summary>
+		/// Blends ARGB color over an opaque ARGB background color
+		/// </summary>
+		private static uint BlendColor(uint color, uint background)
+		{
+			uint alpha = color >> 24;
+
+			if (alpha == 0xff)
+				return color;
+
+			if (alpha == 0)
+				return background | 0xff000000;
+
+			uint inverseAlpha = 0xff - alpha;
+			uint red = ((((color >> 16) & 0xff) * alpha) + (((background >> 16) & 0xff) * inverseAlpha)) / 0xff;
+			uint green = ((((color >> 8) & 0xff) * alpha) + (((background >> 8) & 0xff) * inverseAlpha)) / 0xff;
+			uint blue = (((color & 0xff) * alpha) + ((background & 0xff) * inverseAlpha)) / 0xff;
+
+			return 0xff000000 | (red << 16) | (green << 8) | blue;
+		}
+
+		/// <summary>
+		/// Looks for an HD version of a PIC file in the 'hd' folder next to it, a PNG image with the same name
+		/// and HDScale times the size, and attaches it to this bitmap
+		/// </summary>
+		private void LoadHDLayer(string picPath)
+		{
+			uint[]? hdPixels;
+
+			lock (_hdCacheLock)
+			{
+				if (!_hdCache.TryGetValue(picPath, out hdPixels))
+				{
+					hdPixels = ReadHDImage(picPath, this.iWidth * HDScale, this.iHeight * HDScale);
+					_hdCache.Add(picPath, hdPixels);
+				}
+			}
+
+			if (hdPixels != null)
+			{
+				this.EnsureHDLayer();
+				Array.Copy(hdPixels, this._hdPixels!, hdPixels.Length);
+				Array.Fill(this._hdMask!, true);
+			}
+		}
+
+		private static uint[]? ReadHDImage(string picPath, int width, int height)
+		{
+			string? directory = Path.GetDirectoryName(picPath);
+			string name = Path.GetFileNameWithoutExtension(picPath);
+
+			if (directory == null)
+				return null;
+
+			string hdDirectory = Path.Combine(directory, "hd");
+			string[] candidates = new string[] { $"{name}.png", $"{name.ToUpperInvariant()}.PNG", $"{name.ToUpperInvariant()}.png", $"{name.ToLowerInvariant()}.png" };
+
+			foreach (string candidate in candidates)
+			{
+				string hdPath = Path.Combine(hdDirectory, candidate);
+
+				if (File.Exists(hdPath))
+				{
+					using SKBitmap? image = SKBitmap.Decode(hdPath);
+
+					if (image == null || image.Width != width || image.Height != height)
+					{
+						System.Diagnostics.Debug.WriteLine($"HD image '{hdPath}' is ignored, it has to be a {width}x{height} PNG image");
+						return null;
+					}
+
+					uint[] pixels = new uint[width * height];
+
+					for (int i = 0; i < height; i++)
+					{
+						for (int j = 0; j < width; j++)
+						{
+							pixels[(i * width) + j] = (uint)image.GetPixel(j, i);
+						}
+					}
+
+					return pixels;
+				}
+			}
+
+			return null;
+		}
+
+		/// <summary>
+		/// Writes this bitmap as a nearest-neighbour upscaled PNG, color index 0 is written as transparent
+		/// </summary>
+		private void SaveHDTemplate(string path)
+		{
+			int width = this.iWidth * HDScale;
+			int height = this.iHeight * HDScale;
+
+			using SKBitmap image = new SKBitmap(width, height, SKColorType.Bgra8888, SKAlphaType.Unpremul);
+
+			for (int i = 0; i < height; i++)
+			{
+				for (int j = 0; j < width; j++)
+				{
+					byte colorIndex = this.aPixels[((i / HDScale) * this.iWidth) + (j / HDScale)];
+					uint color = (colorIndex == 0) ? 0 : (this.oPalette[colorIndex].ToUInt32() | 0xff000000);
+
+					image.SetPixel(j, i, new SKColor(color));
+				}
+			}
+
+			Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+
+			using FileStream stream = new FileStream(path, FileMode.Create);
+			image.Encode(stream, SKEncodedImageFormat.Png, 100);
+		}
+		#endregion
 
 		public void DrawString(string text, GFont font, GRectangle rect, byte frontColor, byte backColor, PixelWriteModeEnum writeMode)
 		{
@@ -476,6 +851,8 @@ namespace OpenCivOne.Graphics
 										this.aPixels[iPixelAddress1 + k] ^= color;
 										break;
 								}
+
+								this.ClearHDPixel(iPixelAddress1 + k);
 							}
 						}
 
@@ -803,6 +1180,16 @@ namespace OpenCivOne.Graphics
 			}
 
 			stream.Close();
+
+			if (bitmap != null)
+			{
+				if (_hdTemplatePath != null)
+				{
+					bitmap.SaveHDTemplate(Path.Combine(_hdTemplatePath, $"{Path.GetFileNameWithoutExtension(path).ToUpperInvariant()}.png"));
+				}
+
+				bitmap.LoadHDLayer(path);
+			}
 
 			return bitmap;
 		}
