@@ -250,6 +250,65 @@ uint[] Pipeline(string pic, out GBitmap screen0)
 	Check((Out(cf, screenC, 60 * S, 60 * S) & 0xffffff) == 0x0000ff, "city: index-5 key follows the 5 -> secondary colour swap");
 }
 
+// ---------- 8b. Tall art reaching above a sprite ----------
+{
+	string pic = Path.Combine(dir, "TALL.PIC");
+	File.Copy(picPath, pic);
+	string regionDir = Path.Combine(hdDir, "TALL");
+	Directory.CreateDirectory(regionDir);
+	// sprite at (16,0), 16x16, with 4 original rows (8 HD rows) above it: red above, blue in the sprite
+	using (var art = new SKBitmap(32, 40, SKColorType.Bgra8888, SKAlphaType.Unpremul))
+	{
+		art.Erase(SKColors.Transparent);
+		for (int y = 0; y < 8; y++) for (int x = 10; x < 22; x++) art.SetPixel(x, y, new SKColor(0xff, 0x00, 0x00));
+		for (int y = 8; y < 40; y++) for (int x = 4; x < 28; x++) art.SetPixel(x, y, new SKColor(0x00, 0x00, 0xff));
+		using var fs = File.Create(Path.Combine(regionDir, "16_0_t4.png")); art.Encode(fs, SKEncodedImageFormat.Png, 100);
+	}
+	var loaded = GBitmap.FromPICFile(pic, false)!;
+	Check(GBitmap.HasHDOverflow, "tall: loading tall art turns on HasHDOverflow");
+	Check(loaded.GetPixel(20, 2) != 0, "tall: the region below the tall part loads as usual");
+
+	var sheet = new GBitmap();
+	sheet.DrawBitmap(0, 0, loaded, false);                                // LoadPIC onto screen 1
+	var sprite = new GBitmap(16, 16);
+	sprite.DrawBitmap(0, 0, sheet, new GRectangle(16, 0, 16, 16), false); // ScreenToBitmap
+	var other = new GBitmap(16, 16);
+	other.DrawBitmap(0, 0, sheet, new GRectangle(0, 0, 16, 16), false);
+
+	var screen = new GBitmap();
+	screen.FillRectangle(new GRectangle(0, 0, 320, 200), 5, PixelWriteModeEnum.Normal);
+	screen.HDOverflowClip = new GRectangle(80, 8, 240, 192);
+	screen.DrawBitmap(100, 40, sprite, true);
+	screen.DrawBitmap(140, 40, other, true);
+	screen.DrawBitmap(200, 10, sprite, true);                             // its tall part would cross the clip edge at y = 8
+	uint[] f = Render(screen);
+	uint P(int x, int y) => Out(f, screen, x, y) & 0xffffff;
+	uint bg = PaletteColor(screen, 5) & 0xffffff;
+	Check(P(100 * S + 12, 40 * S - 4) == 0xff0000, "tall: art above the sprite is drawn in the cell above");
+	Check(P(100 * S + 12, 40 * S + 4) == 0x0000ff, "tall: the sprite itself is drawn");
+	Check(P(100 * S + 2, 40 * S - 4) == bg, "tall: transparent tall pixels leave the background");
+	Check(screen.GetPixel(106, 38) == 5, "tall: original pixels above the sprite are not changed");
+	Check(P(140 * S + 12, 40 * S - 4) == bg, "tall: other sprites from the sheet have no tall part");
+	Check(P(200 * S + 12, 9 * S) == 0xff0000 && P(200 * S + 12, 7 * S) == bg, "tall: drawing stops at the clip rectangle");
+
+	var onlyTall = new GBitmap();
+	onlyTall.FillRectangle(new GRectangle(0, 0, 320, 200), 5, PixelWriteModeEnum.Normal);
+	onlyTall.DrawHDOverflow(new GPoint(100, 40), sprite);
+	uint[] ft = Render(onlyTall);
+	Check((Out(ft, onlyTall, 100 * S + 12, 40 * S - 4) & 0xffffff) == 0xff0000 && (Out(ft, onlyTall, 100 * S + 12, 40 * S + 4) & 0xffffff) == bg,
+		"tall: DrawHDOverflow draws the part above the sprite only");
+
+	// a different sheet loaded over the same screen drops the old tall art
+	var plain = GBitmap.FromPICFile(Path.Combine(dir, "PLAIN.PIC"), false)!;
+	sheet.DrawBitmap(0, 0, plain, false);
+	var sprite2 = new GBitmap(16, 16);
+	sprite2.DrawBitmap(0, 0, sheet, new GRectangle(16, 0, 16, 16), false);
+	var screen2 = new GBitmap();
+	screen2.FillRectangle(new GRectangle(0, 0, 320, 200), 5, PixelWriteModeEnum.Normal);
+	screen2.DrawBitmap(100, 40, sprite2, true);
+	Check((Out(Render(screen2), screen2, 100 * S + 12, 40 * S - 4) & 0xffffff) == bg, "tall: loading another sheet over it removes the tall art");
+}
+
 // ---------- 9. The generated art set (assets/hd) loads completely onto 320x200 sheets ----------
 {
 	string assets = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../assets/hd"));
@@ -267,10 +326,11 @@ uint[] Pipeline(string pic, out GBitmap screen0)
 			int files = 0, missing = 0;
 			foreach (string f in Directory.GetFiles(sheetDir, "*.png"))
 			{
-				var m = System.Text.RegularExpressions.Regex.Match(Path.GetFileName(f), @"^(\d+)_(\d+)");
+				var m = System.Text.RegularExpressions.Regex.Match(Path.GetFileName(f), @"^(\d+)_(\d+)(?:_t(\d+))?");
 				int x = int.Parse(m.Groups[1].Value), y = int.Parse(m.Groups[2].Value);
+				int above = m.Groups[3].Success ? int.Parse(m.Groups[3].Value) : 0;
 				using var img = SKBitmap.Decode(f);
-				for (int yy = 0; yy < img.Height / S; yy++) for (int xx = 0; xx < img.Width / S; xx++) if (!mask[(y + yy) * 320 + x + xx]) missing++;
+				for (int yy = 0; yy < img.Height / S - above; yy++) for (int xx = 0; xx < img.Width / S; xx++) if (!mask[(y + yy) * 320 + x + xx]) missing++;
 				files++;
 			}
 			Check(missing == 0, $"art set: all {files} {sheet} sprites load into the sheet ({missing} pixels missing)");

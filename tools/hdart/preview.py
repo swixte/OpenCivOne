@@ -45,6 +45,7 @@ class Atlas:
 
 
 def compose(rows, atlas, units=(), cities=(), roads=(), resources=()):
+    """Cells are drawn row by row with their own overlays, like the game draws cells; units come last."""
     H, W = len(rows), len(rows[0])
     out = np.zeros((H * c.T, W * c.T, 4), dtype=np.uint8)
 
@@ -54,12 +55,26 @@ def compose(rows, atlas, units=(), cities=(), roads=(), resources=()):
         return rows[y][x % W]
 
     def blit(img, x, y, ox=0, oy=0):
+        """Draw img with its tile-sized bottom part at the tile; rows above that reach into the tile above."""
         h, w = img.shape[:2]
-        x0, y0 = x * c.T + ox, y * c.T + oy
-        region = out[y0:y0 + h, x0:x0 + w]
-        out[y0:y0 + h, x0:x0 + w] = c.over(region, img[:region.shape[0], :region.shape[1]])
+        x0 = x * c.T + ox
+        y0 = y * c.T - (h - c.T) if (oy == 0 and h > c.T) else y * c.T + oy
+        sy = max(0, -y0)
+        y0 = max(0, y0)
+        part = img[sy:]
+        region = out[y0:y0 + part.shape[0], x0:x0 + w]
+        out[y0:y0 + region.shape[0], x0:x0 + region.shape[1]] = c.over(region, part[:region.shape[0], :region.shape[1]])
 
     grass = atlas.get('grass', t.grass_background)
+    per_cell = {}
+    for draw in (roads, resources, cities):
+        for img, x, y, ox, oy in draw:
+            per_cell.setdefault((x, y), []).append((img, ox, oy))
+
+    def cell_overlays(x, y):
+        for img, ox, oy in per_cell.get((x, y), ()):
+            blit(img, x, y, ox, oy)
+
     for y in range(H):
         for x in range(W):
             code = rows[y][x]
@@ -84,6 +99,7 @@ def compose(rows, atlas, units=(), cities=(), roads=(), resources=()):
                     dx, dy = t.DIRS[d]
                     if at(x + dx, y + dy) == 'r':
                         blit(atlas.get(('delta', d), lambda d=d: t.delta(d)), x, y)
+                cell_overlays(x, y)
                 continue
             blit(grass, x, y)
             if code == 'r':
@@ -95,6 +111,7 @@ def compose(rows, atlas, units=(), cities=(), roads=(), resources=()):
                         mask |= 8
                 if mask:
                     blit(atlas.get(('river', mask), lambda m=mask: t.river(m)), x, y)
+                cell_overlays(x, y)
                 continue
             name = LAND_CODES[code]
             mask = 0
@@ -107,9 +124,9 @@ def compose(rows, atlas, units=(), cities=(), roads=(), resources=()):
             if row >= 6:
                 mask = 0
             blit(atlas.get(('terrain', name, mask), lambda n=name, m=mask: t.terrain_tile(n, m)), x, y)
-    for draw in (roads, resources, cities, units):
-        for img, x, y, ox, oy in draw:
-            blit(img, x, y, ox, oy)
+            cell_overlays(x, y)
+    for img, x, y, ox, oy in units:
+        blit(img, x, y, ox, oy)
     return out
 
 
@@ -138,16 +155,18 @@ DIGITS = {'0': "111101101101111", '1': "010110010010111", '2': "110001010100111"
           '8': "111101111101111", '9': "111101111001110"}
 
 
-def city_tile(size, player, walls=False):
-    """A city drawn the way the game does it: borders, player color square, city sprite, size, walls."""
+def city_tile(size, player, walls=False, up=8):
+    """A city drawn the way the game does it: borders, player color square, city sprite, size, walls.
+    The result has `up` extra rows on top for the part of the city that rises into the tile above."""
     import overlays as o
     main, second = PLAYER_COLORS[player]
-    tile = np.zeros((c.T, c.T, 4), dtype=np.uint8)
+    full = np.zeros((c.T + up, c.T, 4), dtype=np.uint8)
+    tile = full[up:]
     tile[2:28, 2:28] = (255, 255, 255, 255)
     tile[2:26, 4:28] = second + (255,)
     tile[4:28, 4:28] = main + (255,)
-    sprite = with_player(o.city_streets(), player)
-    tile[2:32, 2:32] = c.over(tile[2:32, 2:32], sprite)
+    sprite = with_player(o.city_streets(up), player)
+    full[2:2 + sprite.shape[0], 2:32] = c.over(full[2:2 + sprite.shape[0], 2:32], sprite[:, :30])
     text = str(size)
     x0 = (6 if size < 10 else 3) * 2
     for n, ch in enumerate(text):
@@ -158,7 +177,7 @@ def city_tile(size, player, walls=False):
                 tile[py:py + 2, px:px + 2] = (0, 0, 0, 255)
     if walls:
         tile[2:32, 2:32] = c.over(tile[2:32, 2:32], o.city_walls())
-    return tile
+    return full
 
 
 SCENE = [

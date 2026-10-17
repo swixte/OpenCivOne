@@ -25,6 +25,18 @@ Sprites cut from a sheet carry their part of the HD image with them, so when the
 - HD art can draw where the original sprite is transparent, as long as it stays inside the sprite's original rectangle.
 - An image with the wrong size is ignored.
 
+### Art above the tile
+
+A region file named `X_Y_tN.png` is N original pixels taller than its sprite: its top 2N rows are drawn above the sprite, in the tile above. The included set uses this for mountains, hills, forest, jungle and cities, which gives the map a sense of height.
+
+When any such art is loaded, the map is drawn so that it is not lost:
+
+- the map draws all cells first and the units after them, so units stay in front of terrain from the cell below;
+- drawing a single cell also draws the tall art of the cell below it again, and redraws the unit of the cell above;
+- tall art is clipped to the map view, so the top row does not reach into the menu bar.
+
+Without tall art loaded, the map is drawn exactly as in the original.
+
 ### Key colors
 
 The game gives units and cities their player colors by swapping palette colors. HD art marks the parts that should change with two key colors:
@@ -50,7 +62,7 @@ Coordinates are in the original 320x200 sheets.
 | SP257 | x = 16 * m, y = 64 and 80 | Rivers, m = connections (bit 0 N, 1 E, 2 S, 3 W) to rivers and ocean. |
 | SP257 | x = 16 * i, y = 48; x = 128 + 16 * i, y = 96 | Roads and railroads toward direction i + 1 (N, NE, E, SE, S, SW, W, NW). |
 | SP257 | 64, 32 / 80, 32 / 96, 32 | Irrigation, mines, pollution. |
-| SP257 | x = 16 * i + 1, y = 113, 15x15 | Special resources by terrain (0-11), city (12), city walls (13), fortress (14), hut (15). |
+| SP257 | x = 16 * i + 1, y = 113, 15x15 | Special resources by terrain (0-11), city (12, drawn at the cell's 1, 1), city walls (13), fortress (14), hut (15). |
 | SP257 | 153, 41, 7x7 | Grassland shield bonus. |
 | SP257 | x = 80 + 16 * i, y = 128 | Fog borders toward unexplored N, E, S, W. |
 | SP257 | x = 16 * i + 1, y = 97, 15x15 | Explosion frames. |

@@ -190,13 +190,38 @@ namespace OpenCivOne
 
 					if (this.parent.GlobalPreferences.Debug.DebugMode || (this.parent.GameData.MapVisibility[mapX, mapY] & mapPlayerVisibilityMask) != 0)
 					{
-						// Instruction address 0x2aea:0x0122, size: 3
-						F0_2aea_11d4_DrawCellWithUnit(mapX, mapY);
+						if (GBitmap.HasHDOverflow)
+						{
+							// units are drawn after all cells, so HD art reaching into the cell above does not cover them
+							F0_2aea_03ba_DrawCell(mapX, mapY);
+						}
+						else
+						{
+							// Instruction address 0x2aea:0x0122, size: 3
+							F0_2aea_11d4_DrawCellWithUnit(mapX, mapY);
+						}
 					}
 					else
 					{
 						// Instruction address 0x2aea:0x0094, size: 5
 						this.parent.DrawTools.FillRectangle(this.parent.Var_aa_Screen0_Rectangle, 80 + (i * 16), 8 + (j * 16), 16, 16, 0);
+					}
+				}
+			}
+
+			if (GBitmap.HasHDOverflow)
+			{
+				for (int i = 0; i < 15; i++)
+				{
+					for (int j = 0; j < 12; j++)
+					{
+						int mapX = this.parent.MapManagement.AdjustXPosition(this.parent.Var_d4cc_MapViewX + i);
+						int mapY = this.parent.Var_d75e_MapViewY + j;
+
+						if (this.parent.GlobalPreferences.Debug.DebugMode || (this.parent.GameData.MapVisibility[mapX, mapY] & mapPlayerVisibilityMask) != 0)
+						{
+							DrawCellUnit(mapX, mapY);
+						}
 					}
 				}
 			}
@@ -479,24 +504,8 @@ namespace OpenCivOne
 
 				if (terrainType != TerrainTypeEnum.Water && terrainType != TerrainTypeEnum.River)
 				{
-					// Blend seas between cells with the same terrain types
-					int mask = 0;
-
-					for (int i = 1; i < 9; i += 2)
-					{
-						mask >>= 1;
-
-						GPoint direction = this.parent.MoveDirections[i];
-
-						if (GetTerrainType(this.parent.MapManagement.AdjustXPosition(x + direction.X), y + direction.Y) == terrainType &&
-							ValidateMapCoordinates(0, y + direction.Y))
-						{
-							mask |= 0x8;
-						}
-					}
-
 					// Instruction address 0x2aea:0x091e, size: 5
-					this.parent.Graphics.F0_VGA_0c3e_DrawBitmapToScreen(this.parent.Var_aa_Screen0_Rectangle, scrX, scrY, this.parent.Array_b886[(int)terrainType, mask]);
+					this.parent.Graphics.F0_VGA_0c3e_DrawBitmapToScreen(this.parent.Var_aa_Screen0_Rectangle, scrX, scrY, GetTerrainBitmap(x, y, terrainType));
 
 					if (terrainType == TerrainTypeEnum.Grassland && (((7 * x) + (11 * y)) & 0x2) == 0)
 					{
@@ -688,9 +697,76 @@ namespace OpenCivOne
 						}
 					}
 				}
+
+				if (GBitmap.HasHDOverflow && IsCellVisibleToHuman(x, y + 1))
+				{
+					// HD art of the cell below reaches into this cell, so it is drawn again over this cell
+					DrawCellHDOverflow(x, y + 1);
+				}
 			}
 
 			return true;
+		}
+
+		/// <summary>
+		/// Terrain bitmap of a land cell, the variant joins the neighbours with the same terrain
+		/// </summary>
+		private int GetTerrainBitmap(int x, int y, TerrainTypeEnum terrainType)
+		{
+			// Blend seas between cells with the same terrain types
+			int mask = 0;
+
+			for (int i = 1; i < 9; i += 2)
+			{
+				mask >>= 1;
+
+				GPoint direction = this.parent.MoveDirections[i];
+
+				if (GetTerrainType(this.parent.MapManagement.AdjustXPosition(x + direction.X), y + direction.Y) == terrainType &&
+					ValidateMapCoordinates(0, y + direction.Y))
+				{
+					mask |= 0x8;
+				}
+			}
+
+			return this.parent.Array_b886[(int)terrainType, mask];
+		}
+
+		/// <summary>
+		/// Draws only the HD art of a cell's terrain and city that reaches above the cell
+		/// </summary>
+		private void DrawCellHDOverflow(int x, int y)
+		{
+			int scrX = this.parent.MapManagement.AdjustXPosition(x - this.parent.Var_d4cc_MapViewX) * 16 + 80;
+			int scrY = (y - this.parent.Var_d75e_MapViewY) * 16 + 8;
+
+			if (scrX < 80 || scrX >= 320 || scrY < 8 || scrY > 192)
+				return;
+
+			TerrainTypeEnum terrainType = GetTerrainType(x, y);
+
+			if (terrainType != TerrainTypeEnum.Water && terrainType != TerrainTypeEnum.River)
+			{
+				this.parent.Graphics.DrawBitmapHDOverflow(this.parent.Var_aa_Screen0_Rectangle, scrX, scrY, GetTerrainBitmap(x, y, terrainType));
+			}
+
+			TerrainImprovementFlagsEnum terrainImprovements = this.parent.GlobalPreferences.Debug.DebugMode ?
+				F0_2aea_1585_GetVisibleTerrainImprovements(x, y) : F0_2aea_15c1_GetTerrainImprovements(x, y);
+
+			if (terrainImprovements.HasFlag(TerrainImprovementFlagsEnum.City) && this.parent.Var_dcfc == 0)
+			{
+				int cityID = this.parent.MapManagement.GetCityByLocation(x, y);
+
+				if (cityID != -1)
+				{
+					City city = this.parent.GameData.Cities[cityID];
+
+					if (city.PlayerID == this.parent.GameData.HumanPlayerID || city.VisibleSize > 0 || this.parent.GlobalPreferences.Debug.DebugMode)
+					{
+						this.parent.Graphics.DrawBitmapHDOverflow(this.parent.Var_aa_Screen0_Rectangle, scrX + 1, scrY + 1, this.parent.Array_d4ce[28]);
+					}
+				}
+			}
 		}
 
 		/// <summary>
@@ -824,9 +900,41 @@ namespace OpenCivOne
 			// this.oCPU.Log.EnterBlock($"F0_2aea_11d4({x}, {y})");
 
 			// function body
+			if (GBitmap.HasHDOverflow)
+			{
+				// HD art of this cell reaches into the cell above and may cover its unit, which is drawn in front of terrain again
+				F0_2aea_03ba_DrawCell(x, y);
+
+				if (IsCellVisibleToHuman(x, y - 1))
+				{
+					DrawCellUnit(x, y - 1);
+				}
+
+				DrawCellUnit(x, y);
+
+				return;
+			}
+
 			// Instruction address 0x2aea:0x11e2, size: 3
 			F0_2aea_03ba_DrawCell(x, y);
 
+			DrawCellUnit(x, y);
+		}
+
+		private bool IsCellVisibleToHuman(int x, int y)
+		{
+			if (y < 0 || y >= 50)
+				return false;
+
+			return this.parent.GlobalPreferences.Debug.DebugMode ||
+				(this.parent.GameData.MapVisibility[this.parent.MapManagement.AdjustXPosition(x), y] & (0x1 << this.parent.GameData.HumanPlayerID)) != 0;
+		}
+
+		/// <summary>
+		/// Draws the unit on a map cell if it exists and is visible to the human player
+		/// </summary>
+		private void DrawCellUnit(int x, int y)
+		{
 			if (this.parent.Var_dcfc == 0)
 			{
 				// Instruction address 0x2aea:0x11f6, size: 3

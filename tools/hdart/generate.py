@@ -15,12 +15,17 @@ import overlays as o
 import units as u
 
 
+CITY_UP = 8     # HD rows of the city that rise into the tile above
+
+
 def sprites():
     """Yields (sheet, x, y, suffix, image) for every sprite."""
     # TER257.PIC: terrain rows with 16 neighbour variants (rows 6-9 use only the first one)
+    # (tall terrains carry extra rows of art above the tile: the _tN suffix, N in original pixels)
     for row, name in enumerate(t.TERRAIN_ROWS):
+        tall = f'_t{t.TALL[name] // 2}' if name in t.TALL else ''
         for mask in range(16 if row < 6 else 1):
-            yield 'TER257', mask * 16, row * 16, '', t.terrain_tile(name, mask)
+            yield 'TER257', mask * 16, row * 16, tall, t.terrain_tile(name, mask)
     # TER257.PIC: ocean quarters, one 16x16 column per neighbour value, and river mouths
     for v in range(8):
         yield 'TER257', v * 16, 176, '', t.coast_column(v)
@@ -44,7 +49,7 @@ def sprites():
     yield 'SP257', 96, 32, '', o.pollution()
     for i, fn in enumerate(o.RESOURCES):
         yield 'SP257', i * 16 + 1, 113, '', fn()
-    yield 'SP257', 12 * 16 + 1, 113, '_k0-5', o.city_streets()
+    yield 'SP257', 12 * 16 + 1, 113, f'_t{CITY_UP // 2}_k0-5', o.city_streets(CITY_UP)
     yield 'SP257', 13 * 16 + 1, 113, '', o.city_walls()
     yield 'SP257', 14 * 16 + 1, 113, '', o.fortress()
     yield 'SP257', 15 * 16 + 1, 113, '', o.hut()

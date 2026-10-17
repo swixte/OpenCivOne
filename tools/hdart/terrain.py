@@ -158,40 +158,50 @@ def forest_floor_texture():
 
 # ---------- features ----------
 
-def _tree(img, cx, base, height, half_w, seed):
-    """A conifer in three tiers, lit from the left, with a dark edge."""
+def _tall(img, up):
+    """Add `up` transparent rows above a tile, for art that reaches into the tile above."""
+    if up == 0:
+        return img
+    return np.concatenate([np.zeros((up, T, 4), dtype=np.uint8), img], 0)
+
+
+def _inside(img, xx, yy):
+    return 0 <= xx < img.shape[1] and 0 <= yy < img.shape[0]
+
+
+def _tree(img, cx, base, height, half_w, seed, oy=0):
+    """A conifer in three tiers, lit from the left, with a dark edge; tile coordinates, drawn `oy` rows lower."""
     top = base - height
-    for yy in range(int(round(top)), int(round(base)) - 1):
-        if not 0 <= yy < T:
-            continue
-        rel = (yy - top) / max(height - 2, 1)
+    for ty in range(int(round(top)), int(round(base)) - 1):
+        yy = ty + oy
+        rel = (ty - top) / max(height - 2, 1)
         tier = min(2, int(rel * 3))
         tt = rel * 3 - tier
         w = half_w * (0.3 + 0.22 * tier + 0.48 * tt * (0.6 + 0.2 * tier))
         for xx in range(int(np.floor(cx - w)), int(np.ceil(cx + w)) + 1):
-            if not 0 <= xx < T:
+            if not _inside(img, xx, yy):
                 continue
             dx = (xx - cx) / max(w, 0.5)
             if abs(dx) > 1:
                 continue
-            v = 0.55 - dx * 0.35 + (float(hash2(xx, yy, seed)) - 0.5) * 0.3 - rel * 0.15
+            v = 0.55 - dx * 0.35 + (float(hash2(xx, ty, seed)) - 0.5) * 0.3 - rel * 0.15
             if tt < 0.14 and tier > 0:
                 v -= 0.25
-            if abs(dx) > 0.82 or yy == int(round(top)):
+            if abs(dx) > 0.82 or ty == int(round(top)):
                 v = 0
-            img[yy, xx] = pick(R['tree'], v, xx, yy)
+            img[yy, xx] = pick(R['tree'], v, xx, ty)
     c = int(round(cx))
-    for yy in range(int(round(base)) - 1, int(round(base)) + 1):
-        if 0 <= yy < T:
-            if 0 <= c - 1 < T:
-                img[yy, c - 1] = TRUNK
-            if 0 <= c < T:
-                img[yy, c] = TRUNK_D
+    for ty in range(int(round(base)) - 1, int(round(base)) + 1):
+        if _inside(img, c - 1, ty + oy):
+            img[ty + oy, c - 1] = TRUNK
+        if _inside(img, c, ty + oy):
+            img[ty + oy, c] = TRUNK_D
 
 
-def forest(mask):
+def forest(mask, up=0):
     f = coverage(mask, 300, margin=3.5)
-    img = apply_coverage(forest_floor_texture(), f)
+    img = _tall(apply_coverage(forest_floor_texture(), f), up)
+    # the top row of trees is taller when it may reach into the tile above
     rows = [10, 17, 24, 31]
     trees = []
     for ri, by in enumerate(rows):
@@ -202,63 +212,68 @@ def forest(mask):
             ix, iy = int(np.clip(round(cx), 0, 31)), int(np.clip(round(base) - 3, 0, 31))
             if f[iy, ix] < 2.5:
                 continue
-            trees.append((cx, base, 9 + float(hash2(bx, by, 303)) * 3, 4.2 + float(hash2(bx, by, 304)) * 1.2))
+            h = 9 + float(hash2(bx, by, 303)) * 3 + (min(up, 8) * 0.9 if ri == 0 else up * 0.25)
+            trees.append((cx, base, h, 4.2 + float(hash2(bx, by, 304)) * 1.2 + (0.6 if ri == 0 and up else 0)))
     for cx, base, h, w in sorted(trees, key=lambda t: t[1]):
-        _tree(img, cx, base, h, w, 305)
+        _tree(img, cx, base, h, w, 305, oy=up)
     return img
 
 
-def _dome(img, cx, cy, rx, ry, palette, seed, cut=0.4):
-    for yy in range(int(np.floor(cy - ry)), int(np.ceil(cy + ry * cut)) + 1):
+def _dome(img, cx, cy, rx, ry, palette, seed, cut=0.4, oy=0):
+    for ty in range(int(np.floor(cy - ry)), int(np.ceil(cy + ry * cut)) + 1):
         for xx in range(int(np.floor(cx - rx)), int(np.ceil(cx + rx)) + 1):
-            if not (0 <= xx < T and 0 <= yy < T):
+            yy = ty + oy
+            if not _inside(img, xx, yy):
                 continue
-            nx, ny = (xx - cx) / rx, (yy - cy) / ry
+            nx, ny = (xx - cx) / rx, (ty - cy) / ry
             e = nx * nx + ny * ny
-            if e > 1 or yy > cy + ry * cut:
+            if e > 1 or ty > cy + ry * cut:
                 continue
             nz = np.sqrt(1 - e)
-            v = 0.12 + (nx * L3[0] + ny * L3[1] + nz * L3[2]) * 0.85 + (float(fbm(np.array(xx), np.array(yy), seed, cells=(4, 2))) - 0.5) * 0.25
-            if float(hash2(xx, yy, seed + 1)) < 0.06:
+            v = 0.12 + (nx * L3[0] + ny * L3[1] + nz * L3[2]) * 0.85 + (float(fbm(np.array(xx), np.array(ty), seed, cells=(4, 2))) - 0.5) * 0.25
+            if float(hash2(xx, ty, seed + 1)) < 0.06:
                 v += 0.15
             if e > 0.8 and nx + ny * 0.6 > 0:
                 v = min(v, 0.05)
             elif e > 0.86:
                 v = max(v, 0.85)
-            img[yy, xx] = pick(palette, v, xx, yy)
+            img[yy, xx] = pick(palette, v, xx, ty)
 
 
-def hills(mask):
+def hills(mask, up=0):
     f = coverage(mask, 400, margin=3.0)
-    img = apply_coverage(hills_floor_texture(), f, rim_dark=R['hills_floor'][0])
-    domes = [(10, 12, 9, 8), (23, 14, 9, 7), (15, 24, 11, 7)]
+    img = _tall(apply_coverage(hills_floor_texture(), f, rim_dark=R['hills_floor'][0]), up)
+    # with room above, the back hills rise into the tile above
+    lift = min(up, 6)
+    domes = [(10, 12 - lift * 0.6, 9, 8 + lift * 0.5), (23, 14 - lift * 0.4, 9, 7 + lift * 0.4), (15, 24, 11, 7)]
     extra = {0: (16, 5, 8, 5), 1: (27, 22, 6, 6), 2: (24, 28, 8, 4), 3: (5, 22, 6, 6)}
     for bit, d in extra.items():
         if mask & (1 << bit):
             domes.append(d)
     for cx, cy, rx, ry in sorted(domes, key=lambda d: d[1]):
         if f[int(np.clip(cy, 0, 31)), int(np.clip(cx, 0, 31))] > 3:
-            _dome(img, cx, cy, rx, ry, R['hill'], 410 + cx)
+            _dome(img, cx, cy, rx, ry, R['hill'], 410 + cx, oy=up)
     return img
 
 
-def _peak(img, own, ax, ay, k, base_y, seed, pid):
+def _peak(img, own, ax, ay, k, base_y, seed, pid, oy=0):
     for xx in range(T):
         top = ay + abs(xx - ax) * k + (float(fbm(np.array(xx * 1.0), np.array(seed * 0.1 + pid), seed + 7, cells=(4, 2))) - 0.5) * 3
         bottom = base_y - float(fbm(np.array(xx * 1.0), np.array(pid * 3.0), seed + 8, cells=(8, 4))) * 3
-        for yy in range(max(0, int(np.ceil(top))), min(T, int(bottom) + 1)):
-            ridge = ax + (yy - ay) * 0.28 + (float(fbm(np.array(yy * 1.0), np.array(pid * 5.0), seed + 9, cells=(4, 2))) - 0.5) * 2
+        for ty in range(max(-oy, int(np.ceil(top))), min(T, int(bottom) + 1)):
+            yy = ty + oy
+            ridge = ax + (ty - ay) * 0.28 + (float(fbm(np.array(ty * 1.0), np.array(pid * 5.0), seed + 9, cells=(4, 2))) - 0.5) * 2
             lit = xx < ridge
-            tex = float(fbm(np.array(xx * 1.0), np.array(yy * 1.0), seed + 10, cells=(8, 4, 2)))
-            snow_line = ay + 6 + (float(fbm(np.array(xx * 1.0), np.array(pid * 9.0), seed + 11, cells=(4, 2))) - 0.5) * 4
-            if yy < snow_line:
-                c = pick(R['snow_lit'], 0.45 + tex * 0.6 - (0 if xx < ridge - 1 else 0.2), xx, yy) if lit else pick(R['snow_shade'], 0.3 + tex * 0.6, xx, yy)
+            tex = float(fbm(np.array(xx * 1.0), np.array(ty * 1.0), seed + 10, cells=(8, 4, 2)))
+            snow_line = ay + 6 + (base_y - ay) * 0.12 + (float(fbm(np.array(xx * 1.0), np.array(pid * 9.0), seed + 11, cells=(4, 2))) - 0.5) * 4
+            if ty < snow_line:
+                c = pick(R['snow_lit'], 0.45 + tex * 0.6 - (0 if xx < ridge - 1 else 0.2), xx, ty) if lit else pick(R['snow_shade'], 0.3 + tex * 0.6, xx, ty)
             else:
-                g = (yy - ay) / max(base_y - ay, 1)
-                c = pick(R['rock_lit'], 0.85 - g * 0.5 + (tex - 0.5) * 0.7, xx, yy) if lit else pick(R['rock_shade'], 0.7 - g * 0.4 + (tex - 0.5) * 0.7, xx, yy)
-                if float(hash2(xx, yy, seed + 12)) < 0.04:
+                g = (ty - ay) / max(base_y - ay, 1)
+                c = pick(R['rock_lit'], 0.85 - g * 0.5 + (tex - 0.5) * 0.7, xx, ty) if lit else pick(R['rock_shade'], 0.7 - g * 0.4 + (tex - 0.5) * 0.7, xx, ty)
+                if float(hash2(xx, ty, seed + 12)) < 0.04:
                     c = R['rock_shade'][0]
-            if yy - top < 1.2 and own[yy, xx] not in (0, pid):
+            if ty - top < 1.2 and own[yy, xx] not in (0, pid):
                 c = OUTLINE
             img[yy, xx] = c
             own[yy, xx] = pid
@@ -266,22 +281,23 @@ def _peak(img, own, ax, ay, k, base_y, seed, pid):
     filled = own == pid
     o = (np.roll(filled, -1, 0) | np.roll(filled, 1, 1) | np.roll(filled, -1, 1)) & (own == 0)
     o[:, 0] = o[:, -1] = False
-    o[base_y - 3:, :] = False
+    o[base_y - 3 + oy:, :] = False
     img[o] = OUTLINE
 
 
-def mountains(mask):
+def mountains(mask, up=0):
     f = coverage(mask, 500, margin=2.5)
-    img = apply_coverage(rock_texture(), f, rim_dark=R['rock'][0])
-    own = np.zeros((T, T), dtype=np.int64)
-    # side ridges toward connected neighbours, then the main peak
+    img = _tall(apply_coverage(rock_texture(), f, rim_dark=R['rock'][0]), up)
+    own = np.zeros(img.shape[:2], dtype=np.int64)
+    # side ridges toward connected neighbours, then the main peak, which rises into the tile above when there is room
     side_peaks = {3: (6, 15, 1.5), 1: (26, 15, 1.5), 0: (16, 6, 1.9)}
     pid = 1
     for bit, (ax, ay, k) in side_peaks.items():
         if mask & (1 << bit):
-            _peak(img, own, ax, ay, k, 27, 510 + bit, pid)
+            _peak(img, own, ax, ay - up * 0.3, k, 27, 510 + bit, pid, oy=up)
             pid += 1
-    _peak(img, own, 16, 4, 1.25, 29, 520, pid)
+    apex = 4 - up * 0.85
+    _peak(img, own, 16, apex, (29 - apex) / 16.5, 29, 520, pid, oy=up)
     return img
 
 
@@ -339,31 +355,36 @@ def swamp():
     return img
 
 
-def jungle():
-    img = _img_from(pick(R['jungle_floor'], 0.5 + (fbm(X, Y, 91, cells=(8, 4)) - 0.5) * 0.8, X, Y))
-    # canopy blobs on a jittered grid, drawn with wrap-around so the tile repeats seamlessly
+def jungle(up=0):
+    """Dense canopy. Without room above, blobs wrap around so the tile repeats seamlessly; with room above,
+    the top row of blobs rises into the tile above and covers the cut-off blobs at the bottom of that tile."""
+    gx_, gy_ = grid(T, T + up)
+    Xj, Yj = gx_, gy_ - up
+    img = np.zeros((T + up, T, 4), dtype=np.uint8)
+    floor = Yj >= 0
+    img[floor] = pick(R['jungle_floor'], 0.5 + (fbm(Xj, Yj, 91, cells=(8, 4)) - 0.5) * 0.8, Xj, Yj)[floor]
     blobs = []
     for gy in range(4):
         for gx in range(4):
             cx = gx * 8 + 4 + (float(hash2(gx, gy, 92)) - 0.5) * 4 + (4 if gy % 2 else 0)
-            cy = gy * 8 + 4 + (float(hash2(gx, gy, 93)) - 0.5) * 3
+            cy = gy * 8 + 4 + (float(hash2(gx, gy, 93)) - 0.5) * 3 - (min(up, 6) * 0.5 if gy == 0 else 0)
             blobs.append((cx % T, cy, 5.2 + float(hash2(gx, gy, 94)) * 1.6))
     for cx, cy, r in sorted(blobs, key=lambda b: b[1]):
         for ox in (-T, 0, T):
-            for oy in (-T, 0, T):
+            for oy in ((0,) if up else (-T, 0, T)):
                 bx, by = cx + ox, cy + oy
-                dx, dy = X - bx, Y - by
+                dx, dy = Xj - bx, Yj - by
                 ang = np.arctan2(dy, dx)
                 rr = r * (0.82 + fbm(np.cos(ang) * 6 + 40, np.sin(ang) * 6 + 40, 95, cells=(4, 2)) * 0.36)
                 d = np.hypot(dx, dy) / rr
-                m = d <= 1
+                m = (d <= 1) & (Yj < T)
                 if not m.any():
                     continue
                 nx, ny = dx / rr, dy / rr
                 nz = np.sqrt(np.clip(1 - nx * nx - ny * ny, 0, 1))
-                v = 0.08 + (nx * L3[0] + ny * L3[1] + nz * L3[2]) * 0.85 + (fbm(X, Y, 96, cells=(4, 2)) - 0.5) * 0.5
+                v = 0.08 + (nx * L3[0] + ny * L3[1] + nz * L3[2]) * 0.85 + (fbm(Xj, Yj, 96, cells=(4, 2)) - 0.5) * 0.5
                 v = np.where(d > 0.88, np.minimum(v, 0.04), v)
-                img[m] = pick(R['jungle'], v, X, Y)[m]
+                img[m] = pick(R['jungle'], v, Xj, Yj)[m]
     return img
 
 
@@ -372,10 +393,16 @@ VARIANT_FUNCS = {'desert': desert, 'plains': plains, 'grassland': grassland, 'fo
 SINGLE_FUNCS = {'tundra': tundra, 'arctic': arctic, 'swamp': swamp, 'jungle': jungle}
 
 
-def terrain_tile(name, mask):
+# HD rows of art above the tile for terrains that rise into the tile above (a multiple of 2)
+TALL = {'forest': 8, 'hills': 6, 'mountains': 16, 'jungle': 8}
+
+
+def terrain_tile(name, mask, tall=True):
+    """The terrain sprite; with `tall`, terrains in TALL get extra rows of art above the tile."""
+    up = TALL.get(name, 0) if tall else 0
     if name in VARIANT_FUNCS:
-        return VARIANT_FUNCS[name](mask)
-    return SINGLE_FUNCS[name]()
+        return VARIANT_FUNCS[name](mask, up) if up else VARIANT_FUNCS[name](mask)
+    return SINGLE_FUNCS[name](up) if up else SINGLE_FUNCS[name]()
 
 
 # ---------- ocean and coasts ----------

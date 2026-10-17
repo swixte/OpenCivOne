@@ -31,6 +31,11 @@ namespace OpenCivOne.Graphics
 		private uint[]? _hdPixels = null;
 		private bool[]? _hdMask = null;
 
+		// HD art reaching above sprites (tall mountains, trees), by the sprite's top left corner in this bitmap
+		private Dictionary<(int X, int Y), HDOverflow>? _hdOverflow = null;
+		private GRectangle? _hdOverflowClip = null;
+		private static bool _hasHDOverflow = false;
+
 		private static readonly object _hdCacheLock = new object();
 		private static readonly Dictionary<string, HDImage?> _hdCache = new Dictionary<string, HDImage?>();
 		private static string? _hdTemplatePath = null;
@@ -136,6 +141,23 @@ namespace OpenCivOne.Graphics
 		internal bool[]? HDMask
 		{
 			get => this._hdMask;
+		}
+
+		/// <summary>
+		/// Area where HD art reaching above sprites may be drawn in this bitmap, for example the map view, or null for anywhere
+		/// </summary>
+		public GRectangle? HDOverflowClip
+		{
+			get => this._hdOverflowClip;
+			set => this._hdOverflowClip = value;
+		}
+
+		/// <summary>
+		/// True once any loaded HD art reaches above its sprite, the map then has to be drawn so that such art is not overdrawn
+		/// </summary>
+		public static bool HasHDOverflow
+		{
+			get => _hasHDOverflow;
 		}
 
 		/// <summary>
@@ -427,6 +449,11 @@ namespace OpenCivOne.Graphics
 		/// <param name="greyHD">HD pixels of the source are drawn in grey (transparent drawing only)</param>
 		public void DrawBitmap(GPoint destPoint, GBitmap srcBitmap, GRectangle srcRect, bool transparent, bool greyHD)
 		{
+			if (srcBitmap._hdOverflow != null || (!transparent && this._hdOverflow != null))
+			{
+				this.CopyOrDrawHDOverflow(destPoint, srcBitmap, srcRect, transparent, greyHD);
+			}
+
 			GRectangle srcRect1 = new GRectangle(srcRect.Location, srcRect.Size);
 			srcRect1.Intersect(srcBitmap.Rectangle);
 
@@ -538,6 +565,135 @@ namespace OpenCivOne.Graphics
 		}
 
 		#region HD layer
+		private class HDOverflow
+		{
+			/// <summary>Width, in original pixels</summary>
+			public int Width;
+			/// <summary>Rows above the sprite, in original pixels</summary>
+			public int Height;
+			/// <summary>ARGB pixels, (Width * HDScale) x (Height * HDScale)</summary>
+			public uint[] Pixels;
+
+			public HDOverflow(int width, int height)
+			{
+				this.Width = width;
+				this.Height = height;
+				this.Pixels = new uint[width * HDScale * height * HDScale];
+			}
+		}
+
+		/// <summary>
+		/// Draws only the HD art of a sprite that reaches above it, as drawing the sprite at destPoint would
+		/// </summary>
+		public void DrawHDOverflow(GPoint destPoint, GBitmap srcBitmap)
+		{
+			if (srcBitmap._hdOverflow != null)
+			{
+				this.CopyOrDrawHDOverflow(destPoint, srcBitmap, srcBitmap.Rectangle, true, false);
+			}
+		}
+
+		/// <summary>
+		/// Art reaching above sprites travels with the pixels it belongs to: an opaque copy (loading a sheet, cutting a sprite,
+		/// copying screens) carries it to the destination, a transparent copy (drawing a sprite) draws it above the sprite.
+		/// </summary>
+		private void CopyOrDrawHDOverflow(GPoint destPoint, GBitmap srcBitmap, GRectangle srcRect, bool transparent, bool grey)
+		{
+			if (!transparent && this._hdOverflow != null)
+			{
+				// what was in the overwritten area is gone
+				GRectangle destRect = new GRectangle(destPoint, srcRect.Size);
+
+				foreach ((int X, int Y) key in this._hdOverflow.Keys.Where(k => destRect.Contains(k.X, k.Y)).ToList())
+				{
+					this._hdOverflow.Remove(key);
+				}
+			}
+
+			if (srcBitmap._hdOverflow == null)
+				return;
+
+			foreach (KeyValuePair<(int X, int Y), HDOverflow> item in srcBitmap._hdOverflow.ToList())
+			{
+				if (!srcRect.Contains(item.Key.X, item.Key.Y))
+					continue;
+
+				int x = destPoint.X + item.Key.X - srcRect.X;
+				int y = destPoint.Y + item.Key.Y - srcRect.Y;
+
+				if (!transparent)
+				{
+					this._hdOverflow ??= new Dictionary<(int X, int Y), HDOverflow>();
+					this._hdOverflow[(x, y)] = item.Value;
+					continue;
+				}
+
+				HDOverflow overflow = item.Value;
+				int overflowWidth = overflow.Width * HDScale;
+
+				for (int i = 0; i < overflow.Height; i++)
+				{
+					int destY = y - overflow.Height + i;
+
+					for (int j = 0; j < overflow.Width; j++)
+					{
+						int destX = x + j;
+
+						if (!this.oRectangle.Contains(destX, destY) || (this._hdOverflowClip is not null && !this._hdOverflowClip.Contains(destX, destY)))
+							continue;
+
+						int srcAddress = (i * HDScale * overflowWidth) + (j * HDScale);
+						bool visible = false;
+
+						for (int k = 0; k < HDScale && !visible; k++)
+						{
+							for (int l = 0; l < HDScale && !visible; l++)
+							{
+								visible = (overflow.Pixels[srcAddress + (k * overflowWidth) + l] >> 24) != 0;
+							}
+						}
+
+						if (!visible)
+							continue;
+
+						this.EnsureHDLayer();
+						this.MaterializeHDPixel(destX, destY);
+						this.ResolveHDKeys(destX, destY);
+
+						int hdAddress = this.GetHDAddress(destX, destY);
+						uint indexColor = this.oPalette[this.aPixels[(destY * this.iWidth) + destX]].ToUInt32();
+
+						for (int k = 0; k < HDScale; k++)
+						{
+							for (int l = 0; l < HDScale; l++)
+							{
+								uint color = overflow.Pixels[srcAddress + (k * overflowWidth) + l];
+
+								if (IsKeyColor(color))
+								{
+									// above a sprite there is no original pixel of its own, a key color takes the color already there
+									color = ShadeColor(indexColor, color);
+								}
+
+								if (grey)
+								{
+									color = GreyColor(color);
+								}
+
+								if ((color >> 24) != 0)
+								{
+									this._hdPixels![hdAddress + (k * this.iWidth * HDScale) + l] =
+										BlendColor(color, this._hdPixels[hdAddress + (k * this.iWidth * HDScale) + l]);
+								}
+							}
+						}
+					}
+				}
+
+				this.bModified = true;
+			}
+		}
+
 		/// <summary>
 		/// Writes this bitmap, scaled by HDScale, to a 32 bit BGRA buffer.
 		/// Pixels with HD content are taken from the HD layer, all other pixels are scaled with nearest-neighbour.
@@ -828,6 +984,12 @@ namespace OpenCivOne.Graphics
 						this.aPixels[i] = (byte)hdImage.Indexes[i];
 					}
 				}
+
+				if (hdImage.Overflow.Count > 0)
+				{
+					this._hdOverflow = new Dictionary<(int X, int Y), HDOverflow>(hdImage.Overflow);
+					_hasHDOverflow = true;
+				}
 			}
 		}
 
@@ -836,6 +998,7 @@ namespace OpenCivOne.Graphics
 			public uint[] Pixels;
 			public bool[] Mask;
 			public short[] Indexes;
+			public Dictionary<(int X, int Y), HDOverflow> Overflow = new Dictionary<(int X, int Y), HDOverflow>();
 
 			public HDImage(int width, int height)
 			{
@@ -846,8 +1009,9 @@ namespace OpenCivOne.Graphics
 			}
 		}
 
+		// X_Y.png, with optional _tN (N original rows of art above the region) and _kP-S (key color indexes)
 		private static readonly System.Text.RegularExpressions.Regex _hdRegionName =
-			new System.Text.RegularExpressions.Regex(@"^(\d+)_(\d+)(?:_k(\d+)-(\d+))?\.png$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+			new System.Text.RegularExpressions.Regex(@"^(\d+)_(\d+)(?:_t(\d+))?(?:_k(\d+)-(\d+))?\.png$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
 		private static HDImage? ReadHDImage(string picPath, GBitmap bitmap)
 		{
@@ -908,21 +1072,40 @@ namespace OpenCivOne.Graphics
 
 					int left = int.Parse(match.Groups[1].Value);
 					int top = int.Parse(match.Groups[2].Value);
-					int primaryIndex = match.Groups[3].Success ? int.Parse(match.Groups[3].Value) : 10;
-					int secondaryIndex = match.Groups[4].Success ? int.Parse(match.Groups[4].Value) : 2;
+					int overflowRows = match.Groups[3].Success ? int.Parse(match.Groups[3].Value) : 0;
+					int primaryIndex = match.Groups[4].Success ? int.Parse(match.Groups[4].Value) : 10;
+					int secondaryIndex = match.Groups[5].Success ? int.Parse(match.Groups[5].Value) : 2;
 
 					using SKBitmap? image = SKBitmap.Decode(regionPath);
+					int regionWidth = (image?.Width ?? 0) / HDScale;
+					int regionHeight = (image?.Height ?? 0) / HDScale - overflowRows;
 
-					if (image == null || (image.Width % HDScale) != 0 || (image.Height % HDScale) != 0 ||
-						left + (image.Width / HDScale) > bitmap.iWidth || top + (image.Height / HDScale) > bitmap.iHeight)
+					if (image == null || (image.Width % HDScale) != 0 || (image.Height % HDScale) != 0 || regionHeight <= 0 ||
+						left + regionWidth > bitmap.iWidth || top + regionHeight > bitmap.iHeight)
 					{
 						System.Diagnostics.Debug.WriteLine($"HD image '{regionPath}' is ignored, its size has to be a multiple of {HDScale} and it has to fit the original image");
 						continue;
 					}
 
-					for (int i = 0; i < image.Height / HDScale; i++)
+					// the top rows of a tall image are drawn above the sprite
+					if (overflowRows > 0)
 					{
-						for (int j = 0; j < image.Width / HDScale; j++)
+						HDOverflow overflow = new HDOverflow(regionWidth, overflowRows);
+
+						for (int i = 0; i < overflowRows * HDScale; i++)
+						{
+							for (int j = 0; j < regionWidth * HDScale; j++)
+							{
+								overflow.Pixels[(i * regionWidth * HDScale) + j] = (uint)image.GetPixel(j, i);
+							}
+						}
+
+						hdImage.Overflow[(left, top)] = overflow;
+					}
+
+					for (int i = 0; i < regionHeight; i++)
+					{
+						for (int j = 0; j < regionWidth; j++)
 						{
 							int x = left + j;
 							int y = top + i;
@@ -936,7 +1119,7 @@ namespace OpenCivOne.Graphics
 							{
 								for (int l = 0; l < HDScale; l++)
 								{
-									uint color = (uint)image.GetPixel((j * HDScale) + l, (i * HDScale) + k);
+									uint color = (uint)image.GetPixel((j * HDScale) + l, ((i + overflowRows) * HDScale) + k);
 
 									hdImage.Pixels[hdAddress + (k * hdWidth) + l] = color;
 

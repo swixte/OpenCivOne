@@ -248,26 +248,35 @@ RESOURCES = [res_oasis, res_horses, res_wheat, res_pheasant, res_coal, res_gold,
 
 # ---------- cities, walls, fortress, hut ----------
 
-def city_streets():
+def city_streets(up=0):
     """City sprite, drawn at the tile's (1, 1) after the game fills the city square with the player color.
 
     Primary key pixels stand for color index 0: they stay transparent in the original and show the
     player color filled below. Secondary key pixels stand for index 5, which the game swaps to the
     player's second color. Both must stay inside the filled square (x and y 2..25 here).
     The city size is printed over the middle, so the middle is an open square in player color.
+    With `up`, the back roofs and a tower rise into the tile above (no key colors there).
     """
-    s = Sprite(30, 30, MATS)
-    s.rect(0, 0, 30, 30, 'stone', -0.5)
-    s.rect(2, 2, 26, 26, 'P', 0)
-    s.rect(8, 7, 22, 21, 'P', 0.6)
+    s = Sprite(30, 30 + up, MATS)
+    o = up
+    s.rect(0, o, 30, 30 + o, 'stone', -0.5)
+    s.rect(2, 2 + o, 26, 26 + o, 'P', 0)
+    s.rect(8, 7 + o, 22, 21 + o, 'P', 0.6)
     houses = [(2, 2, 8, 7), (9, 2, 14, 6), (16, 2, 21, 6), (22, 2, 26, 8), (2, 9, 6, 15), (23, 10, 26, 16),
               (2, 17, 7, 22), (22, 18, 26, 22), (3, 23, 9, 26), (10, 22, 16, 26), (17, 22, 21, 26)]
     for i, (x0, y0, x1, y1) in enumerate(houses):
-        s.rect(x0, y0, x1, y1, 'white', 0.3 - (i % 3) * 0.3)
-        s.rect(x0, y0, x1, y0 + max(2, (y1 - y0) // 2), 'S', 0.4 - (i % 2) * 0.6)
+        s.rect(x0, y0 + o, x1, y1 + o, 'white', 0.3 - (i % 3) * 0.3)
+        s.rect(x0, y0 + o, x1, y0 + o + max(2, (y1 - y0) // 2), 'S', 0.4 - (i % 2) * 0.6)
+    if up:
+        # gabled roofs of the back row and a tower, above the tile
+        for x0, x1 in ((2, 8), (9, 14), (16, 21)):
+            s.poly([(x0 - 0.5, 2.5 + o), ((x0 + x1) / 2, 2.5 + o - (x1 - x0) * 0.55), (x1 + 0.5, 2.5 + o)], 'roof', 0.3)
+        s.rect(22, 2 + o - up, 27, 8 + o, 'stone', 0.4)
+        s.poly([(21.5, 2 + o - up + 0.5), (24.5, -0.5), (27.5, 2 + o - up + 0.5)], 'roof', 0.6)
+        s.rect(23.5, 5 + o - up, 25.5, 8 + o - up, 'dark', 0)
     # a spire on the outer right edge, outside the filled square
-    s.rect(26, 3, 30, 27, 'stone', 0)
-    s.rect(27, 0, 29, 6, 'roof', 0.5)
+    s.rect(26, 3 + o, 30, 27 + o, 'stone', 0)
+    s.rect(27, o, 29, 6 + o, 'roof', 0.5)
     return s.render(outline=None)
 
 

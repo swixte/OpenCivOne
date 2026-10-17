@@ -25,6 +25,9 @@ namespace OpenCivOne.Graphics
 
 			this.screens.Add(0, new GBitmap()); // Main screen
 
+			// map cells are always drawn in the map view, HD art reaching above a cell stays inside it
+			this.screens.GetValueByKey(0).HDOverflowClip = new GRectangle(80, 8, 240, 192);
+
 			byte[] fonts = CommonResources.Fonts_xml;
 
 			Stream fonts1 = new GZipStream(new MemoryStream(fonts), CompressionMode.Decompress);
@@ -458,6 +461,20 @@ namespace OpenCivOne.Graphics
 			else
 			{
 				throw new Exception($"The screen {rect.ScreenID} is not allocated");
+			}
+		}
+
+		/// <summary>
+		/// Draws only the HD art of a bitmap that reaches above it, if it has any
+		/// </summary>
+		public void DrawBitmapHDOverflow(CRectangle rect, int x, int y, int bitmapID)
+		{
+			if (this.screens.ContainsKey(rect.ScreenID) && this.bitmaps.ContainsKey(bitmapID))
+			{
+				lock (VCPU.GraphicsLock)
+				{
+					this.screens.GetValueByKey(rect.ScreenID).DrawHDOverflow(new GPoint(rect.Left + x, rect.Top + y), this.bitmaps.GetValueByKey(bitmapID));
+				}
 			}
 		}
 
