@@ -431,6 +431,12 @@ namespace OpenCivOne.Graphics
 
 		public void F0_VGA_0c3e_DrawBitmapToScreen(CRectangle rect, int x, int y, int bitmapID)
 		{
+			F0_VGA_0c3e_DrawBitmapToScreen(rect, x, y, bitmapID, false);
+		}
+
+		/// <param name="greyHD">HD pixels of the bitmap are drawn in grey, the HD counterpart of greying out a unit by replacing its colors</param>
+		public void F0_VGA_0c3e_DrawBitmapToScreen(CRectangle rect, int x, int y, int bitmapID, bool greyHD)
+		{
 			// function body
 			if (this.screens.ContainsKey(rect.ScreenID))
 			{
@@ -441,7 +447,7 @@ namespace OpenCivOne.Graphics
 						GBitmap screen = this.screens.GetValueByKey(rect.ScreenID);
 						GBitmap bitmap = this.bitmaps.GetValueByKey(bitmapID);
 
-						screen.DrawBitmap(rect.Left + x, rect.Top + y, bitmap, true);
+						screen.DrawBitmap(new GPoint(rect.Left + x, rect.Top + y), bitmap, bitmap.Rectangle, true, greyHD);
 					}
 				}
 				else

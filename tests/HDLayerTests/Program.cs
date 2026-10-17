@@ -170,6 +170,86 @@ uint[] Pipeline(string pic, out GBitmap screen0)
 	Check(!HasHD(GBitmap.FromPICFile(pic4, false)!), "wrong-size HD image is ignored");
 }
 
+// ---------- 8. Per-sprite region files, key colors and player recoloring ----------
+{
+	string pic = Path.Combine(dir, "UNITS.PIC");
+	File.Copy(picPath, pic);
+	string regionDir = Path.Combine(hdDir, "UNITS");
+	Directory.CreateDirectory(regionDir);
+
+	// sprite A (0,0) replaced: orange body, primary key (magenta 0x80 = exact colour) band at rows 4-5, secondary key (cyan) at rows 6-7
+	using (var art = new SKBitmap(32, 32, SKColorType.Bgra8888, SKAlphaType.Unpremul))
+	{
+		art.Erase(SKColors.Transparent);
+		for (int y = 4; y < 28; y++) for (int x = 4; x < 28; x++) art.SetPixel(x, y, new SKColor(0xff, 0x80, 0x00));
+		for (int y = 8; y < 12; y++) for (int x = 4; x < 28; x++) art.SetPixel(x, y, new SKColor(0x80, 0x00, 0x80));
+		for (int y = 12; y < 16; y++) for (int x = 4; x < 28; x++) art.SetPixel(x, y, new SKColor(0x00, 0x40, 0x40));   // half brightness
+		using var fs = File.Create(Path.Combine(regionDir, "0_0.png")); art.Encode(fs, SKEncodedImageFormat.Png, 100);
+	}
+	// a city-style sprite with keys meaning index 0 (transparent, takes the colour below) and 5
+	using (var art = new SKBitmap(8, 8, SKColorType.Bgra8888, SKAlphaType.Unpremul))
+	{
+		art.Erase(new SKColor(0x80, 0x00, 0x80));
+		for (int y = 0; y < 2; y++) for (int x = 0; x < 2; x++) art.SetPixel(x, y, new SKColor(0x00, 0x80, 0x80));
+		using var fs = File.Create(Path.Combine(regionDir, "28_0_k0-5.png")); art.Encode(fs, SKEncodedImageFormat.Png, 100);
+	}
+	File.WriteAllText(Path.Combine(regionDir, "notes.txt"), "ignored");
+
+	var loaded = GBitmap.FromPICFile(pic, false)!;
+	Check(HasHD(loaded), "regions: HD layer created from region files alone");
+	Check(loaded.GetPixel(6, 4) == 10 && loaded.GetPixel(6, 6) == 2, "regions: key pixels set the original pixel to the key index (10, 2)");
+	Check(loaded.GetPixel(0, 0) == 0, "regions: transparent region pixels set the original pixel to transparent");
+	Check(loaded.GetPixel(28, 0) == 5 && loaded.GetPixel(29, 1) == 0, "regions: _k0-5 suffix sets key indexes");
+	Check(loaded.GetPixel(20, 6) == 12, "regions: pixels outside regions keep the original");
+
+	// player recoloring, as LoadBitmaps does on screen 1
+	var screen1 = new GBitmap();
+	screen1.SetPaletteColor(10, Avalonia.Media.Color.FromRgb(0x00, 0xff, 0x00));
+	screen1.SetPaletteColor(2, Avalonia.Media.Color.FromRgb(0x00, 0x80, 0x00));
+	screen1.SetPaletteColor(12, Avalonia.Media.Color.FromRgb(0xff, 0x00, 0x00));
+	screen1.SetPaletteColor(9, Avalonia.Media.Color.FromRgb(0x00, 0x00, 0xff));
+	screen1.DrawBitmap(0, 0, loaded, false);
+	screen1.ReplaceColor(new GRectangle(0, 0, 16, 16), 10, 12);   // primary -> player colour (red)
+	screen1.ReplaceColor(new GRectangle(0, 0, 16, 16), 2, 9);     // secondary -> blue
+	var unit = new GBitmap(16, 16);
+	unit.CopyPalette(screen1);
+	unit.DrawBitmap(0, 0, screen1, new GRectangle(0, 0, 16, 16), false);
+
+	var screen0 = new GBitmap();
+	screen0.CopyPalette(screen1);
+	screen0.FillRectangle(new GRectangle(0, 0, 320, 200), 5, PixelWriteModeEnum.Normal);
+	screen0.DrawBitmap(40, 40, unit, true);
+	uint[] frame = Render(screen0);
+	uint C(int hx, int hy) => Out(frame, screen0, hx, hy) & 0xffffff;
+	Check(C(40 * S + 6, 40 * S + 4) == 0xff8000, "keys: plain HD pixels unchanged by recoloring");
+	Check(C(40 * S + 6, 40 * S + 8) == 0xff0000, $"keys: primary key shows the player colour ({C(40 * S + 6, 40 * S + 8):x6})");
+	Check(C(40 * S + 6, 40 * S + 12) == 0x00007f, $"keys: secondary key shows the secondary colour at half brightness ({C(40 * S + 6, 40 * S + 12):x6})");
+
+	// sentry: grey HD drawing
+	var screenG = new GBitmap();
+	screenG.CopyPalette(screen1);
+	screenG.FillRectangle(new GRectangle(0, 0, 320, 200), 5, PixelWriteModeEnum.Normal);
+	screenG.DrawBitmap(new GPoint(40, 40), unit, unit.Rectangle, true, true);
+	uint[] g = Render(screenG);
+	uint body = Out(g, screenG, 40 * S + 6, 40 * S + 4) & 0xffffff, band = Out(g, screenG, 40 * S + 6, 40 * S + 8) & 0xffffff;
+	bool isGrey(uint c) => ((c >> 16) & 0xff) == ((c >> 8) & 0xff) && ((c >> 8) & 0xff) == (c & 0xff);
+	Check(isGrey(body) && isGrey(band) && body != 0, $"sentry: HD unit drawn in grey ({body:x6}, {band:x6})");
+	Check((Out(g, screenG, 0, 0) & 0xffffff) == (Out(frame, screen0, 0, 0) & 0xffffff), "sentry: background not greyed");
+
+	// city: keys meaning index 0 take the colour of the filled square under them; index 5 key follows a 5 -> 9 swap
+	var city = new GBitmap(8, 8);
+	city.CopyPalette(screen1);
+	city.DrawBitmap(0, 0, screen1, new GRectangle(28, 0, 4, 4), false);
+	var screenC = new GBitmap();
+	screenC.CopyPalette(screen1);
+	screenC.FillRectangle(new GRectangle(60, 60, 4, 4), 12, PixelWriteModeEnum.Normal);
+	screenC.DrawBitmap(60, 60, city, true);
+	screenC.ReplaceColor(new GRectangle(60, 60, 4, 4), 5, 9);
+	uint[] cf = Render(screenC);
+	Check((Out(cf, screenC, 61 * S, 61 * S) & 0xffffff) == 0xff0000, "city: index-0 key shows the player colour filled under it");
+	Check((Out(cf, screenC, 60 * S, 60 * S) & 0xffffff) == 0x0000ff, "city: index-5 key follows the 5 -> secondary colour swap");
+}
+
 Directory.Delete(dir, true);
 Console.WriteLine(failures == 0 ? "ALL PASSED" : $"{failures} FAILED");
 return failures == 0 ? 0 : 1;

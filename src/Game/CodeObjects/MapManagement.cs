@@ -747,8 +747,9 @@ namespace OpenCivOne
 			Unit unit = this.parent.GameData.Players[playerID].Units[unitID];
 
 			// Instruction address 0x2aea:0x0fe2, size: 5
+			// HD art of a sentried unit is drawn in grey, the original pixels are greyed out by color replacement below
 			this.parent.Graphics.F0_VGA_0c3e_DrawBitmapToScreen(this.parent.Var_aa_Screen0_Rectangle, x, y,
-				this.parent.Array_d4ce[64 + (playerID * 32) + (int)unit.UnitType]);
+				this.parent.Array_d4ce[64 + (playerID * 32) + (int)unit.UnitType], (unit.Status & UnitStatusEnum.Sentry) != UnitStatusEnum.None);
 
 			if ((unit.Status & UnitStatusEnum.Fortified) != UnitStatusEnum.None)
 			{

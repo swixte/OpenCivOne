@@ -32,7 +32,7 @@ namespace OpenCivOne.Graphics
 		private bool[]? _hdMask = null;
 
 		private static readonly object _hdCacheLock = new object();
-		private static readonly Dictionary<string, uint[]?> _hdCache = new Dictionary<string, uint[]?>();
+		private static readonly Dictionary<string, HDImage?> _hdCache = new Dictionary<string, HDImage?>();
 		private static string? _hdTemplatePath = null;
 
 		#region Palette 1
@@ -350,8 +350,8 @@ namespace OpenCivOne.Graphics
 					{
 						if (this.aPixels[iPixelAddress + j] == oldColorIndex)
 						{
+							// HD pixels are kept, HD key colors follow the new color index
 							this.aPixels[iPixelAddress + j] = newColorIndex;
-							this.ClearHDPixel(iPixelAddress + j);
 
 							this.bModified = true;
 						}
@@ -421,6 +421,12 @@ namespace OpenCivOne.Graphics
 
 		public void DrawBitmap(GPoint destPoint, GBitmap srcBitmap, GRectangle srcRect, bool transparent)
 		{
+			DrawBitmap(destPoint, srcBitmap, srcRect, transparent, false);
+		}
+
+		/// <param name="greyHD">HD pixels of the source are drawn in grey (transparent drawing only)</param>
+		public void DrawBitmap(GPoint destPoint, GBitmap srcBitmap, GRectangle srcRect, bool transparent, bool greyHD)
+		{
 			GRectangle srcRect1 = new GRectangle(srcRect.Location, srcRect.Size);
 			srcRect1.Intersect(srcBitmap.Rectangle);
 
@@ -475,7 +481,14 @@ namespace OpenCivOne.Graphics
 							{
 								// HD art may cover pixels that are transparent in the original sprite, and the other way around
 								this.MaterializeHDPixel(destX, destY);
-								this.BlendHDBlock(destX, destY, srcBitmap, srcX, srcY);
+
+								if (colorIndex != 0)
+								{
+									// the indexed pixel changes, key colors already there keep the color they have now
+									this.ResolveHDKeys(destX, destY);
+								}
+
+								this.BlendHDBlock(destX, destY, srcBitmap, srcX, srcY, greyHD);
 
 								if (colorIndex != 0)
 								{
@@ -554,7 +567,7 @@ namespace OpenCivOne.Graphics
 							if (isHD)
 							{
 								// keep the alpha of the palette color, so HD pixels are presented the same way as indexed ones
-								pixel = (BlendColor(this._hdPixels![hdAddress + (k * hdWidth) + l], color) & 0xffffff) | (color & 0xff000000);
+								pixel = (ResolveHDColor(this._hdPixels![hdAddress + (k * hdWidth) + l], color) & 0xffffff) | (color & 0xff000000);
 							}
 
 							rows[(k * hdWidth) + (j * HDScale) + l] = (int)pixel;
@@ -639,21 +652,104 @@ namespace OpenCivOne.Graphics
 			this._hdMask![(y * this.iWidth) + x] = true;
 		}
 
-		private void BlendHDBlock(int x, int y, GBitmap srcBitmap, int srcX, int srcY)
+		private void BlendHDBlock(int x, int y, GBitmap srcBitmap, int srcX, int srcY, bool grey)
 		{
 			int hdAddress = this.GetHDAddress(x, y);
 			int srcHDAddress = srcBitmap.GetHDAddress(srcX, srcY);
+			uint indexColor = this.oPalette[this.aPixels[(y * this.iWidth) + x]].ToUInt32();
+			uint srcIndexColor = srcBitmap.oPalette[srcBitmap.aPixels[(srcY * srcBitmap.iWidth) + srcX]].ToUInt32();
 
 			for (int i = 0; i < HDScale; i++)
 			{
 				for (int j = 0; j < HDScale; j++)
 				{
-					this._hdPixels![hdAddress + j] = BlendColor(srcBitmap._hdPixels![srcHDAddress + j], this._hdPixels[hdAddress + j]);
+					uint color = srcBitmap._hdPixels![srcHDAddress + j];
+
+					if (grey)
+					{
+						color = GreyColor(IsKeyColor(color) ? ShadeColor(srcIndexColor, color) : color);
+					}
+
+					if (IsKeyColor(color))
+					{
+						// key colors stay unresolved, they take the color of the indexed pixel when shown
+						this._hdPixels![hdAddress + j] = color;
+					}
+					else if ((color >> 24) != 0)
+					{
+						this._hdPixels![hdAddress + j] = BlendColor(color, ResolveHDColor(this._hdPixels[hdAddress + j], indexColor));
+					}
 				}
 
 				hdAddress += this.iWidth * HDScale;
 				srcHDAddress += srcBitmap.iWidth * HDScale;
 			}
+		}
+
+		/// <summary>
+		/// Replaces key colors in the HD block of a pixel with the color they currently show
+		/// </summary>
+		private void ResolveHDKeys(int x, int y)
+		{
+			int hdAddress = this.GetHDAddress(x, y);
+			uint indexColor = this.oPalette[this.aPixels[(y * this.iWidth) + x]].ToUInt32();
+
+			for (int i = 0; i < HDScale; i++)
+			{
+				for (int j = 0; j < HDScale; j++)
+				{
+					if (IsKeyColor(this._hdPixels![hdAddress + j]))
+					{
+						this._hdPixels[hdAddress + j] = ShadeColor(indexColor, this._hdPixels[hdAddress + j]);
+					}
+				}
+
+				hdAddress += this.iWidth * HDScale;
+			}
+		}
+
+		private static uint GreyColor(uint color)
+		{
+			uint grey = ((((color >> 16) & 0xff) * 3) + (((color >> 8) & 0xff) * 6) + (color & 0xff)) / 10;
+
+			return (color & 0xff000000) | (grey << 16) | (grey << 8) | grey;
+		}
+
+		/// <summary>
+		/// HD key colors take the color of the indexed pixel under them, so palette color swaps (player colors) also apply to HD art.
+		/// Primary key: magenta shades (red == blue, no green); secondary key: cyan shades (green == blue, no red).
+		/// A channel value of 128 means the exact palette color, lower is darker, higher is lighter.
+		/// </summary>
+		private static bool IsKeyColor(uint color)
+		{
+			uint red = (color >> 16) & 0xff;
+			uint green = (color >> 8) & 0xff;
+			uint blue = color & 0xff;
+
+			return (color >> 24) == 0xff && ((green == 0 && red == blue && red != 0) || (red == 0 && green == blue && green != 0));
+		}
+
+		private static bool IsSecondaryKeyColor(uint color)
+		{
+			return IsKeyColor(color) && ((color >> 16) & 0xff) == 0;
+		}
+
+		private static uint ShadeColor(uint baseColor, uint keyColor)
+		{
+			uint shade = Math.Max((keyColor >> 16) & 0xff, keyColor & 0xff);
+			uint red = Math.Min(0xffu, (((baseColor >> 16) & 0xff) * shade) / 0x80);
+			uint green = Math.Min(0xffu, (((baseColor >> 8) & 0xff) * shade) / 0x80);
+			uint blue = Math.Min(0xffu, ((baseColor & 0xff) * shade) / 0x80);
+
+			return 0xff000000 | (red << 16) | (green << 8) | blue;
+		}
+
+		/// <summary>
+		/// Color shown for an HD pixel over the color of its indexed pixel
+		/// </summary>
+		private static uint ResolveHDColor(uint color, uint indexColor)
+		{
+			return IsKeyColor(color) ? ShadeColor(indexColor, color) : BlendColor(color, indexColor);
 		}
 
 		private bool HDBlockIsVisible(int x, int y)
@@ -698,42 +794,77 @@ namespace OpenCivOne.Graphics
 		}
 
 		/// <summary>
-		/// Looks for an HD version of a PIC file in the 'hd' folder next to it, a PNG image with the same name
-		/// and HDScale times the size, and attaches it to this bitmap
+		/// Looks for HD versions of a PIC file in the 'hd' folder next to it and attaches them to this bitmap:
+		/// <list type="bullet">
+		/// <item>hd/NAME.png, the whole image at HDScale times the size,</item>
+		/// <item>hd/NAME/X_Y.png, one region with its top left corner at X, Y in the original image, applied over the whole image.
+		/// The region also replaces the original pixels under it, so they match the HD art.
+		/// The name may end with _kP-S, the color indexes that primary and secondary key colors stand for (default 10 and 2).</item>
+		/// </list>
 		/// </summary>
 		private void LoadHDLayer(string picPath)
 		{
-			uint[]? hdPixels;
+			HDImage? hdImage;
 
 			lock (_hdCacheLock)
 			{
-				if (!_hdCache.TryGetValue(picPath, out hdPixels))
+				if (!_hdCache.TryGetValue(picPath, out hdImage))
 				{
-					hdPixels = ReadHDImage(picPath, this.iWidth * HDScale, this.iHeight * HDScale);
-					_hdCache.Add(picPath, hdPixels);
+					hdImage = ReadHDImage(picPath, this);
+					_hdCache.Add(picPath, hdImage);
 				}
 			}
 
-			if (hdPixels != null)
+			if (hdImage != null)
 			{
 				this.EnsureHDLayer();
-				Array.Copy(hdPixels, this._hdPixels!, hdPixels.Length);
-				Array.Fill(this._hdMask!, true);
+				Array.Copy(hdImage.Pixels, this._hdPixels!, hdImage.Pixels.Length);
+				Array.Copy(hdImage.Mask, this._hdMask!, hdImage.Mask.Length);
+
+				for (int i = 0; i < hdImage.Indexes.Length; i++)
+				{
+					if (hdImage.Indexes[i] >= 0)
+					{
+						this.aPixels[i] = (byte)hdImage.Indexes[i];
+					}
+				}
 			}
 		}
 
-		private static uint[]? ReadHDImage(string picPath, int width, int height)
+		private class HDImage
+		{
+			public uint[] Pixels;
+			public bool[] Mask;
+			public short[] Indexes;
+
+			public HDImage(int width, int height)
+			{
+				this.Pixels = new uint[width * HDScale * height * HDScale];
+				this.Mask = new bool[width * height];
+				this.Indexes = new short[width * height];
+				Array.Fill(this.Indexes, (short)-1);
+			}
+		}
+
+		private static readonly System.Text.RegularExpressions.Regex _hdRegionName =
+			new System.Text.RegularExpressions.Regex(@"^(\d+)_(\d+)(?:_k(\d+)-(\d+))?\.png$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+		private static HDImage? ReadHDImage(string picPath, GBitmap bitmap)
 		{
 			string? directory = Path.GetDirectoryName(picPath);
 			string name = Path.GetFileNameWithoutExtension(picPath);
 
-			if (directory == null)
+			if (directory == null || !Directory.Exists(Path.Combine(directory, "hd")))
 				return null;
 
 			string hdDirectory = Path.Combine(directory, "hd");
-			string[] candidates = new string[] { $"{name}.png", $"{name.ToUpperInvariant()}.PNG", $"{name.ToUpperInvariant()}.png", $"{name.ToLowerInvariant()}.png" };
+			string[] names = new string[] { name, name.ToUpperInvariant(), name.ToLowerInvariant() };
+			HDImage hdImage = new HDImage(bitmap.iWidth, bitmap.iHeight);
+			bool found = false;
+			int hdWidth = bitmap.iWidth * HDScale;
 
-			foreach (string candidate in candidates)
+			// the whole image
+			foreach (string candidate in names.SelectMany(n => new string[] { $"{n}.png", $"{n}.PNG" }).Distinct())
 			{
 				string hdPath = Path.Combine(hdDirectory, candidate);
 
@@ -741,27 +872,137 @@ namespace OpenCivOne.Graphics
 				{
 					using SKBitmap? image = SKBitmap.Decode(hdPath);
 
-					if (image == null || image.Width != width || image.Height != height)
+					if (image == null || image.Width != hdWidth || image.Height != bitmap.iHeight * HDScale)
 					{
-						System.Diagnostics.Debug.WriteLine($"HD image '{hdPath}' is ignored, it has to be a {width}x{height} PNG image");
-						return null;
+						System.Diagnostics.Debug.WriteLine($"HD image '{hdPath}' is ignored, it has to be a {hdWidth}x{bitmap.iHeight * HDScale} PNG image");
 					}
-
-					uint[] pixels = new uint[width * height];
-
-					for (int i = 0; i < height; i++)
+					else
 					{
-						for (int j = 0; j < width; j++)
+						for (int i = 0; i < image.Height; i++)
 						{
-							pixels[(i * width) + j] = (uint)image.GetPixel(j, i);
+							for (int j = 0; j < image.Width; j++)
+							{
+								hdImage.Pixels[(i * hdWidth) + j] = (uint)image.GetPixel(j, i);
+							}
 						}
+
+						Array.Fill(hdImage.Mask, true);
+						found = true;
 					}
 
-					return pixels;
+					break;
 				}
 			}
 
-			return null;
+			// regions
+			string? regionDirectory = names.Select(n => Path.Combine(hdDirectory, n)).FirstOrDefault(Directory.Exists);
+
+			if (regionDirectory != null)
+			{
+				foreach (string regionPath in Directory.GetFiles(regionDirectory).OrderBy(p => p, StringComparer.Ordinal))
+				{
+					System.Text.RegularExpressions.Match match = _hdRegionName.Match(Path.GetFileName(regionPath));
+
+					if (!match.Success)
+						continue;
+
+					int left = int.Parse(match.Groups[1].Value);
+					int top = int.Parse(match.Groups[2].Value);
+					int primaryIndex = match.Groups[3].Success ? int.Parse(match.Groups[3].Value) : 10;
+					int secondaryIndex = match.Groups[4].Success ? int.Parse(match.Groups[4].Value) : 2;
+
+					using SKBitmap? image = SKBitmap.Decode(regionPath);
+
+					if (image == null || (image.Width % HDScale) != 0 || (image.Height % HDScale) != 0 ||
+						left + (image.Width / HDScale) > bitmap.iWidth || top + (image.Height / HDScale) > bitmap.iHeight)
+					{
+						System.Diagnostics.Debug.WriteLine($"HD image '{regionPath}' is ignored, its size has to be a multiple of {HDScale} and it has to fit the original image");
+						continue;
+					}
+
+					for (int i = 0; i < image.Height / HDScale; i++)
+					{
+						for (int j = 0; j < image.Width / HDScale; j++)
+						{
+							int x = left + j;
+							int y = top + i;
+							int hdAddress = (y * HDScale * hdWidth) + (x * HDScale);
+							uint visibleColor = 0;
+							int visibleCount = 0;
+							int primaryCount = 0;
+							int secondaryCount = 0;
+
+							for (int k = 0; k < HDScale; k++)
+							{
+								for (int l = 0; l < HDScale; l++)
+								{
+									uint color = (uint)image.GetPixel((j * HDScale) + l, (i * HDScale) + k);
+
+									hdImage.Pixels[hdAddress + (k * hdWidth) + l] = color;
+
+									if (IsSecondaryKeyColor(color))
+									{
+										secondaryCount++;
+									}
+									else if (IsKeyColor(color))
+									{
+										primaryCount++;
+									}
+									else if ((color >> 24) >= 0x80)
+									{
+										visibleColor = color;
+										visibleCount++;
+									}
+								}
+							}
+
+							// the original pixel under the region follows the majority of its HD pixels:
+							// a key color index, the closest palette color, or transparent
+							int index = 0;
+
+							if (primaryCount + secondaryCount > 0 && primaryCount + secondaryCount >= visibleCount)
+							{
+								index = (secondaryCount > primaryCount) ? secondaryIndex : primaryIndex;
+							}
+							else if (visibleCount > 0)
+							{
+								index = bitmap.GetClosestPaletteIndex(visibleColor);
+							}
+
+							hdImage.Indexes[(y * bitmap.iWidth) + x] = (short)index;
+							hdImage.Mask[(y * bitmap.iWidth) + x] = true;
+						}
+					}
+
+					found = true;
+				}
+			}
+
+			return found ? hdImage : null;
+		}
+
+		private int GetClosestPaletteIndex(uint color)
+		{
+			int closestIndex = 1;
+			int closestDistance = int.MaxValue;
+
+			// index 0 is transparent in sprites, so it is not used for visible pixels
+			for (int i = 1; i < 256; i++)
+			{
+				uint paletteColor = this.oPalette[(byte)i].ToUInt32();
+				int red = (int)((color >> 16) & 0xff) - (int)((paletteColor >> 16) & 0xff);
+				int green = (int)((color >> 8) & 0xff) - (int)((paletteColor >> 8) & 0xff);
+				int blue = (int)(color & 0xff) - (int)(paletteColor & 0xff);
+				int distance = (red * red) + (green * green) + (blue * blue);
+
+				if (distance < closestDistance)
+				{
+					closestDistance = distance;
+					closestIndex = i;
+				}
+			}
+
+			return closestIndex;
 		}
 
 		/// <summary>
