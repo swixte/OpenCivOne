@@ -250,6 +250,45 @@ uint[] Pipeline(string pic, out GBitmap screen0)
 	Check((Out(cf, screenC, 60 * S, 60 * S) & 0xffffff) == 0x0000ff, "city: index-5 key follows the 5 -> secondary colour swap");
 }
 
+// ---------- 9. The generated art set (assets/hd) loads completely onto 320x200 sheets ----------
+{
+	string assets = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../assets/hd"));
+	if (Directory.Exists(assets))
+	{
+		string gameDir = Path.Combine(dir, "game");
+		CopyDirectory(assets, Path.Combine(gameDir, "hd"));
+		foreach (string sheetDir in Directory.GetDirectories(assets))
+		{
+			string sheet = Path.GetFileName(sheetDir);
+			string sheetPic = Path.Combine(gameDir, sheet + ".PIC");
+			new GBitmap(320, 200).SaveToPIC(sheetPic, false);
+			var b = GBitmap.FromPICFile(sheetPic, false)!;
+			var mask = (bool[])typeof(GBitmap).GetProperty("HDMask", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(b)!;
+			int files = 0, missing = 0;
+			foreach (string f in Directory.GetFiles(sheetDir, "*.png"))
+			{
+				var m = System.Text.RegularExpressions.Regex.Match(Path.GetFileName(f), @"^(\d+)_(\d+)");
+				int x = int.Parse(m.Groups[1].Value), y = int.Parse(m.Groups[2].Value);
+				using var img = SKBitmap.Decode(f);
+				for (int yy = 0; yy < img.Height / S; yy++) for (int xx = 0; xx < img.Width / S; xx++) if (!mask[(y + yy) * 320 + x + xx]) missing++;
+				files++;
+			}
+			Check(missing == 0, $"art set: all {files} {sheet} sprites load into the sheet ({missing} pixels missing)");
+		}
+	}
+	else
+	{
+		Console.WriteLine($"SKIP  art set not found at {assets}");
+	}
+}
+
+void CopyDirectory(string from, string to)
+{
+	Directory.CreateDirectory(to);
+	foreach (string f in Directory.GetFiles(from)) File.Copy(f, Path.Combine(to, Path.GetFileName(f)));
+	foreach (string d in Directory.GetDirectories(from)) CopyDirectory(d, Path.Combine(to, Path.GetFileName(d)));
+}
+
 Directory.Delete(dir, true);
 Console.WriteLine(failures == 0 ? "ALL PASSED" : $"{failures} FAILED");
 return failures == 0 ? 0 : 1;
