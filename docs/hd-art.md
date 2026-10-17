@@ -10,6 +10,16 @@ This repository includes a complete 2x set for the map: terrain with its neighbo
 2. Put the original DOS Civilization files where the game looks for them: next to the executable for a release build, or `~/Dos/Civ1` (`C:\Dos\Civ1` on Windows) for a debug build.
 3. Copy the contents of `assets/hd` into an `hd` folder there, so you have for example `Civ1/hd/TER257/0_0.png`.
 
+### Without the original game files
+
+`tools/standin/build.sh [FOLDER]` builds a stand-in data set, so the game starts and plays without the DOS files (default folder `~/Dos/Civ1`, where a debug build looks). It needs Python with numpy and Pillow and the .NET 10 SDK. Nothing in it comes from the original game:
+
+- the map sheets (TER257, SP257, SP299) are the HD art reduced to the original size, and the HD set is copied into its `hd` folder;
+- every other picture is a labelled placeholder, and the interface patterns and icons are simple shapes;
+- the text files hold one generic sentence under every key the code asks for.
+
+It is meant for working on the engine and the art; for the real game, use the original files.
+
 To change the art, edit the generator in `tools/hdart` and run `python3 tools/hdart/generate.py` (needs numpy and Pillow). `python3 tools/hdart/preview.py out.png --scene` renders a sample map with the same tile choices the game makes.
 
 ## How it works

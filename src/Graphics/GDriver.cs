@@ -25,8 +25,8 @@ namespace OpenCivOne.Graphics
 
 			this.screens.Add(0, new GBitmap()); // Main screen
 
-			// map cells are always drawn in the map view, HD art reaching above a cell stays inside it
-			this.screens.GetValueByKey(0).HDOverflowClip = new GRectangle(80, 8, 240, 192);
+			// map cells are drawn in the map view, HD art reaching above a cell stays inside it
+			this.screens.GetValueByKey(0).HDOverflowClip = MapViewRectangle;
 
 			byte[] fonts = CommonResources.Fonts_xml;
 
@@ -43,6 +43,25 @@ namespace OpenCivOne.Graphics
 		}
 
 		#region Properties
+		/// <summary>
+		/// The map view on the main screen
+		/// </summary>
+		public static GRectangle MapViewRectangle
+		{
+			get => new GRectangle(80, 8, 240, 192);
+		}
+
+		/// <summary>
+		/// Area of the main screen where HD art reaching above map cells may be drawn, the map view by default
+		/// </summary>
+		public void SetHDOverflowClip(GRectangle rect)
+		{
+			lock (VCPU.GraphicsLock)
+			{
+				this.screens.GetValueByKey(0).HDOverflowClip = rect;
+			}
+		}
+
 		public BDictionary<int, GBitmap> Screens
 		{
 			get { return this.screens; }

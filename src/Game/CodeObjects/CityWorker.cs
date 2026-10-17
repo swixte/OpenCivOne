@@ -227,6 +227,9 @@ namespace OpenCivOne
 					this.parent.Var_d4cc_MapViewX = city.Position.X - 5;
 					this.parent.Var_d75e_MapViewY = city.Position.Y - 3;
 
+					// the city map is the 5 x 5 cells around the city, HD art must not reach above it
+					this.parent.Graphics.SetHDOverflowClip(new GRectangle(128, 24, 80, 80));
+
 					// Instruction address 0x1d12:0x05cd, size: 5
 					this.parent.MapManagement.F0_2aea_03ba_DrawCell(city.Position.X, city.Position.Y);
 
@@ -3123,6 +3126,7 @@ namespace OpenCivOne
 				L5cc2:
 					this.parent.Var_d4cc_MapViewX = mapViewX;
 					this.parent.Var_d75e_MapViewY = mapViewY;
+					this.parent.Graphics.SetHDOverflowClip(GDriver.MapViewRectangle);
 				}
 
 				if (flag == 0)
