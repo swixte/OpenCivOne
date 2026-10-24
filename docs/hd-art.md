@@ -60,6 +60,16 @@ The repository includes the art in `assets/painted`; copy it to `Civ1/hd/painted
 
 The included art was generated from a concept image with `tools/hdart/generate_painted.py` (OpenAI Images API, the concept as a style reference; set `OPENAI_API_KEY`). Sprites and objects come back on flat magenta, and `tools/hdart/painted_assets.py` makes the textures seamless and cuts the sprites and objects out. To see the painting without the game, run the HD layer tests with `PAINTED_PREVIEW=out.png`: they paint a sample map with the art in `assets/painted`.
 
+## Painted interface
+
+The 4x set also paints the interface:
+
+- The stone pattern behind the sidebar, status panel, menus and dialogs (SP299 32x16 at 288, 120) and the city screen background (SP299 16x16 at 208, 100) are painted textures. The stone is light enough for the black text on it.
+- With `hd/ui/material.png`, flat boxes on the main screen (dialogs, notes, city screen panels, buttons, bars) get a painted grain and darker edges, and boxes and lines are toned to the painted look: their palette colors are half desaturated and a little darker and warmer, so the bright EGA blues, greens and reds keep their hue but sit with the art. The grain is stored as HD pixels that take their color from the palette when shown, so menu highlights, color swaps and palette fades still work. Text drawn on a box keeps its exact color. Fills smaller than 6x6 pixels get the tone but no grain. The texture is a square grey image, mid grey (128) keeps a color, darker and lighter shade it.
+- With `hd/upscale.txt` containing `scale2x`, everything without HD art (text, lines, the minimap, pictures) is enlarged with Scale2x (Scale4x at 4x) instead of nearest-neighbour, which rounds the steps in text and diagonals while keeping the colors.
+
+`painted_set.py` writes all three from the textures in `assets/painted/ui`.
+
 ## How it works
 
 Every PIC file the game loads can have HD versions in the `hd` folder:

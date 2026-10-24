@@ -90,6 +90,13 @@ PROMPTS = {
     'jungle': STYLE + ' A sprite sheet of 16 separate dark, lush tropical broadleaf jungle trees and palm clusters seen from a high three-quarter top-down angle, in the same muted colours as the reference. Varied sizes in a loose grid. ' + SHEET,
     'jungle_green': STYLE + ' A sprite sheet of 16 separate lush tropical jungle trees and palm clusters seen from a high three-quarter top-down angle, with rich deep green leaves (green, not brown), varied sizes in a loose grid. ' + SHEET,
 }
+UI_TEXTURE = (STYLE + ' A seamless tileable texture seen straight on, filling the entire square image edge to edge with even, '
+              'flat lighting: no objects, no vignette, no border, no text. The texture: ')
+PROMPTS.update({
+    'ui_grain': UI_TEXTURE + 'an old painted canvas surface with soft, visible oil-paint brush strokes and fine fibrous grain, in neutral mid grey only, very low contrast.',
+    'ui_stone': UI_TEXTURE + 'a weathered castle wall of rough-hewn grey stone blocks in staggered rows, mortar lines, subtle moss and wear, painterly, medium-light grey.',
+    'ui_slate': UI_TEXTURE + 'dark blue-grey slate with soft painterly brush texture and faint mottling, low contrast.',
+})
 PROMPTS.update({f'unit_{k}': STYLE + ' ' + OBJECT.format(v[0].upper() + v[1:]) for k, v in UNITS.items()})
 PROMPTS.update({k: STYLE + ' ' + OBJECT.format(v[0].upper() + v[1:]) for k, v in ICONS.items()})
 

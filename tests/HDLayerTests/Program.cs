@@ -497,6 +497,73 @@ GBitmap other4()
 	}
 }
 
+// ---------- 12. interface: smooth upscale, painted boxes and lines ----------
+{
+	uint[] Frame(GBitmap b)
+	{
+		int w = b.Width * GBitmap.HDScale, h = b.Height * GBitmap.HDScale;
+		IntPtr mem = Marshal.AllocHGlobal(w * h * 4);
+		b.WriteScaledPixels(mem, w * 4);
+		int[] px = new int[w * h];
+		Marshal.Copy(mem, px, 0, px.Length);
+		Marshal.FreeHGlobal(mem);
+		return px.Select(p => (uint)p & 0xffffff).ToArray();
+	}
+
+	GBitmap.HDScale = 4;
+	var stairs = new GBitmap(8, 8);
+	stairs.FillRectangle(new GRectangle(0, 0, 8, 8), 1, PixelWriteModeEnum.Normal);
+	for (int i = 0; i < 8; i++)
+		stairs.FillRectangle(new GRectangle(0, i, i + 1, 1), 15, PixelWriteModeEnum.Normal);
+	uint[] nearest = Frame(stairs);
+	GBitmap.SmoothUpscale = true;
+	uint[] smooth = Frame(stairs);
+	GBitmap.SmoothUpscale = false;
+	int W = 32;
+	Check(!nearest.SequenceEqual(smooth), "smooth: Scale4x changes a diagonal edge");
+	// pixel (4, 3) is dark with light pixels to its left and below: its lower left corner turns light
+	Check(smooth[(3 * 4 + 3) * W + 4 * 4] == nearest[0] && nearest[(3 * 4 + 3) * W + 4 * 4] != nearest[0], "smooth: the step beside the diagonal is filled in with the light color");
+	Check(smooth[(6 * 4 + 2) * W + 1 * 4 + 2] == nearest[(6 * 4 + 2) * W + 1 * 4 + 2], "smooth: inside a flat area the color is unchanged");
+
+	string grey = Path.Combine(dir, "grain.png");
+	using (var g = new SKBitmap(16, 16))
+	{
+		for (int y = 0; y < 16; y++)
+			for (int x = 0; x < 16; x++)
+				g.SetPixel(x, y, (x + y) % 2 == 0 ? new SKColor(128, 128, 128) : new SKColor(100, 100, 100));
+		using var f = File.OpenWrite(grey);
+		g.Encode(f, SKEncodedImageFormat.Png, 100);
+	}
+	Check(GBitmap.LoadUIMaterial(grey), "material: grain texture loads");
+	var box = new GBitmap(64, 64);
+	box.UseUIMaterial = true;
+	box.FillRectangle(new GRectangle(0, 0, 64, 64), 0, PixelWriteModeEnum.Normal);
+	box.FillRectangle(new GRectangle(10, 10, 30, 30), 4, PixelWriteModeEnum.Normal);
+	uint plain4 = PaletteColor(box, 4) & 0xffffff;
+	uint[] f1 = Frame(box);
+	uint centre = f1[(25 * 4) * 256 + 25 * 4];
+	Check(centre != plain4, $"material: a box is drawn toned and grained ({centre:x6} vs flat {plain4:x6})");
+	Check(f1[(25 * 4) * 256 + 25 * 4] != f1[(25 * 4) * 256 + 25 * 4 + 1], "material: neighbouring HD pixels carry the grain");
+	Check(Brightness(f1[(10 * 4) * 256 + 25 * 4]) < Brightness(centre), "material: a box is darker at its edge");
+	box.ReplaceColor(new GRectangle(10, 10, 30, 30), 4, 2);
+	uint swapped = Frame(box)[(25 * 4) * 256 + 25 * 4];
+	Check(swapped != centre && ((swapped >> 8) & 0xff) > ((swapped >> 16) & 0xff), $"material: a color swap (highlight) recolors the box ({swapped:x6})");
+	box.SetPixel(20, 20, 15);
+	Check(Frame(box)[(20 * 4) * 256 + 20 * 4] == (PaletteColor(box, 15) & 0xffffff), "material: text drawn over a box stays its exact color");
+	box.FillRectangle(new GRectangle(50, 50, 3, 3), 4, PixelWriteModeEnum.Normal);
+	Check(Frame(box)[(51 * 4) * 256 + 51 * 4] == plain4, "material: fills smaller than 6x6 stay flat");
+	box.DrawLine(0, 60, 40, 60, 15, PixelWriteModeEnum.Normal);
+	uint line = Frame(box)[(60 * 4) * 256 + 5 * 4];
+	Check(line != (PaletteColor(box, 15) & 0xffffff) && Brightness(line) > 120, $"material: lines take the toned color ({line:x6})");
+	var plain = new GBitmap(16, 16);
+	plain.FillRectangle(new GRectangle(0, 0, 16, 16), 4, PixelWriteModeEnum.Normal);
+	Check(Frame(plain)[5 * 64 + 5] == plain4, "material: bitmaps without UseUIMaterial (sprite sheets) are not affected");
+	GBitmap.ClearUIMaterial();
+	GBitmap.HDScale = 2;
+}
+
+int Brightness(uint c) => (int)(((c >> 16) & 0xff) + ((c >> 8) & 0xff) + (c & 0xff)) / 3;
+
 Directory.Delete(dir, true);
 Console.WriteLine(failures == 0 ? "ALL PASSED" : $"{failures} FAILED");
 return failures == 0 ? 0 : 1;

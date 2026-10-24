@@ -28,6 +28,9 @@ namespace OpenCivOne.Graphics
 			// map cells are drawn in the map view, HD art reaching above a cell stays inside it
 			this.screens.GetValueByKey(0).HDOverflowClip = MapViewRectangle;
 
+			// flat boxes on the main screen get the painted UI grain, when hd/ui/material.png is there
+			this.screens.GetValueByKey(0).UseUIMaterial = true;
+
 			byte[] fonts = CommonResources.Fonts_xml;
 
 			Stream fonts1 = new GZipStream(new MemoryStream(fonts), CompressionMode.Decompress);

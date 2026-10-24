@@ -151,6 +151,11 @@ namespace OpenCivOne
 				GBitmap.HDTemplatePath = $"{this.gameMainPath}{separator}hd-templates";
 			}
 
+			// Optional painted grain for flat interface boxes, and smooth enlargement of pixel art without HD versions
+			GBitmap.LoadUIMaterial($"{this.gameResourcePath}hd{separator}ui{separator}material.png");
+			string upscalePath = $"{this.gameResourcePath}hd{separator}upscale.txt";
+			GBitmap.SmoothUpscale = File.Exists(upscalePath) && File.ReadAllText(upscalePath).Trim().ToLowerInvariant() == "scale2x";
+
 			// A painted map (hd/painted) replaces the terrain tiles of map cells with one painting of the whole world
 			this.paintedMap = PaintedMap.Load($"{this.gameResourcePath}hd{separator}painted", 16 * GBitmap.HDScale,
 				(x, y) => (int)this.mapManagement!.GetTerrainType(x, y));

@@ -5,11 +5,14 @@ Input folder (as written by generate_painted.py):
   SET.png         sprite sheets on flat magenta: trees, jungle (jungle_green.png wins), hills, mountains
   unit_*.png, res_*.png, hut.png, fortress.png, town.png, walls.png
                   single objects on flat magenta, for the 4x sprite set (painted_set.py)
+  ui_grain.png, ui_stone.png, ui_slate.png
+                  interface textures, for the 4x sprite set
 
 Output folder (copy it to the game's hd/painted):
   ground/NAME.png   textures made to repeat without seams, 512x512
   SET/N.png         each sprite cut from its sheet, with the magenta keyed out
   objects/NAME.png  each single object, keyed out and trimmed
+  ui/NAME.png       interface textures made to repeat without seams, 1024x1024
 
 Usage: python3 painted_assets.py INPUT_DIR OUTPUT_DIR
 """
@@ -98,6 +101,12 @@ def main(src, out):
                     spr = spr.resize((max(1, spr.width * 160 // spr.height), 160), Image.LANCZOS)
                 spr.save(os.path.join(folder, f'{i}.png'))
             print(name, len(sprites), 'sprites')
+    for name in ('grain', 'stone', 'slate'):
+        path = os.path.join(src, f'ui_{name}.png')
+        if os.path.exists(path):
+            os.makedirs(os.path.join(out, 'ui'), exist_ok=True)
+            img = Image.open(path).convert('RGB')
+            Image.fromarray(style.seamless(img, img.width)).convert('RGB').save(os.path.join(out, 'ui', f'{name}.png'))
     objects = sorted(f[:-4] for f in os.listdir(src)
                      if f.endswith('.png') and (f.startswith(('unit_', 'res_')) or f[:-4] in ('hut', 'fortress', 'town', 'walls')))
     if objects:

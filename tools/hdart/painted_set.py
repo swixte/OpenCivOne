@@ -26,6 +26,7 @@ SHIPS = range(16, 25)
 AIRCRAFT = (14, 15, 25)
 
 OBJECTS = os.path.join(HERE, '..', '..', 'assets', 'painted', 'objects')
+UI = os.path.join(HERE, '..', '..', 'assets', 'painted', 'ui')
 
 
 def obj(name):
@@ -111,9 +112,44 @@ def sprites():
         yield 'SP257', (j % 20) * 16 + 1, (j // 20) * 16 + 161, '', unit(j)
 
 
+def tile(name, width, height, scale, mean, spread, tint=(1.0, 1.0, 1.0)):
+    """A width x height tile that repeats without seams, from part of a seamless interface texture shown `scale` times its
+    size, with its brightness set to `mean` and its contrast to `spread` (standard deviation)."""
+    tex = Image.open(os.path.join(UI, name + '.png')).convert('RGB')
+    cw, ch = round(width / scale), round(height / scale)
+    crop = tex.crop((0, 0, cw, ch)).resize((width, height), Image.LANCZOS)
+    a = np.asarray(crop, dtype=np.float64)
+    # blend with a half-shifted copy so the tile repeats without seams in both directions
+    b = np.roll(np.roll(a, height // 2, 0), width // 2, 1)
+    y, x = np.mgrid[0:height, 0:width] + 0.5
+    w = np.minimum(np.minimum(x, width - x) / (width / 2), np.minimum(y, height - y) / (height / 2))
+    w = np.clip(w * 1.6 - 0.3, 0, 1)[..., None]
+    w = w * w * (3 - 2 * w)
+    a = a * w + b * (1 - w)
+    lum = a.mean(-1, keepdims=True)
+    a = (a - lum) + mean + (lum - lum.mean()) * (spread / max(lum.std(), 1e-6))
+    a = a * np.array(tint)
+    out = np.concatenate([np.clip(a, 0, 255), np.full((height, width, 1), 255.0)], -1)
+    return np.rint(out).astype(np.uint8)
+
+
+def ui():
+    """Yields (sheet, x, y, suffix, image) for the interface patterns, and the grain for flat boxes as image files."""
+    # SP299 32x16 at (288, 120): the stone behind the sidebar, status panel and dialogs; light enough for black text
+    yield 'SP299', 288, 120, '', tile('stone', 32 * S, 16 * S, 0.17, 150, 22)
+    # SP299 16x16 at (208, 100): the city screen background; dark for its light and colored text
+    yield 'SP299', 208, 100, '', tile('slate', 16 * S, 16 * S, 0.25, 52, 8, (0.95, 1.0, 1.1))
+
+
+def grain():
+    """The painted grain for flat boxes: mid grey (128 keeps a box's color), low contrast, repeating without seams."""
+    g = tile('grain', 256, 256, 0.5, 124, 9)
+    return np.repeat(np.rint(g[..., :3].mean(-1, keepdims=True)).astype(np.uint8), 3, -1)
+
+
 def main(out):
     count = 0
-    for sheet, x, y, suffix, img in sprites():
+    for sheet, x, y, suffix, img in list(sprites()) + list(ui()):
         folder = os.path.join(out, sheet)
         os.makedirs(folder, exist_ok=True)
         if not (y >= 160 or suffix):
@@ -123,6 +159,11 @@ def main(out):
         count += 1
     with open(os.path.join(out, 'scale.txt'), 'w') as f:
         f.write('4\n')
+    # text and other pixel art without HD versions are enlarged with Scale4x
+    with open(os.path.join(out, 'upscale.txt'), 'w') as f:
+        f.write('scale2x\n')
+    os.makedirs(os.path.join(out, 'ui'), exist_ok=True)
+    Image.fromarray(grain(), 'RGB').save(os.path.join(out, 'ui', 'material.png'))
     print(f'{count} sprites written to {out}')
 
 

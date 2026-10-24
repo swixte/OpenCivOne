@@ -53,6 +53,12 @@ namespace OpenCivOne.Graphics
 		private static readonly Dictionary<string, HDImage?> _hdCache = new Dictionary<string, HDImage?>();
 		private static string? _hdTemplatePath = null;
 
+		// Optional painted grain for flat fills on screens (hd/ui/material.png): shades around 128, one per HD pixel
+		private static byte[]? _uiMaterial = null;
+		private static int _uiMaterialSize = 0;
+		private bool _useUIMaterial = false;
+		private static bool _smoothUpscale = false;
+
 		#region Palette 1
 		public static Color[] Palette1 = new Color[] {
 			Color.FromUInt32(0x000000),
@@ -181,6 +187,116 @@ namespace OpenCivOne.Graphics
 		{
 			get => _hdTemplatePath;
 			set => _hdTemplatePath = value;
+		}
+
+		/// <summary>
+		/// Pixels without HD art are enlarged with Scale2x (Scale4x at 4x) instead of nearest-neighbour,
+		/// which rounds the steps in text, lines and leftover pixel art while keeping its colors
+		/// </summary>
+		public static bool SmoothUpscale
+		{
+			get => _smoothUpscale;
+			set => _smoothUpscale = value;
+		}
+
+		/// <summary>
+		/// Flat fills of at least 6x6 pixels on this bitmap get the painted grain of the UI material, see LoadUIMaterial
+		/// </summary>
+		public bool UseUIMaterial
+		{
+			get => this._useUIMaterial;
+			set => this._useUIMaterial = value;
+		}
+
+		/// <summary>
+		/// Loads a square grain texture for flat fills: its brightness shades the fill's palette color (mid grey keeps it),
+		/// as HD key pixels, so the fill still follows palette changes, color swaps and fades. Returns false without it.
+		/// </summary>
+		public static bool LoadUIMaterial(string path)
+		{
+			if (!File.Exists(path))
+				return false;
+
+			using SKBitmap? image = SKBitmap.Decode(path);
+
+			if (image == null || image.Width != image.Height)
+				return false;
+
+			byte[] shades = new byte[image.Width * image.Height];
+
+			for (int y = 0; y < image.Height; y++)
+			{
+				for (int x = 0; x < image.Width; x++)
+				{
+					SKColor c = image.GetPixel(x, y);
+					// 128 grey keeps the color, darker and lighter grain shade it
+					shades[(y * image.Width) + x] = (byte)Math.Clamp(((c.Red * 30) + (c.Green * 59) + (c.Blue * 11)) / 100, 1, 255);
+				}
+			}
+
+			_uiMaterial = shades;
+			_uiMaterialSize = image.Width;
+
+			return true;
+		}
+
+		// HD pixels of painted boxes: the shade in red and blue, like a key color, marked by this alpha
+		private const uint MaterialAlpha = 0xfe000000;
+
+		/// <summary>
+		/// Color of a painted box pixel: the box's palette color, toned down to the painted look (half desaturated,
+		/// a little darker and warmer, so the bright EGA colors keep their hue but sit with the art), and shaded by the grain
+		/// </summary>
+		private static uint MaterialColor(uint color, uint indexColor)
+		{
+			float shade = ((color >> 16) & 0xff) / 128f;
+			float r = (indexColor >> 16) & 0xff, g = (indexColor >> 8) & 0xff, b = indexColor & 0xff;
+			float grey = (r * 0.3f) + (g * 0.59f) + (b * 0.11f);
+			r = ((r + grey) * 0.5f * 0.82f + 6) * shade;
+			g = ((g + grey) * 0.5f * 0.82f + 3) * shade;
+			b = ((b + grey) * 0.5f * 0.82f - 2) * shade;
+
+			return 0xff000000 | ((uint)Math.Clamp(r, 0, 255) << 16) | ((uint)Math.Clamp(g, 0, 255) << 8) | (uint)Math.Clamp(b, 0, 255);
+		}
+
+		/// <summary>
+		/// Turns the UI material off again
+		/// </summary>
+		public static void ClearUIMaterial()
+		{
+			_uiMaterial = null;
+			_uiMaterialSize = 0;
+		}
+
+		private void FillUIMaterial(GRectangle rect)
+		{
+			if (_uiMaterial == null || rect.Width < 6 || rect.Height < 6)
+				return;
+
+			this.EnsureHDLayer();
+
+			int hdWidth = this.iWidth * HDScale;
+			int size = _uiMaterialSize;
+			// boxes are darker toward their edges, over about three original pixels
+			float edge = 3f * HDScale;
+
+			for (int y = rect.Y * HDScale; y < (rect.Y + rect.Height) * HDScale; y++)
+			{
+				float dy = Math.Min(y - (rect.Y * HDScale), ((rect.Y + rect.Height) * HDScale) - 1 - y);
+
+				for (int x = rect.X * HDScale; x < (rect.X + rect.Width) * HDScale; x++)
+				{
+					float dx = Math.Min(x - (rect.X * HDScale), ((rect.X + rect.Width) * HDScale) - 1 - x);
+					float rim = Math.Clamp(Math.Min(dx, dy) / edge, 0, 1);
+					float shade = _uiMaterial[((y % size) * size) + (x % size)] * (0.8f + (0.2f * rim));
+					uint s = (uint)Math.Clamp(shade, 1, 255);
+
+					this._hdPixels![(y * hdWidth) + x] = MaterialAlpha | (s << 16) | s;
+				}
+			}
+
+			for (int y = rect.Y; y < rect.Y + rect.Height; y++)
+				Array.Fill(this._hdMask!, true, (y * this.iWidth) + rect.X, rect.Width);
 		}
 
 		public static Color Color18ToColor(int red, int green, int blue)
@@ -332,14 +448,14 @@ namespace OpenCivOne.Graphics
 			if (iWidth == 1 && iHeight == 1)
 			{
 				// a single point
-				this.SetPixel(x1, y1, colorIndex, mode);
+				this.SetLinePixel(x1, y1, colorIndex, mode);
 			}
 			else if (iWidth > 1 && iHeight == 1)
 			{
 				// a horizontal line
 				for (int i = 0; i < iWidth; i++)
 				{
-					this.SetPixel(x1 + i * iWidthDir, y1, colorIndex, mode);
+					this.SetLinePixel(x1 + i * iWidthDir, y1, colorIndex, mode);
 				}
 			}
 			else if (iWidth == 1 && iHeight > 1)
@@ -347,7 +463,7 @@ namespace OpenCivOne.Graphics
 				// a vertical line
 				for (int i = 0; i < iHeight; i++)
 				{
-					this.SetPixel(x1, y1 + i * iHeightDir, colorIndex, mode);
+					this.SetLinePixel(x1, y1 + i * iHeightDir, colorIndex, mode);
 				}
 			}
 			else if (iWidth > iHeight)
@@ -356,7 +472,7 @@ namespace OpenCivOne.Graphics
 
 				for (int i = 0; i < iWidth; i++)
 				{
-					this.SetPixel(x1 + i * iWidthDir, y1 + (int)(dYStep * i) * iHeightDir, colorIndex, mode);
+					this.SetLinePixel(x1 + i * iWidthDir, y1 + (int)(dYStep * i) * iHeightDir, colorIndex, mode);
 				}
 			}
 			else
@@ -365,8 +481,26 @@ namespace OpenCivOne.Graphics
 
 				for (int i = 0; i < iHeight; i++)
 				{
-					this.SetPixel(x1 + (int)(dXStep * i) * iWidthDir, y1 + i * iHeightDir, colorIndex, mode);
+					this.SetLinePixel(x1 + (int)(dXStep * i) * iWidthDir, y1 + i * iHeightDir, colorIndex, mode);
 				}
+			}
+		}
+
+		// Lines on a bitmap with the UI material take the toned colors of the painted boxes, without grain
+		private void SetLinePixel(int x, int y, byte colorIndex, PixelWriteModeEnum mode)
+		{
+			this.SetPixel(x, y, colorIndex, mode);
+
+			if (this._useUIMaterial && _uiMaterial != null && mode == PixelWriteModeEnum.Normal && this.oRectangle.Contains(x, y))
+			{
+				this.EnsureHDLayer();
+
+				int hdAddress = this.GetHDAddress(x, y);
+
+				for (int k = 0; k < HDScale; k++)
+					Array.Fill(this._hdPixels!, MaterialAlpha | (0x80u << 16) | 0x80u, hdAddress + (k * this.iWidth * HDScale), HDScale);
+
+				this._hdMask![(y * this.iWidth) + x] = true;
 			}
 		}
 
@@ -433,6 +567,11 @@ namespace OpenCivOne.Graphics
 					}
 
 					iPixelAddress += this.iWidth;
+				}
+
+				if (this._useUIMaterial && mode == PixelWriteModeEnum.Normal)
+				{
+					this.FillUIMaterial(newRect);
 				}
 
 				this.bModified = true;
@@ -737,6 +876,7 @@ namespace OpenCivOne.Graphics
 			int hdWidth = this.iWidth * HDScale;
 			int[] rows = new int[hdWidth * HDScale];
 			int pixelAddress = 0;
+			byte[]? smooth = _smoothUpscale ? this.ScaleIndexes() : null;
 
 			for (int i = 0; i < this.iHeight; i++)
 			{
@@ -750,7 +890,7 @@ namespace OpenCivOne.Graphics
 					{
 						for (int l = 0; l < HDScale; l++)
 						{
-							uint pixel = color;
+							uint pixel = (smooth != null && !isHD) ? this.oPalette[smooth[hdAddress + (k * hdWidth) + l]].ToUInt32() : color;
 
 							if (isHD)
 							{
@@ -771,6 +911,45 @@ namespace OpenCivOne.Graphics
 					destination += stride;
 				}
 			}
+		}
+
+		/// <summary>
+		/// The indexed pixels enlarged to HD size with Scale2x, applied twice at 4x
+		/// </summary>
+		private byte[] ScaleIndexes()
+		{
+			byte[] source = this.aPixels;
+			int width = this.iWidth, height = this.iHeight;
+
+			for (int scale = 1; scale < HDScale; scale *= 2)
+			{
+				byte[] target = new byte[width * 2 * height * 2];
+				int targetWidth = width * 2;
+
+				for (int y = 0; y < height; y++)
+				{
+					for (int x = 0; x < width; x++)
+					{
+						byte p = source[(y * width) + x];
+						byte a = (y > 0) ? source[((y - 1) * width) + x] : p;
+						byte b = (x < width - 1) ? source[(y * width) + x + 1] : p;
+						byte c = (x > 0) ? source[(y * width) + x - 1] : p;
+						byte d = (y < height - 1) ? source[((y + 1) * width) + x] : p;
+						int t = (y * 2 * targetWidth) + (x * 2);
+
+						target[t] = (c == a && c != d && a != b) ? a : p;
+						target[t + 1] = (a == b && a != c && b != d) ? b : p;
+						target[t + targetWidth] = (d == c && d != b && c != a) ? c : p;
+						target[t + targetWidth + 1] = (b == d && b != a && d != c) ? d : p;
+					}
+				}
+
+				source = target;
+				width *= 2;
+				height *= 2;
+			}
+
+			return source;
 		}
 
 		private void EnsureHDLayer()
@@ -937,6 +1116,9 @@ namespace OpenCivOne.Graphics
 		/// </summary>
 		private static uint ResolveHDColor(uint color, uint indexColor)
 		{
+			if ((color & 0xff000000) == MaterialAlpha)
+				return MaterialColor(color, indexColor);
+
 			return IsKeyColor(color) ? ShadeColor(indexColor, color) : BlendColor(color, indexColor);
 		}
 
