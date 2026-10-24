@@ -548,10 +548,13 @@ GBitmap other4()
 	box.ReplaceColor(new GRectangle(10, 10, 30, 30), 4, 2);
 	uint swapped = Frame(box)[(25 * 4) * 256 + 25 * 4];
 	Check(swapped != centre && ((swapped >> 8) & 0xff) > ((swapped >> 16) & 0xff), $"material: a color swap (highlight) recolors the box ({swapped:x6})");
+	bool Flat(uint[] f, int x, int y) => Enumerable.Range(0, 16).All(i => f[(y * 4 + i / 4) * 256 + x * 4 + i % 4] == f[(y * 4) * 256 + x * 4]);
 	box.SetPixel(20, 20, 15);
-	Check(Frame(box)[(20 * 4) * 256 + 20 * 4] == (PaletteColor(box, 15) & 0xffffff), "material: text drawn over a box stays its exact color");
+	uint[] f2 = Frame(box);
+	Check(Flat(f2, 20, 20) && Brightness(f2[(20 * 4) * 256 + 20 * 4]) > 200, "material: text drawn over a box is flat and keeps its brightness");
 	box.FillRectangle(new GRectangle(50, 50, 3, 3), 4, PixelWriteModeEnum.Normal);
-	Check(Frame(box)[(51 * 4) * 256 + 51 * 4] == plain4, "material: fills smaller than 6x6 stay flat");
+	uint[] f3 = Frame(box);
+	Check(Flat(f3, 51, 51) && f3[(51 * 4) * 256 + 51 * 4] != plain4, "material: fills smaller than 6x6 are toned but not grained");
 	box.DrawLine(0, 60, 40, 60, 15, PixelWriteModeEnum.Normal);
 	uint line = Frame(box)[(60 * 4) * 256 + 5 * 4];
 	Check(line != (PaletteColor(box, 15) & 0xffffff) && Brightness(line) > 120, $"material: lines take the toned color ({line:x6})");

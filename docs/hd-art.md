@@ -68,7 +68,19 @@ The 4x set also paints the interface:
 - With `hd/ui/material.png`, flat boxes on the main screen (dialogs, notes, city screen panels, buttons, bars) get a painted grain and darker edges, and boxes and lines are toned to the painted look: their palette colors are half desaturated and a little darker and warmer, so the bright EGA blues, greens and reds keep their hue but sit with the art. The grain is stored as HD pixels that take their color from the palette when shown, so menu highlights, color swaps and palette fades still work. Text drawn on a box keeps its exact color. Fills smaller than 6x6 pixels get the tone but no grain. The texture is a square grey image, mid grey (128) keeps a color, darker and lighter shade it.
 - With `hd/upscale.txt` containing `scale2x`, everything without HD art (text, lines, the minimap, pictures) is enlarged with Scale2x (Scale4x at 4x) instead of nearest-neighbour, which rounds the steps in text and diagonals while keeping the colors.
 
-`painted_set.py` writes all three from the textures in `assets/painted/ui`.
+- With the material, everything else on the main screen without HD art (text, the minimap, pictures) gets a gentler version of the same tone (a third desaturated, a little warmer), so the original colors sit with the painted art without losing their meaning.
+
+`painted_set.py` writes all of this from the textures in `assets/painted/ui`.
+
+### Full-screen pictures
+
+The advisors, leaders, city view, intro and other pictures come from the original game files, so they cannot be painted without them. `tools/hdart/repaint_pictures.py` repaints them from your own copy:
+
+1. Set `"ExportHDTemplates": true` in the `Debug` section of `~/Games/OpenCivOne/Preferences.json` and play for a while: every picture the game loads is written to `~/Games/OpenCivOne/hd-templates`.
+2. Run `OPENAI_API_KEY=... python3 tools/hdart/repaint_pictures.py ~/Games/OpenCivOne/hd-templates CONCEPT.png OUT`. Each full-screen picture is sent to the OpenAI Images API with the concept image, asking for the same picture painted in its style with the composition and lettering kept, and is written as `OUT/NAME.png` at the HD size. `--only NAME ...` limits it to some pictures (and also allows ones it would skip).
+3. Copy the files into the `hd` folder and look at each in the game; delete a file to go back to the original.
+
+Sprite sheets (map tiles, units, city buildings, leader faces, wonders and the like) are skipped, since the game cuts them into pieces at fixed places that a repainted sheet would not keep.
 
 ## How it works
 

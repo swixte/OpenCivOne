@@ -268,6 +268,20 @@ namespace OpenCivOne.Graphics
 			_uiMaterialSize = 0;
 		}
 
+		/// <summary>
+		/// A gentler version of the painted boxes' tone, for pixels without HD art: a third desaturated, a little warmer
+		/// </summary>
+		private static uint GradeColor(uint color)
+		{
+			float r = (color >> 16) & 0xff, g = (color >> 8) & 0xff, b = color & 0xff;
+			float grey = (r * 0.3f) + (g * 0.59f) + (b * 0.11f);
+			r = (r * 0.67f) + (grey * 0.33f) + 4;
+			g = (g * 0.67f) + (grey * 0.33f) + 2;
+			b = (b * 0.67f) + (grey * 0.33f) - 3;
+
+			return (color & 0xff000000) | ((uint)Math.Clamp(r, 0, 255) << 16) | ((uint)Math.Clamp(g, 0, 255) << 8) | (uint)Math.Clamp(b, 0, 255);
+		}
+
 		private void FillUIMaterial(GRectangle rect)
 		{
 			if (_uiMaterial == null || rect.Width < 6 || rect.Height < 6)
@@ -877,6 +891,11 @@ namespace OpenCivOne.Graphics
 			int[] rows = new int[hdWidth * HDScale];
 			int pixelAddress = 0;
 			byte[]? smooth = _smoothUpscale ? this.ScaleIndexes() : null;
+			// with the UI material, pixels without HD art (text, the minimap, pictures) get a gentler version of its tone
+			uint[] palette = new uint[256];
+
+			for (int c = 0; c < 256; c++)
+				palette[c] = (this._useUIMaterial && _uiMaterial != null) ? GradeColor(this.oPalette[(byte)c].ToUInt32()) : this.oPalette[(byte)c].ToUInt32();
 
 			for (int i = 0; i < this.iHeight; i++)
 			{
@@ -890,7 +909,7 @@ namespace OpenCivOne.Graphics
 					{
 						for (int l = 0; l < HDScale; l++)
 						{
-							uint pixel = (smooth != null && !isHD) ? this.oPalette[smooth[hdAddress + (k * hdWidth) + l]].ToUInt32() : color;
+							uint pixel = (smooth != null && !isHD) ? palette[smooth[hdAddress + (k * hdWidth) + l]] : (isHD ? color : palette[this.aPixels[pixelAddress]]);
 
 							if (isHD)
 							{
