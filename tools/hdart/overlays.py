@@ -2,6 +2,7 @@
 
 import numpy as np
 from common import T, grid, fbm, hash2, ramp, pick, blank, Sprite, key_primary, poly_mask
+import style
 
 X, Y = grid()
 DIRS = {1: (0, -1), 2: (1, -1), 3: (1, 0), 4: (1, 1), 5: (0, 1), 6: (-1, 1), 7: (-1, 0), 8: (-1, -1)}
@@ -257,6 +258,18 @@ def city_streets(up=0):
     The city size is printed over the middle, so the middle is an open square in player color.
     With `up`, the back roofs and a tower rise into the tile above (no key colors there).
     """
+    spr = style.sprite('city')
+    if spr is not None:
+        # the pack's city over the whole cell, with a plate in the player's colors behind the size number
+        img = blank(30, 30 + up)
+        style.paste(img, style.fit(spr, width=30, height=29 + up), 15, 29.5 + up)
+        plate = Sprite(30, 30 + up, MATS)
+        plate.rect(7, 7 + up, 21, 21 + up, 'S', 0)
+        plate.rect(8, 8 + up, 20, 20 + up, 'P', 0.6)
+        p = plate.render(outline=None)
+        shown = p[..., 3] > 0
+        img[shown] = p[shown]
+        return img
     s = Sprite(30, 30 + up, MATS)
     o = up
     s.rect(0, o, 30, 30 + o, 'stone', -0.5)
@@ -302,6 +315,13 @@ def fortress():
 
 
 def hut():
+    spr = style.sprite('hut')
+    if spr is not None:
+        img = blank(30, 30)
+        fitted = style.fit(spr, width=26, height=22)
+        style.shadow(img, 15, 27, fitted.shape[1] * 0.45)
+        style.paste(img, fitted, 15, 27.5)
+        return img
     s = Sprite(30, 30, MATS)
     for cx, cy, r in ((10, 18, 6), (21, 20, 5.5), (16, 11, 4.5)):
         s.rect(cx - r + 1, cy, cx + r - 1, cy + r * 0.9, 'wood', 0)

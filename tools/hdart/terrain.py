@@ -11,6 +11,17 @@ How the game uses these (MapManagement.F0_2aea_03ba_DrawCell):
 
 import numpy as np
 from common import (T, grid, fbm, vnoise, hash2, ramp, pick, blank, over, bayer)
+import style
+
+
+def from_pack(name):
+    """Use the style pack's texture for `name` when it has one, otherwise the procedural one."""
+    def wrap(fn):
+        def inner(*args, **kwargs):
+            tex = style.texture(name, T)
+            return tex.copy() if tex is not None else fn(*args, **kwargs)
+        return inner
+    return wrap
 
 # ---------- palettes (dark to light) ----------
 R = dict(
@@ -58,6 +69,7 @@ def _img_from(colors, alpha=None):
 
 # ---------- grass background ----------
 
+@from_pack('grass')
 def grass_background():
     h = lambda x, y: fbm(x, y, 11) + fbm(x, y, 12, cells=(4, 2)) * 0.3
     v = 0.5 + (fbm(X, Y, 13, cells=(32, 16)) - 0.5) * 0.7 + (h(X + 1, Y + 1) - h(X - 1, Y - 1)) * 2.2
@@ -113,6 +125,7 @@ def apply_coverage(colors, f, rim_dark=None, rim_light=None):
 
 # ---------- terrain materials (full tile, tileable) ----------
 
+@from_pack('desert')
 def desert_texture():
     def h(x, y):
         return np.sin(2 * np.pi * (2 * x + y) / T + fbm(x, y, 31, cells=(16, 8)) * 9) * 0.5
@@ -121,6 +134,7 @@ def desert_texture():
     return pick(R['desert'], v, X, Y)
 
 
+@from_pack('plains')
 def plains_texture():
     h = lambda x, y: fbm(x, y, 22) + fbm(x, y, 23, cells=(4, 2)) * 0.25
     v = 0.5 + (fbm(X, Y, 21, cells=(32, 16)) - 0.5) * 0.6 + (h(X + 1, Y + 1) - h(X - 1, Y - 1)) * 2.2
@@ -129,6 +143,7 @@ def plains_texture():
     return pick(R['plains'], v, X, Y)
 
 
+@from_pack('grassland')
 def meadow_texture():
     h = lambda x, y: fbm(x, y, 41) + fbm(x, y, 42, cells=(4, 2)) * 0.3
     v = 0.5 + (fbm(X, Y, 43, cells=(32, 16)) - 0.5) * 0.5 + (h(X + 1, Y + 1) - h(X - 1, Y - 1)) * 2.0
@@ -138,6 +153,7 @@ def meadow_texture():
     return img
 
 
+@from_pack('rock')
 def rock_texture(seed=74):
     h = lambda x, y: fbm(x, y, seed + 1, cells=(8, 4, 2))
     v = 0.45 + (fbm(X, Y, seed, cells=(16, 8)) - 0.5) * 0.6 + (h(X + 1, Y + 1) - h(X - 1, Y - 1)) * 2.4
@@ -145,12 +161,14 @@ def rock_texture(seed=74):
     return pick(R['rock'], v, X, Y)
 
 
+@from_pack('hills_floor')
 def hills_floor_texture():
     h = lambda x, y: fbm(x, y, 72) + fbm(x, y, 73, cells=(4, 2)) * 0.3
     v = 0.5 + (fbm(X, Y, 71, cells=(32, 16)) - 0.5) * 0.6 + (h(X + 1, Y + 1) - h(X - 1, Y - 1)) * 2.4
     return pick(R['hills_floor'], v, X, Y)
 
 
+@from_pack('forest_floor')
 def forest_floor_texture():
     v = 0.5 + (fbm(X, Y, 81, cells=(16, 8, 4)) - 0.5) * 0.8
     return pick(R['forest_floor'], v, X, Y)
@@ -214,8 +232,14 @@ def forest(mask, up=0):
                 continue
             h = 9 + float(hash2(bx, by, 303)) * 3 + (min(up, 8) * 0.9 if ri == 0 else up * 0.25)
             trees.append((cx, base, h, 4.2 + float(hash2(bx, by, 304)) * 1.2 + (0.6 if ri == 0 and up else 0)))
-    for cx, base, h, w in sorted(trees, key=lambda t: t[1]):
-        _tree(img, cx, base, h, w, 305, oy=up)
+    tree = style.sprite('tree')
+    for i, (cx, base, h, w) in enumerate(sorted(trees, key=lambda t: t[1])):
+        if tree is not None:
+            spr = style.fit(tree, height=h * 1.25)
+            style.shadow(img, cx + 1, base + up, spr.shape[1] * 0.4, alpha=60)
+            style.paste(img, spr, cx, base + up + 0.5)
+        else:
+            _tree(img, cx, base, h, w, 305, oy=up)
     return img
 
 
@@ -250,9 +274,13 @@ def hills(mask, up=0):
     for bit, d in extra.items():
         if mask & (1 << bit):
             domes.append(d)
+    hill = style.sprite('hill')
     for cx, cy, rx, ry in sorted(domes, key=lambda d: d[1]):
         if f[int(np.clip(cy, 0, 31)), int(np.clip(cx, 0, 31))] > 3:
-            _dome(img, cx, cy, rx, ry, R['hill'], 410 + cx, oy=up)
+            if hill is not None:
+                style.paste(img, style.fit(hill, width=rx * 2.1, height=ry * 1.6), cx, cy + ry * 0.4 + up)
+            else:
+                _dome(img, cx, cy, rx, ry, R['hill'], 410 + cx, oy=up)
     return img
 
 
@@ -291,6 +319,16 @@ def mountains(mask, up=0):
     own = np.zeros(img.shape[:2], dtype=np.int64)
     # side ridges toward connected neighbours, then the main peak, which rises into the tile above when there is room
     side_peaks = {3: (6, 15, 1.5), 1: (26, 15, 1.5), 0: (16, 6, 1.9)}
+    mountain = style.sprite('mountain')
+    if mountain is not None:
+        # side peaks toward connected neighbours, then the main peak rising into the tile above
+        for bit, (ax, ay, k) in side_peaks.items():
+            if mask & (1 << bit):
+                style.paste(img, style.fit(mountain, width=20, height=27 - ay + up * 0.3), ax, 28 + up)
+        main = style.fit(mountain, width=34, height=26 + up * 0.9)
+        style.shadow(img, 17, 29 + up, 15, alpha=70)
+        style.paste(img, main, 16, 30 + up)
+        return img
     pid = 1
     for bit, (ax, ay, k) in side_peaks.items():
         if mask & (1 << bit):
@@ -318,6 +356,7 @@ def plains(mask):
 
 # Terrains without neighbour variants: full tiles that repeat seamlessly.
 
+@from_pack('tundra')
 def tundra():
     h = lambda x, y: fbm(x, y, 43, cells=(8, 4)) + fbm(x, y, 44, cells=(4, 2)) * 0.3
     v = 0.52 + (fbm(X, Y, 41, cells=(32, 16)) - 0.5) * 0.6 + (h(X + 1, Y + 1) - h(X - 1, Y - 1)) * 2.0
@@ -329,6 +368,7 @@ def tundra():
     return img
 
 
+@from_pack('arctic')
 def arctic():
     h = lambda x, y: fbm(x, y, 62, cells=(16, 8)) * 1.2 + fbm(x, y, 63, cells=(4, 2)) * 0.2
     v = 0.62 + (fbm(X, Y, 61, cells=(32, 16)) - 0.5) * 0.4 + (h(X + 1, Y + 1) - h(X - 1, Y - 1)) * 2.8
@@ -338,6 +378,7 @@ def arctic():
     return _img_from(pick(R['arctic'], v, X, Y))
 
 
+@from_pack('swamp')
 def swamp():
     p = fbm(X, Y, 51, cells=(32, 16, 8))
     pool = p > 0.56
@@ -362,13 +403,25 @@ def jungle(up=0):
     Xj, Yj = gx_, gy_ - up
     img = np.zeros((T + up, T, 4), dtype=np.uint8)
     floor = Yj >= 0
-    img[floor] = pick(R['jungle_floor'], 0.5 + (fbm(Xj, Yj, 91, cells=(8, 4)) - 0.5) * 0.8, Xj, Yj)[floor]
+    floor_tex = style.texture('jungle_floor', T)
+    if floor_tex is not None:
+        img[up:] = floor_tex
+    else:
+        img[floor] = pick(R['jungle_floor'], 0.5 + (fbm(Xj, Yj, 91, cells=(8, 4)) - 0.5) * 0.8, Xj, Yj)[floor]
     blobs = []
     for gy in range(4):
         for gx in range(4):
             cx = gx * 8 + 4 + (float(hash2(gx, gy, 92)) - 0.5) * 4 + (4 if gy % 2 else 0)
             cy = gy * 8 + 4 + (float(hash2(gx, gy, 93)) - 0.5) * 3 - (min(up, 6) * 0.5 if gy == 0 else 0)
             blobs.append((cx % T, cy, 5.2 + float(hash2(gx, gy, 94)) * 1.6))
+    palm = style.sprite('jungle_tree')
+    if palm is not None:
+        # trees on the same grid, repeated left and right so the tile joins its neighbours
+        for cx, cy, r in sorted(blobs, key=lambda b: b[1]):
+            spr = style.fit(palm, height=r * 2.6)
+            for ox in (-T, 0, T):
+                style.paste(img, spr, cx + ox, cy + r + up)
+        return img
     for cx, cy, r in sorted(blobs, key=lambda b: b[1]):
         for ox in (-T, 0, T):
             for oy in ((0,) if up else (-T, 0, T)):
@@ -439,15 +492,26 @@ def ocean_field(land_dirs):
     wave = (h(X + 1, Y + 1) - h(X - 1, Y - 1)) * 1.6
     depth = np.clip(1 - d / 13, 0, 1)
     v = 0.22 + depth * 0.6 + wave * 0.3 + (fbm(X, Y, 703, cells=(32, 16)) - 0.5) * 0.12
-    img = _img_from(pick(R['water'], v, X, Y, dither=0.55))
-    glint = (hash2(X, Y, 704) < 0.004) & (depth < 0.3)
-    img[glint] = R['water'][7]
+    water = style.texture('ocean', T)
+    if water is not None:
+        # the pack's water, lighter and more turquoise toward the shore
+        rgb = water[..., :3].astype(np.float64) * (0.8 + depth[..., None] * 0.5)
+        rgb = rgb * (1 - depth[..., None] * 0.3) + np.array([90.0, 190.0, 200.0]) * depth[..., None] * 0.3
+        img = _img_from(np.concatenate([np.clip(rgb, 0, 255), np.full((T, T, 1), 255.0)], -1).astype(np.uint8))
+    else:
+        img = _img_from(pick(R['water'], v, X, Y, dither=0.55))
+        glint = (hash2(X, Y, 704) < 0.004) & (depth < 0.3)
+        img[glint] = R['water'][7]
     foam2 = (d > 3.4) & (d < 4.2) & (fbm(X, Y, 705, cells=(8, 4)) > 0.62)
     img[foam2] = FOAM2
     foam = (d <= 2.6) & (d > 1.6) & ((bayer(X, Y) + (fbm(X, Y, 706, cells=(4, 2)) - 0.5)) > 0.05)
     img[foam] = FOAM
     beach = d <= 1.6
-    img[beach] = pick(R['sand'], 0.25 + d / 1.6 * 0.5 + (fbm(X, Y, 707, cells=(4, 2)) - 0.5) * 0.4, X, Y)[beach]
+    sand = style.texture('sand', T)
+    if sand is not None:
+        img[beach] = sand[beach]
+    else:
+        img[beach] = pick(R['sand'], 0.25 + d / 1.6 * 0.5 + (fbm(X, Y, 707, cells=(4, 2)) - 0.5) * 0.4, X, Y)[beach]
     return img
 
 

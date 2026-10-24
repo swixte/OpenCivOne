@@ -1,7 +1,7 @@
 """Renders sample maps from the generated HD sprites, using the same tile choices as the game
 (MapManagement.F0_2aea_03ba_DrawCell), so the art can be checked in place without the game files.
 
-Usage: python3 preview.py OUT.png [--scale N]
+Usage: python3 preview.py OUT.png [--scale N] [--scene] [--style PACK_DIR]
 """
 
 import sys
@@ -228,7 +228,7 @@ def scene(atlas):
                  (27, 1, 18, 2), (12, 1, 15, 5)]
     us = []
     for kind, player, x, y in unit_list:
-        img = with_player(u.UNITS[kind](), player)
+        img = with_player(u.unit(kind), player)
         us.append((img, x, y, 0, 0))
     out = compose(SCENE, atlas, units=us, cities=city_imgs, roads=overlays, resources=res)
     # fog: the bottom right corner is unexplored
@@ -249,6 +249,9 @@ def scene(atlas):
 
 if __name__ == '__main__':
     path = sys.argv[1]
+    if '--style' in sys.argv:
+        import style
+        style.load(sys.argv[sys.argv.index('--style') + 1])
     scale = int(sys.argv[sys.argv.index('--scale') + 1]) if '--scale' in sys.argv else 2
     img = scene(Atlas()) if '--scene' in sys.argv else compose(SAMPLE, Atlas())
     Image.fromarray(img).resize((img.shape[1] * scale, img.shape[0] * scale), Image.NEAREST).save(path)

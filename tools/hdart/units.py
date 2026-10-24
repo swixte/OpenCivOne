@@ -463,3 +463,35 @@ def transport():
 UNITS = [settler, militia, phalanx, legion, musketeers, riflemen, cavalry, knights, catapult, cannon,
          chariot, armor, mech_infantry, artillery, fighter, bomber, trireme, sail, frigate, ironclad,
          cruiser, battleship, submarine, carrier, transport, nuclear, diplomat, caravan]
+
+
+UNIT_NAMES = ['settlers', 'militia', 'phalanx', 'legion', 'musketeers', 'riflemen', 'cavalry', 'knights', 'catapult', 'cannon',
+              'chariot', 'armor', 'mech_infantry', 'artillery', 'fighter', 'bomber', 'trireme', 'sail', 'frigate', 'ironclad',
+              'cruiser', 'battleship', 'submarine', 'carrier', 'transport', 'nuclear', 'diplomat', 'caravan']
+
+
+def unit(j):
+    """Unit j in UnitTypeEnum order: the style pack's sprite when it has one, otherwise the drawn unit.
+
+    A pack sprite is fitted into the tile with a drop shadow, and gets a small banner in the player's
+    colors (key colors), since the image itself has no player colors.
+    """
+    import numpy as np
+    import style
+    spr = style.sprite(UNIT_NAMES[j])
+    if spr is None:
+        return UNITS[j]()
+    img = np.zeros((30, 30, 4), dtype=np.uint8)
+    ship = 16 <= j <= 24
+    fitted = style.fit(spr, width=27, height=25)
+    if not ship:
+        style.shadow(img, 15, 27.5, fitted.shape[1] * 0.42, alpha=80)
+    style.paste(img, fitted, 15, 28)
+    banner = Sprite(30, 30, M)
+    banner.line(2.5, 1, 2.5, 11, 1, 'wood', 0)
+    banner.rect(3, 1, 9, 5, 'P', 0.3)
+    banner.rect(3, 5, 9, 6.5, 'S', 0)
+    flag = banner.render()
+    shown = flag[..., 3] > 0
+    img[shown] = flag[shown]
+    return img

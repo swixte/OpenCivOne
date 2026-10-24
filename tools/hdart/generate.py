@@ -1,6 +1,8 @@
 """Writes the HD map art as per-sprite region files, in the layout the game cuts its sprites from.
 
-Usage: python3 generate.py [OUTPUT_DIR]     (default: assets/hd in the repository)
+Usage: python3 generate.py [OUTPUT_DIR] [--style PACK_DIR]     (default output: assets/hd in the repository)
+
+With --style, art from a style pack folder replaces the drawn art where the pack has it (see style.py).
 
 Copy the output folder's contents into the 'hd' folder next to the game's PIC files.
 Region files are named X_Y.png, X and Y being the sprite's top left corner in the original
@@ -58,8 +60,8 @@ def sprites():
         yield 'SP257', 80 + i * 16, 128, '', o.fog(direction)
     for i in range(8):
         yield 'SP257', i * 16 + 1, 97, '', o.explosion(i)
-    for j, fn in enumerate(u.UNITS):
-        yield 'SP257', (j % 20) * 16 + 1, (j // 20) * 16 + 161, '', fn()
+    for j in range(len(u.UNITS)):
+        yield 'SP257', (j % 20) * 16 + 1, (j // 20) * 16 + 161, '', u.unit(j)
 
 
 def main(out):
@@ -76,5 +78,11 @@ def main(out):
 
 
 if __name__ == '__main__':
+    import style
     here = os.path.dirname(os.path.abspath(__file__))
-    main(sys.argv[1] if len(sys.argv) > 1 else os.path.join(here, '..', '..', 'assets', 'hd'))
+    args = sys.argv[1:]
+    if '--style' in args:
+        i = args.index('--style')
+        style.load(args[i + 1])
+        del args[i:i + 2]
+    main(args[0] if args else os.path.join(here, '..', '..', 'assets', 'hd'))

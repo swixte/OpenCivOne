@@ -22,6 +22,10 @@ It is meant for working on the engine and the art; for the real game, use the or
 
 To change the art, edit the generator in `tools/hdart` and run `python3 tools/hdart/generate.py` (needs numpy and Pillow). `python3 tools/hdart/preview.py out.png --scene` renders a sample map with the same tile choices the game makes.
 
+### Art from images
+
+`python3 tools/hdart/generate.py OUT --style PACK` builds the set from a folder of images instead of drawing it: a texture image for each terrain, made to repeat without seams, and sprites for trees, hills, mountains, jungle, cities, huts and units, which get their backgrounds removed, are scaled to the tile and get drop shadows. Units also get a small banner in the player's colors. Anything the folder lacks is drawn as before. `tools/hdart/style.py` lists the file names; `preview.py` takes the same `--style PACK`.
+
 ## How it works
 
 Every PIC file the game loads can have HD versions in the `hd` folder:
