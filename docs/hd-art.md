@@ -36,7 +36,7 @@ With an `hd/painted` folder, the map is no longer built from terrain tiles. The 
 - trees, jungle, hills and mountains are scattered over their cells and reach into the cells around them, back to front, with soft shadows;
 - drifting cloud shadows and a colour grade lie over everything.
 
-Each map cell shows its square of that painting. Irrigation, roads, mines, resources, huts, cities, units and fog borders are drawn over it as before, from the HD set or the original sprites. The world is painted in chunks of 8x8 cells when they are first shown, and a chunk is painted again when the terrain under it changes. The same cell always gets the same trees and peaks.
+Each map cell shows its square of that painting. Irrigation, roads, mines, resources, huts, cities, units and fog borders are drawn over it as before, from the HD set or the original sprites. The world is painted in chunks of 8x8 cells: the chunk a cell needs is painted when it is first shown (about a fifth of a second), and from then on a background thread paints the rest of the world on one core, nearest chunks first, so scrolling rarely waits. A chunk is painted again when the terrain under it changes. The same cell always gets the same trees and peaks.
 
 The painting works at either HD scale; at 4x (`scale.txt` with `4`) it is 64 pixels per cell.
 

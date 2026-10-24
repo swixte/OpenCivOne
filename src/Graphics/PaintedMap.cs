@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using SkiaSharp;
 
 namespace OpenCivOne.Graphics
@@ -51,6 +52,14 @@ namespace OpenCivOne.Graphics
 		private readonly Dictionary<string, List<Sprite>> sprites = new Dictionary<string, List<Sprite>>();
 		private readonly Dictionary<(int X, int Y), Chunk> chunks = new Dictionary<(int X, int Y), Chunk>();
 
+		// The world is also painted on a background thread, nearest chunks first, so the map rarely waits for painting.
+		// The game waits for a chunk the background thread is painting rather than paint it twice.
+		private readonly object chunkLock = new object();
+		private Thread? painter = null;
+		private bool painterRestart = false;
+		private (int X, int Y) painterCentre = (0, 0);
+		private (int X, int Y)? painterChunk = null;
+
 		private class Texture
 		{
 			public int Size;
@@ -64,6 +73,31 @@ namespace OpenCivOne.Graphics
 			public float[] R = Array.Empty<float>(), G = Array.Empty<float>(), B = Array.Empty<float>(), A = Array.Empty<float>();
 			// softened alpha, for the cast shadow
 			public float[] Soft = Array.Empty<float>();
+		}
+
+		// The terrain around a chunk, read from the map once before it is painted
+		private class TerrainGrid
+		{
+			public const int Margin = 4;
+			private readonly int left, top, width;
+			private readonly int[] values;
+
+			public TerrainGrid(PaintedMap map, int cx, int cy)
+			{
+				this.left = (cx * ChunkCells) - Margin;
+				this.top = (cy * ChunkCells) - Margin;
+				this.width = ChunkCells + (2 * Margin);
+				this.values = new int[this.width * this.width];
+
+				for (int j = 0; j < this.width; j++)
+					for (int i = 0; i < this.width; i++)
+						this.values[(j * this.width) + i] = map.Terrain(this.left + i, this.top + j);
+			}
+
+			public int At(int x, int y)
+			{
+				return this.values[((y - this.top) * this.width) + (x - this.left)];
+			}
 		}
 
 		private class Chunk
@@ -131,6 +165,14 @@ namespace OpenCivOne.Graphics
 
 				map.sprites[set] = list;
 			}
+
+			// every texture is in place before painting starts, so painting threads only read them
+			foreach ((string Name, float Weight)[] parts in Ground)
+				foreach ((string name, float _) in parts)
+					map.TextureOr(name);
+
+			map.TextureOr("ocean");
+			map.TextureOr("shallow");
 
 			return map;
 		}
@@ -237,20 +279,155 @@ namespace OpenCivOne.Graphics
 		/// </summary>
 		public void Clear()
 		{
-			this.chunks.Clear();
+			lock (this.chunkLock)
+			{
+				this.chunks.Clear();
+			}
 		}
 
 		private Chunk GetChunk(int cx, int cy)
 		{
 			long signature = this.Signature(cx, cy);
+			Chunk? chunk;
 
-			if (!this.chunks.TryGetValue((cx, cy), out Chunk? chunk) || chunk.Signature != signature)
+			lock (this.chunkLock)
 			{
-				chunk = new Chunk { Signature = signature, Pixels = this.Paint(cx, cy) };
-				this.chunks[(cx, cy)] = chunk;
+				// the background thread is painting this one: wait for it rather than paint it twice
+				while (this.painterChunk == (cx, cy))
+					Monitor.Wait(this.chunkLock);
+
+				this.chunks.TryGetValue((cx, cy), out chunk);
+			}
+
+			if (chunk == null || chunk.Signature != signature)
+			{
+				chunk = new Chunk { Signature = signature, Pixels = this.Paint(cx, cy, true) };
+
+				lock (this.chunkLock)
+				{
+					this.chunks[(cx, cy)] = chunk;
+				}
+
+				this.PaintInBackground(cx, cy);
 			}
 
 			return chunk;
+		}
+
+		/// <summary>
+		/// Paints the chunks that are missing or out of date on a background thread, the nearest to (cx, cy) first
+		/// </summary>
+		private void PaintInBackground(int cx, int cy)
+		{
+			lock (this.chunkLock)
+			{
+				this.painterCentre = (cx, cy);
+
+				if (this.painter != null)
+				{
+					this.painterRestart = true;
+				}
+				else
+				{
+					this.painter = new Thread(this.BackgroundPainter) { IsBackground = true, Priority = ThreadPriority.BelowNormal, Name = "Painted map" };
+					this.painter.Start();
+				}
+			}
+		}
+
+		private void BackgroundPainter()
+		{
+			try
+			{
+				while (true)
+				{
+					(int X, int Y) centre;
+
+					lock (this.chunkLock)
+					{
+						centre = this.painterCentre;
+						this.painterRestart = false;
+					}
+
+					int columns = MapWidth / ChunkCells, rows = ((MapHeight - 1) / ChunkCells) + 1;
+					List<(int X, int Y)> order = new List<(int X, int Y)>();
+
+					for (int y = 0; y < rows; y++)
+						for (int x = 0; x < columns; x++)
+							order.Add((x, y));
+
+					// the world wraps around horizontally
+					int Distance((int X, int Y) c)
+					{
+						int dx = Math.Abs(c.X - centre.X);
+						return Math.Max(Math.Min(dx, columns - dx), Math.Abs(c.Y - centre.Y));
+					}
+
+					order.Sort((a, b) => Distance(a).CompareTo(Distance(b)));
+					bool restart = false;
+
+					foreach ((int x, int y) in order)
+					{
+						lock (this.chunkLock)
+						{
+							restart = this.painterRestart;
+						}
+
+						if (restart)
+							break;
+
+						long signature = this.Signature(x, y);
+						Chunk? chunk;
+
+						lock (this.chunkLock)
+						{
+							this.chunks.TryGetValue((x, y), out chunk);
+
+							if (chunk != null && chunk.Signature == signature)
+								continue;
+
+							this.painterChunk = (x, y);
+						}
+
+						try
+						{
+							// one core at low priority, so the game itself keeps running smoothly
+							Chunk painted = new Chunk { Signature = signature, Pixels = this.Paint(x, y, false) };
+
+							lock (this.chunkLock)
+							{
+								if (!this.chunks.TryGetValue((x, y), out chunk) || chunk.Signature != signature)
+									this.chunks[(x, y)] = painted;
+							}
+						}
+						finally
+						{
+							lock (this.chunkLock)
+							{
+								this.painterChunk = null;
+								Monitor.PulseAll(this.chunkLock);
+							}
+						}
+					}
+
+					lock (this.chunkLock)
+					{
+						if (!this.painterRestart)
+						{
+							this.painter = null;
+							return;
+						}
+					}
+				}
+			}
+			catch (Exception)
+			{
+				// the map could not be read just now (for example while a game loads), chunks are then painted when shown
+				lock (this.chunkLock)
+				{
+					this.painter = null;
+				}
+			}
 		}
 
 		// The terrain a chunk's painting depends on: its own cells and the ones whose art can reach into it
@@ -339,7 +516,8 @@ namespace OpenCivOne.Graphics
 
 		#region Painting
 
-		private uint[] Paint(int cx, int cy)
+		/// <param name="parallel">Paint rows on all cores, for a chunk the game is waiting for</param>
+		private uint[] Paint(int cx, int cy, bool parallel)
 		{
 			int size = ChunkCells * this.cell;
 			int x0 = cx * size, y0 = cy * size;
@@ -350,8 +528,11 @@ namespace OpenCivOne.Graphics
 			float riverWidth = 3.6f * k, bankWidth = 6.5f * k;
 
 			Texture ocean = this.TextureOr("ocean"), shallow = this.TextureOr("shallow");
+			(Texture Texture, float Weight)[][] ground = Array.ConvertAll(Ground, parts => Array.ConvertAll(parts, part => (this.TextureOr(part.Name), part.Weight)));
+			TerrainGrid grid = new TerrainGrid(this, cx, cy);
 
-			for (int py = 0; py < size; py++)
+			// rows are independent, so they can be painted in parallel
+			Rows(size, parallel, py =>
 			{
 				int wy = y0 + py;
 
@@ -377,15 +558,14 @@ namespace OpenCivOne.Graphics
 
 						for (int di = -1; di <= 1; di++)
 						{
-							int terrain = this.Terrain(ci + di, cj + dj);
+							int terrain = grid.At(ci + di, cj + dj);
 							bool isLand = terrain != Water;
 							float w = wyG * this.Weight(qx, ci + di, groundRadius);
 
 							if (w > 0)
 							{
-								foreach ((string name, float weight) in Ground[terrain])
+								foreach ((Texture t, float weight) in ground[terrain])
 								{
-									Texture t = this.TextureOr(name);
 									int ti = this.TextureIndex(t, wx, wy);
 									gr += w * weight * t.R[ti];
 									gg += w * weight * t.G[ti];
@@ -424,7 +604,7 @@ namespace OpenCivOne.Graphics
 
 							for (int di = -2; di <= 2; di++)
 							{
-								if (this.Terrain(ui + di, uj + dj) != Water)
+								if (grid.At(ui + di, uj + dj) != Water)
 									near += wyD * this.Weight(wx, ui + di, depthRadius);
 							}
 						}
@@ -448,14 +628,14 @@ namespace OpenCivOne.Graphics
 					// rivers wind through river cells and on into the sea
 					if (land >= 0.5f)
 					{
-						float d = this.RiverDistance(qx, qy, ci, cj);
+						float d = this.RiverDistance(grid, qx, qy, ci, cj);
 
 						if (d < bankWidth)
 						{
 							if (d < riverWidth)
 							{
 								int si = this.TextureIndex(shallow, wx, wy);
-								bool lit = this.RiverDistance(qx - (2 * k), qy, ci, cj) >= riverWidth;
+								bool lit = this.RiverDistance(grid, qx - (2 * k), qy, ci, cj) >= riverWidth;
 								float light = lit ? 1.35f : 1f;
 								r[i] = ((shallow.R[si] * 0.7f) + 18) * light;
 								g[i] = ((shallow.G[si] * 0.7f) + 21) * light;
@@ -470,14 +650,14 @@ namespace OpenCivOne.Graphics
 						}
 					}
 				}
-			}
+			});
 
 			this.PaintScenery(cx, cy, r, g, b, size);
 
 			// light: drifting cloud shadows and a slight warm grade on the highlights
 			uint[] pixels = new uint[size * size];
 
-			for (int py = 0; py < size; py++)
+			Rows(size, parallel, py =>
 			{
 				for (int px = 0; px < size; px++)
 				{
@@ -492,9 +672,40 @@ namespace OpenCivOne.Graphics
 					float bb = (b[i] * scale) - (6 * l) + (4 * (1 - l));
 					pixels[i] = 0xff000000u | ((uint)Math.Clamp(rr, 0, 255) << 16) | ((uint)Math.Clamp(gg2, 0, 255) << 8) | (uint)Math.Clamp(bb, 0, 255);
 				}
-			}
+			});
 
 			return pixels;
+		}
+
+		/// <summary>
+		/// Runs row(0 .. count - 1), in parallel on threads of its own. Not on the thread pool: the game's timer runs there,
+		/// and its callbacks can be waiting for the graphics lock that the painting thread holds.
+		/// </summary>
+		private static void Rows(int count, bool parallel, Action<int> row)
+		{
+			int threads = parallel ? Math.Clamp(Environment.ProcessorCount, 1, 8) : 1;
+			int next = -1;
+
+			void Work()
+			{
+				int i;
+
+				while ((i = Interlocked.Increment(ref next)) < count)
+					row(i);
+			}
+
+			Thread[] helpers = new Thread[threads - 1];
+
+			for (int t = 0; t < helpers.Length; t++)
+			{
+				helpers[t] = new Thread(Work) { IsBackground = true, Name = "Painted map rows" };
+				helpers[t].Start();
+			}
+
+			Work();
+
+			foreach (Thread helper in helpers)
+				helper.Join();
 		}
 
 		private Texture TextureOr(string name)
@@ -524,7 +735,7 @@ namespace OpenCivOne.Graphics
 		/// Distance from a point to the river lines of the cells around it: each river cell joins its centre to the
 		/// centres of neighbouring river and ocean cells
 		/// </summary>
-		private float RiverDistance(float x, float y, int ci, int cj)
+		private float RiverDistance(TerrainGrid grid, float x, float y, int ci, int cj)
 		{
 			float best = float.MaxValue;
 			float half = this.cell / 2f;
@@ -535,7 +746,7 @@ namespace OpenCivOne.Graphics
 				{
 					int i = ci + di, j = cj + dj;
 
-					if (this.Terrain(i, j) != River)
+					if (grid.At(i, j) != River)
 						continue;
 
 					float ax = (i * this.cell) + half, ay = (j * this.cell) + half;
@@ -543,7 +754,7 @@ namespace OpenCivOne.Graphics
 
 					foreach ((int nx, int ny) in new[] { (0, -1), (1, 0), (0, 1), (-1, 0) })
 					{
-						int terrain = this.Terrain(i + nx, j + ny);
+						int terrain = grid.At(i + nx, j + ny);
 
 						if (terrain == River || terrain == Water)
 						{
