@@ -11,7 +11,7 @@ void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "PASS" : "FAIL")} 
 
 string dir = Path.Combine(Path.GetTempPath(), "hdtest-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(dir);
-const int S = GBitmap.HDScale;
+int S = GBitmap.HDScale;
 
 uint[] Render(GBitmap b)
 {
@@ -347,6 +347,53 @@ void CopyDirectory(string from, string to)
 	Directory.CreateDirectory(to);
 	foreach (string f in Directory.GetFiles(from)) File.Copy(f, Path.Combine(to, Path.GetFileName(f)));
 	foreach (string d in Directory.GetDirectories(from)) CopyDirectory(d, Path.Combine(to, Path.GetFileName(d)));
+}
+
+// ---------- 10. 4x art (64x64 tiles) ----------
+{
+	GBitmap.HDScale = 4;
+	string pic = Path.Combine(dir, "FOUR.PIC");
+	File.Copy(picPath, pic);
+	string regionDir = Path.Combine(hdDir, "FOUR");
+	Directory.CreateDirectory(regionDir);
+	using (var art = new SKBitmap(64, 80, SKColorType.Bgra8888, SKAlphaType.Unpremul))
+	{
+		art.Erase(SKColors.Transparent);
+		for (int y = 0; y < 16; y++) for (int x = 24; x < 40; x++) art.SetPixel(x, y, new SKColor(0xff, 0x00, 0x00));      // tall part, 4 rows
+		for (int y = 16; y < 80; y++) for (int x = 8; x < 56; x++) art.SetPixel(x, y, new SKColor(0x00, (byte)(y * 3), 0xff));
+		using var fs = File.Create(Path.Combine(regionDir, "0_0_t4.png")); art.Encode(fs, SKEncodedImageFormat.Png, 100);
+	}
+	var loaded = GBitmap.FromPICFile(pic, false)!;
+	var sheet = new GBitmap();
+	sheet.DrawBitmap(0, 0, loaded, false);
+	var sprite = new GBitmap(16, 16);
+	sprite.DrawBitmap(0, 0, sheet, new GRectangle(0, 0, 16, 16), false);
+	var screen = new GBitmap();
+	screen.FillRectangle(new GRectangle(0, 0, 320, 200), 5, PixelWriteModeEnum.Normal);
+	screen.DrawBitmap(100, 40, sprite, true);
+	screen.DrawBitmap(20, 20, other4(), true);
+
+	int w = 320 * 4, h = 200 * 4;
+	IntPtr mem = Marshal.AllocHGlobal(w * h * 4);
+	screen.WriteScaledPixels(mem, w * 4);
+	int[] px = new int[w * h];
+	Marshal.Copy(mem, px, 0, px.Length);
+	Marshal.FreeHGlobal(mem);
+	uint At(int x, int y) => (uint)px[y * w + x] & 0xffffff;
+	Check(At(100 * 4 + 20, 40 * 4 + 20) == ((0u << 16) | ((uint)(36 * 3) << 8) | 0xff), $"4x: HD pixel drawn at full 4x detail ({At(100 * 4 + 20, 40 * 4 + 20):x6})");
+	Check(At(100 * 4 + 21, 40 * 4 + 21) != At(100 * 4 + 21, 40 * 4 + 22), "4x: neighbouring rows within one original pixel differ (4x4 blocks are used)");
+	Check(At(100 * 4 + 30, 40 * 4 - 8) == 0xff0000, "4x: tall art is drawn above the sprite");
+	uint bg = PaletteColor(screen, 5) & 0xffffff;
+	Check(At(0, 0) == bg && At(3, 3) == bg, "4x: pixels without HD art are a 4x4 nearest-neighbour block");
+	Check(At(20 * 4, 20 * 4) == (PaletteColor(screen, 12) & 0xffffff), "4x: sprites without HD art fall back to the original");
+	GBitmap.HDScale = 2;
+}
+
+GBitmap other4()
+{
+	var b = new GBitmap(4, 4);
+	b.FillRectangle(new GRectangle(0, 0, 4, 4), 12, PixelWriteModeEnum.Normal);
+	return b;
 }
 
 Directory.Delete(dir, true);

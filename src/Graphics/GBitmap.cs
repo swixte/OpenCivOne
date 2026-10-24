@@ -11,9 +11,22 @@ namespace OpenCivOne.Graphics
 	public class GBitmap
 	{
 		/// <summary>
-		/// Scale of the optional HD layer, relative to the indexed pixels
+		/// Scale of the optional HD layer, relative to the indexed pixels: 2 (32x32 tiles) or 4 (64x64 tiles).
+		/// It has to be set at start, before any HD art is loaded.
 		/// </summary>
-		public const int HDScale = 2;
+		public static int HDScale
+		{
+			get => _hdScale;
+			set
+			{
+				if (value != 2 && value != 4)
+					throw new ArgumentOutOfRangeException(nameof(value), "The HD scale has to be 2 or 4");
+
+				_hdScale = value;
+			}
+		}
+
+		private static int _hdScale = 2;
 
 		private int iWidth;
 		private int iHeight;

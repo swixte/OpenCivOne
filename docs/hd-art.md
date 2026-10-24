@@ -38,6 +38,7 @@ Sprites cut from a sheet carry their part of the HD image with them, so when the
 - Transparent PNG pixels are transparent when the sprite is drawn, and partly transparent pixels are blended (drop shadows).
 - HD art can draw where the original sprite is transparent, as long as it stays inside the sprite's original rectangle.
 - An image with the wrong size is ignored.
+- The art is twice the original size unless the `hd` folder has a `scale.txt` containing `4`: then every image is four times the size (64x64 tiles) and the game renders at 1280x800.
 
 ### Art above the tile
 

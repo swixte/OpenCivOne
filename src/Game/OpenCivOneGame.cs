@@ -137,6 +137,14 @@ namespace OpenCivOne
 
 			this.globalPreferences = GlobalPreferences.DeSerializeFromJSON(this, this.gameMainPath);
 
+			// HD art declares its scale in hd/scale.txt (4 for 64x64 tiles); without it the scale is 2
+			string hdScalePath = $"{this.gameResourcePath}hd{separator}scale.txt";
+
+			if (File.Exists(hdScalePath) && int.TryParse(File.ReadAllText(hdScalePath).Trim(), out int hdScale) && (hdScale == 2 || hdScale == 4))
+			{
+				GBitmap.HDScale = hdScale;
+			}
+
 			if (this.globalPreferences.Debug.ExportHDTemplates)
 			{
 				GBitmap.HDTemplatePath = $"{this.gameMainPath}{separator}hd-templates";
