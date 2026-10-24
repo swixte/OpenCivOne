@@ -396,6 +396,107 @@ GBitmap other4()
 	return b;
 }
 
+// ---------- 11. painted map ----------
+{
+	string repo = AppContext.BaseDirectory;
+	while (!Directory.Exists(Path.Combine(repo, "assets", "painted")))
+		repo = Path.GetDirectoryName(repo.TrimEnd(Path.DirectorySeparatorChar))!;
+	string art = Path.Combine(repo, "assets", "painted");
+
+	string[] scene = {
+		"oooooooooooooooooooooo", "oooooaaaaooooooooooooo", "ooootttttaoooooggooooo", "ooogttffhmmooogppgoooo",
+		"oogggffhhmmmooggpffooo", "oogpgrrrhhmooggprfffoo", "ooppgrggggmooogprgfjoo", "oodppgrfffjoooogrgjjjo",
+		"oodddprssjjjooooorjjoo", "ooodddrsssjooooooooooo", "oooodddrsooooooooooooo", "oooooooooooooooooooooo" };
+	const string codes = "dpgfhmtasjor";
+	int[,] map = new int[80, 50];
+	for (int y = 0; y < 50; y++)
+		for (int x = 0; x < 80; x++)
+			map[x, y] = 10;
+	for (int y = 0; y < scene.Length; y++)
+		for (int x = 0; x < scene[y].Length; x++)
+			map[x + 4, y + 2] = codes.IndexOf(scene[y][x]);
+	// land across the world's wrap-around edge
+	for (int y = 20; y < 26; y++)
+		for (int x = 76; x < 84; x++)
+			map[x % 80, y] = (x % 3 == 0) ? 3 : 2;
+
+	Check(PaintedMap.Load(dir, 64, (x, y) => 10) == null, "painted: no hd/painted folder, no painted map");
+	PaintedMap painted = PaintedMap.Load(art, 64, (x, y) => map[x, y])!;
+	Check(painted != null, "painted: art folder loads");
+
+	uint[] Cell(PaintedMap m, int x, int y) { uint[] c = new uint[64 * 64]; m.CopyCell(x, y, c, 0, 64); return c; }
+	double Diff(uint a, uint b) => Math.Abs((int)((a >> 16) & 255) - (int)((b >> 16) & 255)) + Math.Abs((int)((a >> 8) & 255) - (int)((b >> 8) & 255)) + Math.Abs((int)(a & 255) - (int)(b & 255));
+	// mean colour step across the border between two horizontally adjacent cells, and inside the left one
+	(double Across, double Inside) Steps(PaintedMap m, int x, int y)
+	{
+		uint[] l = Cell(m, x, y), r = Cell(m, x + 1, y);
+		double across = 0, inside = 0;
+		for (int i = 0; i < 64; i++)
+		{
+			across += Diff(l[i * 64 + 63], r[i * 64]);
+			inside += Diff(l[i * 64 + 62], l[i * 64 + 63]);
+		}
+		return (across / 64, inside / 64);
+	}
+
+	PaintedMap small = PaintedMap.Load(art, 32, (x, y) => map[x, y])!;
+	uint[] smallCell = new uint[32 * 32];
+	small.CopyCell(10, 6, smallCell, 0, 32);
+	Check(smallCell.Distinct().Count() > 100, "painted: paints at 2x too (32 pixels per cell)");
+
+	var chunkBorder = Steps(painted, 7, 7);
+	Check(chunkBorder.Across < chunkBorder.Inside * 2 + 4, $"painted: no seam between chunks ({chunkBorder.Across:0.0} across vs {chunkBorder.Inside:0.0} inside)");
+	var wrap = Steps(painted, 79, 22);
+	Check(wrap.Across < wrap.Inside * 2 + 4, $"painted: no seam where the world wraps around ({wrap.Across:0.0} vs {wrap.Inside:0.0})");
+	Check(Cell(painted, 10, 6).SequenceEqual(Cell(painted, 10, 6)), "painted: a cell paints the same every time");
+	Check(Cell(painted, 50, 40).All(c => ((c >> 16) & 255) < 120 && (c & 255) >= ((c >> 16) & 255)), "painted: open ocean is dark water");
+
+	uint[] before = Cell(painted, 9, 8);
+	int old = map[9, 8];
+	map[9, 8] = 0;
+	Check(!before.SequenceEqual(Cell(painted, 9, 8)), "painted: a terrain change paints the cell again");
+	map[9, 8] = old;
+	Check(before.SequenceEqual(Cell(painted, 9, 8)), "painted: changing it back restores the painting");
+
+	GBitmap.HDScale = 4;
+	var screen = new GBitmap(320, 200);
+	screen.FillRectangle(new GRectangle(0, 0, 320, 200), 5, PixelWriteModeEnum.Normal);
+	screen.DrawPaintedCell(96, 24, painted, 10, 6);
+	int w = 320 * 4, h = 200 * 4;
+	IntPtr mem = Marshal.AllocHGlobal(w * h * 4);
+	screen.WriteScaledPixels(mem, w * 4);
+	int[] px = new int[w * h];
+	Marshal.Copy(mem, px, 0, px.Length);
+	Marshal.FreeHGlobal(mem);
+	uint[] expect = Cell(painted, 10, 6);
+	bool same = true;
+	for (int y = 0; y < 64; y++)
+		for (int x = 0; x < 64; x++)
+			same &= ((uint)px[(24 * 4 + y) * w + 96 * 4 + x] & 0xffffff) == (expect[y * 64 + x] & 0xffffff);
+	Check(same, "painted: DrawPaintedCell shows the cell's painting at 4x");
+	Check(((uint)px[0] & 0xffffff) == (PaletteColor(screen, 5) & 0xffffff), "painted: the rest of the screen is untouched");
+	var other = new GBitmap(320, 200);
+	other.DrawPaintedCell(0, 0, new PaintedMap(32, (x, y) => 10), 0, 0);
+	Check(!HasHD(other), "painted: a painted map of the wrong cell size is ignored");
+	GBitmap.HDScale = 2;
+
+	string? output = Environment.GetEnvironmentVariable("PAINTED_PREVIEW");
+	if (output != null)
+	{
+		using var image = new SKBitmap(22 * 64, 12 * 64, SKColorType.Bgra8888, SKAlphaType.Premul);
+		for (int cy = 0; cy < 12; cy++)
+			for (int cx = 0; cx < 22; cx++)
+			{
+				uint[] c = Cell(painted, cx + 4, cy + 2);
+				for (int y = 0; y < 64; y++)
+					for (int x = 0; x < 64; x++)
+						image.SetPixel(cx * 64 + x, cy * 64 + y, new SKColor(c[y * 64 + x]));
+			}
+		using var file = File.OpenWrite(output);
+		image.Encode(file, SKEncodedImageFormat.Png, 100);
+	}
+}
+
 Directory.Delete(dir, true);
 Console.WriteLine(failures == 0 ? "ALL PASSED" : $"{failures} FAILED");
 return failures == 0 ? 0 : 1;

@@ -464,8 +464,11 @@ namespace OpenCivOne
 					this.parent.Graphics.F0_VGA_07d8_DrawImage(this.parent.Var_19e8_Screen2_Rectangle, 256, 120, 16, 16, this.parent.Var_aa_Screen0_Rectangle, scrX, scrY);
 				}
 
-				if (terrainImprovements.HasFlag(TerrainImprovementFlagsEnum.Irrigation) && terrainType != TerrainTypeEnum.Water &&
-					this.parent.Var_dcfc == 0 && !terrainImprovements.HasFlag(TerrainImprovementFlagsEnum.City))
+				PaintedMap? paintedMap = this.parent.PaintedMap;
+				bool drawIrrigation = terrainImprovements.HasFlag(TerrainImprovementFlagsEnum.Irrigation) && terrainType != TerrainTypeEnum.Water &&
+					this.parent.Var_dcfc == 0 && !terrainImprovements.HasFlag(TerrainImprovementFlagsEnum.City);
+
+				if (drawIrrigation && paintedMap == null)
 				{
 					// Draw irrigation
 					// Instruction address 0x2aea:0x07f8, size: 5
@@ -502,17 +505,28 @@ namespace OpenCivOne
 					}
 				}
 
-				if (terrainType != TerrainTypeEnum.Water && terrainType != TerrainTypeEnum.River)
+				if (terrainType != TerrainTypeEnum.Water && terrainType != TerrainTypeEnum.River && paintedMap == null)
 				{
 					// Instruction address 0x2aea:0x091e, size: 5
 					this.parent.Graphics.F0_VGA_0c3e_DrawBitmapToScreen(this.parent.Var_aa_Screen0_Rectangle, scrX, scrY, GetTerrainBitmap(x, y, terrainType));
+				}
 
-					if (terrainType == TerrainTypeEnum.Grassland && (((7 * x) + (11 * y)) & 0x2) == 0)
+				if (paintedMap != null)
+				{
+					// The painted map replaces the terrain at HD resolution, the ocean, grass and river tiles above still set the indexed pixels
+					this.parent.Graphics.DrawPaintedCell(this.parent.Var_aa_Screen0_Rectangle, scrX, scrY, paintedMap, this.AdjustXPosition(x), y);
+
+					if (drawIrrigation)
 					{
-						// Draw grassland tiles with production bonus
-						// Instruction address 0x2aea:0x0996, size: 5
-						this.parent.Graphics.F0_VGA_0c3e_DrawBitmapToScreen(this.parent.Var_aa_Screen0_Rectangle, scrX + 4, scrY + 4, this.parent.Var_b880);
+						this.parent.Graphics.F0_VGA_0c3e_DrawBitmapToScreen(this.parent.Var_aa_Screen0_Rectangle, scrX, scrY, this.parent.Array_d4ce[4]);
 					}
+				}
+
+				if (terrainType == TerrainTypeEnum.Grassland && (((7 * x) + (11 * y)) & 0x2) == 0)
+				{
+					// Draw grassland tiles with production bonus
+					// Instruction address 0x2aea:0x0996, size: 5
+					this.parent.Graphics.F0_VGA_0c3e_DrawBitmapToScreen(this.parent.Var_aa_Screen0_Rectangle, scrX + 4, scrY + 4, this.parent.Var_b880);
 				}
 
 				if (terrainImprovements.HasFlag(TerrainImprovementFlagsEnum.Pollution))
@@ -745,7 +759,7 @@ namespace OpenCivOne
 
 			TerrainTypeEnum terrainType = GetTerrainType(x, y);
 
-			if (terrainType != TerrainTypeEnum.Water && terrainType != TerrainTypeEnum.River)
+			if (terrainType != TerrainTypeEnum.Water && terrainType != TerrainTypeEnum.River && this.parent.PaintedMap == null)
 			{
 				this.parent.Graphics.DrawBitmapHDOverflow(this.parent.Var_aa_Screen0_Rectangle, scrX, scrY, GetTerrainBitmap(x, y, terrainType));
 			}

@@ -61,6 +61,20 @@ namespace OpenCivOne.UI
 			// Initialize game state
 			this.game = new OpenCivOneGame(this);
 
+			// Open large enough to show 4x HD art at its own size, if the screen has the room
+			if (GBitmap.HDScale > 2)
+			{
+				double width = 320 * GBitmap.HDScale + 4;
+				double height = 200 * GBitmap.HDScale + 4;
+				PixelRect? area = this.Screens.Primary?.WorkingArea;
+
+				if (area == null || (area.Value.Width >= width && area.Value.Height >= height))
+				{
+					this.Width = width;
+					this.Height = height;
+				}
+			}
+
 			// Main Windows events
 			this.Closing += this.MainWindow_Closing;
 			this.KeyDown += this.MainWindow_KeyDown;

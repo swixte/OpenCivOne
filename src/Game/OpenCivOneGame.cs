@@ -29,6 +29,7 @@ namespace OpenCivOne
 		private ImageTools imageTools;
 		private LanguageTools languageTools;
 		private MapManagement mapManagement;
+		private PaintedMap? paintedMap = null;
 		private UnitManagement unitManagement;
 		private UnitGoTo unitGoTo;
 		private Actions oSegment_2459;
@@ -149,6 +150,10 @@ namespace OpenCivOne
 			{
 				GBitmap.HDTemplatePath = $"{this.gameMainPath}{separator}hd-templates";
 			}
+
+			// A painted map (hd/painted) replaces the terrain tiles of map cells with one painting of the whole world
+			this.paintedMap = PaintedMap.Load($"{this.gameResourcePath}hd{separator}painted", 16 * GBitmap.HDScale,
+				(x, y) => (int)this.mapManagement!.GetTerrainType(x, y));
 
 			#region Initialize Segments
 			this.CApi = new CAPI(this);
@@ -565,6 +570,14 @@ namespace OpenCivOne
 		public LanguageTools LanguageTools
 		{
 			get { return this.languageTools; }
+		}
+
+		/// <summary>
+		/// The painted world map, or null when the map is drawn from terrain tiles
+		/// </summary>
+		public PaintedMap? PaintedMap
+		{
+			get => this.paintedMap;
 		}
 
 		public MapManagement MapManagement

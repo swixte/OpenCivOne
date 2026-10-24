@@ -486,6 +486,20 @@ namespace OpenCivOne.Graphics
 		/// <summary>
 		/// Draws only the HD art of a bitmap that reaches above it, if it has any
 		/// </summary>
+		/// <summary>
+		/// Shows the painted map's cell (mapX, mapY) over the 16x16 pixels at (x, y) of the rectangle's screen
+		/// </summary>
+		public void DrawPaintedCell(CRectangle rect, int x, int y, PaintedMap map, int mapX, int mapY)
+		{
+			if (this.screens.ContainsKey(rect.ScreenID))
+			{
+				lock (VCPU.GraphicsLock)
+				{
+					this.screens.GetValueByKey(rect.ScreenID).DrawPaintedCell(rect.Left + x, rect.Top + y, map, mapX, mapY);
+				}
+			}
+		}
+
 		public void DrawBitmapHDOverflow(CRectangle rect, int x, int y, int bitmapID)
 		{
 			if (this.screens.ContainsKey(rect.ScreenID) && this.bitmaps.ContainsKey(bitmapID))

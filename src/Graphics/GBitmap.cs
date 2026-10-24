@@ -454,6 +454,25 @@ namespace OpenCivOne.Graphics
 			DrawBitmap(new GPoint(x, y), srcBitmap, srcRect, transparent);
 		}
 
+		/// <summary>
+		/// Shows the painting of a map cell (see PaintedMap) over the 16x16 indexed pixels at (x, y)
+		/// </summary>
+		public void DrawPaintedCell(int x, int y, PaintedMap map, int mapX, int mapY)
+		{
+			if (map.CellSize != 16 * HDScale || x < 0 || y < 0 || x + 16 > this.iWidth || y + 16 > this.iHeight)
+				return;
+
+			this.EnsureHDLayer();
+			map.CopyCell(mapX, mapY, this._hdPixels!, this.GetHDAddress(x, y), this.iWidth * HDScale);
+
+			for (int i = 0; i < 16; i++)
+			{
+				Array.Fill(this._hdMask!, true, ((y + i) * this.iWidth) + x, 16);
+			}
+
+			this.bModified = true;
+		}
+
 		public void DrawBitmap(GPoint destPoint, GBitmap srcBitmap, GRectangle srcRect, bool transparent)
 		{
 			DrawBitmap(destPoint, srcBitmap, srcRect, transparent, false);

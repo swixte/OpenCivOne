@@ -26,6 +26,27 @@ To change the art, edit the generator in `tools/hdart` and run `python3 tools/hd
 
 `python3 tools/hdart/generate.py OUT --style PACK` builds the set from a folder of images instead of drawing it: a texture image for each terrain, made to repeat without seams, and sprites for trees, hills, mountains, jungle, cities, huts and units, which get their backgrounds removed, are scaled to the tile and get drop shadows. Units also get a small banner in the player's colors. Anything the folder lacks is drawn as before. `tools/hdart/style.py` lists the file names; `preview.py` takes the same `--style PACK`.
 
+## Painted map
+
+With an `hd/painted` folder, the map is no longer built from terrain tiles. The game paints the whole world as one picture from its terrain:
+
+- the ground textures blend across terrain borders with soft, irregular edges;
+- the sea is shallow and teal near land, deep away from it, and breaks into surf along the coast;
+- rivers wind through river cells and on into the sea;
+- trees, jungle, hills and mountains are scattered over their cells and reach into the cells around them, back to front, with soft shadows;
+- drifting cloud shadows and a colour grade lie over everything.
+
+Each map cell shows its square of that painting. Irrigation, roads, mines, resources, huts, cities, units and fog borders are drawn over it as before, from the HD set or the original sprites. The world is painted in chunks of 8x8 cells when they are first shown, and a chunk is painted again when the terrain under it changes. The same cell always gets the same trees and peaks.
+
+The painting works at either HD scale; at 4x (`scale.txt` with `4`) it is 64 pixels per cell.
+
+The repository includes the art in `assets/painted`; copy it to `Civ1/hd/painted` (the stand-in build does this). The folder holds:
+
+- `ground/NAME.png`: textures that repeat without seams, one for each of `grass`, `plains`, `desert`, `tundra`, `snow`, `ocean`, `shallow`, `swamp` and `floor` (under trees). A texture spans 8 cells. Each terrain uses one or two of them; a missing one shows as flat grey-green.
+- `trees/`, `jungle/`, `hills/`, `mountains/`: sprites with transparent backgrounds, any size; the game scales them. Forest cells get about 26 trees, jungle 12 crowns, hills 2 hills, mountains one peak about 1.4 cells tall, and some grassland a lone tree.
+
+The included art was generated from a concept image with `tools/hdart/generate_painted.py` (OpenAI Images API, the concept as a style reference; set `OPENAI_API_KEY`). Sprite sheets come back on flat magenta, and `tools/hdart/painted_assets.py` makes the textures seamless and cuts the sprites out. To see the painting without the game, run the HD layer tests with `PAINTED_PREVIEW=out.png`: they paint a sample map with the art in `assets/painted`.
+
 ## How it works
 
 Every PIC file the game loads can have HD versions in the `hd` folder:
@@ -38,7 +59,7 @@ Sprites cut from a sheet carry their part of the HD image with them, so when the
 - Transparent PNG pixels are transparent when the sprite is drawn, and partly transparent pixels are blended (drop shadows).
 - HD art can draw where the original sprite is transparent, as long as it stays inside the sprite's original rectangle.
 - An image with the wrong size is ignored.
-- The art is twice the original size unless the `hd` folder has a `scale.txt` containing `4`: then every image is four times the size (64x64 tiles) and the game renders at 1280x800.
+- The art is twice the original size unless the `hd` folder has a `scale.txt` containing `4`: then every image is four times the size (64x64 tiles), the game renders at 1280x800 and the window opens at that size when the screen has room.
 
 ### Art above the tile
 
@@ -91,3 +112,4 @@ Set `"ExportHDTemplates": true` in the `Debug` section of `Preferences.json` (in
 
 - Palette effects, such as fades and colour cycling, change only original pixels. HD pixels keep their colours.
 - The city size and other text stay in the original pixel font.
+- On the painted map, a tall peak or tree from an unexplored cell can show at the edge of an explored one.
