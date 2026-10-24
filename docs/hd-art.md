@@ -40,12 +40,25 @@ Each map cell shows its square of that painting. Irrigation, roads, mines, resou
 
 The painting works at either HD scale; at 4x (`scale.txt` with `4`) it is 64 pixels per cell.
 
+### The 4x set
+
+`assets/hd4` is the sprite set that goes with the painted map at 4x: all 28 units, the special resources, the city, city walls, fortress and huts are painted in the same style, and the rest (roads, railroads, irrigation, mines, pollution, fog borders, explosions) are the drawn 2x sprites at twice the size. Units carry a small flag in their player's colors, and the city a badge in its player's colors. It has no terrain tiles, since the painting replaces them, and it holds `scale.txt` with `4`.
+
+To play with it, copy `assets/hd4` to `Civ1/hd` and `assets/painted` to `Civ1/hd/painted` (`HD_SET=hd4 tools/standin/build.sh` does this for the stand-in set). With the 2x set in `assets/hd` instead, the map is painted at 32 pixels per cell and the other sprites are the drawn 2x ones.
+
+On the painted map the city size is written in the top left corner of the city, on the badge, so that the town shows.
+
+`tools/hdart/painted_set.py` builds the set from the painted objects in `assets/painted/objects`.
+
+### Art
+
 The repository includes the art in `assets/painted`; copy it to `Civ1/hd/painted` (the stand-in build does this). The folder holds:
 
 - `ground/NAME.png`: textures that repeat without seams, one for each of `grass`, `plains`, `desert`, `tundra`, `snow`, `ocean`, `shallow`, `swamp` and `floor` (under trees). A texture spans 8 cells. Each terrain uses one or two of them; a missing one shows as flat grey-green.
 - `trees/`, `jungle/`, `hills/`, `mountains/`: sprites with transparent backgrounds, any size; the game scales them. Forest cells get about 26 trees, jungle 12 crowns, hills 2 hills, mountains one peak about 1.4 cells tall, and some grassland a lone tree.
+- `objects/`: single painted objects (units, resources, town, walls, fortress, hut) that `painted_set.py` uses; the game does not read them.
 
-The included art was generated from a concept image with `tools/hdart/generate_painted.py` (OpenAI Images API, the concept as a style reference; set `OPENAI_API_KEY`). Sprite sheets come back on flat magenta, and `tools/hdart/painted_assets.py` makes the textures seamless and cuts the sprites out. To see the painting without the game, run the HD layer tests with `PAINTED_PREVIEW=out.png`: they paint a sample map with the art in `assets/painted`.
+The included art was generated from a concept image with `tools/hdart/generate_painted.py` (OpenAI Images API, the concept as a style reference; set `OPENAI_API_KEY`). Sprites and objects come back on flat magenta, and `tools/hdart/painted_assets.py` makes the textures seamless and cuts the sprites and objects out. To see the painting without the game, run the HD layer tests with `PAINTED_PREVIEW=out.png`: they paint a sample map with the art in `assets/painted`.
 
 ## How it works
 

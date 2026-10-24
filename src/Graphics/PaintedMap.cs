@@ -436,10 +436,10 @@ namespace OpenCivOne.Graphics
 						float wb = ocean.B[oi] + ((shallow.B[si] - ocean.B[oi]) * shallowness);
 
 						// surf: a broken white line just off the coast, and fainter foam further out
-						float foamNoise = (this.Noise(wx, wy, 6 * k, 5) * 0.6f) + (this.Noise(wx, wy, 2 * k, 6) * 0.4f);
-						float surf = Smooth(0.18f, 0.32f, surfLand) * Smooth(0.5f, 0.38f, land) * Smooth(0.35f, 0.65f, foamNoise);
-						surf += Smooth(0.08f, 0.14f, surfLand) * Smooth(0.2f, 0.14f, surfLand) * Smooth(0.6f, 0.85f, foamNoise) * 0.5f;
-						surf = Math.Min(surf, 1) * 0.8f;
+						float foamNoise = (this.Noise(wx, wy, 12 * k, 5) * 0.7f) + (this.Noise(wx, wy, 4 * k, 6) * 0.3f);
+						float surf = Smooth(0.2f, 0.34f, surfLand) * Smooth(0.5f, 0.4f, land) * Smooth(0.4f, 0.7f, foamNoise);
+						surf += Smooth(0.08f, 0.14f, surfLand) * Smooth(0.2f, 0.14f, surfLand) * Smooth(0.6f, 0.8f, foamNoise) * 0.35f;
+						surf = Math.Min(surf, 1) * 0.7f;
 						r[i] = (wr * (1 - surf)) + (210 * surf);
 						g[i] = (wg * (1 - surf)) + (216 * surf);
 						b[i] = (wb * (1 - surf)) + (205 * surf);

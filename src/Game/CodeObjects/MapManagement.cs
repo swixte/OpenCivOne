@@ -661,6 +661,12 @@ namespace OpenCivOne
 							this.parent.DrawTools.FillRectangle(this.parent.Var_aa_Screen0_Rectangle, scrX + 2, scrY + 2, 12, 12,
 								this.parent.Array_1946_PlayerColours[city.PlayerID]);
 
+							if (paintedMap != null)
+							{
+								// On the painted map the town stands on the painted ground, the square keeps the indexed player colors
+								this.parent.Graphics.DrawPaintedCell(this.parent.Var_aa_Screen0_Rectangle, scrX, scrY, paintedMap, this.AdjustXPosition(x), y);
+							}
+
 							// Draw city 'streets'
 
 							// Instruction address 0x2aea:0x0cba, size: 5
@@ -687,7 +693,15 @@ namespace OpenCivOne
 								// Draw city size
 
 								// Instruction address 0x2aea:0x0d8d, size: 5
-								this.parent.DrawTools.DrawStringToScreen0($"{citySize}", ((citySize < 10) ? 6 : 3) + scrX, scrY + 5, 0);
+								if (paintedMap != null)
+								{
+									// on the painted map the size stands in the top left corner, so the town shows
+									this.parent.DrawTools.DrawStringToScreen0($"{citySize}", ((citySize < 10) ? 5 : 3) + scrX, scrY + 2, 0);
+								}
+								else
+								{
+									this.parent.DrawTools.DrawStringToScreen0($"{citySize}", ((citySize < 10) ? 6 : 3) + scrX, scrY + 5, 0);
+								}
 							}
 
 							// Instruction address 0x2aea:0x0d9c, size: 3

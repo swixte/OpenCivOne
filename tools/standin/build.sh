@@ -9,6 +9,7 @@ python3 "$HERE/make_standin.py" "$OUT"
 dotnet run --project "$HERE/PicWriter" -- "$OUT"
 rm -rf "$OUT/raw" "$OUT/palette.bin"
 rm -rf "$OUT/hd"
-cp -r "$HERE/../../assets/hd" "$OUT/hd"
+# HD_SET=hd4 installs the 4x sprite set that goes with the painted map instead of the 2x set
+cp -r "$HERE/../../assets/${HD_SET:-hd}" "$OUT/hd"
 cp -r "$HERE/../../assets/painted" "$OUT/hd/painted"
 echo "Stand-in data set ready in $OUT"
