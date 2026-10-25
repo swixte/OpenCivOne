@@ -95,8 +95,8 @@ yet, so a theme only needs a file of the right size.
 | PRODUCE | production advice |
 | CREDITS, ERROR | credits, error messages |
 
-Many names are written in the code rather than in these files: units, advances, improvements, wonders, governments,
-civilizations and leaders, and the menus. Renaming them for a theme means moving them into a data file first.
+Units, advances, improvements, wonders, terrain, governments, civilizations, leaders and city names can be renamed with
+a `names.json` (see [hd-art.md](hd-art.md#names)). The menus and other messages are still written in the code.
 
 ## What a theme needs
 
@@ -108,4 +108,4 @@ Done so far: the map and interface, BIRTH0, CUSTOM, DIFFS, HILL, POP, GOVT0A and
 - **About 60 backdrops**: one generated picture each, keeping its text areas.
 - **About 30 picture sheets**: generated piece by piece and placed into their rectangles. Leaders, the palace and the
   city view need the most care: they are assembled from many parts that have to fit together.
-- **Text**: the 13 files, and the names in the code once they are moved out.
+- **Text**: the 13 files, and a `names.json` for the names.

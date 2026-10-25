@@ -291,7 +291,7 @@ namespace OpenCivOne
 							this.parent.CommonTools.PlayTune(36, 0);
 
 							this.parent.News.F21_0000_0000_ShowNews(cityID,
-								$"Food storage exhausted\nin {this.parent.Segment_2459.F0_2459_08c6_GetCityName(cityID)}!\n{((lostUnitID != -1) ? "Settlers lost." : "Famine feared.")}\n");
+								$"Food storage exhausted\nin {this.parent.Segment_2459.F0_2459_08c6_GetCityName(cityID)}!\n{((lostUnitID != -1) ? $"{this.parent.GameData.Units[(int)UnitTypeEnum.Settler].Name} lost." : "Famine feared.")}\n");
 
 							// Instruction address 0x1d12:0x07f4, size: 5
 							this.parent.CommonTools.PlayTune(1, 0);

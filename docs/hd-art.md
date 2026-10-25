@@ -134,6 +134,19 @@ The repository has one theme, `themes/dark-painterly`, with the pictures done so
 GOVT0A and ICONPGT1. `theme.py list` shows all 23 backdrops and 28 sheets (236 pieces) it can build. Each backdrop,
 object or scene is one medium-quality image.
 
+### Names
+
+A theme can rename the units, advances, improvements, wonders, terrain, governments and nations (leader, plural,
+adjective and city names) with a `names.json` in its `hd` folder; without a theme the game reads `names.json` from its
+own folder. `themes/names.json` holds every original name mapped to itself: copy it, change the right-hand sides and
+remove what you keep. Each entry maps an original name to its new one, and nations are keyed by their plural
+(`"Romans": {"Leader": "...", "Nation": "...", "Nationality": "...", "Cities": [...]}`). Governments have two forms in the
+game, as a type (Communist, Democratic) and as an Encyclopedia topic (Communism, Democracy), and both are listed.
+
+Keep names about as long as the originals: the screens have room for them, and a save game stores unit names in 12
+characters (a loaded game keeps the names it was saved with). The Encyclopedia and help texts (the `.TXT` files) and the
+realm titles (Kingdom, Republic, Empire) are not renamed yet.
+
 ## How it works
 
 Every PIC file the game loads can have HD versions in the `hd` folder:

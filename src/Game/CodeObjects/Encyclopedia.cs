@@ -9,7 +9,7 @@ namespace OpenCivOne
 	{
 		private OpenCivOneGame parent;
 
-		private string[] gameConcepts = ["Veteran Units", "Fortify", "Irrigation", "Mining", "Roads", "RailRoads", 
+		public string[] GameConcepts = ["Veteran Units", "Fortify", "Irrigation", "Mining", "Roads", "RailRoads", 
 			"Anarchy", "Despotism", "Monarchy", "Communism", "Republic", "Democracy", "Fortress", "Pillage", "Disband", 
 			"Pollution", "Sentry", "Luxuries", "Taxes", "Science", "Trade Routes"];
 		private int Var_6808 = 0;
@@ -187,14 +187,14 @@ namespace OpenCivOne
 				{
 					for (int j = 0; j < 21; j++)
 					{
-						if (string.Compare(gameConcepts[j], oldTopicText, true) > 0 &&
-							string.Compare(gameConcepts[j], topicText, true) < 0)
+						if (string.Compare(GameConcepts[j], oldTopicText, true) > 0 &&
+							string.Compare(GameConcepts[j], topicText, true) < 0)
 						{
 							itemTopic = EncyclopediaTopicEnum.GameConcept;
 							topicIndex = j;
 
 							// Instruction address 0x0000:0x0348, size: 5
-							topicText = gameConcepts[j];
+							topicText = GameConcepts[j];
 						}
 					}
 				}
@@ -465,7 +465,7 @@ namespace OpenCivOne
 					this.parent.DrawTools.DrawCenteredStringToScreen0("Game Concept", xPosition, 36, 7);
 
 					// Instruction address 0x0000:0x0b9c, size: 5
-					topicName = gameConcepts[topicIndex];
+					topicName = GameConcepts[topicIndex];
 
 					break;
 			}
@@ -784,12 +784,12 @@ namespace OpenCivOne
 					}
 
 					// Instruction address 0x0000:0x156f, size: 5
-					this.parent.DrawTools.DrawStringToScreen0("*  -1 if government is Despotism/Anarchy.", 16, yPosition, 9);
+					this.parent.DrawTools.DrawStringToScreen0($"*  -1 if government is {this.GameConcepts[7]}/{this.GameConcepts[6]}.", 16, yPosition, 9);
 
 					yPosition += 8;
 
 					// Instruction address 0x0000:0x158a, size: 5
-					this.parent.DrawTools.DrawStringToScreen0("%  +1 if government is Republic/Democracy.", 16, yPosition, 9);
+					this.parent.DrawTools.DrawStringToScreen0($"%  +1 if government is {this.GameConcepts[10]}/{this.GameConcepts[11]}.", 16, yPosition, 9);
 
 					yPosition += 12;
 

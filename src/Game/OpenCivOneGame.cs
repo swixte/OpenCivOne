@@ -215,6 +215,10 @@ namespace OpenCivOne
 			this.secession = new Secession(this);
 			#endregion
 
+			// New names for units, advances, nations and the rest, from the theme's names.json or the game folder's
+			string namesPath = GBitmap.HDDirectory != null ? $"{hdPath}{separator}names.json" : $"{this.gameResourcePath}names.json";
+			GameNames.Load(namesPath)?.Apply(this.gameData, this.Array_1966_GovernmentNames, this.Encyclopedia.GameConcepts);
+
 			/*string[] aFiles = Directory.GetFiles(this.oParent.ResourcePath, "*.pic");
 
 			for (int i = 0; i < aFiles.Length; i++)

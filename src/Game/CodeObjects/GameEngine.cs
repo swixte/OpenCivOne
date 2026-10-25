@@ -2807,7 +2807,7 @@ namespace OpenCivOne
 
 							// Instruction address 0x1ade:0x216c, size: 5
 							this.parent.MenuBoxDialog.ShowDialog(
-								$"Development of {this.parent.GameData.TechnologyAdvances[(int)technology].Name}\nmakes existing Barracks\nobsolete.\n", 80, 100);
+								$"Development of {this.parent.GameData.TechnologyAdvances[(int)technology].Name}\nmakes existing {this.parent.GameData.GetImprovementType((int)ImprovementEnum.Barracks).Name}\nobsolete.\n", 80, 100);
 						}
 					}
 
