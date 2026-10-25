@@ -2248,7 +2248,7 @@ namespace OpenCivOne
 									this.parent.MenuBoxDialog.F0_2d05_0031_ShowMenuBox(
 										$"Military Advisor:\n{this.parent.LanguageTools.F0_2f4d_0000_AdjustTextBlockWidth(
 											this.parent.LanguageTools.F0_2f4d_0471_ReplaceKeywords(
-											this.parent.LanguageTools.F0_2f4d_01ad_GetTextBySectionAndKey("PRODUCE", $"*{this.parent.Array_30b8[3]}")), 50)}",
+											this.parent.LanguageTools.F0_2f4d_01ad_GetTextBySectionAndKey("PRODUCE", $"*{GameNames.OriginalName(this.parent.Array_30b8[3])}")), 50)}",
 										8, 160, true, false, true);
 								}
 
@@ -2273,7 +2273,7 @@ namespace OpenCivOne
 									this.parent.MenuBoxDialog.F0_2d05_0031_ShowMenuBox(
 										this.parent.LanguageTools.F0_2f4d_0000_AdjustTextBlockWidth(
 										"Domestic Advisor:\n" + this.parent.LanguageTools.F0_2f4d_0471_ReplaceKeywords(this.parent.LanguageTools.F0_2f4d_01ad_GetTextBySectionAndKey("PRODUCE",
-										$"*{this.parent.Array_30b8[3]}")), 50), 164, 160, true, false, true);
+										$"*{GameNames.OriginalName(this.parent.Array_30b8[3])}")), 50), 164, 160, true, false, true);
 								}
 
 								firstPass = false;

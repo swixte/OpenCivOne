@@ -481,7 +481,7 @@ namespace OpenCivOne
 
 			if (this.parent.GameData.GameSettingFlags.EncyclopediaText && topicType != EncyclopediaTopicEnum.TerrainType)
 			{
-				string content = this.parent.LanguageTools.F0_2f4d_01ad_GetTextBySectionAndKey($"BLURB{((int)topicType) - 1}", $"*{topicName.ToUpper()}");
+				string content = this.parent.LanguageTools.F0_2f4d_01ad_GetTextBySectionAndKey($"BLURB{((int)topicType) - 1}", $"*{GameNames.OriginalName(topicName).ToUpper()}");
 
 				// Instruction address 0x0000:0x0855, size: 5
 				if (!string.IsNullOrEmpty(content))
@@ -501,7 +501,7 @@ namespace OpenCivOne
 			{
 				// Instruction address 0x0000:0x08d6, size: 5
 				yPosition = this.parent.DrawTools.DrawTextBlock(12, yPosition,
-					this.parent.LanguageTools.F0_2f4d_01ad_GetTextBySectionAndKey($"BLURB{((int)topicType - 1)}", $"*{topicName.ToUpper()}2"), 288, 1);
+					this.parent.LanguageTools.F0_2f4d_01ad_GetTextBySectionAndKey($"BLURB{((int)topicType - 1)}", $"*{GameNames.OriginalName(topicName).ToUpper()}2"), 288, 1);
 
 				yPosition += 8;
 			}

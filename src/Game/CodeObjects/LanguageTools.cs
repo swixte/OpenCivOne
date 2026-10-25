@@ -35,7 +35,7 @@ namespace OpenCivOne
 			Match match;
 			string? line;
 
-			inputStream = new FileStream($"{this.parent.ResourcePath}{section}.TXT", FileMode.Open);
+			inputStream = new FileStream(this.parent.GetTextFilePath($"{section}.TXT"), FileMode.Open);
 			inputStream.Seek(0x212, SeekOrigin.Begin);
 			textReader = new StreamReader(inputStream, Encoding.ASCII);
 
@@ -232,7 +232,7 @@ namespace OpenCivOne
 
 			int lineCount = 0;
 
-			using (FileStream inputStream = new FileStream($"{this.parent.ResourcePath}{section.ToUpper()}.TXT", FileMode.Open))
+			using (FileStream inputStream = new FileStream(this.parent.GetTextFilePath($"{section.ToUpper()}.TXT"), FileMode.Open))
 			{
 				inputStream.Seek(0x212, SeekOrigin.Begin);
 

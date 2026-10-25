@@ -511,6 +511,22 @@ namespace OpenCivOne
 
 		public string ResourcePath { get => this.gameResourcePath; }
 
+		/// <summary>
+		/// Path of a game text file (HELP.TXT, KING.TXT, ...): the theme's own copy when it has one, otherwise the game's
+		/// </summary>
+		public string GetTextFilePath(string fileName)
+		{
+			if (GBitmap.HDDirectory != null)
+			{
+				string themePath = Path.Combine(GBitmap.HDDirectory, fileName);
+
+				if (File.Exists(themePath))
+					return themePath;
+			}
+
+			return $"{this.gameResourcePath}{fileName}";
+		}
+
 		public string MainPath { get => this.gameMainPath; }
 
 		public string SavePath { get => this.gameSavePath; }

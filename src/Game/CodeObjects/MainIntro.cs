@@ -73,7 +73,7 @@ namespace OpenCivOne
 			MouseEvent mouseEvent = this.parent.GetMouseEvent();
 
 			// Instruction address 0x0000:0x0329, size: 5
-			using (StreamReader reader = new($"{this.parent.ResourcePath}CREDITS.TXT"))
+			using (StreamReader reader = new(this.parent.GetTextFilePath("CREDITS.TXT")))
 			{
 				// Instruction address 0x0000:0x0334, size: 5
 				this.parent.CommonTools.ResetWaitTimer();

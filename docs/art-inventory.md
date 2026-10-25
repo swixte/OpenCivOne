@@ -110,4 +110,4 @@ the dark-painterly theme has so far.
 - **About 60 backdrops**: one generated picture each, keeping its text areas.
 - **About 30 picture sheets**: generated piece by piece and placed into their rectangles. Leaders, the palace and the
   city view need the most care: they are assembled from many parts that have to fit together.
-- **Text**: the 13 files, and a `names.json` for the names.
+- **Text**: a `names.json` for the names, and the theme's own copies of any of the 13 text files.

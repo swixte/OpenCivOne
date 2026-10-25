@@ -32,6 +32,13 @@ namespace OpenCivOne
 		/// </summary>
 		public Dictionary<string, NationNames> Nations { get; set; } = new();
 
+		private static readonly Dictionary<string, string> originalNames = new();
+
+		/// <summary>
+		/// The original name of something renamed (text files keep the original names as keys); other names as they are
+		/// </summary>
+		public static string OriginalName(string name) => originalNames.TryGetValue(name, out string? original) ? original : name;
+
 		public class NationNames
 		{
 			public string? Leader { get; set; }
@@ -119,6 +126,13 @@ namespace OpenCivOne
 		}
 
 		private static string Rename(Dictionary<string, string> names, string name)
-			=> names.TryGetValue(name, out string? newName) && !string.IsNullOrEmpty(newName) ? newName : name;
+		{
+			if (!names.TryGetValue(name, out string? newName) || string.IsNullOrEmpty(newName))
+				return name;
+
+			originalNames.TryAdd(newName, name);
+
+			return newName;
+		}
 	}
 }

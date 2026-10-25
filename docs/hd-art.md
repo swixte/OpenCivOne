@@ -149,8 +149,15 @@ remove what you keep. Each entry maps an original name to its new one, and natio
 game, as a type (Communist, Democratic) and as an Encyclopedia topic (Communism, Democracy), and both are listed.
 
 Keep names about as long as the originals: the screens have room for them, and a save game stores unit names in 12
-characters (a loaded game keeps the names it was saved with). The Encyclopedia and help texts are the game's `.TXT`
-files, which a theme does not change yet.
+characters (a loaded game keeps the names it was saved with).
+
+### Texts
+
+A theme can also have its own copies of the game's text files (`BLURB0-4.TXT` for the Encyclopedia, `HELP.TXT`,
+`KING.TXT`, `PRODUCE.TXT`, `STORY.TXT`, `CREDITS.TXT` and the rest) in its `hd` folder; the game reads a theme's copy
+when there is one. Their topics keep the original names as keys (`*POTTERY`), also for renamed things: the game looks
+a renamed topic up by its original name.
+
 
 ## How it works
 
