@@ -112,7 +112,7 @@ def scene(theme, key, subject, rect, cache):
     img = call(key, theme['concept'], prompt, size_for(w, h), theme.get('quality', 'medium')).convert('RGB')
     img = ImageOps.fit(img, (w * S, h * S), Image.LANCZOS)
     os.makedirs(os.path.dirname(cache), exist_ok=True)
-    img.save(cache)
+    img.save(cache, quality=92)
     return img
 
 
@@ -206,7 +206,7 @@ def sheet(theme, key, name, spec, subjects, out, force):
         rect = spec['pieces'][i][0]
         try:
             if kind == 'scene':
-                return scene(theme, key, subjects[i], rect, cache(theme, name, i))
+                return scene(theme, key, subjects[i], rect, cache(theme, name, i)[:-4] + '.jpg')
             return piece(theme, key, subjects[i], FRAMING[kind], cache(theme, name, i), rect[2:])
         except Exception as e:      # a failed piece is left for the next run
             print(f'{name}: piece {i} failed, {e}', flush=True)
@@ -270,11 +270,13 @@ def build(theme_dir, only=None, force=False, with_map=False):
 
     def run(job):
         name, make = job
-        path = os.path.join(out, name + '.png')
-        if os.path.exists(path) and not force:
+        path = os.path.join(out, name + '.jpg')      # backdrops have no transparency
+        if (os.path.exists(path) or os.path.exists(path[:-4] + '.png')) and not force:
             return f'{name}: kept'
         try:
-            make().save(path)
+            make().convert('RGB').save(path, quality=92)
+            if os.path.exists(path[:-4] + '.png'):
+                os.remove(path[:-4] + '.png')
             return f'{name}: written'
         except Exception as e:      # one failed picture should not stop the rest
             return f'{name}: failed, {e}'

@@ -5,7 +5,7 @@ of them. SHEETS are cut into pieces at fixed rectangles: each piece is generated
 A theme can change any backdrop subject in its theme.json.
 
 Not listed yet: the city view roads, the palace garden layers (CBACKS, CBRUSH), the spaceship (SPACEST, DOCKER,
-PLANET1-2) and the game-over pictures (SLAM1-2); they keep their stand-in art.
+PLANET2) and the game-over pictures (SLAM1-2); they keep their stand-in art.
 Leaders are painted as one still bust each: their face parts, which change expressions, are cleared. MAP is the Earth's terrain stored as pixels: never paint it.
 """
 
@@ -44,6 +44,10 @@ BACKDROPS = {
     'ARCH': ('The ruins of a great civilization overgrown by forest, a broken arch in the foreground.', CALM_TOP),
     'DISCOVR1': ('Scholars in a candlelit library studying scrolls and instruments.', CALM_ALL),
     'DISCOVR2': ('An inventor\'s workshop full of models, gears and drawings.', CALM_ALL),
+    # the space race: the launch, and the arrival at Alpha Centauri
+    'SPACEST': ('A great spaceship lifting off from a launch complex at night in a column of fire.', CALM_TOP),
+    'PLANET1': ('A new world seen from its surface: an alien landscape under a strange sky with a large ringed planet '
+                'and two suns.', CALM_TOP),
     # behind the palace, which is built on the lower part: CBACK normally, SAD when the people are unhappy
     'CBACK': ('Sunny palace grounds: a wide, even lawn under a bright sky with distant hills; the lower two thirds are '
               'open, empty ground where a palace will be built.', CALM_TOP),
