@@ -1195,7 +1195,7 @@ namespace OpenCivOne.Graphics
 		/// <summary>
 		/// Looks for HD versions of a PIC file in the 'hd' folder next to it and attaches them to this bitmap:
 		/// <list type="bullet">
-		/// <item>hd/NAME.png, the whole image at HDScale times the size,</item>
+		/// <item>hd/NAME.png (or .jpg, for art without transparency), the whole image at HDScale times the size,</item>
 		/// <item>hd/NAME/X_Y.png, one region with its top left corner at X, Y in the original image, applied over the whole image.
 		/// The region also replaces the original pixels under it, so they match the HD art.
 		/// The name may end with _kP-S, the color indexes that primary and secondary key colors stand for (default 10 and 2).</item>
@@ -1252,9 +1252,9 @@ namespace OpenCivOne.Graphics
 			}
 		}
 
-		// X_Y.png, with optional _tN (N original rows of art above the region) and _kP-S (key color indexes)
+		// X_Y.png, with optional _tN (N original rows of art above the region) and _kP-S (key color indexes); .jpg for opaque art
 		private static readonly System.Text.RegularExpressions.Regex _hdRegionName =
-			new System.Text.RegularExpressions.Regex(@"^(\d+)_(\d+)(?:_t(\d+))?(?:_k(\d+)-(\d+))?\.png$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+			new System.Text.RegularExpressions.Regex(@"^(\d+)_(\d+)(?:_t(\d+))?(?:_k(\d+)-(\d+))?\.(?:png|jpg)$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
 		private static HDImage? ReadHDImage(string picPath, GBitmap bitmap)
 		{
@@ -1272,7 +1272,7 @@ namespace OpenCivOne.Graphics
 			int hdWidth = bitmap.iWidth * HDScale;
 
 			// the whole image
-			foreach (string candidate in names.SelectMany(n => new string[] { $"{n}.png", $"{n}.PNG" }).Distinct())
+			foreach (string candidate in names.SelectMany(n => new string[] { $"{n}.png", $"{n}.PNG", $"{n}.jpg", $"{n}.JPG" }).Distinct())
 			{
 				string hdPath = Path.Combine(hdDirectory, candidate);
 

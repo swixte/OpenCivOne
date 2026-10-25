@@ -41,13 +41,14 @@ Small sprites cut in `StartGameMenu.cs` (`F5_0000_1455_LoadBitmaps`), not yet pa
 | File | Rectangles | Contents | Code |
 | --- | --- | --- | --- |
 | CITYPIX1 | 4 groups of 4 houses, 31x31, at (1 + x, 1), (33 + x, 1), (1 + x, 33), (33 + x, 33); roads 24x8 at y 65 and 81 | city view houses and streets, by era | `CityView.cs` `LoadCityViewBitmaps` |
-| CITYPIX2, CITYPIX3 | grid of 49x49 at (50c + 1, 50r + 1), 4 rows | city view buildings (improvements); CITYPIX2 is also used for Encyclopedia pictures | same |
-| WONDERS, WONDERS2 | 21 fixed rectangles (`wonderRectangles` in `CityView.cs`) | city view wonders | `CityView.cs` |
-| ICONPG1–8 | grid of 49x49 at (50c + 1, 50r + 1), 9 per sheet | advance and improvement icons (research, Encyclopedia) | `Encyclopedia.cs`, `GameEngine.cs` |
-| ICONPGA–E, ICONPGT1–2 | full-screen pages chosen by topic | Encyclopedia pictures for units, terrain, governments | `Encyclopedia.cs` |
+| CITYPIX2, CITYPIX3 | 49x49 at (50(i >> 2) + 1, 50(i & 3) + 1), cell i = improvement i + 2 | city view buildings, before and after Combustion; CITYPIX2 is also the Encyclopedia picture for improvements. Cell 17 is repeated along the top (power plant), 22 along the city walls, 15 along the mass transit line | same |
+| WONDERS, WONDERS2 | 21 fixed rectangles (`wonderRectangles` in `CityView.cs`, corners; width x2 - x1 - 1); WONDERS2 holds Pyramids, Colossus, Great Wall and Hoover Dam | city view wonders | `CityView.cs` |
+| ICONPG1–8 | 110x68 at (111(i % 3) + 1, 69((i % 9) / 3) + 1), 9 per sheet, cell order in `technologyAdvanceFileID` | advance pictures (Encyclopedia, discovery screen) | `Encyclopedia.cs`, `GameEngine.cs` |
+| ICONPGA–E | 158x61 at (160(i & 1) + 1, 61((i % 6) >> 1)), 6 per sheet, order in `unitTypeFileID` | unit pictures (Encyclopedia) | `Encyclopedia.cs` |
+| ICONPGT1–2 | 106x77 at (107(i % 3) + 1, 87((i % 6) / 3) + 5), 6 per sheet, order in `terrainTypeFileID` | terrain pictures (Encyclopedia) | `Encyclopedia.cs` |
 | POP | 34x50 at (35i + 1, 1) and (35i + 1, 52) | city population figures (content, happy, unhappy, specialists), two eras | `CityView.cs` `DrawCityPopulation` |
 | KING00–13 | face parts: 59x20 at (x, y + 1), 59x29 at (x, y + 21); expressions 28x24 at (161 + 29k, 25n + 1) | the 14 leaders, assembled from parts for each expression | `MeetWithKing.cs` |
-| GOVT0A–3A, GOVT0M–2M | 78x99 at (80i + 1, 101), 4 figures; rest is the throne room backdrop | advisors and court, ancient (A) and modern (M) | `MeetWithKing.cs`, `StartGameMenu.cs` |
+| GOVT0A–3A, GOVT0M–2M | 4 advisors (defense, domestic, foreign, science): figures 78x99 at (80i + 1, 101), heads 40x60 at (40i, 0) | 0 despotism and anarchy, 1 monarchy, 2 republic and democracy, 3 communism; A before Invention, M after | `MeetWithKing.cs`, `StartGameMenu.cs` |
 | CASTLE0–4 | 3 x 5 parts per level, rectangles in `Palace.cs` (`bitmapRectangles`) | palace pieces for the five building levels | `Palace.cs` |
 | CBACK, CBACKS1–3, CBRUSH0–5 | backdrop plus garden and brush layers | palace grounds | `Palace.cs` |
 | SETTLERS | 47x15 at (1, 16i + 1), 4 frames | settlers walking (new city animation) | `Animations.cs` |
@@ -100,7 +101,8 @@ civilizations and leaders, and the menus. Renaming them for a theme means moving
 ## What a theme needs
 
 `tools/hdart/theme.py` generates a theme (see [hd-art.md](hd-art.md#themes)); `tools/hdart/pictures.py` says what each
-picture shows. Done so far: the map and interface, BIRTH0, CUSTOM, DIFFS, HILL and POP.
+picture shows; every sheet above except the leaders, palace, spaceship, roads and animations is described there.
+Done so far: the map and interface, BIRTH0, CUSTOM, DIFFS, HILL, POP, GOVT0A and ICONPGT1.
 
 - **Map and interface**: done, generated from one concept image (see [hd-art.md](hd-art.md)).
 - **About 60 backdrops**: one generated picture each, keeping its text areas.

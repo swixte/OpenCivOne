@@ -111,20 +111,28 @@ in `themes/` with a `theme.json`:
   holds what it changes.
 - `python3 tools/hdart/theme.py list` shows the pictures it knows.
 
-Pictures come in three kinds (see [art-inventory.md](art-inventory.md)):
+Pictures come in these kinds (see [art-inventory.md](art-inventory.md)):
 
 - **Backdrops** are generated whole, at 1536x1024, and cropped to the 16:10 screen. Their subjects ask for calm areas
   where the game writes text: menus written straight onto a picture use dark text, so those need a light area behind
   them.
 - **Placed objects** are generated alone and put into the exact rectangles the game copies out of a backdrop, with a
   soft shadow. DIFFS uses this for its five crowns.
-- **Grids** are sheets of equal cells, one object generated per cell. POP uses this for its 18 citizens.
+- **Sheets** are cut by the game at fixed rectangles. Each piece is generated alone and written as a region file
+  (`NAME/X_Y.png`), so a piece a theme does not paint keeps its stand-in art. A piece is a *scene* (an opaque
+  illustration filling its rectangle, written as `.jpg`: the Encyclopedia pictures), an *object* (cut out, resting on
+  the bottom of its rectangle: city buildings, houses, wonders) or a *figure* (a cut-out person: citizens, advisors).
+  An advisor is generated once and used twice, as the full figure and, cut to head and shoulders, as the portrait.
 
-Each object is generated on flat magenta and cut out. The cut pieces are kept in `themes/NAME/pieces`, so `--force`
-composes a picture again without new images; delete a piece to generate it again.
+Each object is generated on flat magenta and cut out. The generated pieces are kept in `themes/NAME/pieces`, so
+`--force` composes a picture again without new images; delete a piece to generate it again.
 
-The repository has one theme, `themes/dark-painterly`, with the pictures done so far: BIRTH0, CUSTOM, DIFFS, HILL and
-POP. A backdrop costs about as much as a medium-quality 1536x1024 image, a placed object or grid cell a 1024x1024 one.
+Pictures without transparency can be `.jpg` instead of `.png`, for whole images and regions alike; a full theme is
+several times smaller that way.
+
+The repository has one theme, `themes/dark-painterly`, with the pictures done so far: BIRTH0, CUSTOM, DIFFS, HILL, POP,
+GOVT0A and ICONPGT1. `theme.py list` shows all 23 backdrops and 28 sheets (236 pieces) it can build. Each backdrop,
+object or scene is one medium-quality image.
 
 ## How it works
 
