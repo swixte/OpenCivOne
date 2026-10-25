@@ -185,6 +185,23 @@
     "Communism": "Communism",
     "Democracy": "Democracy"
   },
+  "Titles": {
+    "Mr.": "Mr.",
+    "Emperor": "Emperor",
+    "King": "King",
+    "Comrade": "Comrade",
+    "President": "President",
+    "Empire": "Empire",
+    "Kingdom": "Kingdom",
+    "Republic": "Republic"
+  },
+  "Difficulties": {
+    "Chieftain": "Chieftain",
+    "Warlord": "Warlord",
+    "Prince": "Prince",
+    "King": "King",
+    "Emperor": "Emperor"
+  },
   "Nations": {
     "Barbarians": {
       "Leader": "Attila",

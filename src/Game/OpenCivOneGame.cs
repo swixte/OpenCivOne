@@ -217,7 +217,8 @@ namespace OpenCivOne
 
 			// New names for units, advances, nations and the rest, from the theme's names.json or the game folder's
 			string namesPath = GBitmap.HDDirectory != null ? $"{hdPath}{separator}names.json" : $"{this.gameResourcePath}names.json";
-			GameNames.Load(namesPath)?.Apply(this.gameData, this.Array_1966_GovernmentNames, this.Encyclopedia.GameConcepts);
+			GameNames.Load(namesPath)?.Apply(this.gameData, this.Array_1966_GovernmentNames, this.Encyclopedia.GameConcepts,
+				this.Array_19b2_GovernmentTypeNames, this.Array_RealmNames, this.Array_33a2_GameDifficultyNames);
 
 			/*string[] aFiles = Directory.GetFiles(this.oParent.ResourcePath, "*.pic");
 

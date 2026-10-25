@@ -4,7 +4,8 @@ BACKDROPS are shown whole: one generated image each, with any PLACED objects put
 of them. SHEETS are cut into pieces at fixed rectangles: each piece is generated alone and written as a region file.
 A theme can change any backdrop subject in its theme.json.
 
-Not listed yet: the palace, the city view roads, the spaceship and the animations; they keep their stand-in art.
+Not listed yet: the city view roads, the palace garden layers (CBACKS, CBRUSH), the spaceship (SPACEST, DOCKER,
+PLANET1-2) and the game-over pictures (SLAM1-2); they keep their stand-in art.
 Leaders are painted as one still bust each: their face parts, which change expressions, are cleared. MAP is the Earth's terrain stored as pixels: never paint it.
 """
 
@@ -43,7 +44,11 @@ BACKDROPS = {
     'ARCH': ('The ruins of a great civilization overgrown by forest, a broken arch in the foreground.', CALM_TOP),
     'DISCOVR1': ('Scholars in a candlelit library studying scrolls and instruments.', CALM_ALL),
     'DISCOVR2': ('An inventor\'s workshop full of models, gears and drawings.', CALM_ALL),
-    'SAD': ('A gloomy, empty throne room in the rain.', CALM_ALL),
+    # behind the palace, which is built on the lower part: CBACK normally, SAD when the people are unhappy
+    'CBACK': ('Sunny palace grounds: a wide, even lawn under a bright sky with distant hills; the lower two thirds are '
+              'open, empty ground where a palace will be built.', CALM_TOP),
+    'SAD': ('Bleak palace grounds under a dark, stormy sky: a wide, even lawn with dead grass; the lower two thirds are '
+            'open, empty ground where a palace will be built.', CALM_TOP),
 }
 
 # Objects placed into fixed rectangles over a backdrop, (x, y, width, height): the game copies these rectangles out.
@@ -79,6 +84,7 @@ NEVER_PAINT = {'MAP'}
 #   object  a cut-out object resting on the bottom of its rectangle (city view buildings, houses, wonders)
 #   figure  a cut-out person; a piece can also list bust rectangles that get the head and shoulders of the same figure
 #   bust    a cut-out head and upper body (the leaders)
+#   frames  an animation: one cut-out group, its frames made from it
 # A piece is (rect, subject) or (rect, subject, [bust_rect, ...]), rectangles as (x, y, width, height) in original
 # pixels. 'clear' lists rectangles written as transparent regions, so the game draws nothing there.
 
@@ -349,5 +355,78 @@ def _city():
     return sheets
 
 
-SHEETS = {**_encyclopedia(), **_city()}
+# The palace, built in five levels (CASTLE0-4) and three styles. Each style has a central building, a wall section and
+# a tower; the game puts walls and towers on both sides, so the right-hand ones are the left-hand ones mirrored.
+PALACE_STYLES = ['classical, of white marble with columns and pediments', 'medieval, a stone castle with battlements',
+                 'oriental, with curved tiled roofs and red lacquered timber']
+PALACE_LEVELS = ['a modest', 'a small', 'a fine', 'a grand', 'a magnificent']
+PALACE_RECTS = [
+    [[(1, 66, 50, 34), (53, 69, 17, 31), (85, 69, 17, 31)]],
+    [[(0, 57, 52, 43), (53, 64, 24, 36), (78, 64, 24, 36), (113, 47, 16, 53), (134, 47, 16, 53)],
+     [(160, 56, 52, 44), (213, 66, 24, 34), (238, 66, 24, 34), (164, 161, 31, 39), (196, 161, 31, 39)],
+     [(2, 151, 48, 49), (53, 166, 24, 34), (78, 166, 24, 34), (113, 149, 18, 51), (132, 149, 18, 51)]],
+    [[(0, 36, 52, 64), (53, 59, 24, 41), (78, 59, 24, 41), (109, 47, 20, 53), (134, 47, 20, 53)],
+     [(160, 51, 52, 49), (213, 61, 24, 39), (238, 61, 24, 39), (163, 155, 32, 45), (196, 155, 32, 45)],
+     [(2, 126, 48, 74), (53, 153, 24, 47), (78, 153, 24, 47), (113, 131, 18, 69), (132, 131, 18, 69)]],
+    [[(0, 34, 52, 66), (53, 52, 24, 48), (78, 52, 24, 48), (105, 26, 24, 74), (134, 26, 24, 74)],
+     [(160, 40, 52, 60), (213, 58, 24, 42), (238, 58, 24, 42), (161, 151, 34, 49), (196, 151, 34, 49)],
+     [(2, 115, 48, 85), (53, 139, 24, 61), (78, 139, 24, 61), (113, 119, 18, 81), (132, 119, 18, 81)]],
+    [[(0, 18, 52, 82), (53, 41, 24, 59), (78, 41, 24, 59), (105, 22, 24, 78), (134, 22, 24, 78)],
+     [(160, 32, 52, 68), (213, 55, 24, 45), (238, 55, 24, 45), (160, 150, 35, 50), (196, 150, 35, 50)],
+     [(2, 105, 48, 95), (53, 139, 24, 61), (78, 139, 24, 61), (113, 111, 18, 89), (132, 111, 18, 89)]],
+]
+
+
+def _palace():
+    sheets = {}
+    for level, styles in enumerate(PALACE_RECTS):
+        pieces, mirror = [], {}
+        for style, rects in enumerate(styles):
+            size, look = PALACE_LEVELS[level], PALACE_STYLES[style]
+            subjects = [f'the central hall of {size} palace, {look}, seen from the front',
+                        f'a straight section of {size} palace wall, {look}, seen from the front, ending flat on both sides',
+                        None,
+                        f'a tall tower of {size} palace, {look}, seen from the front',
+                        None]
+            for k, rect in enumerate(rects):
+                if subjects[k] is None:
+                    mirror[len(pieces)] = len(pieces) - 1     # the right-hand wall or tower: the left one mirrored
+                pieces.append((rect, subjects[k] or ''))
+        sheets[f'CASTLE{level}'] = {'kind': 'object', 'pieces': pieces, 'mirror': mirror}
+    return sheets
+
+
+# Animations: one group generated once, its frames made from it (a walking bob, or a blast that grows and fades), so the
+# frames stay the same figures. Rectangles of the frames, in order.
+def _frames(n, x0, y0, w, h, sx, sy, per_row):
+    return [(x0 + (i % per_row) * sx, y0 + (i // per_row) * sy, w, h) for i in range(n)]
+
+
+ANIMATIONS = {
+    # crowds crossing the city view: invaders by era, rioters, and celebrations ("We love the king" day)
+    'INVADER3': ('a band of ancient warriors with swords, spears and shields marching to the right, seen from the side',
+                 _frames(10, 1, 1, 78, 65, 79, 66, 4), 'walk'),
+    'INVADER2': ('a column of musketeers in tricorn hats marching to the right, seen from the side',
+                 _frames(10, 0, 2, 78, 60, 79, 61, 4), 'walk'),
+    'INVADERS': ('a column of modern soldiers with rifles and helmets advancing to the right, seen from the side',
+                 _frames(10, 0, 2, 78, 60, 79, 61, 4), 'walk'),
+    'RIOT2': ('an angry crowd of ancient townspeople with clubs and torches marching to the right, seen from the side',
+              _frames(10, 1, 1, 74, 65, 75, 66, 4), 'walk'),
+    'RIOT': ('an angry crowd of modern protesters with placards and torches marching to the right, seen from the side',
+             _frames(10, 1, 1, 78, 63, 79, 64, 4), 'walk'),
+    'LOVE1': ('a joyful parade of ancient townspeople with flowers and banners walking to the left, seen from the side',
+              _frames(10, 1, 1, 78, 65, 79, 66, 4), 'walk'),
+    'LOVE2': ('a joyful parade of modern townspeople with flags and balloons walking to the left, seen from the side',
+              _frames(10, 1, 1, 78, 65, 79, 66, 4), 'walk'),
+    # a settler party walking to its new city
+    'SETTLERS': ('a small party of settlers with an ox cart walking to the right, seen from the side, wide and low',
+                 _frames(4, 1, 1, 47, 15, 0, 16, 1), 'walk'),
+    'NUKE1': ('a nuclear explosion: a glowing fireball rising into a mushroom cloud', _frames(28, 1, 1, 44, 44, 45, 45, 7),
+              'grow'),
+}
+
+
+SHEETS = {**_encyclopedia(), **_city(), **_palace()}
+SHEETS.update({name: {'kind': 'frames', 'motion': motion, 'pieces': [(r, subject) for r in rects]}
+               for name, (subject, rects, motion) in ANIMATIONS.items()})
 SHEETS['POP'] = {'kind': 'figure', 'pieces': [((1 + (i % 9) * 35, 1 + (i // 9) * 51, 34, 50), s) for i, s in enumerate(POP)]}

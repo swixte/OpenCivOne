@@ -26,7 +26,9 @@ namespace OpenCivOne
 
 			// Instruction address 0x0000:0x0056, size: 5
 			this.parent.GameData.DifficultyLevel = (short)this.parent.MenuBoxDialog.F0_2d05_0031_ShowMenuBox(
-				"Difficulty Level...\n Chieftain (easiest)\n Warlord\n Prince\n King\n Emperor (toughest)\n", 160, 35, false, false, true);
+				$"Difficulty Level...\n {this.parent.Array_33a2_GameDifficultyNames[0]} (easiest)\n {this.parent.Array_33a2_GameDifficultyNames[1]}\n " +
+				$"{this.parent.Array_33a2_GameDifficultyNames[2]}\n {this.parent.Array_33a2_GameDifficultyNames[3]}\n {this.parent.Array_33a2_GameDifficultyNames[4]} (toughest)\n",
+				160, 35, false, false, true);
 
 			if (this.parent.Var_2fa2_DialogMousePressed)
 			{

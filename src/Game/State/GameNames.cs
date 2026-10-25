@@ -21,6 +21,13 @@ namespace OpenCivOne
 		public Dictionary<string, string> Governments { get; set; } = new();
 
 		/// <summary>
+		/// Ruler titles (Emperor, King, Comrade, President) and realm titles (Empire, Kingdom, Republic)
+		/// </summary>
+		public Dictionary<string, string> Titles { get; set; } = new();
+
+		public Dictionary<string, string> Difficulties { get; set; } = new();
+
+		/// <summary>
 		/// Nations by their original plural name (Romans, Babylonians, ...)
 		/// </summary>
 		public Dictionary<string, NationNames> Nations { get; set; } = new();
@@ -59,7 +66,8 @@ namespace OpenCivOne
 		/// <summary>
 		/// Renames everything named in this file
 		/// </summary>
-		public void Apply(GameData gameData, string[] governmentNames, string[] gameConcepts)
+		public void Apply(GameData gameData, string[] governmentNames, string[] gameConcepts, string[] rulerTitles, string[] realmTitles,
+			string[] difficultyNames)
 		{
 			foreach (TechnologyAdvanceDefinition advance in gameData.TechnologyAdvances)
 				advance.Name = Rename(this.Advances, advance.Name);
@@ -86,6 +94,10 @@ namespace OpenCivOne
 			for (int i = 0; i < gameConcepts.Length; i++)
 				gameConcepts[i] = Rename(this.Governments, gameConcepts[i]);
 
+			RenameAll(this.Titles, rulerTitles);
+			RenameAll(this.Titles, realmTitles);
+			RenameAll(this.Difficulties, difficultyNames);
+
 			foreach (NationDefinition nation in gameData.Nations)
 			{
 				if (!this.Nations.TryGetValue(nation.Nation, out NationNames? names))
@@ -98,6 +110,12 @@ namespace OpenCivOne
 				for (int i = 0; names.Cities != null && i < names.Cities.Length && i < nation.Cities.Length; i++)
 					nation.Cities[i] = names.Cities[i];
 			}
+		}
+
+		private static void RenameAll(Dictionary<string, string> names, string[] list)
+		{
+			for (int i = 0; i < list.Length; i++)
+				list[i] = Rename(names, list[i]);
 		}
 
 		private static string Rename(Dictionary<string, string> names, string name)

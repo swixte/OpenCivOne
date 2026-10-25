@@ -166,22 +166,57 @@ def region_done(out, name, rect):
     return any(os.path.exists(os.path.join(out, name, f'{rect[0]}_{rect[1]}.{ext}')) for ext in ('png', 'jpg'))
 
 
+def frames(theme, key, name, spec, out, force):
+    """An animation: one group generated once, every frame made from it."""
+    rects = [p[0] for p in spec['pieces']]
+    if not force and all(region_done(out, name, r) for r in rects):
+        return 0
+    w, h = rects[0][2], rects[0][3]
+    obj = piece(theme, key, spec['pieces'][0][1], 'group of figures' if spec['motion'] == 'walk' else 'object',
+                cache(theme, name, 0), (w, h))
+    if obj is None:
+        return 0
+    n = len(rects)
+    for f, rect in enumerate(rects):
+        cell = Image.new('RGBA', (w * S, h * S), (0, 0, 0, 0))
+        if spec['motion'] == 'walk':
+            # every other frame half a pixel higher, so the group bobs as it walks
+            place(cell, obj, (0, 0, w, h), True)
+            cell = cell.transform(cell.size, Image.AFFINE, (1, 0, 0, 0, 1, S // 2 if f % 2 else 0))
+        else:
+            # the blast grows from the ground over the first half and fades over the second
+            grow = min(1.0, 0.15 + f / (n * 0.5))
+            gw, gh = max(1, round(w * grow)), max(1, round(h * grow))
+            place(cell, obj, ((w - gw) // 2, h - gh, gw, gh), True)
+            fade = 1.0 if f < n * 0.6 else max(0.0, 1 - (f - n * 0.6) / (n * 0.4))
+            a = np.asarray(cell).copy()
+            a[..., 3] = (a[..., 3] * fade).astype(np.uint8)
+            cell = Image.fromarray(a)
+        region(out, name, rect, cell, False)
+    return 1
+
+
 def sheet(theme, key, name, spec, subjects, out, force):
     """A sheet cut at fixed rectangles: each piece written as its own region file."""
     kind = spec['kind']
-    todo = [i for i, p in enumerate(spec['pieces']) if force or not region_done(out, name, p[0])]
+    mirror = spec.get('mirror', {})
+    todo = [i for i, p in enumerate(spec['pieces']) if i not in mirror and (force or not region_done(out, name, p[0]))]
 
     def make(i):
         rect = spec['pieces'][i][0]
-        if kind == 'scene':
-            return scene(theme, key, subjects[i], rect, cache(theme, name, i))
-        return piece(theme, key, subjects[i], FRAMING[kind], cache(theme, name, i), rect[2:])
+        try:
+            if kind == 'scene':
+                return scene(theme, key, subjects[i], rect, cache(theme, name, i))
+            return piece(theme, key, subjects[i], FRAMING[kind], cache(theme, name, i), rect[2:])
+        except Exception as e:      # a failed piece is left for the next run
+            print(f'{name}: piece {i} failed, {e}', flush=True)
+            return None
 
-    with ThreadPoolExecutor(4) as pool:
+    with ThreadPoolExecutor(6) as pool:
         made = list(pool.map(lambda i: (i, make(i)), todo))
+    made += [(i, ImageOps.mirror(img)) for i, j in mirror.items() for k, img in list(made) if k == j and img is not None]
     for i, img in made:
         if img is None:
-            print(f'{name}: piece {i} could not be cut out')
             continue
         rect = spec['pieces'][i][0]
         if kind == 'scene':
@@ -194,7 +229,7 @@ def sheet(theme, key, name, spec, subjects, out, force):
             region(out, name, b, bust(img, b), True)
     for rect in spec.get('clear', []) if made else []:
         region(out, name, rect, Image.new('RGBA', (rect[2] * S, rect[3] * S), (0, 0, 0, 0)), False)
-    return len(made)
+    return sum(1 for _, img in made if img is not None)
 
 
 def placed(theme, key, name, img, pieces):
@@ -233,26 +268,30 @@ def build(theme_dir, only=None, force=False, with_map=False):
             return placed(theme, key, n, img, pictures.PLACED[n]) if n in pictures.PLACED else img
         jobs.append((name, make))
 
-    for name, make in jobs:
-        if name in pictures.NEVER_PAINT or (only and name not in only):
-            continue
+    def run(job):
+        name, make = job
         path = os.path.join(out, name + '.png')
         if os.path.exists(path) and not force:
-            print(f'{name}: kept')
-            continue
+            return f'{name}: kept'
         try:
             make().save(path)
-            print(f'{name}: written')
+            return f'{name}: written'
         except Exception as e:      # one failed picture should not stop the rest
-            print(f'{name}: failed, {e}')
+            return f'{name}: failed, {e}'
+
+    jobs = [j for j in jobs if j[0] not in pictures.NEVER_PAINT and not (only and j[0] not in only)]
+    with ThreadPoolExecutor(4) as pool:
+        for line in pool.map(run, jobs):
+            print(line, flush=True)
 
     for name, spec in pictures.SHEETS.items():
         if only and name not in only:
             continue
         subjects = overrides.get(name, [p[1] for p in spec['pieces']])
         try:
-            count = sheet(theme, key, name, spec, subjects, out, force)
-            print(f'{name}: {count} of {len(spec["pieces"])} pieces written' if count else f'{name}: kept')
+            count = (frames(theme, key, name, spec, out, force) if spec['kind'] == 'frames'
+                     else sheet(theme, key, name, spec, subjects, out, force))
+            print(f'{name}: {count} of {len(spec["pieces"])} pieces written' if count else f'{name}: kept', flush=True)
         except Exception as e:
             print(f'{name}: failed, {e}')
 

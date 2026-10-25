@@ -101,7 +101,8 @@ a `names.json` (see [hd-art.md](hd-art.md#names)). The menus and other messages 
 ## What a theme needs
 
 `tools/hdart/theme.py` generates a theme (see [hd-art.md](hd-art.md#themes)); `tools/hdart/pictures.py` says what each
-picture shows; every sheet above except the palace, spaceship, roads and animations is described there.
+picture shows; every sheet above except the spaceship (SPACEST, DOCKER, PLANET), the game-over scenes (SLAM), the city
+view roads and the palace garden layers (CBACKS, CBRUSH) is described there.
 Leaders are painted as one still bust each, with the face parts cleared. Done so far: the map and interface, BIRTH0,
 CUSTOM, DIFFS, HILL, POP, GOVT0A, ICONPGT1 and KING10.
 

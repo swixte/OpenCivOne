@@ -122,7 +122,9 @@ Pictures come in these kinds (see [art-inventory.md](art-inventory.md)):
   (`NAME/X_Y.png`), so a piece a theme does not paint keeps its stand-in art. A piece is a *scene* (an opaque
   illustration filling its rectangle, written as `.jpg`: the Encyclopedia pictures), an *object* (cut out, resting on
   the bottom of its rectangle: city buildings, houses, wonders), a *figure* (a cut-out person: citizens, advisors) or
-  a *bust* (a leader). An advisor is generated once and used for its full figure and, cut to head and shoulders, for
+  a *bust* (a leader). An *animation* is one generated group whose frames are made from it, so they stay the same
+  figures: crowds and settlers bob as they walk, the nuclear blast grows and fades. A palace's right-hand walls and
+  towers are its left-hand ones mirrored. An advisor is generated once and used for its full figure and, cut to head and shoulders, for
   its portraits. A leader is one still bust: the face parts the game lays over it for expressions would not fit a new
   bust, so they are written as transparent regions.
 
@@ -133,21 +135,21 @@ Pictures without transparency can be `.jpg` instead of `.png`, for whole images 
 several times smaller that way.
 
 The repository has one theme, `themes/dark-painterly`, with the pictures done so far: BIRTH0, CUSTOM, DIFFS, HILL, POP,
-GOVT0A, ICONPGT1 and KING10. `theme.py list` shows all 23 backdrops and 42 sheets (250 pieces) it can build. Each backdrop,
+GOVT0A, ICONPGT1 and KING10. `theme.py list` shows all 24 backdrops and 56 sheets it can build. Each backdrop,
 object or scene is one medium-quality image.
 
 ### Names
 
-A theme can rename the units, advances, improvements, wonders, terrain, governments and nations (leader, plural,
-adjective and city names) with a `names.json` in its `hd` folder; without a theme the game reads `names.json` from its
+A theme can rename the units, advances, improvements, wonders, terrain, governments, ruler and realm titles (Emperor,
+Comrade, Empire, Kingdom ...), difficulty levels and nations (leader, plural, adjective and city names) with a `names.json` in its `hd` folder; without a theme the game reads `names.json` from its
 own folder. `themes/names.json` holds every original name mapped to itself: copy it, change the right-hand sides and
 remove what you keep. Each entry maps an original name to its new one, and nations are keyed by their plural
 (`"Romans": {"Leader": "...", "Nation": "...", "Nationality": "...", "Cities": [...]}`). Governments have two forms in the
 game, as a type (Communist, Democratic) and as an Encyclopedia topic (Communism, Democracy), and both are listed.
 
 Keep names about as long as the originals: the screens have room for them, and a save game stores unit names in 12
-characters (a loaded game keeps the names it was saved with). The Encyclopedia and help texts (the `.TXT` files) and the
-realm titles (Kingdom, Republic, Empire) are not renamed yet.
+characters (a loaded game keeps the names it was saved with). The Encyclopedia and help texts are the game's `.TXT`
+files, which a theme does not change yet.
 
 ## How it works
 
