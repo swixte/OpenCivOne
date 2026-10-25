@@ -156,6 +156,8 @@ def bust(obj, rect):
 def region(out, name, rect, img, opaque):
     folder = os.path.join(out, name)
     os.makedirs(folder, exist_ok=True)
+    # some rectangles reach past the 320x200 picture (the game trims them when drawing); a region has to fit
+    img = img.crop((0, 0, min(rect[2], 320 - rect[0]) * S, min(rect[3], 200 - rect[1]) * S))
     if opaque:
         img.convert('RGB').save(os.path.join(folder, f'{rect[0]}_{rect[1]}.jpg'), quality=92)
     else:

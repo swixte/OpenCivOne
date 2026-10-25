@@ -134,8 +134,9 @@ Each object is generated on flat magenta and cut out. The generated pieces are k
 Pictures without transparency can be `.jpg` instead of `.png`, for whole images and regions alike; a full theme is
 several times smaller that way.
 
-The repository has one theme, `themes/dark-painterly`, with the pictures done so far: BIRTH0, CUSTOM, DIFFS, HILL, POP,
-GOVT0A, ICONPGT1 and KING10. `theme.py list` shows all 24 backdrops and 56 sheets it can build. Each backdrop,
+The repository has one theme, `themes/dark-painterly`. Done so far: all the intro, throne room, discovery and ruins
+backdrops, CUSTOM, DIFFS, HILL, all 67 advance pictures, 12 of the 28 unit pictures (ICONPGA-B), six terrain pictures
+(ICONPGT1), the citizens, the despotism advisors (GOVT0A) and Caesar (KING10). `theme.py list` shows all 24 backdrops and 56 sheets it can build. Each backdrop,
 object or scene is one medium-quality image.
 
 ### Names
