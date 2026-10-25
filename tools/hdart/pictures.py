@@ -4,8 +4,8 @@ BACKDROPS are shown whole: one generated image each, with any PLACED objects put
 of them. SHEETS are cut into pieces at fixed rectangles: each piece is generated alone and written as a region file.
 A theme can change any backdrop subject in its theme.json.
 
-Not listed yet: the leaders (assembled from face parts), the palace, the city view roads, the spaceship and the
-animations; they keep their stand-in art. MAP is the Earth's terrain stored as pixels: never paint it.
+Not listed yet: the palace, the city view roads, the spaceship and the animations; they keep their stand-in art.
+Leaders are painted as one still bust each: their face parts, which change expressions, are cleared. MAP is the Earth's terrain stored as pixels: never paint it.
 """
 
 # Text the game writes over a backdrop needs calm areas; most backdrops carry a title at the top.
@@ -77,8 +77,10 @@ NEVER_PAINT = {'MAP'}
 # theme does not paint keeps its stand-in art. Kinds:
 #   scene   an opaque illustration filling its rectangle (Encyclopedia and discovery pictures)
 #   object  a cut-out object resting on the bottom of its rectangle (city view buildings, houses, wonders)
-#   figure  a cut-out person; a piece can also name a bust rectangle that gets the head and shoulders of the same figure
-# A piece is (rect, subject) or (rect, subject, bust_rect), rectangles as (x, y, width, height) in original pixels.
+#   figure  a cut-out person; a piece can also list bust rectangles that get the head and shoulders of the same figure
+#   bust    a cut-out head and upper body (the leaders)
+# A piece is (rect, subject) or (rect, subject, [bust_rect, ...]), rectangles as (x, y, width, height) in original
+# pixels. 'clear' lists rectangles written as transparent regions, so the game draws nothing there.
 
 ADVANCES = [
     'Alphabet', 'Code of Laws', 'Currency', 'Atomic Theory', 'Democracy', 'Monarchy', 'Astronomy', 'Map Making',
@@ -304,6 +306,14 @@ GOVERNMENTS = {
 ADVISOR_LOOKS = ['in armour or uniform', 'holding a ledger', 'holding a sealed scroll', 'holding a book and instruments']
 
 
+# the leaders by KING file number (the game's table of nations to files)
+LEADERS = [('Queen Elizabeth I', 'English'), ('Pharaoh Ramesses', 'Egyptians'), ('Mahatma Gandhi', 'Indians'),
+           ('King Shaka', 'Zulus'), ('Abraham Lincoln', 'Americans'), ('Genghis Khan', 'Mongols'), ('Mao Tse Tung', 'Chinese'),
+           ('King Hammurabi', 'Babylonians'), ('Joseph Stalin', 'Russians'), ('Emperor Montezuma', 'Aztecs'),
+           ('Julius Caesar', 'Romans'), ('Emperor Napoleon', 'French'), ('Frederick the Great', 'Germans'),
+           ('Alexander the Great', 'Greeks')]
+
+
 def _city():
     sheets = {}
     for name, era in (('CITYPIX2', 'before the industrial age'), ('CITYPIX3', 'of the industrial and modern age')):
@@ -325,9 +335,17 @@ def _city():
             pieces.append(((x1, y1, x2 - x1 - 1, y2 - y1 - 1), f'{WONDERS[i][1]} (the wonder "{WONDERS[i][0]}")'))
         sheets[name] = {'kind': 'object', 'pieces': pieces}
     for govt, court in GOVERNMENTS.items():
+        # each advisor also has a 40x60 head and three 28x24 small heads (one per expression; all the same here)
         sheets[f'GOVT{govt}'] = {'kind': 'figure', 'pieces': [
-            ((80 * i + 1, 101, 78, 99), f'the {advisor} {court}, {ADVISOR_LOOKS[i]}', (40 * i, 0, 40, 60))
+            ((80 * i + 1, 101, 78, 99), f'the {advisor} {court}, {ADVISOR_LOOKS[i]}',
+             [(40 * i, 0, 40, 60)] + [(161 + 29 * k, 25 * i + 1, 28, 24) for k in range(3)])
             for i, advisor in enumerate(ADVISORS)]}
+    for number, (leader, nation) in enumerate(LEADERS):
+        # the face parts are laid over the bust for expressions; they would not fit a new bust, so they are cleared
+        parts = [(60 * (j % 5) + 1, 50 * (j // 5) + 1 + dy, 59, h) for j in list(range(8)) + [10, 11, 12, 15, 16, 17]
+                 for dy, h in ((0, 20), (20, 29))]
+        sheets[f'KING{number:02}'] = {'kind': 'bust', 'clear': parts, 'pieces': [
+            ((181, 67, 139, 133), f'{leader}, leader of the {nation}, in the dress of a ruler, facing the viewer')]}
     return sheets
 
 

@@ -47,8 +47,8 @@ Small sprites cut in `StartGameMenu.cs` (`F5_0000_1455_LoadBitmaps`), not yet pa
 | ICONPGA–E | 158x61 at (160(i & 1) + 1, 61((i % 6) >> 1)), 6 per sheet, order in `unitTypeFileID` | unit pictures (Encyclopedia) | `Encyclopedia.cs` |
 | ICONPGT1–2 | 106x77 at (107(i % 3) + 1, 87((i % 6) / 3) + 5), 6 per sheet, order in `terrainTypeFileID` | terrain pictures (Encyclopedia) | `Encyclopedia.cs` |
 | POP | 34x50 at (35i + 1, 1) and (35i + 1, 52) | city population figures (content, happy, unhappy, specialists), two eras | `CityView.cs` `DrawCityPopulation` |
-| KING00–13 | face parts: 59x20 at (x, y + 1), 59x29 at (x, y + 21); expressions 28x24 at (161 + 29k, 25n + 1) | the 14 leaders, assembled from parts for each expression | `MeetWithKing.cs` |
-| GOVT0A–3A, GOVT0M–2M | 4 advisors (defense, domestic, foreign, science): figures 78x99 at (80i + 1, 101), heads 40x60 at (40i, 0) | 0 despotism and anarchy, 1 monarchy, 2 republic and democracy, 3 communism; A before Invention, M after | `MeetWithKing.cs`, `StartGameMenu.cs` |
+| KING00–13 | bust 139x133 at (181, 67), drawn at (90, 0) over the throne room; face parts 59x20 and 59x29 at (60(j % 5) + 1, 50(j / 5) + 1) and 20 lower, for j = 0–7, 10–12, 15–17, laid over the bust for expressions | the 14 leaders: 00 Elizabeth I, 01 Ramesses, 02 Gandhi, 03 Shaka, 04 Lincoln, 05 Genghis Khan, 06 Mao, 07 Hammurabi, 08 Stalin, 09 Montezuma, 10 Caesar, 11 Napoleon, 12 Frederick, 13 Alexander (the game's table at DS:3938) | `MeetWithKing.cs` |
+| GOVT0A–3A, GOVT0M–2M | 4 advisors (defense, domestic, foreign, science): figures 78x99 at (80i + 1, 101), heads 40x60 at (40i, 0), small heads 28x24 at (161 + 29k, 25i + 1) for three expressions | 0 despotism and anarchy, 1 monarchy, 2 republic and democracy, 3 communism; A before Invention, M after | `MeetWithKing.cs`, `StartGameMenu.cs` |
 | CASTLE0–4 | 3 x 5 parts per level, rectangles in `Palace.cs` (`bitmapRectangles`) | palace pieces for the five building levels | `Palace.cs` |
 | CBACK, CBACKS1–3, CBRUSH0–5 | backdrop plus garden and brush layers | palace grounds | `Palace.cs` |
 | SETTLERS | 47x15 at (1, 16i + 1), 4 frames | settlers walking (new city animation) | `Animations.cs` |
@@ -101,8 +101,9 @@ a `names.json` (see [hd-art.md](hd-art.md#names)). The menus and other messages 
 ## What a theme needs
 
 `tools/hdart/theme.py` generates a theme (see [hd-art.md](hd-art.md#themes)); `tools/hdart/pictures.py` says what each
-picture shows; every sheet above except the leaders, palace, spaceship, roads and animations is described there.
-Done so far: the map and interface, BIRTH0, CUSTOM, DIFFS, HILL, POP, GOVT0A and ICONPGT1.
+picture shows; every sheet above except the palace, spaceship, roads and animations is described there.
+Leaders are painted as one still bust each, with the face parts cleared. Done so far: the map and interface, BIRTH0,
+CUSTOM, DIFFS, HILL, POP, GOVT0A, ICONPGT1 and KING10.
 
 - **Map and interface**: done, generated from one concept image (see [hd-art.md](hd-art.md)).
 - **About 60 backdrops**: one generated picture each, keeping its text areas.

@@ -73,6 +73,7 @@ def backdrop(theme, key, name, subject, calm):
 FRAMING = {
     'object': 'building or object, seen from a high three-quarter angle like a town in a strategy game',
     'figure': 'figure, full body, standing, seen from the front',
+    'bust': 'portrait bust, head, shoulders and upper body',
 }
 
 
@@ -143,7 +144,7 @@ def bust(obj, rect):
     ys, xs = np.nonzero(a[..., 3] > 128)
     top = ys.min()
     head = xs[ys < top + (ys.max() - top) * 0.12]          # the head is the top of the figure
-    ch = int((ys.max() - top) * 0.45)
+    ch = int((ys.max() - top) * (0.45 if h > w else 0.2))     # a wide frame gets just the head
     cw = int(ch * w / h)
     cx = int(head.mean())
     crop = obj.crop((cx - cw // 2, max(0, top - ch // 12), cx - cw // 2 + cw, max(0, top - ch // 12) + ch)).resize((w, h), Image.LANCZOS)
@@ -189,9 +190,10 @@ def sheet(theme, key, name, spec, subjects, out, force):
         cell = Image.new('RGBA', (rect[2] * S, rect[3] * S), (0, 0, 0, 0))
         place(cell, img, (0, 0) + tuple(rect[2:]), True)
         region(out, name, rect, cell, False)
-        if len(spec['pieces'][i]) > 2:
-            b = spec['pieces'][i][2]
+        for b in (spec['pieces'][i][2] if len(spec['pieces'][i]) > 2 else []):
             region(out, name, b, bust(img, b), True)
+    for rect in spec.get('clear', []) if made else []:
+        region(out, name, rect, Image.new('RGBA', (rect[2] * S, rect[3] * S), (0, 0, 0, 0)), False)
     return len(made)
 
 

@@ -121,8 +121,10 @@ Pictures come in these kinds (see [art-inventory.md](art-inventory.md)):
 - **Sheets** are cut by the game at fixed rectangles. Each piece is generated alone and written as a region file
   (`NAME/X_Y.png`), so a piece a theme does not paint keeps its stand-in art. A piece is a *scene* (an opaque
   illustration filling its rectangle, written as `.jpg`: the Encyclopedia pictures), an *object* (cut out, resting on
-  the bottom of its rectangle: city buildings, houses, wonders) or a *figure* (a cut-out person: citizens, advisors).
-  An advisor is generated once and used twice, as the full figure and, cut to head and shoulders, as the portrait.
+  the bottom of its rectangle: city buildings, houses, wonders), a *figure* (a cut-out person: citizens, advisors) or
+  a *bust* (a leader). An advisor is generated once and used for its full figure and, cut to head and shoulders, for
+  its portraits. A leader is one still bust: the face parts the game lays over it for expressions would not fit a new
+  bust, so they are written as transparent regions.
 
 Each object is generated on flat magenta and cut out. The generated pieces are kept in `themes/NAME/pieces`, so
 `--force` composes a picture again without new images; delete a piece to generate it again.
@@ -131,7 +133,7 @@ Pictures without transparency can be `.jpg` instead of `.png`, for whole images 
 several times smaller that way.
 
 The repository has one theme, `themes/dark-painterly`, with the pictures done so far: BIRTH0, CUSTOM, DIFFS, HILL, POP,
-GOVT0A and ICONPGT1. `theme.py list` shows all 23 backdrops and 28 sheets (236 pieces) it can build. Each backdrop,
+GOVT0A, ICONPGT1 and KING10. `theme.py list` shows all 23 backdrops and 42 sheets (250 pieces) it can build. Each backdrop,
 object or scene is one medium-quality image.
 
 ### Names
