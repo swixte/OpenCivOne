@@ -138,8 +138,18 @@ namespace OpenCivOne
 
 			this.globalPreferences = GlobalPreferences.DeSerializeFromJSON(this, this.gameMainPath);
 
-			// HD art declares its scale in hd/scale.txt (4 for 64x64 tiles); without it the scale is 2
-			string hdScalePath = $"{this.gameResourcePath}hd{separator}scale.txt";
+			// The HD art is in the hd folder, or in themes/NAME when the preferences name a theme that is there
+			string hdPath = $"{this.gameResourcePath}hd";
+			string? theme = this.globalPreferences.Theme;
+
+			if (!string.IsNullOrWhiteSpace(theme) && Directory.Exists($"{this.gameResourcePath}themes{separator}{theme}"))
+			{
+				hdPath = $"{this.gameResourcePath}themes{separator}{theme}";
+				GBitmap.HDDirectory = hdPath;
+			}
+
+			// HD art declares its scale in scale.txt (4 for 64x64 tiles); without it the scale is 2
+			string hdScalePath = $"{hdPath}{separator}scale.txt";
 
 			if (File.Exists(hdScalePath) && int.TryParse(File.ReadAllText(hdScalePath).Trim(), out int hdScale) && (hdScale == 2 || hdScale == 4))
 			{
@@ -152,12 +162,12 @@ namespace OpenCivOne
 			}
 
 			// Optional painted grain for flat interface boxes, and smooth enlargement of pixel art without HD versions
-			GBitmap.LoadUIMaterial($"{this.gameResourcePath}hd{separator}ui{separator}material.png");
-			string upscalePath = $"{this.gameResourcePath}hd{separator}upscale.txt";
+			GBitmap.LoadUIMaterial($"{hdPath}{separator}ui{separator}material.png");
+			string upscalePath = $"{hdPath}{separator}upscale.txt";
 			GBitmap.SmoothUpscale = File.Exists(upscalePath) && File.ReadAllText(upscalePath).Trim().ToLowerInvariant() == "scale2x";
 
 			// A painted map (hd/painted) replaces the terrain tiles of map cells with one painting of the whole world
-			this.paintedMap = PaintedMap.Load($"{this.gameResourcePath}hd{separator}painted", 16 * GBitmap.HDScale,
+			this.paintedMap = PaintedMap.Load($"{hdPath}{separator}painted", 16 * GBitmap.HDScale,
 				(x, y) => (int)this.mapManagement!.GetTerrainType(x, y));
 
 			#region Initialize Segments

@@ -82,6 +82,50 @@ The advisors, leaders, city view, intro and other pictures come from the origina
 
 Sprite sheets (map tiles, units, city buildings, leader faces, wonders and the like) are skipped, since the game cuts them into pieces at fixed places that a repainted sheet would not keep.
 
+## Themes
+
+A theme is a complete set of HD art, kept in the game's `themes/NAME` folder (next to the PIC files) and chosen with
+`"Theme": "NAME"` in `~/Games/OpenCivOne/Preferences.json`. Without a theme, or when its folder is missing, the game uses
+the `hd` folder. Switching themes needs only a restart, so a game can have several looks side by side.
+
+`tools/hdart/theme.py` makes a theme from one concept image and a style description. The source of a theme is a folder
+in `themes/` with a `theme.json`:
+
+```json
+{
+  "name": "dark-painterly",
+  "concept": "concept.png",
+  "style": "dark, moody, painterly, muted fantasy strategy map, light from the top left",
+  "quality": "medium",
+  "pictures": {}
+}
+```
+
+- `OPENAI_API_KEY=... python3 tools/hdart/theme.py build themes/NAME` generates the theme's pictures into
+  `themes/NAME/hd` (OpenAI Images API, the concept as a style reference). What each picture shows is in
+  `tools/hdart/pictures.py`; `pictures` in `theme.json` replaces a subject for one theme. `--only NAME ...` builds some
+  pictures, `--force` builds them again, and `--map` also generates the painted map, units and interface in the
+  theme's style (about 60 images).
+- `python3 tools/hdart/theme.py install themes/NAME [GAME_DIR]` puts it into `GAME_DIR/themes/NAME` (default
+  `~/Dos/Civ1`): the shared 4x set (`assets/hd4`, `assets/painted`) with the theme's own files over it, so a theme only
+  holds what it changes.
+- `python3 tools/hdart/theme.py list` shows the pictures it knows.
+
+Pictures come in three kinds (see [art-inventory.md](art-inventory.md)):
+
+- **Backdrops** are generated whole, at 1536x1024, and cropped to the 16:10 screen. Their subjects ask for calm areas
+  where the game writes text: menus written straight onto a picture use dark text, so those need a light area behind
+  them.
+- **Placed objects** are generated alone and put into the exact rectangles the game copies out of a backdrop, with a
+  soft shadow. DIFFS uses this for its five crowns.
+- **Grids** are sheets of equal cells, one object generated per cell. POP uses this for its 18 citizens.
+
+Each object is generated on flat magenta and cut out. The cut pieces are kept in `themes/NAME/pieces`, so `--force`
+composes a picture again without new images; delete a piece to generate it again.
+
+The repository has one theme, `themes/dark-painterly`, with the pictures done so far: BIRTH0, CUSTOM, DIFFS, HILL and
+POP. A backdrop costs about as much as a medium-quality 1536x1024 image, a placed object or grid cell a 1024x1024 one.
+
 ## How it works
 
 Every PIC file the game loads can have HD versions in the `hd` folder:

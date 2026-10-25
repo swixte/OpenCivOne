@@ -19,6 +19,11 @@ namespace OpenCivOne
 		/// </summary>
 		public GlobalDebugPreferences Debug { get => this._debugSettings; set => this._debugSettings = value; }
 
+		/// <summary>
+		/// Name of the art theme to use, a folder in the game's themes folder; empty for the hd folder
+		/// </summary>
+		public string? Theme { get; set; } = null;
+
 		[XmlIgnore]
 		[JsonIgnore]
 		public bool SaveGameWarning { get => this._saveGameWarning; set => this._saveGameWarning = value; }

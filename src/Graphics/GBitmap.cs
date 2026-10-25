@@ -52,6 +52,7 @@ namespace OpenCivOne.Graphics
 		private static readonly object _hdCacheLock = new object();
 		private static readonly Dictionary<string, HDImage?> _hdCache = new Dictionary<string, HDImage?>();
 		private static string? _hdTemplatePath = null;
+		private static string? _hdDirectory = null;
 
 		// Optional painted grain for flat fills on screens (hd/ui/material.png): shades around 128, one per HD pixel
 		private static byte[]? _uiMaterial = null;
@@ -187,6 +188,15 @@ namespace OpenCivOne.Graphics
 		{
 			get => _hdTemplatePath;
 			set => _hdTemplatePath = value;
+		}
+
+		/// <summary>
+		/// Folder of the HD art, for example a theme's folder; when null, the hd folder next to each PIC file
+		/// </summary>
+		public static string? HDDirectory
+		{
+			get => _hdDirectory;
+			set => _hdDirectory = value;
 		}
 
 		/// <summary>
@@ -1251,10 +1261,11 @@ namespace OpenCivOne.Graphics
 			string? directory = Path.GetDirectoryName(picPath);
 			string name = Path.GetFileNameWithoutExtension(picPath);
 
-			if (directory == null || !Directory.Exists(Path.Combine(directory, "hd")))
+			string? hdDirectory = _hdDirectory ?? (directory == null ? null : Path.Combine(directory, "hd"));
+
+			if (hdDirectory == null || !Directory.Exists(hdDirectory))
 				return null;
 
-			string hdDirectory = Path.Combine(directory, "hd");
 			string[] names = new string[] { name, name.ToUpperInvariant(), name.ToLowerInvariant() };
 			HDImage hdImage = new HDImage(bitmap.iWidth, bitmap.iHeight);
 			bool found = false;

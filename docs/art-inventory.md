@@ -61,6 +61,7 @@ Small sprites cut in `StartGameMenu.cs` (`F5_0000_1455_LoadBitmaps`), not yet pa
 | DOCKER | 10 rectangles from the game's data table (DS:4BE2) | space docking parts | `Overlay_18.cs` |
 | LOGO | 320x80 band at (0, 64) | title logo | `MainIntro.cs` |
 | TORCH | small | intro torch | `StartGame.cs` |
+| DIFFS | 5 crowns, 53x47 at (21, 35i + 6) for even i and (80, 35i + 6) for odd i; also a backdrop | one crown per difficulty level, copied beside the next menus; clicking left of x 135 picks the level by row | `StartGameMenu.cs` |
 
 ## Backdrops
 
@@ -69,7 +70,7 @@ Small sprites cut in `StartGameMenu.cs` (`F5_0000_1455_LoadBitmaps`), not yet pa
 | BIRTH0–8 | intro story and "the dawn of civilization" sequence |
 | BACK0A–3A, BACK0M–2M | backgrounds behind leaders and advisors, by era |
 | HILL | city founding and city view landscape |
-| CUSTOM, DIFFS | world customisation and difficulty choice |
+| CUSTOM, DIFFS | world customisation and difficulty choice; menus are written on the right in dark text, from x 200 (CUSTOM) and x 160 (DIFFS) |
 | ARCH | game over (lost) |
 | DISCOVR1, DISCOVR2 | discovery announcements (`GameEngine.cs`) |
 | MAP | the Earth map for "play on Earth" (`MapManagement.cs` `LoadEarthMap`) |
@@ -97,6 +98,9 @@ Many names are written in the code rather than in these files: units, advances, 
 civilizations and leaders, and the menus. Renaming them for a theme means moving them into a data file first.
 
 ## What a theme needs
+
+`tools/hdart/theme.py` generates a theme (see [hd-art.md](hd-art.md#themes)); `tools/hdart/pictures.py` says what each
+picture shows. Done so far: the map and interface, BIRTH0, CUSTOM, DIFFS, HILL and POP.
 
 - **Map and interface**: done, generated from one concept image (see [hd-art.md](hd-art.md)).
 - **About 60 backdrops**: one generated picture each, keeping its text areas.

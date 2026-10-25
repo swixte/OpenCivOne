@@ -14,8 +14,9 @@ from concurrent.futures import ThreadPoolExecutor
 
 import requests
 
-STYLE = ('Use the reference image only for its art style and colours: dark, moody, painterly, muted fantasy '
-         'strategy map, light from the top left.')
+# a theme can describe its own style (theme.py sets PAINTED_STYLE)
+STYLE = ('Use the reference image only for its art style and colours: '
+         + os.environ.get('PAINTED_STYLE', 'dark, moody, painterly, muted fantasy strategy map, light from the top left') + '.')
 TEXTURE = (STYLE + ' A seamless tileable ground texture seen straight from above, filling the entire square image edge '
            'to edge with even, flat lighting: no objects, no horizon, no vignette, no border, no text. The texture: ')
 SHEET = ('Every object is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, with clear empty '
