@@ -3,6 +3,8 @@
   <PropertyGroup>
 	<OutputType>WinExe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
+    <!-- also runs where only a newer .NET runtime (9, 10) is installed -->
+    <RollForward>Major</RollForward>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <Title>OpenCivOne project - Free and Open Source (FOSS) preservation effort and rewrite of the iconic Civilization Game designed by Sid Meier and Bruce Shelley in year 1991</Title>
