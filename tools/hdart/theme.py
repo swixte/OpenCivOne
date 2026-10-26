@@ -7,6 +7,8 @@ A theme is a folder with a theme.json:
       "concept": "concept.png",
       "style": "dark, moody, painterly, muted fantasy strategy map, light from the top left",
       "quality": "medium",
+      "references": {"default": ["refs/a.jpg"], "scene": ["refs/b.jpg", "refs/c.jpg"]},
+      "rules": {"scene": "rules for Encyclopedia scenes", "bust": "rules for leader portraits"},
       "pictures": {"BIRTH0": "a subject that replaces the one in pictures.py", "POP": ["one subject per piece", ...]}
     }
 
@@ -15,7 +17,8 @@ A theme is a folder with a theme.json:
     any placed objects put into their rectangles; sheets piece by piece, each piece a region file (NAME/X_Y.png, or
     .jpg for opaque scenes), so anything not painted keeps its stand-in art;
   - with --map, the painted map, units and interface as well (generate_painted.py, painted_assets.py, painted_set.py).
-Pictures and pieces already built are kept, so an interrupted build can be resumed; --force builds them again.
+Style references and rules can be given per kind of asset (backdrop, scene, object, figure, bust); without them the
+concept image is the reference. Pictures and pieces already built are kept, so an interrupted build can be resumed; --force builds them again.
 Generated pieces are kept in THEME/pieces and reused by --force: delete a piece to generate it again.
 
 `install` puts a theme into the game's themes/NAME folder: the shared 4x set (assets/hd4 and assets/painted) with the
@@ -23,7 +26,7 @@ theme's own files from THEME/hd over it, so a theme only holds what it changes. 
 ~/Games/OpenCivOne/Preferences.json.
 
 Usage:
-  OPENAI_API_KEY=... python3 theme.py build THEME_DIR [--map] [--only NAME ...] [--force]
+  OPENAI_API_KEY=... python3 theme.py build THEME_DIR [--map] [--only NAME|NAME:PIECE ...] [--force]
   python3 theme.py install THEME_DIR [GAME_DIR]      (GAME_DIR defaults to ~/Dos/Civ1)
   python3 theme.py list
 """
@@ -51,21 +54,41 @@ S = 4                       # HD pixels per original pixel
 W, H = 320 * S, 200 * S
 
 
-def call(key, concept, prompt, size, quality):
-    """One image from the OpenAI Images API, with the concept image as style reference."""
-    with open(concept, 'rb') as f:
+def call(key, references, prompt, size, quality):
+    """One image from the OpenAI Images API, with the reference images as style references."""
+    files = [('image[]', (os.path.basename(path), open(path, 'rb'),
+                          'image/jpeg' if path.lower().endswith('.jpg') else 'image/png')) for path in references]
+    try:
         r = requests.post('https://api.openai.com/v1/images/edits', headers={'Authorization': f'Bearer {key}'},
                           data={'model': 'gpt-image-2', 'prompt': prompt, 'size': size, 'quality': quality, 'n': '1'},
-                          files={'image[]': (os.path.basename(concept), f, 'image/png')}, timeout=900)
+                          files=files, timeout=900)
+    finally:
+        for _, (_, f, _) in files:
+            f.close()
     if r.status_code != 200:
         raise RuntimeError(f'HTTP {r.status_code} {r.text[:300]}')
     return Image.open(io.BytesIO(base64.b64decode(r.json()['data'][0]['b64_json'])))
 
 
+def references(theme, kind):
+    """The style reference images for a kind of asset: the theme's own list for that kind, its default list, or the
+    concept image."""
+    refs = theme.get('references', {})
+    paths = refs.get(kind) or refs.get('default') or [theme['concept']]
+    return [os.path.join(theme['dir'], p) for p in paths]
+
+
+def lead(theme, kind):
+    """The start of every prompt: the theme's style and its rules for this kind of asset."""
+    rules = theme.get('rules', {}).get(kind, '')
+    return (f'Use the reference images only for their painting style, palette and light, never for their subjects or '
+            f'composition. Style: {theme["style"]}. {rules} ')
+
+
 def backdrop(theme, key, name, subject, calm):
-    prompt = (f'Use the reference image only for its art style and colours: {theme["style"]}. '
+    prompt = (lead(theme, 'backdrop') +
               f'A wide full-screen game illustration: {subject} {calm} No text, letters, numbers, frame or border.')
-    img = call(key, theme['concept'], prompt, '1536x1024', theme.get('quality', 'medium')).convert('RGB')
+    img = call(key, references(theme, 'backdrop'), prompt, '1536x1024', theme.get('quality', 'medium')).convert('RGB')
     # the 3:2 image is cropped to the game's 16:10 screen
     return img.crop((0, 32, 1536, 992)).resize((W, H), Image.LANCZOS)
 
@@ -82,17 +105,17 @@ def size_for(w, h):
     return '1536x1024' if w >= 1.2 * h else '1024x1536' if h >= 1.2 * w else '1024x1024'
 
 
-def piece(theme, key, subject, framing, cache, shape=(1, 1)):
+def piece(theme, key, subject, framing, cache, shape=(1, 1), kind='object'):
     """One object generated alone on magenta and cut out. Kept in the theme's pieces folder, so a picture can be
     composed again without new images; delete a piece to generate it again."""
     if os.path.exists(cache):
         return Image.open(cache).convert('RGBA')
     wide = ' It is wide and low, filling the width of the image.' if shape[0] >= 1.6 * shape[1] else ''
-    prompt = (f'Use the reference image only for its art style and colours: {theme["style"]}. '
+    prompt = (lead(theme, kind) +
               f'A single small game {framing}: {subject}, centred and filling most of the image, with a bold, readable '
               f'silhouette that stays clear when shrunk to a small icon.{wide} It is isolated on a perfectly flat, '
               'uniform pure magenta (#FF00FF) background. No ground, no shadow, no text.')
-    obj = painted_assets.cut_object(call(key, theme['concept'], prompt, size_for(*shape), theme.get('quality', 'medium')),
+    obj = painted_assets.cut_object(call(key, references(theme, kind), prompt, size_for(*shape), theme.get('quality', 'medium')),
                                     size=512)
     if obj is not None:
         os.makedirs(os.path.dirname(cache), exist_ok=True)
@@ -106,10 +129,10 @@ def scene(theme, key, subject, rect, cache):
         return Image.open(cache).convert('RGB')
     w, h = rect[2], rect[3]
     band = ' A wide panoramic composition: keep everything important in the middle band of the picture.' if w >= 2 * h else ''
-    prompt = (f'Use the reference image only for its art style and colours: {theme["style"]}. '
+    prompt = (lead(theme, 'scene') +
               f'A small painted illustration for a game encyclopedia: {subject}. It fills the whole image edge to edge, '
               f'with one clear subject that reads well when small.{band} No text, letters, numbers, frame or border.')
-    img = call(key, theme['concept'], prompt, size_for(w, h), theme.get('quality', 'medium')).convert('RGB')
+    img = call(key, references(theme, 'scene'), prompt, size_for(w, h), theme.get('quality', 'medium')).convert('RGB')
     img = ImageOps.fit(img, (w * S, h * S), Image.LANCZOS)
     os.makedirs(os.path.dirname(cache), exist_ok=True)
     img.save(cache, quality=92)
@@ -174,8 +197,9 @@ def frames(theme, key, name, spec, out, force):
     if not force and all(region_done(out, name, r) for r in rects):
         return 0
     w, h = rects[0][2], rects[0][3]
-    obj = piece(theme, key, spec['pieces'][0][1], 'group of figures' if spec['motion'] == 'walk' else 'object',
-                cache(theme, name, 0), (w, h))
+    walk = spec['motion'] == 'walk'
+    obj = piece(theme, key, spec['pieces'][0][1], 'group of figures' if walk else 'object', cache(theme, name, 0), (w, h),
+                'figure' if walk else 'object')
     if obj is None:
         return 0
     n = len(rects)
@@ -198,18 +222,19 @@ def frames(theme, key, name, spec, out, force):
     return 1
 
 
-def sheet(theme, key, name, spec, subjects, out, force):
-    """A sheet cut at fixed rectangles: each piece written as its own region file."""
+def sheet(theme, key, name, spec, subjects, out, force, chosen=None):
+    """A sheet cut at fixed rectangles: each piece written as its own region file. chosen limits it to some pieces."""
     kind = spec['kind']
     mirror = spec.get('mirror', {})
-    todo = [i for i, p in enumerate(spec['pieces']) if i not in mirror and (force or not region_done(out, name, p[0]))]
+    todo = [i for i, p in enumerate(spec['pieces']) if i not in mirror and (chosen is None or i in chosen) and
+            (force or not region_done(out, name, p[0]))]
 
     def make(i):
         rect = spec['pieces'][i][0]
         try:
             if kind == 'scene':
                 return scene(theme, key, subjects[i], rect, cache(theme, name, i)[:-4] + '.jpg')
-            return piece(theme, key, subjects[i], FRAMING[kind], cache(theme, name, i), rect[2:])
+            return piece(theme, key, subjects[i], FRAMING[kind], cache(theme, name, i), rect[2:], kind)
         except Exception as e:      # a failed piece is left for the next run
             print(f'{name}: piece {i} failed, {e}', flush=True)
             return None
@@ -229,7 +254,7 @@ def sheet(theme, key, name, spec, subjects, out, force):
         region(out, name, rect, cell, False)
         for b in (spec['pieces'][i][2] if len(spec['pieces'][i]) > 2 else []):
             region(out, name, b, bust(img, b), True)
-    for rect in spec.get('clear', []) if made else []:
+    for rect in spec.get('clear', []) if any(img is not None for _, img in made) else []:
         region(out, name, rect, Image.new('RGBA', (rect[2] * S, rect[3] * S), (0, 0, 0, 0)), False)
     return sum(1 for _, img in made if img is not None)
 
@@ -246,6 +271,14 @@ def placed(theme, key, name, img, pieces):
 
 
 def build(theme_dir, only=None, force=False, with_map=False):
+    # NAME:i in only picks single pieces of a sheet
+    pieces = {}
+    for item in list(only or []):
+        if ':' in item:
+            name, i = item.split(':')
+            pieces.setdefault(name, set()).add(int(i))
+            only.discard(item)
+            only.add(name)
     key = os.environ.get('OPENAI_API_KEY')
     if not key:
         sys.exit('Set OPENAI_API_KEY first.')
@@ -292,9 +325,10 @@ def build(theme_dir, only=None, force=False, with_map=False):
         if only and name not in only:
             continue
         subjects = overrides.get(name, [p[1] for p in spec['pieces']])
+        chosen = pieces.get(name)
         try:
             count = (frames(theme, key, name, spec, out, force) if spec['kind'] == 'frames'
-                     else sheet(theme, key, name, spec, subjects, out, force))
+                     else sheet(theme, key, name, spec, subjects, out, force, chosen))
             print(f'{name}: {count} of {len(spec["pieces"])} pieces written' if count else f'{name}: kept', flush=True)
         except Exception as e:
             print(f'{name}: failed, {e}')

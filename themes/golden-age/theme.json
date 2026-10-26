@@ -1,0 +1,22 @@
+{
+  "name": "golden-age",
+  "concept": "refs/1946.73.jpg",
+  "style": "classical oil painting in the manner of Claude Lorrain and Nicolas Poussin: clear golden light from the left, airy blue distances, warm umber shadows, ultramarine and vermilion accents, a calm balanced composition, smooth paint and simple readable shapes; bright and clean, never murky",
+  "quality": "medium",
+  "references": {
+    "default": ["refs/1946.73.jpg", "refs/1981.18.jpg"],
+    "backdrop": ["refs/1946.73.jpg", "refs/1962.151.jpg", "refs/1970.55.jpg"],
+    "scene": ["refs/1981.18.jpg", "refs/1962.151.jpg"],
+    "bust": ["refs/1952.542.jpg"],
+    "figure": ["refs/2003.6.4.jpg", "refs/1952.542.jpg"],
+    "object": ["refs/1974.39.jpg", "refs/1976.97.1.jpg", "refs/1970.55.jpg"]
+  },
+  "rules": {
+    "backdrop": "A low horizon and a big luminous sky over the upper half; trees or architecture framing one side; a sunlit middle distance and a darker foreground. Warm golden light, cool blue distance, large simple shapes.",
+    "scene": "Staged like a Poussin history painting: one to three figures doing one clear action on a shallow stage, with architecture or trees behind; eye-level view; clothing in ultramarine, vermilion and ochre; clean silhouettes against a lighter background. No clutter, no fog, no dark vignette.",
+    "bust": "A portrait in the manner of Jacques-Louis David: one person, head and shoulders, three-quarter view, an idealised but individual face, soft light from the left, crisp edges, clothing in a few strong colours.",
+    "figure": "A full-length figure painted like a neoclassical portrait: a dignified pose, a clear silhouette, clothing in a few strong colours, soft light from the left.",
+    "object": "Classical architecture painted like Panini or Hubert Robert: clean marble, travertine and terracotta, simple volumes, sunlight from the left on one face and a cool shadow side, very little surface clutter."
+  },
+  "pictures": {}
+}

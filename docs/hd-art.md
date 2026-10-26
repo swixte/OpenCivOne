@@ -128,6 +128,10 @@ Pictures come in these kinds (see [art-inventory.md](art-inventory.md)):
   its portraits. A leader is one still bust: the face parts the game lays over it for expressions would not fit a new
   bust, so they are written as transparent regions.
 
+A theme can give each kind of asset (backdrop, scene, object, figure, bust) its own style reference images and its own
+rules in `theme.json` (`references` and `rules`); the prompts then ask to take only the painting style, palette and
+light from the references. `--only NAME:i` builds single pieces of a sheet, for trying a style on a few assets.
+
 Each object is generated on flat magenta and cut out. The generated pieces are kept in `themes/NAME/pieces`, so
 `--force` composes a picture again without new images; delete a piece to generate it again.
 
