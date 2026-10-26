@@ -155,7 +155,8 @@ def place(sheet, obj, rect, standing, shade=False):
     if shade:
         py -= 2 * S
         a = np.array(sheet)
-        style.shadow(a, px + fitted.width / 2, py + fitted.height - S, fitted.width * 0.55, fitted.height * 0.12, 110)
+        rx = min(fitted.width * 0.55, w * 0.46)     # the shadow stays inside the rectangle
+        style.shadow(a, px + fitted.width / 2, py + fitted.height - S, rx, fitted.height * 0.12, 110)
         sheet.paste(Image.fromarray(a))
     sheet.alpha_composite(fitted, (px, py))
 
@@ -250,7 +251,8 @@ def sheet(theme, key, name, spec, subjects, out, force, chosen=None):
             region(out, name, rect, img, True)
             continue
         cell = Image.new('RGBA', (rect[2] * S, rect[3] * S), (0, 0, 0, 0))
-        place(cell, img, (0, 0) + tuple(rect[2:]), True)
+        # buildings get a soft contact shadow, which the game blends onto the landscape under them
+        place(cell, img, (0, 0) + tuple(rect[2:]), True, shade=kind == 'object')
         region(out, name, rect, cell, False)
         for b in (spec['pieces'][i][2] if len(spec['pieces'][i]) > 2 else []):
             region(out, name, b, bust(img, b), True)
