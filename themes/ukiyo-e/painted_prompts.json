@@ -1,0 +1,19 @@
+{
+  "tex_grass": "{TEXTURE}fresh light green grassland, main colour #8DB255 at medium saturation, with small scattered grass tufts drawn in fine dark-green key-block strokes and a gentle bokashi variation of lighter and darker green.",
+  "tex_plains": "{TEXTURE}golden ochre prairie, main colour #D9B45A, with small tufts of dry grass drawn in fine brown strokes, evenly spread.",
+  "tex_desert": "{TEXTURE}pale sand desert, main colour #EAD9A6, with rows of fine curved brown dune lines like a woodblock print, evenly spread.",
+  "tex_tundra": "{TEXTURE}tundra, main colour lilac-grey #B4A3B8, with small clumps of grey-green lichen drawn with fine lines and little scattered patches of old snow.",
+  "tex_snow": "{TEXTURE}arctic ice and snowfield, main colour white #F2F2EE, with pale blue #C9D9E6 shadows, a pattern of rounded ice floes and fine crack lines.",
+  "tex_ocean": "{TEXTURE}deep open sea, main colour dark indigo #1F3A5F, covered evenly with a dense repeating pattern of small stylised wave crests in the manner of Hokusai, drawn as fine cream and light-blue lines; no single big wave.",
+  "tex_shallow": "{TEXTURE}shallow coastal water, main colour bright turquoise #4F9BA8, with fine parallel ripple lines in lighter turquoise and a few tiny cream glints.",
+  "tex_swamp": "{TEXTURE}swamp, main colour murky olive-brown #6B6B45, with tufts of reeds drawn in fine dark lines and scattered small dark-teal pools of water.",
+  "tex_floor": "{TEXTURE}the floor of a dense forest, main colour very dark blue-green #2E5A43, with a fine pattern of fallen needles and moss.",
+  "tex_forest": "{TEXTURE}a dense forest canopy seen from above, main colour very dark blue-green #2E5A43, packed rounded tree crowns each drawn with a fine black key line and a slightly lighter green highlight, like the forests of the reference map.",
+  "tex_hills": "{TEXTURE}rolling hill country, main colour olive-brown #A08A4E, with fine curved contour lines and sparse tufts of grass.",
+  "tex_mountains": "{TEXTURE}rocky mountain ground, main colour slate grey-blue #6E7C8C, with fine hatching of stone and scree and small white patches of snow.",
+  "tex_jungle": "{TEXTURE}the floor of a tropical jungle, main colour saturated emerald #2F8A4E, dense leafy undergrowth and palm fronds drawn with fine key-block lines.",
+  "trees": "{STYLE} A sprite sheet of 20 separate deciduous and conifer trees seen from a high three-quarter top-down angle, each a rounded patterned crown in very dark blue-green #2E5A43 with a lighter green highlight on the left, a fine black key line around it, like the forest trees of the reference map, varied sizes in a loose grid. {SHEET}",
+  "jungle_green": "{STYLE} A sprite sheet of 16 separate tropical palms and broadleaf jungle trees seen from a high three-quarter top-down angle, saturated emerald #2F8A4E with fine black key lines, varied sizes in a loose grid. {SHEET}",
+  "hills": "{STYLE} A sprite sheet of 9 separate low rounded hills seen from a high three-quarter top-down angle, olive-brown #A08A4E with fine curved contour lines, a lighter left side and a darker right side, a fine black key line, varied sizes. {SHEET}",
+  "mountains": "{STYLE} A sprite sheet of 6 separate jagged mountains seen from a high three-quarter top-down angle, slate grey-blue #6E7C8C rock with white snow caps, lit from the left with a darker right side, fine black key lines and hatching like a Hokusai print, some single peaks and some clusters of two or three. {SHEET}"
+}

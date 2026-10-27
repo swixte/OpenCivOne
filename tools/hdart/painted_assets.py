@@ -1,7 +1,8 @@
 """Prepares art for the painted map (src/Graphics/PaintedMap.cs) from generated images.
 
 Input folder (as written by generate_painted.py):
-  tex_NAME.png    ground textures: grass, plains, desert, tundra, snow, ocean, shallow, swamp, floor
+  tex_NAME.png    ground textures: grass, plains, desert, tundra, snow, ocean, shallow, swamp, floor, and optionally
+                  forest, hills, mountains, jungle (a terrain's own ground)
   SET.png         sprite sheets on flat magenta: trees, jungle (jungle_green.png wins), hills, mountains
   unit_*.png, res_*.png, hut.png, fortress.png, town.png, walls.png
                   single objects on flat magenta, for the 4x sprite set (painted_set.py)
@@ -25,7 +26,8 @@ from scipy import ndimage
 
 import style
 
-TEXTURES = ['grass', 'plains', 'desert', 'tundra', 'snow', 'ocean', 'shallow', 'swamp', 'floor']
+# forest, hills, mountains and jungle are optional: with them each of those terrains has its own ground
+TEXTURES = ['grass', 'plains', 'desert', 'tundra', 'snow', 'ocean', 'shallow', 'swamp', 'floor', 'forest', 'hills', 'mountains', 'jungle']
 SETS = ['trees', 'jungle', 'hills', 'mountains']
 TEXTURE_SIZE = 512
 

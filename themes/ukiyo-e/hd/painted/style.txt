@@ -1,0 +1,4 @@
+clouds 0
+grade 0
+shallows 0.45
+coastline 1

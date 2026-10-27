@@ -370,3 +370,6 @@ Log.txt
 VGADriverLog.txt
 IntroLog.txt
 InterruptLog.txt
+
+# raw image generations of a theme (large; the cut art in hd/ is kept)
+themes/*/raw/

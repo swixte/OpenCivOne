@@ -44,6 +44,21 @@ namespace OpenCivOne.Graphics
 			new[] { ("grass", 1f) },
 		};
 
+		// a texture with a terrain's own name, if the art has one, paints that terrain on its own instead of the mix above
+		private static readonly string[] OwnGround = { "desert", "plains", "grass", "forest", "hills", "mountains", "tundra", "snow", "swamp", "jungle", "", "" };
+
+		// the ground textures of each terrain, for this art
+		private (string Name, float Weight)[][] groundParts = Ground;
+
+		/// <summary>
+		/// How the art wants to be painted, from an optional style.txt next to its folders (lines of "name value"):
+		/// clouds, the strength of the drifting cloud shadows (1); grade, the strength of the warm colour grade (1);
+		/// shallows, the width of the shallow water along coasts (1); coastline, 1 for a printed coast with a dark key line
+		/// and a cream beach instead of a dark rocky rim (0).
+		/// </summary>
+		private float clouds = 1, grade = 1, shallows = 1;
+		private bool printedCoast = false;
+
 		private readonly Func<int, int, int> terrainAt;
 		private readonly int cell;
 		private readonly int worldWidth;
@@ -166,8 +181,34 @@ namespace OpenCivOne.Graphics
 				map.sprites[set] = list;
 			}
 
+			string stylePath = Path.Combine(folder, "style.txt");
+
+			if (File.Exists(stylePath))
+			{
+				foreach (string line in File.ReadAllLines(stylePath))
+				{
+					string[] parts = line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+
+					if (parts.Length < 2 || !float.TryParse(parts[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float value))
+						continue;
+
+					switch (parts[0].ToLowerInvariant())
+					{
+						case "clouds": map.clouds = value; break;
+						case "grade": map.grade = value; break;
+						case "shallows": map.shallows = Math.Max(0.1f, value); break;
+						case "coastline": map.printedCoast = value != 0; break;
+					}
+				}
+			}
+
+			map.groundParts = new (string Name, float Weight)[Ground.Length][];
+
+			for (int t = 0; t < Ground.Length; t++)
+				map.groundParts[t] = (OwnGround[t] != "" && map.textures.ContainsKey(OwnGround[t])) ? new[] { (OwnGround[t], 1f) } : Ground[t];
+
 			// every texture is in place before painting starts, so painting threads only read them
-			foreach ((string Name, float Weight)[] parts in Ground)
+			foreach ((string Name, float Weight)[] parts in map.groundParts)
 				foreach ((string name, float _) in parts)
 					map.TextureOr(name);
 
@@ -526,11 +567,11 @@ namespace OpenCivOne.Graphics
 			// which pixels are open water (1) or river (2): they move when the screen is shown (see GBitmap.SeaAlpha)
 			byte[] water = new byte[size * size];
 
-			float warpAmount = 14 * k, groundRadius = 13 * k, coastRadius = 5 * k, surfRadius = 24 * k, depthRadius = 70 * k;
+			float warpAmount = 14 * k, groundRadius = 13 * k, coastRadius = 5 * k, surfRadius = 24 * k, depthRadius = 70 * k * this.shallows;
 			float riverWidth = 3.6f * k, bankWidth = 6.5f * k;
 
 			Texture ocean = this.TextureOr("ocean"), shallow = this.TextureOr("shallow");
-			(Texture Texture, float Weight)[][] ground = Array.ConvertAll(Ground, parts => Array.ConvertAll(parts, part => (this.TextureOr(part.Name), part.Weight)));
+			(Texture Texture, float Weight)[][] ground = Array.ConvertAll(this.groundParts, parts => Array.ConvertAll(parts, part => (this.TextureOr(part.Name), part.Weight)));
 			TerrainGrid grid = new TerrainGrid(this, cx, cy);
 
 			// rows are independent, so they can be painted in parallel
@@ -585,11 +626,26 @@ namespace OpenCivOne.Graphics
 
 					if (land >= 0.5f)
 					{
-						// dark, rocky rim along the shore
-						float rim = 1 - (0.55f * (1 - Smooth(0.5f, 0.85f, land)));
-						r[i] = gr * rim;
-						g[i] = gg * rim;
-						b[i] = gb * rim;
+						if (this.printedCoast)
+						{
+							// a printed coast: a dark key line at the water's edge, then a cream beach fading into the land
+							float key = Smooth(0.6f, 0.52f, land);
+							float beach = Smooth(0.75f, 0.6f, land) * (1 - key);
+							r[i] = (gr * (1 - beach)) + (232 * beach);
+							g[i] = (gg * (1 - beach)) + (220 * beach);
+							b[i] = (gb * (1 - beach)) + (188 * beach);
+							r[i] = (r[i] * (1 - key)) + (30 * key);
+							g[i] = (g[i] * (1 - key)) + (26 * key);
+							b[i] = (b[i] * (1 - key)) + (22 * key);
+						}
+						else
+						{
+							// dark, rocky rim along the shore
+							float rim = 1 - (0.55f * (1 - Smooth(0.5f, 0.85f, land)));
+							r[i] = gr * rim;
+							g[i] = gg * rim;
+							b[i] = gb * rim;
+						}
 					}
 					else
 					{
@@ -668,12 +724,12 @@ namespace OpenCivOne.Graphics
 					int i = (py * size) + px;
 					int wx = x0 + px, wy = y0 + py;
 					float cloud = Math.Clamp(((this.Noise(wx, wy, 160 * k, 7) * 0.7f) + (this.Noise(wx, wy, 60 * k, 8) * 0.3f) - 0.45f) * 2.2f, 0, 1);
-					float shade = 1 - (cloud * 0.35f);
+					float shade = 1 - (cloud * 0.35f * this.clouds);
 					float l = (r[i] + g[i] + b[i]) / 765f;
-					float scale = shade * (0.92f + (0.16f * l));
-					float rr = (r[i] * scale) + (6 * l) - (2 * (1 - l));
-					float gg2 = (g[i] * scale) + (2 * l);
-					float bb = (b[i] * scale) - (6 * l) + (4 * (1 - l));
+					float scale = shade * (1 + (this.grade * (-0.08f + (0.16f * l))));
+					float rr = (r[i] * scale) + (this.grade * ((6 * l) - (2 * (1 - l))));
+					float gg2 = (g[i] * scale) + (this.grade * 2 * l);
+					float bb = (b[i] * scale) + (this.grade * ((-6 * l) + (4 * (1 - l))));
 					uint alpha = water[i] == 1 ? GBitmap.SeaAlpha : water[i] == 2 ? GBitmap.RiverAlpha : 0xff000000u;
 					pixels[i] = alpha | ((uint)Math.Clamp(rr, 0, 255) << 16) | ((uint)Math.Clamp(gg2, 0, 255) << 8) | (uint)Math.Clamp(bb, 0, 255);
 				}

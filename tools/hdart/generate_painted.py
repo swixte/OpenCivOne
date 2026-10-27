@@ -5,6 +5,10 @@ sheets of trees, jungle, hills and mountains on flat magenta, which painted_asse
 
 Usage: OPENAI_API_KEY=... python3 generate_painted.py CONCEPT.png OUT_DIR [NAME ...]
        then: python3 painted_assets.py OUT_DIR ../../assets/painted
+
+A theme can give more reference images (PAINTED_REFS, paths separated by commas, used together with the concept) and
+its own prompts (PAINTED_PROMPTS, a JSON file of name: prompt that replace or add to the ones here). Its prompts can
+use {STYLE}, {TEXTURE}, {SHEET} and {OBJECT} for the shared parts.
 """
 
 import base64
@@ -101,12 +105,23 @@ PROMPTS.update({
 PROMPTS.update({f'unit_{k}': STYLE + ' ' + OBJECT.format(v[0].upper() + v[1:]) for k, v in UNITS.items()})
 PROMPTS.update({k: STYLE + ' ' + OBJECT.format(v[0].upper() + v[1:]) for k, v in ICONS.items()})
 
+if os.environ.get('PAINTED_PROMPTS'):
+    import json
+    for name, prompt in json.load(open(os.environ['PAINTED_PROMPTS'])).items():
+        PROMPTS[name] = prompt.replace('{STYLE}', STYLE).replace('{TEXTURE}', TEXTURE).replace('{SHEET}', SHEET).replace('{OBJECT}', OBJECT)
+REFS = [p for p in os.environ.get('PAINTED_REFS', '').split(',') if p]
+
 
 def generate(key, concept, out, name):
-    with open(concept, 'rb') as f:
+    files = [('image[]', (os.path.basename(p), open(p, 'rb'), 'image/jpeg' if p.lower().endswith('.jpg') else 'image/png'))
+             for p in [concept] + REFS]
+    try:
         r = requests.post('https://api.openai.com/v1/images/edits', headers={'Authorization': f'Bearer {key}'},
                           data={'model': 'gpt-image-2', 'prompt': PROMPTS[name], 'size': '1024x1024', 'quality': 'medium', 'n': '1'},
-                          files={'image[]': (os.path.basename(concept), f, 'image/png')}, timeout=600)
+                          files=files, timeout=600)
+    finally:
+        for _, (_, f, _) in files:
+            f.close()
     if r.status_code != 200:
         return f'{name}: HTTP {r.status_code} {r.text[:300]}'
     with open(os.path.join(out, name + '.png'), 'wb') as f:

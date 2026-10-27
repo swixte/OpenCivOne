@@ -293,7 +293,9 @@ def build(theme_dir, only=None, force=False, with_map=False):
 
     if with_map:
         raw = os.path.join(theme_dir, 'raw')
-        env = dict(os.environ, PAINTED_STYLE=theme['style'])
+        env = dict(os.environ, PAINTED_STYLE=theme['style'],
+                   PAINTED_REFS=','.join(os.path.join(theme_dir, r) for r in theme.get('map_references', [])),
+                   PAINTED_PROMPTS=os.path.join(theme_dir, theme['map_prompts']) if theme.get('map_prompts') else '')
         for cmd in (['generate_painted.py', theme['concept'], raw], ['painted_assets.py', raw, os.path.join(out, 'painted')],
                     ['painted_set.py', out, os.path.join(out, 'painted', 'objects')]):
             subprocess.run([sys.executable, os.path.join(HERE, cmd[0])] + cmd[1:], check=True, env=env)

@@ -1,15 +1,32 @@
 {
   "name": "ukiyo-e",
-  "concept": "refs/map-roman.jpg",
-  "style": "a Japanese ukiyo-e woodblock print in the manner of Hokusai and Hiroshige: flat areas of colour inside fine black key-block outlines, Prussian blue and indigo, ochre and sage-green grounds, vermilion accents, cream paper showing through, subtle woodgrain and soft bokashi gradients, stylised curling waves and patterned foliage; flat, clear and decorative, never photographic or 3D-rendered",
+  "concept": "refs/v5-palette.jpg",
+  "style": "a ukiyo-e woodblock print technique: fine black key-block outlines, flat colour areas, soft bokashi gradients, patterned foliage and waves, cream paper grain; the subjects belong to each civilization, not only Japan; muted medium saturation for terrain, never photographic or 3D",
   "quality": "medium",
   "references": {
-    "default": ["refs/map-roman.jpg", "refs/landscape-hokusai.jpg"],
-    "backdrop": ["refs/landscape-hokusai.jpg", "refs/landscape-hiroshige.jpg"],
-    "scene": ["refs/landscape-hokusai.jpg", "refs/map-roman.jpg"],
-    "bust": ["refs/portrait-caesar.jpg"],
-    "figure": ["refs/eras-sheet.jpg", "refs/portrait-caesar.jpg"],
-    "object": ["refs/eras-sheet.jpg", "refs/map-roman.jpg"]
+    "default": [
+      "refs/map-roman.jpg",
+      "refs/landscape-hokusai.jpg"
+    ],
+    "backdrop": [
+      "refs/landscape-hokusai.jpg",
+      "refs/landscape-hiroshige.jpg"
+    ],
+    "scene": [
+      "refs/landscape-hokusai.jpg",
+      "refs/map-roman.jpg"
+    ],
+    "bust": [
+      "refs/portrait-caesar.jpg"
+    ],
+    "figure": [
+      "refs/eras-sheet.jpg",
+      "refs/portrait-caesar.jpg"
+    ],
+    "object": [
+      "refs/eras-sheet.jpg",
+      "refs/map-roman.jpg"
+    ]
   },
   "rules": {
     "backdrop": "A woodblock landscape print: a bird's-eye view or a high horizon, the sky in bands of bokashi colour, stylised waves and clouds, a few small figures at most. Flat colour, no photographic depth.",
@@ -25,5 +42,10 @@
     "Farms, paddies and mines are painted into the ground; railroads are thin.",
     "All factions and eras share the same ground language; only costume and architecture change."
   ],
-  "pictures": {}
+  "pictures": {},
+  "map_references": [
+    "refs/v5-screen.jpg",
+    "refs/map-roman.jpg"
+  ],
+  "map_prompts": "painted_prompts.json"
 }

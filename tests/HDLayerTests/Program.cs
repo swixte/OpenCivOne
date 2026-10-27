@@ -401,7 +401,8 @@ GBitmap other4()
 	string repo = AppContext.BaseDirectory;
 	while (!Directory.Exists(Path.Combine(repo, "assets", "painted")))
 		repo = Path.GetDirectoryName(repo.TrimEnd(Path.DirectorySeparatorChar))!;
-	string art = Path.Combine(repo, "assets", "painted");
+	// PAINTED_ART previews another painted art folder, for example a theme's
+	string art = Environment.GetEnvironmentVariable("PAINTED_ART") ?? Path.Combine(repo, "assets", "painted");
 
 	string[] scene = {
 		"oooooooooooooooooooooo", "oooooaaaaooooooooooooo", "ooootttttaoooooggooooo", "ooogttffhmmooogppgoooo",
@@ -449,7 +450,8 @@ GBitmap other4()
 	var wrap = Steps(painted, 79, 22);
 	Check(wrap.Across < wrap.Inside * 2 + 4, $"painted: no seam where the world wraps around ({wrap.Across:0.0} vs {wrap.Inside:0.0})");
 	Check(Cell(painted, 10, 6).SequenceEqual(Cell(painted, 10, 6)), "painted: a cell paints the same every time");
-	Check(Cell(painted, 50, 40).All(c => ((c >> 16) & 255) < 120 && (c & 255) >= ((c >> 16) & 255)), "painted: open ocean is dark water");
+	if (Environment.GetEnvironmentVariable("PAINTED_ART") == null)
+		Check(Cell(painted, 50, 40).All(c => ((c >> 16) & 255) < 120 && (c & 255) >= ((c >> 16) & 255)), "painted: open ocean is dark water");
 
 	uint[] before = Cell(painted, 9, 8);
 	int old = map[9, 8];
