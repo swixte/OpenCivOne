@@ -1,0 +1,5 @@
+A concept sheet for a Civilization-like strategy game in exactly the same ukiyo-e woodblock style as the reference images: flat colour inside fine black key-block lines, indigo and Prussian blue, sage and ochre, vermilion accents, cream paper with faint woodgrain, Hokusai waves and clouds. Thin cream gutters separate the panels, and each panel has a small plain black caption on the gutter below it.
+INTERFACE: one large panel showing the full main game screen, and two smaller panels beside it.
+Main screen: the map on the right as in the reference; on the left a sidebar of cream paper with dark vermilion frames holding a minimap, the treasury and year in brush-style lettering ("1250 AD, 340 gold"), and the active unit's name, moves and terrain. Above, a menu bar of cream paper with five words: GAME, ORDERS, ADVISORS, WORLD, CIVILOPEDIA.
+Smaller panel 1, "Menu": an opened drop-down menu as a cream paper scroll with vermilion headings and a highlighted line.
+Smaller panel 2, "Dialog": a message box like a hanging scroll with a seal stamp: "The people of Rome celebrate the completion of the Colosseum!" with an OK button like a red seal.

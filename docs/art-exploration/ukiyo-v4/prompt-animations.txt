@@ -1,0 +1,5 @@
+A concept sheet for a Civilization-like strategy game in exactly the same ukiyo-e woodblock style as the reference images: flat colour inside fine black key-block lines, indigo and Prussian blue, sage and ochre, vermilion accents, cream paper with faint woodgrain, Hokusai waves and clouds. Thin cream gutters separate the panels, and each panel has a small plain black caption on the gutter below it.
+ANIMATION STORYBOARDS: three rows, each a strip of four frames from left to right on the map style of the reference:
+1 Combat: a samurai-style unit attacks a legion; a burst of woodblock flame and smoke; the loser fades away.
+2 Celebration in a city: townspeople parade with lanterns and banners across the city view.
+3 Settlers found a city: a settler party walks to a spot, plants a flag, and a small town appears in the ground.
