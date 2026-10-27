@@ -880,7 +880,7 @@ namespace OpenCivOne.Graphics
 			int margin = (int)MathF.Ceiling(Math.Max(8 * k, shallowRange * 1.3f)) + 2;
 			int ext = size + (2 * margin);
 			float coastLine = 1.3f * k, beachWidth = 3 * k, softWidth = 7 * k;
-			float riverWidth = 2.7f * k, riverLine = 1.1f * k, waveAt = 10 * k;
+			float riverWidth = 3.4f * k, riverLine = 1.0f * k, waveAt = 10 * k;
 
 			Texture ocean = this.TextureOr("ocean"), shallow = this.TextureOr("shallow");
 			Texture[] ground = Array.ConvertAll(this.groundParts, parts => this.TextureOr(parts[0].Name));
@@ -902,6 +902,7 @@ namespace OpenCivOne.Graphics
 			});
 
 			float[] seaDepth = WaterDistance(region, ext);
+			RiverCourses rivers = new RiverCourses(this, grid, cx, cy);
 			float[] r = new float[size * size], g = new float[size * size], b = new float[size * size];
 			byte[] water = new byte[size * size];
 			int reach = (int)MathF.Ceiling(Math.Max(softWidth, beachWidth + coastLine)) + 1;
@@ -995,22 +996,34 @@ namespace OpenCivOne.Graphics
 						cg += (220 - cg) * beach;
 						cb += (186 - cb) * beach;
 
-						// rivers: an even ribbon of water inside crisp inked banks
-						float d = this.PrintRiverDistance(grid, wx, wy);
+						// rivers: a ribbon of blue inside a fine ink line, lighter on the bank towards the light (top left) and deeper
+						// on the other, with a broken white line of flowing water along the light side
+						float d = rivers.Distance(wx, wy);
 
 						if (d < riverWidth + riverLine + 1)
 						{
 							float inLine = Smooth(riverWidth + riverLine + 0.5f, riverWidth + riverLine - 0.5f, d);
 							float inCore = Smooth(riverWidth + 0.5f, riverWidth - 0.5f, d);
-							cr += (34 - cr) * inLine * 0.9f;
-							cg += (40 - cg) * inLine * 0.9f;
-							cb += (52 - cb) * inLine * 0.9f;
-							Fetch(shallow, sx, sy, out float sr, out float sg, out float sb);
-							// a lighter thread down the middle
-							float lift = Smooth(riverWidth * 0.5f, 0, d) * 18;
-							cr += ((sr * 0.5f) + 40 + lift - cr) * inCore;
-							cg += ((sg * 0.5f) + 72 + lift - cg) * inCore;
-							cb += ((sb * 0.5f) + 108 + lift - cb) * inCore;
+							cr += (30 - cr) * inLine * 0.9f;
+							cg += (34 - cg) * inLine * 0.9f;
+							cb += (44 - cb) * inLine * 0.9f;
+
+							if (inCore > 0)
+							{
+								// which bank: the distance grows towards the lower right on the lower right bank
+								float side = Math.Clamp((rivers.Distance(wx + k, wy + k) - d) / (1.4f * k), -1, 1);
+								float across = Math.Clamp(side * d / riverWidth, -1, 1);
+								float t = (across + 1) / 2;
+								float br = 120 + ((50 - 120) * t), bg = 170 + ((96 - 170) * t), bb = 214 + ((160 - 214) * t);
+								float flow = Smooth(0.75f * k, 0.25f * k, MathF.Abs(across + 0.45f) * riverWidth)
+									* Smooth(0.5f, 0.62f, this.Noise(wx, wy, 5 * k, 35));
+								br += (236 - br) * flow;
+								bg += (236 - bg) * flow;
+								bb += (226 - bb) * flow;
+								cr += (br - cr) * inCore;
+								cg += (bg - cg) * inCore;
+								cb += (bb - cb) * inCore;
+							}
 
 							if (inCore > 0.5f)
 								water[i] = 2;
@@ -1126,87 +1139,150 @@ namespace OpenCivOne.Graphics
 		}
 
 		/// <summary>
-		/// Distance from a pixel to the rivers of a print: in each river cell the river curves smoothly from the middle of
-		/// one side to the middle of another (a quadratic curve bent by the cell centre), so the course flows without
-		/// corners; into the sea it runs on to the sea cell's centre, under the coast. The pixel is moved by a slow wobble
-		/// only, so the banks stay smooth.
+		/// The river courses a print chunk can show, worked out once per chunk. In each river cell the river curves
+		/// smoothly from the middle of one side to the middle of another (a quadratic curve bent by the cell centre); a
+		/// spring starts thin at the centre; into the sea the river runs on to the sea cell's centre, under the coast. Every
+		/// point of a course is then moved by a slow wobble and a quicker one, so the river swings in S-bends, while its
+		/// width stays even. Points on the sides of cells move the same way in both cells, so courses join without breaks.
 		/// </summary>
-		private float PrintRiverDistance(TerrainGrid grid, float wx, float wy)
+		private sealed class RiverCourses
 		{
-			float k = this.cell / 64f, wobble = 15 * k;
-			float x = wx + ((this.Noise(wx, wy, 44 * k, 31) - 0.5f) * 2 * wobble);
-			float y = wy + ((this.Noise(wx, wy, 44 * k, 32) - 0.5f) * 2 * wobble);
-			int ci = (int)MathF.Floor(x / this.cell), cj = (int)MathF.Floor(y / this.cell);
-			float half = this.cell / 2f, best = float.MaxValue;
-			Span<int> ways = stackalloc int[4];
+			private readonly int left, top, width, cell;
+			// per cell, its courses: x, y and a width adjustment (added to the distance) per point
+			private readonly List<float[]>?[] courses;
 
-			for (int j = cj - 1; j <= cj + 1; j++)
+			public RiverCourses(PaintedMap map, TerrainGrid grid, int cx, int cy)
 			{
-				for (int i = ci - 1; i <= ci + 1; i++)
+				const int Reach = 2;
+				this.cell = map.cell;
+				this.left = (cx * ChunkCells) - Reach;
+				this.top = (cy * ChunkCells) - Reach;
+				this.width = ChunkCells + (2 * Reach);
+				this.courses = new List<float[]>?[this.width * this.width];
+				float k = this.cell / 64f, half = this.cell / 2f;
+				Span<int> ways = stackalloc int[4];
+
+				for (int j = this.top; j < this.top + this.width; j++)
 				{
-					if (grid.At(i, j) != River)
-						continue;
-
-					float ax = (i * this.cell) + half, ay = (j * this.cell) + half;
-					int count = 0;
-
-					for (int w = 0; w < 4; w++)
+					for (int i = this.left; i < this.left + this.width; i++)
 					{
-						int terrain = grid.At(i + Sides[w].X, j + Sides[w].Y);
+						if (grid.At(i, j) != River)
+							continue;
 
-						if (terrain == River || terrain == Water)
+						List<float[]> list = new List<float[]>();
+						float ax = (i * this.cell) + half, ay = (j * this.cell) + half;
+						int count = 0;
+
+						for (int w = 0; w < 4; w++)
 						{
+							int terrain = grid.At(i + Sides[w].X, j + Sides[w].Y);
+
+							if (terrain != River && terrain != Water)
+								continue;
+
 							ways[count++] = w;
 
 							if (terrain == Water)
-								best = Math.Min(best, SegmentDistance(x, y, ax + (Sides[w].X * half), ay + (Sides[w].Y * half), ax + (Sides[w].X * this.cell), ay + (Sides[w].Y * this.cell)));
+								list.Add(Curve(ax + (Sides[w].X * half), ay + (Sides[w].Y * half), ax + (Sides[w].X * this.cell * 0.75f), ay + (Sides[w].Y * this.cell * 0.75f), ax + (Sides[w].X * this.cell), ay + (Sides[w].Y * this.cell), 0, 0));
 						}
-					}
 
-					if (count == 0)
-						best = Math.Min(best, MathF.Sqrt(((x - ax) * (x - ax)) + ((y - ay) * (y - ay))) - (3 * k));
-					else if (count == 1)
-					{
-						// a spring: the river starts thin at the cell centre and widens to the side it flows out of
-						float bx = ax + (Sides[ways[0]].X * half), by = ay + (Sides[ways[0]].Y * half);
-						float t = Math.Clamp((((x - ax) * (bx - ax)) + ((y - ay) * (by - ay))) / (half * half), 0, 1);
-						best = Math.Min(best, SegmentDistance(x, y, ax, ay, bx, by) + ((1 - t) * 2.5f * k));
-					}
+						if (count == 0)
+							list.Add(new[] { ax, ay, -3 * k });
+						else if (count == 1)
+							list.Add(Curve(ax, ay, ax + (Sides[ways[0]].X * half * 0.5f), ay + (Sides[ways[0]].Y * half * 0.5f), ax + (Sides[ways[0]].X * half), ay + (Sides[ways[0]].Y * half), 2.5f * k, 0));
 
-					for (int a = 0; a < count; a++)
-					{
-						for (int c = a + 1; c < count; c++)
+						if (count == 2)
 						{
-							float px = ax + (Sides[ways[a]].X * half), py = ay + (Sides[ways[a]].Y * half);
-							float qx = ax + (Sides[ways[c]].X * half), qy = ay + (Sides[ways[c]].Y * half);
-							best = Math.Min(best, CurveDistance(x, y, px, py, ax, ay, qx, qy));
+							list.Add(Curve(ax + (Sides[ways[0]].X * half), ay + (Sides[ways[0]].Y * half), ax, ay,
+								ax + (Sides[ways[1]].X * half), ay + (Sides[ways[1]].Y * half), 0, 0));
 						}
+						else if (count > 2)
+						{
+							// a fork: every branch runs into the centre, so the branches meet in one point, not a loop
+							for (int a = 0; a < count; a++)
+							{
+								float ex = ax + (Sides[ways[a]].X * half), ey = ay + (Sides[ways[a]].Y * half);
+								list.Add(Curve(ex, ey, (ex + ax) / 2, (ey + ay) / 2, ax, ay, 0, 0));
+							}
+						}
+
+						foreach (float[] course in list)
+						{
+							for (int n = 0; n < course.Length; n += 3)
+							{
+								float x = course[n], y = course[n + 1];
+								course[n] = x + ((map.Noise(x, y, 44 * k, 31) - 0.5f) * 20 * k) + ((map.Noise(x, y, 20 * k, 33) - 0.5f) * 12 * k);
+								course[n + 1] = y + ((map.Noise(x, y, 44 * k, 32) - 0.5f) * 20 * k) + ((map.Noise(x, y, 20 * k, 34) - 0.5f) * 12 * k);
+							}
+						}
+
+						this.courses[((j - this.top) * this.width) + (i - this.left)] = list;
 					}
 				}
 			}
 
-			return best;
+			// a quadratic curve from p to q bent towards c, as points with a width adjustment going from `from` to `to`
+			private static float[] Curve(float px, float py, float cx, float cy, float qx, float qy, float from, float to)
+			{
+				const int Pieces = 12;
+				float[] points = new float[(Pieces + 1) * 3];
+
+				for (int n = 0; n <= Pieces; n++)
+				{
+					float t = n / (float)Pieces, u = 1 - t;
+					points[n * 3] = (u * u * px) + (2 * u * t * cx) + (t * t * qx);
+					points[(n * 3) + 1] = (u * u * py) + (2 * u * t * cy) + (t * t * qy);
+					points[(n * 3) + 2] = from + ((to - from) * t);
+				}
+
+				return points;
+			}
+
+			/// <summary>
+			/// Distance from a pixel to the nearest river course, less the course's width adjustment there
+			/// </summary>
+			public float Distance(float x, float y)
+			{
+				int ci = (int)MathF.Floor(x / this.cell), cj = (int)MathF.Floor(y / this.cell);
+				float best = float.MaxValue;
+
+				for (int j = cj - 1; j <= cj + 1; j++)
+				{
+					for (int i = ci - 1; i <= ci + 1; i++)
+					{
+						if (i < this.left || j < this.top || i >= this.left + this.width || j >= this.top + this.width)
+							continue;
+
+						List<float[]>? list = this.courses[((j - this.top) * this.width) + (i - this.left)];
+
+						if (list == null)
+							continue;
+
+						foreach (float[] c in list)
+						{
+							if (c.Length == 3)
+							{
+								best = Math.Min(best, MathF.Sqrt(((x - c[0]) * (x - c[0])) + ((y - c[1]) * (y - c[1]))) + c[2]);
+								continue;
+							}
+
+							for (int n = 3; n < c.Length; n += 3)
+							{
+								float ax = c[n - 3], ay = c[n - 2], bx = c[n], by = c[n + 1];
+								float dx = bx - ax, dy = by - ay, length = (dx * dx) + (dy * dy);
+								float t = length > 0 ? Math.Clamp((((x - ax) * dx) + ((y - ay) * dy)) / length, 0, 1) : 0;
+								float ex = x - (ax + (t * dx)), ey = y - (ay + (t * dy));
+								best = Math.Min(best, MathF.Sqrt((ex * ex) + (ey * ey)) + c[n - 1] + ((c[n + 2] - c[n - 1]) * t));
+							}
+						}
+					}
+				}
+
+				return best;
+			}
 		}
 
 		private static readonly (int X, int Y)[] Sides = { (0, -1), (1, 0), (0, 1), (-1, 0) };
-
-		// Distance to a quadratic curve from p to q bent towards c, measured along a few straight pieces of it
-		private static float CurveDistance(float x, float y, float px, float py, float cx, float cy, float qx, float qy)
-		{
-			const int Pieces = 10;
-			float best = float.MaxValue, lx = px, ly = py;
-
-			for (int n = 1; n <= Pieces; n++)
-			{
-				float t = n / (float)Pieces, u = 1 - t;
-				float nx = (u * u * px) + (2 * u * t * cx) + (t * t * qx), ny = (u * u * py) + (2 * u * t * cy) + (t * t * qy);
-				best = Math.Min(best, SegmentDistance(x, y, lx, ly, nx, ny));
-				lx = nx;
-				ly = ny;
-			}
-
-			return best;
-		}
 
 		/// <summary>
 		/// Distance from a point to the river lines of the cells around it: each river cell joins its centre to the

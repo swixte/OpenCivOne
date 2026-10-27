@@ -69,17 +69,19 @@ def up2(img):
     return np.asarray(Image.fromarray(img).resize((w * 2, h * 2), Image.LANCZOS))
 
 
-def icon(name, size, bottom=None, shadow=True):
-    """A painted object fitted into a size x size sprite, standing on its bottom edge, with a soft shadow."""
+def icon(name, size, bottom=None, shadow=True, painted=False):
+    """A painted object fitted into a size x size sprite, standing on its bottom edge, with a soft shadow. In a print it
+    gets the key line and cream outline of a token, or, `painted`, only a thin ink line, so it sits in the ground like
+    the trees and hills of the map rather than on top of it."""
     img = np.zeros((UNIT, UNIT, 4), dtype=np.uint8)
     if PRINT:
         # room for the outline inside the sprite
-        size = min(size, UNIT - 14)
+        size = min(size + (6 if painted else 0), UNIT - (6 if painted else 14))
     fitted = style.fit(obj(name), width=size, height=size)
     bottom = UNIT - 2 if bottom is None else bottom
     if PRINT:
-        style.paste(img, fitted, UNIT / 2, min(bottom, UNIT - 7))
-        return outlined(img)
+        style.paste(img, fitted, UNIT / 2, min(bottom, UNIT - (3 if painted else 7)))
+        return outlined(img, 1, 0) if painted else outlined(img)
     if shadow:
         style.shadow(img, UNIT / 2, bottom - 1, fitted.shape[1] * 0.42, alpha=90)
     style.paste(img, fitted, UNIT / 2, bottom)
@@ -321,12 +323,17 @@ def print_mine():
 
 
 def print_shield_bonus():
-    """The shield marker for the print map: a small muted shield seal with key lines, quieter than the units."""
-    s = c.Sprite(14, 14, dict(seal=c.ramp('#7a3a26', '#9a4e34', '#b0654a', '#c47c5e', '#d4967a'),
-                              ochre=c.ramp('#8a6a30', '#a8853e', '#c09c56', '#d2b46e', '#e2cb8e')))
+    """The shield marker for the print map: a small red seal stamped into the paper, like the seals on a woodblock print,
+    with no outline and a slightly worn edge, so it marks the ground without sitting on it."""
+    s = c.Sprite(14, 14, dict(seal=c.ramp('#7a3a26', '#8e4430', '#a2513a', '#b46048', '#c47258'),
+                              paper=c.ramp('#c9a88a', '#d6b89a', '#e0c6aa', '#e8d2b8', '#efdcc6')))
     s.poly([(2, 2), (12, 2), (12, 7), (7, 12), (2, 7)], 'seal', 0)
-    s.poly([(5, 4), (9, 4), (9, 7), (7, 9), (5, 7)], 'ochre', 0)
-    return s.render(outline=KEY_LINE, auto_light=False)
+    s.poly([(5, 4), (9, 4), (9, 7), (7, 9), (5, 7)], 'paper', 0)
+    img = s.render(outline=None, auto_light=False).copy()
+    # stamped ink: a little see-through, unevenly
+    noise = smooth_noise(7, 18)[:img.shape[0], :img.shape[1]]
+    img[..., 3] = (img[..., 3] * (0.8 + 0.18 * noise)).astype(np.uint8)
+    return img
 
 
 def print_city():
@@ -384,11 +391,12 @@ def sprites():
     yield 'SP257', 80, 32, '', print_mine() if PRINT and mine else up2(o.mine())
     yield 'SP257', 96, 32, '', print_pollution() if PRINT else up2(o.pollution())
     for i, name in enumerate(RESOURCES):
-        yield 'SP257', i * 16 + 1, 113, '', icon('res_' + name, 34, UNIT - 10)
+        # resources are painted into the ground in a print, not set on it as tokens
+        yield 'SP257', i * 16 + 1, 113, '', icon('res_' + name, 34, UNIT - 10, painted=True)
     yield 'SP257', 12 * 16 + 1, 113, f'_t{CITY_UP // S}_k0-5', print_city() if PRINT else city()
     yield 'SP257', 13 * 16 + 1, 113, '', icon('walls', UNIT, UNIT - 1, shadow=False)
     yield 'SP257', 14 * 16 + 1, 113, '', icon('fortress', UNIT - 6)
-    yield 'SP257', 15 * 16 + 1, 113, '', icon('hut', 44)
+    yield 'SP257', 15 * 16 + 1, 113, '', icon('hut', 44, painted=True)
     yield 'SP257', 153, 41, '', up2(print_shield_bonus() if PRINT else o.shield_bonus())
     if os.path.exists(os.path.join(OBJECTS, 'icon_food.png')):
         for i, name in enumerate(ICONS):

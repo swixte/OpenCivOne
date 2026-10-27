@@ -63,7 +63,8 @@ An optional `style.txt` in the painted art folder (lines of `name value`) change
   packed edge to edge wherever the rounded terrain is wood, so the crowns make the scalloped edge of the wood. The coast
   is a crisp ink line with a narrow cream beach inside it; the sea lightens towards the shore in a soft gradient that
   follows the coastline, with one broken wave line along it. Rivers flow in smooth curves from side to side of their
-  cells, meandering gently, as an even ribbon inside inked banks, thin at their source. Scenery never covers the sea,
+  cells, swinging in S-bends at an even width: a blue ribbon inside a fine ink line, lighter on the bank towards the
+  light and deeper on the other, with a broken white line of flowing water, thin at their source. Scenery never covers the sea,
   the feet of hills and mountains fade into the ground, nothing casts a shadow, and grassland gets more, smaller trees.
 - `pattern`, `seapattern`: how much larger the land and sea textures are drawn (smaller than 1 draws them smaller);
   `pattern forest 1.3` sets one terrain's own (by its texture name).
@@ -74,8 +75,9 @@ An optional `style.txt` in the painted art folder (lines of `name value`) change
 A terrain can also have a ground texture of its own: `forest`, `hills`, `mountains` and `jungle` in `ground/` replace
 the mix those terrains use otherwise. `themes/ukiyo-e/hd/painted` uses all of this.
 
-With `print 1`, `painted_set.py` also draws the sprites as print tokens (a dark key line and a cream outline, no
-shadows), and the interface on paper: cream washi behind the sidebar, menus and dialogs, and a mid indigo behind the
+With `print 1`, `painted_set.py` also draws units and cities as print tokens (a dark key line and a cream outline, no
+shadows), resources and huts as part of the ground (only a thin ink line), and the shield marker as a red seal stamped
+into the paper, and the interface on paper: cream washi behind the sidebar, menus and dialogs, and a mid indigo behind the
 city screen, from the textures in the theme's `hd/painted/ui` (`stone`, `slate`, `grain`) when it has them.
 
 ### Art
