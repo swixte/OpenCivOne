@@ -1,0 +1,303 @@
+{
+ "unit_settlers": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Settlers. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/settlers.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_militia": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Militia. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/militia.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_phalanx": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Phalanx. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/phalanx.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_legion": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Legion. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/legion.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_chariot": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Chariot. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/chariot.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_catapult": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: a wooden catapult, an old timber machine with a throwing arm, standing at rest, no people. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/catapult.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_knights": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Knights. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/knights.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_musketeers": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Musketeers. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/musketeers.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_cannon": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Cannon. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/cannon.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_cavalry": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Cavalry. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/cavalry.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_riflemen": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Riflemen. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/riflemen.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_artillery": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Artillery. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/artillery.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_diplomat": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Diplomat. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/diplomat.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_caravan": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Caravan. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/caravan.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_armor": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Armor (a tank). It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/armor.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_mech_infantry": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Mechanized infantry (an armoured vehicle). It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/mech_infantry.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_fighter": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Fighter (a propeller fighter plane). It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/fighter.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_bomber": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Bomber (a bomber plane). It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/bomber.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_nuclear": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Nuclear missile. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/nuclear.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_trireme": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Trireme. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/trireme.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_sail": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Sailing ship. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/sail.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_frigate": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Frigate. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/frigate.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_ironclad": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Ironclad. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/ironclad.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_cruiser": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Cruiser. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/cruiser.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_battleship": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Battleship. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/battleship.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_submarine": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Submarine. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/submarine.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_carrier": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Aircraft carrier. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/carrier.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "unit_transport": {
+  "prompt": "Redraw the unit shown in the first reference image as one clean game piece, in exactly its woodblock drawing: the same figure(s), costume, colours and pose, seen from the same high three-quarter angle, with fine dark key-block lines and flat colour, larger and crisper, with a bold readable silhouette. Leave out its flag and the ground. The unit: Transport ship. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/units/transport.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "res_oasis": {
+  "prompt": "A single small map resource for a strategy game, in exactly the woodblock drawing and colours of the reference map: fine dark key-block lines, flat colour, a bold readable shape that stays clear when shrunk to a small icon, seen from a high three-quarter angle. The resource: an oasis: a small pool of blue water ringed by two palm trees. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/v5-screen.jpg",
+   "refs/crops/grass_a.jpg"
+  ]
+ },
+ "res_horses": {
+  "prompt": "A single small map resource for a strategy game, in exactly the woodblock drawing and colours of the reference map: fine dark key-block lines, flat colour, a bold readable shape that stays clear when shrunk to a small icon, seen from a high three-quarter angle. The resource: a pair of wild horses grazing. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/v5-screen.jpg",
+   "refs/crops/grass_a.jpg"
+  ]
+ },
+ "res_wheat": {
+  "prompt": "A single small map resource for a strategy game, in exactly the woodblock drawing and colours of the reference map: fine dark key-block lines, flat colour, a bold readable shape that stays clear when shrunk to a small icon, seen from a high three-quarter angle. The resource: a few golden sheaves of wheat. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/v5-screen.jpg",
+   "refs/crops/grass_a.jpg"
+  ]
+ },
+ "res_pheasant": {
+  "prompt": "A single small map resource for a strategy game, in exactly the woodblock drawing and colours of the reference map: fine dark key-block lines, flat colour, a bold readable shape that stays clear when shrunk to a small icon, seen from a high three-quarter angle. The resource: a pheasant. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/v5-screen.jpg",
+   "refs/crops/grass_a.jpg"
+  ]
+ },
+ "res_coal": {
+  "prompt": "A single small map resource for a strategy game, in exactly the woodblock drawing and colours of the reference map: fine dark key-block lines, flat colour, a bold readable shape that stays clear when shrunk to a small icon, seen from a high three-quarter angle. The resource: a heap of black coal lumps with a small pick. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/v5-screen.jpg",
+   "refs/crops/grass_a.jpg"
+  ]
+ },
+ "res_gold": {
+  "prompt": "A single small map resource for a strategy game, in exactly the woodblock drawing and colours of the reference map: fine dark key-block lines, flat colour, a bold readable shape that stays clear when shrunk to a small icon, seen from a high three-quarter angle. The resource: a small pile of gold nuggets. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/v5-screen.jpg",
+   "refs/crops/grass_a.jpg"
+  ]
+ },
+ "res_caribou": {
+  "prompt": "A single small map resource for a strategy game, in exactly the woodblock drawing and colours of the reference map: fine dark key-block lines, flat colour, a bold readable shape that stays clear when shrunk to a small icon, seen from a high three-quarter angle. The resource: a caribou with antlers. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/v5-screen.jpg",
+   "refs/crops/grass_a.jpg"
+  ]
+ },
+ "res_seal": {
+  "prompt": "A single small map resource for a strategy game, in exactly the woodblock drawing and colours of the reference map: fine dark key-block lines, flat colour, a bold readable shape that stays clear when shrunk to a small icon, seen from a high three-quarter angle. The resource: a grey seal on a small ice floe. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/v5-screen.jpg",
+   "refs/crops/grass_a.jpg"
+  ]
+ },
+ "res_peat": {
+  "prompt": "A single small map resource for a strategy game, in exactly the woodblock drawing and colours of the reference map: fine dark key-block lines, flat colour, a bold readable shape that stays clear when shrunk to a small icon, seen from a high three-quarter angle. The resource: a stack of cut brown peat bricks. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/v5-screen.jpg",
+   "refs/crops/grass_a.jpg"
+  ]
+ },
+ "res_gems": {
+  "prompt": "A single small map resource for a strategy game, in exactly the woodblock drawing and colours of the reference map: fine dark key-block lines, flat colour, a bold readable shape that stays clear when shrunk to a small icon, seen from a high three-quarter angle. The resource: a cluster of coloured gemstones. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/v5-screen.jpg",
+   "refs/crops/grass_a.jpg"
+  ]
+ },
+ "res_fish": {
+  "prompt": "A single small map resource for a strategy game, in exactly the woodblock drawing and colours of the reference map: fine dark key-block lines, flat colour, a bold readable shape that stays clear when shrunk to a small icon, seen from a high three-quarter angle. The resource: three silver fish leaping from a ripple. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/v5-screen.jpg",
+   "refs/crops/grass_a.jpg"
+  ]
+ },
+ "hut": {
+  "prompt": "Redraw the village shown in the first reference image as one clean game piece, in exactly its woodblock drawing and colours, seen from the same high three-quarter angle, larger and crisper: a small cluster of three thatched huts. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/objects/hut.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "fortress": {
+  "prompt": "Redraw the fortress shown in the first reference image as one clean game piece, in exactly its woodblock drawing and colours, seen from the same high three-quarter angle, larger and crisper: a square earthwork fort with a timber stockade, empty inside. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/objects/fortress.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "town": {
+  "prompt": "Redraw the town shown in the first reference image as one clean game piece, in exactly its woodblock drawing and colours, seen from the same high three-quarter angle, larger and crisper: a compact town of houses with terracotta and vermilion roofs and cream walls around a church or temple, seen from above at a gentle angle, with no town wall. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/objects/town.jpg",
+   "refs/objects/city-grass.jpg"
+  ]
+ },
+ "walls": {
+  "prompt": "Redraw the town shown in the first reference image as one clean game piece, in exactly its woodblock drawing and colours, seen from the same high three-quarter angle, larger and crisper: only its town wall: a ring of cream stone walls with small round towers at the corners and a gatehouse, completely empty inside. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/objects/town.jpg",
+   "refs/objects/city-grass.jpg"
+  ]
+ }
+}
