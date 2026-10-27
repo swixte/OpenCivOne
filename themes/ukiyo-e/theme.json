@@ -43,7 +43,8 @@
     "All factions and eras share the same ground language; only costume and architecture change."
   ],
   "pictures": {
-    "BACK1M": "A 20th-century statesman's office with a large desk, tall windows over a city, and plain banners with no national emblems or flags of any real country."
+    "BACK1M": "A 20th-century statesman's office with a large desk, tall windows over a city, and plain banners with no national emblems or flags of any real country.",
+    "KING02": "A wise elderly leader of the Indians, in the dress of a ruler: a white shawl over simple robes and a dignified bearing, facing the viewer"
   },
   "map_references": [
     "refs/v5-screen.jpg",

@@ -272,6 +272,41 @@ def placed(theme, key, name, img, pieces):
     return sheet.convert('RGB')
 
 
+def city_streets(out, force=False):
+    """The streets of the city view (CITYPIX1: 16 pieces of 24x8 at (24x, 65 + y) before the Automobile and at
+    (24x, 81 + y) after, y 0 or 8), drawn rather than generated: soft-edged diamonds of packed earth, or of grey stone
+    setts later, that run together into lanes under the houses and fade into the landscape around them."""
+    written = 0
+    w, h = 24 * S, 8 * S
+    yy, xx = np.mgrid[0:h, 0:w] + 0.5
+    # the diamond: 1 inside, falling to 0 over its last fifth
+    diamond = np.clip((1 - (np.abs(xx - w / 2) / (w / 2) + np.abs(yy - h / 2) / (h / 2))) / 0.2, 0, 1)
+    for era, top in enumerate((65, 81)):
+        for i in range(16):
+            rect = ((i % 8) * 24, top + (i - i % 8), 24, 8)
+            if region_done(out, 'CITYPIX1', rect) and not force:
+                continue
+            rng = np.random.default_rng(1000 * era + i)
+            grain = np.asarray(Image.fromarray(np.uint8(rng.random((h // 4 + 1, w // 4 + 1)) * 255)).resize((w, h), Image.BICUBIC),
+                               dtype=np.float64) / 255
+            if era == 0:
+                base = np.array([201, 180, 138])
+                tone = base[None, None, :] * (0.9 + 0.2 * grain[..., None])
+                # pale stones and dark specks of a beaten earth lane
+                specks = rng.random((h, w))
+                tone[specks > 0.985] = [234, 222, 196]
+                tone[specks < 0.012] = [120, 100, 72]
+            else:
+                tone = np.array([150, 146, 138])[None, None, :] * (0.92 + 0.16 * grain[..., None])
+                # rows of setts: fine dark joints
+                joints = ((yy.astype(int) % (2 * S)) == 0) | (((xx.astype(int) + (yy.astype(int) // (2 * S)) * S) % (3 * S)) == 0)
+                tone[joints] *= 0.72
+            img = np.dstack([np.clip(tone, 0, 255), diamond * 235]).astype(np.uint8)
+            region(out, 'CITYPIX1', rect, Image.fromarray(img, 'RGBA'), False)
+            written += 1
+    return written
+
+
 def build(theme_dir, only=None, force=False, with_map=False):
     # NAME:i in only picks single pieces of a sheet
     pieces = {}
@@ -336,6 +371,9 @@ def build(theme_dir, only=None, force=False, with_map=False):
             print(f'{name}: {count} of {len(spec["pieces"])} pieces written' if count else f'{name}: kept', flush=True)
         except Exception as e:
             print(f'{name}: failed, {e}')
+
+    if not only or 'CITYPIX1' in only:
+        print(f'CITYPIX1: {city_streets(out, force)} streets drawn', flush=True)
 
 
 def install(theme_dir, game_dir):
