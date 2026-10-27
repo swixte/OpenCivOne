@@ -147,6 +147,11 @@ namespace OpenCivOne.Graphics
 		public int CellSize => this.cell;
 
 		/// <summary>
+		/// The art is painted like a woodblock print (print 1 in its style.txt); the city size then stands at the bottom left
+		/// </summary>
+		public bool Print => this.print;
+
+		/// <summary>
 		/// Loads the art from an hd/painted folder, or returns null if there is none
 		/// </summary>
 		public static PaintedMap? Load(string folder, int cellSize, Func<int, int, int> terrainAt)

@@ -693,7 +693,12 @@ namespace OpenCivOne
 								// Draw city size
 
 								// Instruction address 0x2aea:0x0d8d, size: 5
-								if (paintedMap != null)
+								if (paintedMap != null && paintedMap.Print)
+								{
+									// on a print map the size stands on a badge at the bottom left, under the town
+									this.parent.DrawTools.DrawStringToScreen0($"{citySize}", ((citySize < 10) ? 3 : 1) + scrX, scrY + 9, 0);
+								}
+								else if (paintedMap != null)
 								{
 									// on the painted map the size stands in the top left corner, so the town shows
 									this.parent.DrawTools.DrawStringToScreen0($"{citySize}", ((citySize < 10) ? 5 : 3) + scrX, scrY + 2, 0);

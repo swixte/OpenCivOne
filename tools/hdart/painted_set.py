@@ -141,22 +141,27 @@ def print_shield_bonus():
 
 
 def print_city():
-    """The town for the print map, on a ring of light cleared earth that fades into the ground around it."""
+    """The town for the print map, on a ring of light cleared earth that fades into the ground around it, rising into the
+    cell above. The game writes the city size at the bottom left of the cell on a print map (from original pixel 1 or 3,
+    9), so a small badge sits there, over the edge of the town as on a printed map."""
     h = UNIT + CITY_UP
     img = np.zeros((h, UNIT, 4), dtype=np.uint8)
     y, x = np.mgrid[0:h, 0:UNIT] + 0.5
-    d = np.sqrt(((x - UNIT / 2) / (UNIT * 0.5)) ** 2 + ((y - (h - UNIT * 0.45)) / (UNIT * 0.36)) ** 2)
-    ring = np.clip((1 - d) / 0.35, 0, 1)
+    d = np.sqrt(((x - UNIT * 0.5) / (UNIT * 0.52)) ** 2 + ((y - (h - UNIT * 0.42)) / (UNIT * 0.44)) ** 2)
+    ring = np.clip((1 - d) / 0.3, 0, 1)
     img[..., 0], img[..., 1], img[..., 2] = 240, 230, 200
-    img[..., 3] = np.rint(ring * 235).astype(np.uint8)
+    img[..., 3] = np.rint(ring * 230).astype(np.uint8)
     town = np.zeros((h, UNIT, 4), dtype=np.uint8)
-    fitted = style.fit(obj('town'), width=UNIT - 8, height=h - 10)
-    style.paste(town, fitted, UNIT / 2, h - 5)
-    town = outlined(town, key=2, cream=0)
-    style.paste(img, town, UNIT / 2, h)
+    fitted = style.fit(obj('town'), width=UNIT - 4, height=h - 8)
+    style.paste(town, fitted, UNIT / 2 + 1, h - 6)
+    town = outlined(town, key=2, cream=1)
+    shown = town[..., 3] > 0
+    img[shown] = town[shown]
     badge = c.Sprite(UNIT, h, {'P': 'P', 'S': 'S'})
-    badge.rect(6, CITY_UP + 1, 39, CITY_UP + 29, 'S', 0)
-    badge.rect(8, CITY_UP + 3, 37, CITY_UP + 27, 'P', 0.5)
+    # the sprite is drawn one original pixel in from the cell corner, and the game fills original pixels 2..13 of the
+    # cell with the player's colors, so the badge stays inside that square
+    badge.rect(5, CITY_UP + 29, 35, CITY_UP + 52, 'S', 0)
+    badge.rect(7, CITY_UP + 31, 33, CITY_UP + 50, 'P', 0.5)
     b = badge.render(outline=KEY_LINE)
     shown = b[..., 3] > 0
     img[shown] = b[shown]
