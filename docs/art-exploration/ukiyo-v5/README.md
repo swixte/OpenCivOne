@@ -10,6 +10,7 @@ The ukiyo-e look is the drawing technique, not the subject: people, buildings an
 | `screen.jpg` | Ancient era, Greeks against Egyptians |
 | `readability.jpg` | The same city, unit and improvement on each of 12 terrains |
 | `screen2.jpg` | Medieval era, English against Mongols, with the corrected swamp and tundra and stronger cities |
+| `players.jpg` | All eight player colours on the five hardest terrains, with the double outline |
 
 ## Rules
 
@@ -43,6 +44,11 @@ the brightest warm spot on the map. The size badge takes the player colour.
 patchwork with thin bright-blue channels that follow the land; mines a dark spoil terrace with a timber headframe;
 roads thin pale cream lines; railroads thin dark lines with sleepers.
 
-**Units** are small tokens, about half a map square, with a thin cream outline and a strong player colour. Terrain
-never uses strong player colours, so units stand out everywhere. Open issue: a yellow player on plains and desert is
-weak (`screen2.jpg`, the Mongols); yellow needs a darker key line and outline, or a different player colour.
+**Units** are small tokens, about half a map square, in a strong player colour that terrain never uses. The game's
+eight player colours (red, white, green, blue, yellow, cyan, pink, grey) do not all differ from every terrain: white on
+arctic (colour distance 5) and grey on tundra (13) nearly vanish, and a muted woodblock yellow on plains was weak in
+`screen2.jpg`. So every unit has a double outline: a dark key line (`#1E1A16`) right around the figure and a thin
+cream outline (`#F4ECD8`) outside it. Whatever the ground, one of the two contrasts with it at 4:1 or better (cream
+alone drops to 1:1 on arctic). Player colours stay saturated: red `#E8483F`, white `#FFFFFF` with a dark-bordered
+flag, green `#2FC04A`, blue `#3E5BFF`, yellow `#FFD21A`, cyan `#2FC8E0`, pink `#E84AC8`, and a dark ink grey `#4A4A50`
+in place of the light grey. `players.jpg` shows all eight on the five hardest terrains, and all of them read.
