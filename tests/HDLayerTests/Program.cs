@@ -507,6 +507,25 @@ GBitmap other4()
 	Check(!other.ShowsWater, "water: a screen without painted water does not");
 	GBitmap.HDScale = 2;
 
+	// fields on irrigated land and cleared ground around cities, painted into the ground
+	int[,] features = new int[80, 50];
+	uint[] plainField = Cell(painted, 11, 8), plainCity = Cell(painted, 8, 7), plainForest = Cell(painted, 13, 4);
+	painted.FeaturesAt = (x, y) => features[x, y];
+	Check(Cell(painted, 11, 8).SequenceEqual(plainField), "features: without features the painting is the same");
+	foreach ((int fx, int fy) in new[] { (10, 8), (11, 8), (12, 8), (6, 8), (7, 8), (7, 9), (8, 9), (18, 7), (18, 8), (19, 8) })
+		features[fx, fy] = PaintedMap.FieldsFeature;
+	features[8, 7] = PaintedMap.CityFeature;
+	features[19, 6] = PaintedMap.CityFeature;
+	uint[] field = Cell(painted, 11, 8), cityGround = Cell(painted, 8, 7);
+	Check(!field.SequenceEqual(plainField), "features: irrigated land is painted as fields");
+	Check(!cityGround.SequenceEqual(plainCity), "features: a city clears the ground around it");
+	Check(Cell(painted, 13, 4).SequenceEqual(plainForest), "features: cells away from them are untouched");
+	int[,] saved = (int[,])features.Clone();
+	Array.Clear(features);
+	Check(Cell(painted, 11, 8).SequenceEqual(plainField) && Cell(painted, 8, 7).SequenceEqual(plainCity), "features: removing them paints the cells again");
+	features = saved;
+	painted.FeaturesAt = (x, y) => features[x, y];
+
 	string? output = Environment.GetEnvironmentVariable("PAINTED_PREVIEW");
 	if (output != null)
 	{

@@ -516,7 +516,8 @@ namespace OpenCivOne
 					// The painted map replaces the terrain at HD resolution, the ocean, grass and river tiles above still set the indexed pixels
 					this.parent.Graphics.DrawPaintedCell(this.parent.Var_aa_Screen0_Rectangle, scrX, scrY, paintedMap, this.AdjustXPosition(x), y);
 
-					if (drawIrrigation)
+					// irrigation is painted into the ground as fields when the painted map knows the cell features
+					if (drawIrrigation && paintedMap.FeaturesAt == null)
 					{
 						this.parent.Graphics.F0_VGA_0c3e_DrawBitmapToScreen(this.parent.Var_aa_Screen0_Rectangle, scrX, scrY, this.parent.Array_d4ce[4]);
 					}

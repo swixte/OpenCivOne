@@ -44,7 +44,13 @@ namespace OpenCivOne.Graphics
 			new[] { ("grass", 1f) },
 		};
 
+		/// <summary>
+		/// Cell features painted into the ground, as flags returned by FeaturesAt
+		/// </summary>
+		public const int FieldsFeature = 1, CityFeature = 2;
+
 		private readonly Func<int, int, int> terrainAt;
+		private Func<int, int, int>? featuresAt = null;
 		private readonly int cell;
 		private readonly int worldWidth;
 		private readonly int worldHeight;
@@ -80,7 +86,7 @@ namespace OpenCivOne.Graphics
 		{
 			public const int Margin = 4;
 			private readonly int left, top, width;
-			private readonly int[] values;
+			private readonly int[] values, features;
 
 			public TerrainGrid(PaintedMap map, int cx, int cy)
 			{
@@ -88,15 +94,26 @@ namespace OpenCivOne.Graphics
 				this.top = (cy * ChunkCells) - Margin;
 				this.width = ChunkCells + (2 * Margin);
 				this.values = new int[this.width * this.width];
+				this.features = new int[this.width * this.width];
 
 				for (int j = 0; j < this.width; j++)
+				{
 					for (int i = 0; i < this.width; i++)
+					{
 						this.values[(j * this.width) + i] = map.Terrain(this.left + i, this.top + j);
+						this.features[(j * this.width) + i] = map.Feature(this.left + i, this.top + j);
+					}
+				}
 			}
 
 			public int At(int x, int y)
 			{
 				return this.values[((y - this.top) * this.width) + (x - this.left)];
+			}
+
+			public int FeatureAt(int x, int y)
+			{
+				return this.features[((y - this.top) * this.width) + (x - this.left)];
 			}
 		}
 
@@ -123,6 +140,21 @@ namespace OpenCivOne.Graphics
 		}
 
 		public int CellSize => this.cell;
+
+		/// <summary>
+		/// Features of a map cell (FieldsFeature, CityFeature), x already wrapped and y inside the map. With it, irrigated
+		/// land is painted as fields and cities get cleared ground around them, as part of the painting; a chunk is painted
+		/// again when its features change.
+		/// </summary>
+		public Func<int, int, int>? FeaturesAt
+		{
+			get => this.featuresAt;
+			set
+			{
+				this.featuresAt = value;
+				this.Clear();
+			}
+		}
 
 		/// <summary>
 		/// Loads the art from an hd/painted folder, or returns null if there is none
@@ -440,6 +472,7 @@ namespace OpenCivOne.Graphics
 				for (int x = (cx * ChunkCells) - 2; x < ((cx + 1) * ChunkCells) + 2; x++)
 				{
 					hash = (hash * 31) + this.Terrain(x, y);
+					hash = (hash * 7) + this.Feature(x, y);
 				}
 			}
 
@@ -449,6 +482,11 @@ namespace OpenCivOne.Graphics
 		private int WrapX(int x)
 		{
 			return ((x % MapWidth) + MapWidth) % MapWidth;
+		}
+
+		private int Feature(int x, int y)
+		{
+			return (this.featuresAt == null || y < 0 || y >= MapHeight) ? 0 : this.featuresAt(WrapX(x), y);
 		}
 
 		private int Terrain(int x, int y)
@@ -590,6 +628,9 @@ namespace OpenCivOne.Graphics
 						r[i] = gr * rim;
 						g[i] = gg * rim;
 						b[i] = gb * rim;
+
+						if (this.featuresAt != null)
+							this.PaintFeatures(grid, wx, wy, qx, qy, ci, cj, ref r[i], ref g[i], ref b[i]);
 					}
 					else
 					{
@@ -680,6 +721,126 @@ namespace OpenCivOne.Graphics
 			});
 
 			return pixels;
+		}
+
+		// crop colours of fields: young green, ripe gold, pale green, ploughed earth
+		private static readonly (float R, float G, float B)[] Crops = { (112, 128, 58), (196, 160, 74), (150, 160, 92), (128, 96, 62) };
+
+		/// <summary>
+		/// Fields on irrigated land and cleared ground around cities, painted into the ground at one pixel. Fields are a
+		/// patchwork of irregular parcels of different crops, some lying fallow, with furrows running across the slope of the
+		/// land and thin dikes between them. A city stands in a ring of packed earth with a ragged edge and a few lanes
+		/// leading out.
+		/// Both fade out over the cell borders.
+		/// </summary>
+		private void PaintFeatures(TerrainGrid grid, int wx, int wy, float qx, float qy, int ci, int cj, ref float r, ref float g, ref float b)
+		{
+			float k = this.cell / 64f;
+			float fields = 0, city = 0;
+			float cityX = 0, cityY = 0;
+
+			for (int dj = -1; dj <= 1; dj++)
+			{
+				for (int di = -1; di <= 1; di++)
+				{
+					int feature = grid.FeatureAt(ci + di, cj + dj);
+
+					if ((feature & FieldsFeature) != 0)
+						fields += this.Weight(qx, ci + di, 6 * k) * this.Weight(qy, cj + dj, 6 * k);
+
+					if ((feature & CityFeature) != 0)
+					{
+						float centreX = (ci + di + 0.5f) * this.cell, centreY = (cj + dj + 0.6f) * this.cell;
+						float d = MathF.Sqrt(((qx - centreX) * (qx - centreX)) + ((qy - centreY) * (qy - centreY))) / this.cell;
+						float edge = d + ((this.Noise(wx, wy, 10 * k, 13) - 0.5f) * 0.35f);
+						float w = Smooth(0.95f, 0.5f, edge);
+
+						if (w > city)
+						{
+							city = w;
+							cityX = centreX;
+							cityY = centreY;
+						}
+					}
+				}
+			}
+
+			if (fields > 0.01f)
+			{
+				// a patchwork of parcels: the nearest of jittered seed points, with slightly wavy edges
+				float spacing = 28 * k;
+				float px = qx + ((this.Noise(wx, wy, 14 * k, 11) - 0.5f) * 2 * k), py = qy + ((this.Noise(wx, wy, 14 * k, 12) - 0.5f) * 2 * k);
+				int gx = (int)MathF.Floor(px / spacing), gy = (int)MathF.Floor(py / spacing);
+				float nearest = float.MaxValue, second = float.MaxValue;
+				int parcelX = 0, parcelY = 0;
+
+				for (int sj = -1; sj <= 1; sj++)
+				{
+					for (int si = -1; si <= 1; si++)
+					{
+						int sx = gx + si, sy = gy + sj;
+						float seedX = (sx + 0.15f + (Hash(sx, sy, 21) * 0.7f)) * spacing, seedY = (sy + 0.15f + (Hash(sx, sy, 22) * 0.7f)) * spacing;
+						float d = ((px - seedX) * (px - seedX)) + ((py - seedY) * (py - seedY));
+
+						if (d < nearest)
+						{
+							second = nearest;
+							nearest = d;
+							parcelX = sx;
+							parcelY = sy;
+						}
+						else if (d < second)
+						{
+							second = d;
+						}
+					}
+				}
+
+				float border = MathF.Sqrt(second) - MathF.Sqrt(nearest);
+				float pick = Hash(parcelX, parcelY, 23);
+				float fr = r, fg = g, fb = b;
+
+				// one parcel in five lies fallow and keeps the ground
+				if (pick < 0.8f)
+				{
+					(float cr, float cg, float cb) = Crops[(int)(pick / 0.8f * Crops.Length) % Crops.Length];
+					// furrows across the slope of the land, from the gradient of a slow noise field at the parcel
+					float centreX = (parcelX + 0.5f) * spacing, centreY = (parcelY + 0.5f) * spacing;
+					float slopeX = this.Noise(centreX + (8 * k), centreY, 120 * k, 24) - this.Noise(centreX - (8 * k), centreY, 120 * k, 24);
+					float slopeY = this.Noise(centreX, centreY + (8 * k), 120 * k, 24) - this.Noise(centreX, centreY - (8 * k), 120 * k, 24);
+					float length = MathF.Max(1e-5f, MathF.Sqrt((slopeX * slopeX) + (slopeY * slopeY)));
+					float across = ((px * slopeX) + (py * slopeY)) / length;
+					float furrow = 0.82f + (0.18f * MathF.Sin(across / (1.6f * k)));
+					fr = ((r * 0.35f) + (cr * 0.65f)) * furrow;
+					fg = ((g * 0.35f) + (cg * 0.65f)) * furrow;
+					fb = ((b * 0.35f) + (cb * 0.65f)) * furrow;
+				}
+
+				// thin dikes and paths between the parcels
+				float dike = Smooth(2.4f * k, 0.8f * k, border);
+				fr += ((r * 0.4f) + 92 - fr) * dike;
+				fg += ((g * 0.4f) + 80 - fg) * dike;
+				fb += ((b * 0.4f) + 52 - fb) * dike;
+				float w = Math.Min(fields, 1) * 0.92f;
+				r += (fr - r) * w;
+				g += (fg - g) * w;
+				b += (fb - b) * w;
+			}
+
+			if (city > 0.01f)
+			{
+				// packed earth, lighter along a few lanes leading out of the city
+				float er = (r * 0.5f) + 78, eg = (g * 0.5f) + 66, eb = (b * 0.5f) + 46;
+				float angle = MathF.Atan2(qy - cityY, qx - cityX);
+				float lanes = MathF.Abs(MathF.Sin((angle * 2.5f) + (Hash((int)cityX, (int)cityY, 16) * 6.28f)));
+				float lane = Smooth(0.12f, 0.03f, lanes) * Smooth(0.2f, 0.4f, 1 - city);
+				er += (186 - er) * lane * 0.5f;
+				eg += (164 - eg) * lane * 0.5f;
+				eb += (120 - eb) * lane * 0.5f;
+				r += (er - r) * city;
+				g += (eg - g) * city;
+				b += (eb - b) * city;
+			}
 		}
 
 		/// <summary>
@@ -802,6 +963,10 @@ namespace OpenCivOne.Graphics
 				for (int i = (cx * ChunkCells) - 2; i < ((cx + 1) * ChunkCells) + 2; i++)
 				{
 					int terrain = this.Terrain(i, j);
+
+					// fields and cities are cleared land
+					if ((this.Feature(i, j) & (FieldsFeature | CityFeature)) != 0 && (terrain == Grassland || terrain == River))
+						continue;
 					// the same cell always gets the same art, whichever chunk paints it
 					Random random = new Random((WrapX(i) * 7919) + (j * 104729) + 17);
 					float left = i * this.cell, top = j * this.cell;

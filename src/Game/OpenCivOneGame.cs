@@ -172,6 +172,23 @@ namespace OpenCivOne
 			this.paintedMap = PaintedMap.Load($"{hdPath}{separator}painted", 16 * GBitmap.HDScale,
 				(x, y) => (int)this.mapManagement!.GetTerrainType(x, y));
 
+			if (this.paintedMap != null)
+			{
+				// irrigated land and cities are painted into the ground, as the human player sees them (all of them in debug mode)
+				this.paintedMap.FeaturesAt = (x, y) =>
+				{
+					MapManagement map = this.mapManagement!;
+					TerrainImprovementFlagsEnum improvements = this.globalPreferences.Debug.DebugMode ?
+						map.F0_2aea_1585_GetVisibleTerrainImprovements(x, y) : map.F0_2aea_15c1_GetTerrainImprovements(x, y);
+
+					if (improvements.HasFlag(TerrainImprovementFlagsEnum.City))
+						return PaintedMap.CityFeature;
+
+					return (improvements.HasFlag(TerrainImprovementFlagsEnum.Irrigation) && map.GetTerrainType(x, y) != TerrainTypeEnum.Water) ?
+						PaintedMap.FieldsFeature : 0;
+				};
+			}
+
 			#region Initialize Segments
 			this.CApi = new CAPI(this);
 			this.graphics = new GDriver(this);
