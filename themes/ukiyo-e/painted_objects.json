@@ -306,5 +306,117 @@
    "refs/objects/mine.jpg",
    "refs/v5-screen.jpg"
   ]
+ },
+ "icon_food": {
+  "prompt": "Draw one small game interface icon in a ukiyo-e woodblock print technique, matching the drawing and palette of the reference images: a bold, simple, instantly readable shape with thick dark key-block lines and two or three flat colours, no fine detail, because it is shown only 28 pixels wide. The icon: food: a chunky, fat tied sheaf of bright yellow grain heads over vivid green leaves, bound with a red cord, a bold compact shape. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground, no shadow, no outline around it, no text, no frame.",
+  "refs": [
+   "refs/v5-palette.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "icon_shield": {
+  "prompt": "Draw one small game interface icon in a ukiyo-e woodblock print technique, matching the drawing and palette of the reference images: a bold, simple, instantly readable shape with thick dark key-block lines and two or three flat colours, no fine detail, because it is shown only 28 pixels wide. The icon: production: a round wooden shield lacquered deep red with a dark iron rim and a central boss, seen from the front. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground, no shadow, no outline around it, no text, no frame.",
+  "refs": [
+   "refs/v5-palette.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "icon_trade": {
+  "prompt": "Draw one small game interface icon in a ukiyo-e woodblock print technique, matching the drawing and palette of the reference images: a bold, simple, instantly readable shape with thick dark key-block lines and two or three flat colours, no fine detail, because it is shown only 28 pixels wide. The icon: trade: two thick golden-yellow arrows curving past each other in opposite directions, like a circle of exchange. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground, no shadow, no outline around it, no text, no frame.",
+  "refs": [
+   "refs/v5-palette.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "icon_gold": {
+  "prompt": "Draw one small game interface icon in a ukiyo-e woodblock print technique, matching the drawing and palette of the reference images: a bold, simple, instantly readable shape with thick dark key-block lines and two or three flat colours, no fine detail, because it is shown only 28 pixels wide. The icon: gold: a single round gold coin seen from the front, with a raised rim and a simple stamped mark, bright ochre gold. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground, no shadow, no outline around it, no text, no frame.",
+  "refs": [
+   "refs/v5-palette.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "icon_science": {
+  "prompt": "Draw one small game interface icon in a ukiyo-e woodblock print technique, matching the drawing and palette of the reference images: a bold, simple, instantly readable shape with thick dark key-block lines and two or three flat colours, no fine detail, because it is shown only 28 pixels wide. The icon: science: a glowing light bulb with a pale cyan-white glass and a short brass base, rays of light around it. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground, no shadow, no outline around it, no text, no frame.",
+  "refs": [
+   "refs/v5-palette.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "icon_unhappy": {
+  "prompt": "Draw one small game interface icon in a ukiyo-e woodblock print technique, matching the drawing and palette of the reference images: a bold, simple, instantly readable shape with thick dark key-block lines and two or three flat colours, no fine detail, because it is shown only 28 pixels wide. The icon: unhappiness: a round face with angry frowning brows and a down-turned mouth, flushed red skin. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground, no shadow, no outline around it, no text, no frame.",
+  "refs": [
+   "refs/v5-palette.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "icon_luxury": {
+  "prompt": "Draw one small game interface icon in a ukiyo-e woodblock print technique, matching the drawing and palette of the reference images: a bold, simple, instantly readable shape with thick dark key-block lines and two or three flat colours, no fine detail, because it is shown only 28 pixels wide. The icon: luxury: a faceted cut gemstone, bright turquoise blue-green with white highlights and a dark outline. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground, no shadow, no outline around it, no text, no frame.",
+  "refs": [
+   "refs/v5-palette.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "citizen_happy_m": {
+  "prompt": "Draw one tiny full-length standing figure for a game's city screen, in exactly the woodblock drawing of the people in the first reference image: fine dark key-block lines, flat colour, a simple patterned garment, seen from the front. The person belongs to no one culture: a plain ancient tunic or long dress with a belt, sandals, short or simply tied hair, no hat, no East Asian clothing or hairstyle. Drawn as a clean woodblock print, not pixel art. It is shown only 32 by 64 pixels, so the pose and colours must read at a glance: a bold silhouette, a clear face, no fine detail. The figure: a happy man of a town, both arms raised in celebration, a big smile, a bright vermilion and gold tunic. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling the height of the image; no ground, no shadow, no outline around it, no text, no frame.",
+  "refs": [
+   "refs/units/settlers.jpg",
+   "refs/v5-palette.jpg"
+  ]
+ },
+ "citizen_happy_f": {
+  "prompt": "Draw one tiny full-length standing figure for a game's city screen, in exactly the woodblock drawing of the people in the first reference image: fine dark key-block lines, flat colour, a simple patterned garment, seen from the front. The person belongs to no one culture: a plain ancient tunic or long dress with a belt, sandals, short or simply tied hair, no hat, no East Asian clothing or hairstyle. Drawn as a clean woodblock print, not pixel art. It is shown only 32 by 64 pixels, so the pose and colours must read at a glance: a bold silhouette, a clear face, no fine detail. The figure: a happy woman of a town, both arms raised in celebration, a big smile, a bright vermilion and gold robe. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling the height of the image; no ground, no shadow, no outline around it, no text, no frame.",
+  "refs": [
+   "refs/units/settlers.jpg",
+   "refs/v5-palette.jpg"
+  ]
+ },
+ "citizen_content_m": {
+  "prompt": "Draw one tiny full-length standing figure for a game's city screen, in exactly the woodblock drawing of the people in the first reference image: fine dark key-block lines, flat colour, a simple patterned garment, seen from the front. The person belongs to no one culture: a plain ancient tunic or long dress with a belt, sandals, short or simply tied hair, no hat, no East Asian clothing or hairstyle. Drawn as a clean woodblock print, not pixel art. It is shown only 32 by 64 pixels, so the pose and colours must read at a glance: a bold silhouette, a clear face, no fine detail. The figure: a calm, contented man of a town standing at ease with arms at his sides, a plain indigo and cream tunic. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling the height of the image; no ground, no shadow, no outline around it, no text, no frame.",
+  "refs": [
+   "refs/units/settlers.jpg",
+   "refs/v5-palette.jpg"
+  ]
+ },
+ "citizen_content_f": {
+  "prompt": "Draw one tiny full-length standing figure for a game's city screen, in exactly the woodblock drawing of the people in the first reference image: fine dark key-block lines, flat colour, a simple patterned garment, seen from the front. The person belongs to no one culture: a plain ancient tunic or long dress with a belt, sandals, short or simply tied hair, no hat, no East Asian clothing or hairstyle. Drawn as a clean woodblock print, not pixel art. It is shown only 32 by 64 pixels, so the pose and colours must read at a glance: a bold silhouette, a clear face, no fine detail. The figure: a calm, contented woman of a town standing at ease with hands folded, a plain indigo and cream robe. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling the height of the image; no ground, no shadow, no outline around it, no text, no frame.",
+  "refs": [
+   "refs/units/settlers.jpg",
+   "refs/v5-palette.jpg"
+  ]
+ },
+ "citizen_unhappy_m": {
+  "prompt": "Draw one tiny full-length standing figure for a game's city screen, in exactly the woodblock drawing of the people in the first reference image: fine dark key-block lines, flat colour, a simple patterned garment, seen from the front. The person belongs to no one culture: a plain ancient tunic or long dress with a belt, sandals, short or simply tied hair, no hat, no East Asian clothing or hairstyle. Drawn as a clean woodblock print, not pixel art. It is shown only 32 by 64 pixels, so the pose and colours must read at a glance: a bold silhouette, a clear face, no fine detail. The figure: an angry, unhappy man of a town shaking a raised fist, frowning, a drab grey-brown tunic. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling the height of the image; no ground, no shadow, no outline around it, no text, no frame.",
+  "refs": [
+   "refs/units/settlers.jpg",
+   "refs/v5-palette.jpg"
+  ]
+ },
+ "citizen_unhappy_f": {
+  "prompt": "Draw one tiny full-length standing figure for a game's city screen, in exactly the woodblock drawing of the people in the first reference image: fine dark key-block lines, flat colour, a simple patterned garment, seen from the front. The person belongs to no one culture: a plain ancient tunic or long dress with a belt, sandals, short or simply tied hair, no hat, no East Asian clothing or hairstyle. Drawn as a clean woodblock print, not pixel art. It is shown only 32 by 64 pixels, so the pose and colours must read at a glance: a bold silhouette, a clear face, no fine detail. The figure: an angry, unhappy woman of a town with fists on her hips, frowning, a drab grey-brown robe. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling the height of the image; no ground, no shadow, no outline around it, no text, no frame.",
+  "refs": [
+   "refs/units/settlers.jpg",
+   "refs/v5-palette.jpg"
+  ]
+ },
+ "citizen_entertainer": {
+  "prompt": "Draw one tiny full-length standing figure for a game's city screen, in exactly the woodblock drawing of the people in the first reference image: fine dark key-block lines, flat colour, a simple patterned garment, seen from the front. The person belongs to no one culture: a plain ancient tunic or long dress with a belt, sandals, short or simply tied hair, no hat, no East Asian clothing or hairstyle. Drawn as a clean woodblock print, not pixel art. It is shown only 32 by 64 pixels, so the pose and colours must read at a glance: a bold silhouette, a clear face, no fine detail. The figure: an entertainer playing a small lute, colourful green and gold patterned costume. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling the height of the image; no ground, no shadow, no outline around it, no text, no frame.",
+  "refs": [
+   "refs/units/settlers.jpg",
+   "refs/v5-palette.jpg"
+  ]
+ },
+ "citizen_taxman": {
+  "prompt": "Draw one tiny full-length standing figure for a game's city screen, in exactly the woodblock drawing of the people in the first reference image: fine dark key-block lines, flat colour, a simple patterned garment, seen from the front. The person belongs to no one culture: a plain ancient tunic or long dress with a belt, sandals, short or simply tied hair, no hat, no East Asian clothing or hairstyle. Drawn as a clean woodblock print, not pixel art. It is shown only 32 by 64 pixels, so the pose and colours must read at a glance: a bold silhouette, a clear face, no fine detail. The figure: a tax collector holding up a bag of gold coins, an ochre robe. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling the height of the image; no ground, no shadow, no outline around it, no text, no frame.",
+  "refs": [
+   "refs/units/settlers.jpg",
+   "refs/v5-palette.jpg"
+  ]
+ },
+ "citizen_scientist": {
+  "prompt": "Draw one tiny full-length standing figure for a game's city screen, in exactly the woodblock drawing of the people in the first reference image: fine dark key-block lines, flat colour, a simple patterned garment, seen from the front. The person belongs to no one culture: a plain ancient tunic or long dress with a belt, sandals, short or simply tied hair, no hat, no East Asian clothing or hairstyle. Drawn as a clean woodblock print, not pixel art. It is shown only 32 by 64 pixels, so the pose and colours must read at a glance: a bold silhouette, a clear face, no fine detail. The figure: a scholar in a long white robe holding an open book and pointing upwards. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling the height of the image; no ground, no shadow, no outline around it, no text, no frame.",
+  "refs": [
+   "refs/units/settlers.jpg",
+   "refs/v5-palette.jpg"
+  ]
  }
 }

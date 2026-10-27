@@ -110,7 +110,7 @@ def main(src, out):
             img = Image.open(path).convert('RGB')
             Image.fromarray(style.seamless(img, img.width)).convert('RGB').save(os.path.join(out, 'ui', f'{name}.png'))
     objects = sorted(f[:-4] for f in os.listdir(src)
-                     if f.endswith('.png') and (f.startswith(('unit_', 'res_')) or f[:-4] in ('hut', 'fortress', 'town', 'walls', 'mine')))
+                     if f.endswith('.png') and (f.startswith(('unit_', 'res_', 'icon_', 'citizen_')) or f[:-4] in ('hut', 'fortress', 'town', 'walls', 'mine')))
     if objects:
         os.makedirs(os.path.join(out, 'objects'), exist_ok=True)
         for name in objects:

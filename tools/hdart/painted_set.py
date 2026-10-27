@@ -9,6 +9,7 @@ Usage: python3 painted_set.py [OUTPUT_DIR] [OBJECTS_DIR]     (defaults: assets/h
 With `print 1` in the style.txt next to the objects folder (the painted art folder), the set is drawn for a woodblock
 print map: no cast shadows, every unit and object inside a dark key line and a cream outline so it reads on any ground,
 units a little smaller, the flag and the shield marker drawn with key lines, and the city on a ring of light cleared earth.
+With icon_* and citizen_* objects, the city screen icons and citizens are drawn from them too.
 """
 
 import os
@@ -233,6 +234,22 @@ def print_unit(j):
     return img
 
 
+def small(name, width, height, key=2, cream=1):
+    """A city screen icon or citizen: the object fitted into width x height original pixels, in a key line and a cream
+    outline so it reads on the indigo panels and where the game draws them overlapping."""
+    img = np.zeros((height * S, width * S, 4), dtype=np.uint8)
+    pad = key + cream
+    fitted = style.fit(obj(name), width=width * S - 2 * pad, height=height * S - 2 * pad)
+    style.paste(img, fitted, width * S / 2, height * S - pad)
+    return outlined(img, key, cream)
+
+
+# city screen icons, 7x7 at (129 + 8(i & 3), 33 + 2(i & 4)); the eighth, at (153, 41), is the shield bonus
+ICONS = ['food', 'shield', 'trade', 'gold', 'science', 'unhappy', 'luxury']
+# city screen citizens, 8x16 at (8i, 128): happy, content and unhappy (two each), then the three specialists
+CITIZENS = ['happy_m', 'happy_f', 'content_m', 'content_f', 'unhappy_m', 'unhappy_f', 'entertainer', 'taxman', 'scientist']
+
+
 def print_mine():
     """The painted mine, a dug terrace with a headframe, inside a key line and a cream outline, filling a whole cell."""
     img = np.zeros((CELL, CELL, 4), dtype=np.uint8)
@@ -311,6 +328,12 @@ def sprites():
     yield 'SP257', 14 * 16 + 1, 113, '', icon('fortress', UNIT - 6)
     yield 'SP257', 15 * 16 + 1, 113, '', icon('hut', 44)
     yield 'SP257', 153, 41, '', up2(print_shield_bonus() if PRINT else o.shield_bonus())
+    if os.path.exists(os.path.join(OBJECTS, 'icon_food.png')):
+        for i, name in enumerate(ICONS):
+            yield 'SP257', 129 + 8 * (i & 3), 33 + 2 * (i & 4), '', small('icon_' + name, 7, 7, 1, 1)
+    if os.path.exists(os.path.join(OBJECTS, 'citizen_happy_m.png')):
+        for i, name in enumerate(CITIZENS):
+            yield 'SP257', 8 * i, 128, '', small('citizen_' + name, 8, 16)
     for i, direction in enumerate((1, 3, 5, 7)):
         yield 'SP257', 80 + i * 16, 128, '', up2(o.fog(direction))
     for i in range(8):

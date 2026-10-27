@@ -25,14 +25,14 @@ The code locations are where each file is loaded and cut, for checking details.
 | SP257 | sheet | Units, roads, railroads, rivers, irrigation, mines, pollution, resources, city, walls, fortress, hut, fog, explosions. Layout in [hd-art.md](hd-art.md#sheet-layout). | done |
 | SP299 | sheet + patterns | Coasts, grass background, interface patterns (stone 32x16 at 288,120; city screen 16x16 at 208,100), and the small sprites below. | patterns done, small sprites placeholder |
 
-Small sprites cut in `StartGameMenu.cs` (`F5_0000_1455_LoadBitmaps`), not yet painted:
+Small sprites cut in `StartGameMenu.cs` (`F5_0000_1455_LoadBitmaps`):
 
 | Sheet | Rectangle | Count | Use |
 | --- | --- | --- | --- |
 | SP299 | x = 160 + 42i, y = 142, 41x58 | 3 | portraits beside report boxes (spies, diplomats, travelers) (`MenuBoxDialog.cs`) |
 | SP257 | x = 160 + 7i, y = 0 / 16 / 32, 7x15 | 3 rows of 20 | small palace parts, three styles (`GameEngine.cs`) |
-| SP257 | x = 129 + 8(i & 3), y = 33 + 2(i & 4), 7x7 | 8 | city screen resource icons: food, shields, trade, and the rest (`CityWorker.cs`) |
-| SP257 | x = 8i, y = 128, 8x16 | 9 | city screen citizens, ancient and modern, and the disorder sign (`CityWorker.cs`) |
+| SP257 | x = 129 + 8(i & 3), y = 33 + 2(i & 4), 7x7 | 8 | city screen icons: food, shield, trade, gold, science, unhappy face, luxury, and the shield bonus (`CityWorker.cs`); painted in the ukiyo-e theme |
+| SP257 | x = 8i, y = 128, 8x16 | 9 | city screen citizens: happy, content and unhappy (a man and a woman each), entertainer, tax collector, scientist (`CityWorker.cs`); painted in the ukiyo-e theme |
 | SP257 | 176, 128, 20x9 | 1 | figure on the news screen (`News.cs`) |
 | SP257 | 48, 32, 16x16 | 1 | marker in the city screen's lower panel (`CityWorker.cs`) |
 
