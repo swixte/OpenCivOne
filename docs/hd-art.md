@@ -34,7 +34,10 @@ With an `hd/painted` folder, the map is no longer built from terrain tiles. The 
 - the sea is shallow and teal near land, deep away from it, and breaks into surf along the coast;
 - rivers wind through river cells and on into the sea;
 - trees, jungle, hills and mountains are scattered over their cells and reach into the cells around them, back to front, with soft shadows;
-- drifting cloud shadows and a colour grade lie over everything.
+- drifting cloud shadows and a colour grade lie over everything;
+- the sea and rivers move, as the original game's palette-cycled water did: a slow swell on the sea and a ripple
+  running along rivers, about ten frames a second. Trees, peaks, units and cities on the water stay still. Set
+  `"AnimateWater": false` in `~/Games/OpenCivOne/Preferences.json` to keep the water still.
 
 Each map cell shows its square of that painting. Irrigation, roads, mines, resources, huts, cities, units and fog borders are drawn over it as before, from the HD set or the original sprites. The world is painted in chunks of 8x8 cells: the chunk a cell needs is painted when it is first shown (about a fifth of a second), and from then on a background thread paints the rest of the world on one core, nearest chunks first, so scrolling rarely waits. A chunk is painted again when the terrain under it changes. The same cell always gets the same trees and peaks.
 

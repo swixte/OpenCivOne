@@ -523,6 +523,8 @@ namespace OpenCivOne.Graphics
 			int x0 = cx * size, y0 = cy * size;
 			float k = this.cell / 64f;
 			float[] r = new float[size * size], g = new float[size * size], b = new float[size * size];
+			// which pixels are open water (1) or river (2): they move when the screen is shown (see GBitmap.SeaAlpha)
+			byte[] water = new byte[size * size];
 
 			float warpAmount = 14 * k, groundRadius = 13 * k, coastRadius = 5 * k, surfRadius = 24 * k, depthRadius = 70 * k;
 			float riverWidth = 3.6f * k, bankWidth = 6.5f * k;
@@ -623,6 +625,7 @@ namespace OpenCivOne.Graphics
 						r[i] = (wr * (1 - surf)) + (210 * surf);
 						g[i] = (wg * (1 - surf)) + (216 * surf);
 						b[i] = (wb * (1 - surf)) + (205 * surf);
+						water[i] = 1;
 					}
 
 					// rivers wind through river cells and on into the sea
@@ -640,6 +643,7 @@ namespace OpenCivOne.Graphics
 								r[i] = ((shallow.R[si] * 0.7f) + 18) * light;
 								g[i] = ((shallow.G[si] * 0.7f) + 21) * light;
 								b[i] = ((shallow.B[si] * 0.7f) + 21) * light;
+								water[i] = 2;
 							}
 							else
 							{
@@ -652,7 +656,7 @@ namespace OpenCivOne.Graphics
 				}
 			});
 
-			this.PaintScenery(cx, cy, r, g, b, size);
+			this.PaintScenery(cx, cy, r, g, b, water, size);
 
 			// light: drifting cloud shadows and a slight warm grade on the highlights
 			uint[] pixels = new uint[size * size];
@@ -670,7 +674,8 @@ namespace OpenCivOne.Graphics
 					float rr = (r[i] * scale) + (6 * l) - (2 * (1 - l));
 					float gg2 = (g[i] * scale) + (2 * l);
 					float bb = (b[i] * scale) - (6 * l) + (4 * (1 - l));
-					pixels[i] = 0xff000000u | ((uint)Math.Clamp(rr, 0, 255) << 16) | ((uint)Math.Clamp(gg2, 0, 255) << 8) | (uint)Math.Clamp(bb, 0, 255);
+					uint alpha = water[i] == 1 ? GBitmap.SeaAlpha : water[i] == 2 ? GBitmap.RiverAlpha : 0xff000000u;
+					pixels[i] = alpha | ((uint)Math.Clamp(rr, 0, 255) << 16) | ((uint)Math.Clamp(gg2, 0, 255) << 8) | (uint)Math.Clamp(bb, 0, 255);
 				}
 			});
 
@@ -783,7 +788,7 @@ namespace OpenCivOne.Graphics
 		/// <summary>
 		/// Trees, hills and mountains of the cells around a chunk, back to front, each with a soft shadow to the lower right
 		/// </summary>
-		private void PaintScenery(int cx, int cy, float[] r, float[] g, float[] b, int size)
+		private void PaintScenery(int cx, int cy, float[] r, float[] g, float[] b, byte[] water, int size)
 		{
 			List<Placement> placements = new List<Placement>();
 			float k = this.cell / 64f;
@@ -839,7 +844,7 @@ namespace OpenCivOne.Graphics
 			placements.Sort((a, c) => a.Base.CompareTo(c.Base));
 
 			foreach (Placement p in placements)
-				DrawSprite(p, r, g, b, size, x0, y0);
+				DrawSprite(p, r, g, b, water, size, x0, y0);
 		}
 
 		private static float Range(Random random, float from, float to)
@@ -861,7 +866,7 @@ namespace OpenCivOne.Graphics
 			placements.Add(new Placement { Sprite = sprite, X = x - (width / 2), Base = baseY, Width = width, Height = height, Flip = flip });
 		}
 
-		private static void DrawSprite(Placement p, float[] r, float[] g, float[] b, int size, int x0, int y0)
+		private static void DrawSprite(Placement p, float[] r, float[] g, float[] b, byte[] water, int size, int x0, int y0)
 		{
 			Sprite s = p.Sprite;
 			float top = p.Base - p.Height;
@@ -888,6 +893,10 @@ namespace OpenCivOne.Graphics
 					r[i] = sr + (r[i] * (1 - sa));
 					g[i] = sg + (g[i] * (1 - sa));
 					b[i] = sb + (b[i] * (1 - sa));
+
+					// water under a tree or peak stays still
+					if (sa > 0.35f)
+						water[i] = 0;
 				}
 			}
 		}

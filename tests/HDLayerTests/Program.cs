@@ -478,6 +478,33 @@ GBitmap other4()
 	var other = new GBitmap(320, 200);
 	other.DrawPaintedCell(0, 0, new PaintedMap(32, (x, y) => 10), 0, 0);
 	Check(!HasHD(other), "painted: a painted map of the wrong cell size is ignored");
+
+	// moving water: the painting marks open water and rivers, the screen moves them when shown
+	int Marked(uint[] c, uint kind) => c.Count(p => (p & 0xff000000) == kind);
+	Check(Marked(Cell(painted, 40, 40), GBitmap.SeaAlpha) == 64 * 64, "water: open sea is marked as sea");
+	Check(Marked(Cell(painted, 13, 6), GBitmap.SeaAlpha) + Marked(Cell(painted, 13, 6), GBitmap.RiverAlpha) == 0, "water: a mountain cell has no water");
+	Check(Marked(Cell(painted, 9, 7), GBitmap.RiverAlpha) > 0, "water: a river cell has river water");
+	var sea = new GBitmap(320, 200);
+	sea.DrawPaintedCell(96, 24, painted, 40, 40);
+	IntPtr seaMem = Marshal.AllocHGlobal(w * h * 4);
+	GBitmap.AnimateWater = false;
+	sea.WriteScaledPixels(seaMem, w * 4);
+	int[] still = new int[w * h];
+	Marshal.Copy(seaMem, still, 0, still.Length);
+	uint[] seaCell = Cell(painted, 40, 40);
+	bool stillSame = true;
+	for (int y = 0; y < 64; y++)
+		for (int x = 0; x < 64; x++)
+			stillSame &= ((uint)still[(24 * 4 + y) * w + 96 * 4 + x] & 0xffffff) == (seaCell[y * 64 + x] & 0xffffff);
+	Check(sea.ShowsWater && stillSame, "water: a screen with sea shows it, still when moving water is off");
+	GBitmap.AnimateWater = true;
+	sea.WriteScaledPixels(seaMem, w * 4);
+	Marshal.FreeHGlobal(seaMem);
+	Check(sea.ShowsWater, "water: a screen with sea shows it when moving water is on");
+	IntPtr otherMem = Marshal.AllocHGlobal(w * h * 4);
+	other.WriteScaledPixels(otherMem, w * 4);
+	Marshal.FreeHGlobal(otherMem);
+	Check(!other.ShowsWater, "water: a screen without painted water does not");
 	GBitmap.HDScale = 2;
 
 	string? output = Environment.GetEnvironmentVariable("PAINTED_PREVIEW");
@@ -490,7 +517,7 @@ GBitmap other4()
 				uint[] c = Cell(painted, cx + 4, cy + 2);
 				for (int y = 0; y < 64; y++)
 					for (int x = 0; x < 64; x++)
-						image.SetPixel(cx * 64 + x, cy * 64 + y, new SKColor(c[y * 64 + x]));
+						image.SetPixel(cx * 64 + x, cy * 64 + y, new SKColor(c[y * 64 + x] | 0xff000000));
 			}
 		using var file = File.OpenWrite(output);
 		image.Encode(file, SKEncodedImageFormat.Png, 100);

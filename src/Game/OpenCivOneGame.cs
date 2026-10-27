@@ -166,6 +166,8 @@ namespace OpenCivOne
 			string upscalePath = $"{hdPath}{separator}upscale.txt";
 			GBitmap.SmoothUpscale = File.Exists(upscalePath) && File.ReadAllText(upscalePath).Trim().ToLowerInvariant() == "scale2x";
 
+			GBitmap.AnimateWater = this.globalPreferences.AnimateWater;
+
 			// A painted map (hd/painted) replaces the terrain tiles of map cells with one painting of the whole world
 			this.paintedMap = PaintedMap.Load($"{hdPath}{separator}painted", 16 * GBitmap.HDScale,
 				(x, y) => (int)this.mapManagement!.GetTerrainType(x, y));

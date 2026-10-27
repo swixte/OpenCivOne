@@ -253,6 +253,25 @@ namespace OpenCivOne.Graphics
 		// HD pixels of painted boxes: the shade in red and blue, like a key color, marked by this alpha
 		private const uint MaterialAlpha = 0xfe000000;
 
+		// Painted water: HD pixels the painted map marks as open water or river move when the screen is shown.
+		// Anything drawn over them replaces the mark, so units, cities and trees on the water stay still.
+		public const uint SeaAlpha = 0xfd000000;
+		public const uint RiverAlpha = 0xfc000000;
+
+		// one loop of the water's movement, in milliseconds
+		private const float WaterPeriod = 1800f;
+		private static readonly System.Diagnostics.Stopwatch _waterClock = System.Diagnostics.Stopwatch.StartNew();
+
+		/// <summary>
+		/// Painted water moves; when false it is drawn still
+		/// </summary>
+		public static bool AnimateWater { get; set; } = true;
+
+		/// <summary>
+		/// The last WriteScaledPixels showed painted water, so the screen has to be shown again for it to move
+		/// </summary>
+		public bool ShowsWater { get; private set; } = false;
+
 		/// <summary>
 		/// Color of a painted box pixel: the box's palette color, toned down to the painted look (half desaturated,
 		/// a little darker and warmer, so the bright EGA colors keep their hue but sit with the art), and shaded by the grain
@@ -907,6 +926,9 @@ namespace OpenCivOne.Graphics
 			for (int c = 0; c < 256; c++)
 				palette[c] = (this._useUIMaterial && _uiMaterial != null) ? GradeColor(this.oPalette[(byte)c].ToUInt32()) : this.oPalette[(byte)c].ToUInt32();
 
+			WaterFrame? water = (AnimateWater && this._hdPixels != null) ? new WaterFrame(hdWidth, this.iHeight * HDScale) : null;
+			bool showsWater = false;
+
 			for (int i = 0; i < this.iHeight; i++)
 			{
 				for (int j = 0; j < this.iWidth; j++)
@@ -923,8 +945,19 @@ namespace OpenCivOne.Graphics
 
 							if (isHD)
 							{
+								uint hd = this._hdPixels![hdAddress + (k * hdWidth) + l];
+								uint kind = hd & 0xff000000;
+
+								if (kind == SeaAlpha || kind == RiverAlpha)
+								{
+									showsWater = true;
+
+									if (water != null)
+										hd = water.Pixel(this._hdPixels, (j * HDScale) + l, (i * HDScale) + k, hd, kind);
+								}
+
 								// keep the alpha of the palette color, so HD pixels are presented the same way as indexed ones
-								pixel = (ResolveHDColor(this._hdPixels![hdAddress + (k * hdWidth) + l], color) & 0xffffff) | (color & 0xff000000);
+								pixel = (ResolveHDColor(hd, color) & 0xffffff) | (color & 0xff000000);
 							}
 
 							rows[(k * hdWidth) + (j * HDScale) + l] = (int)pixel;
@@ -939,6 +972,108 @@ namespace OpenCivOne.Graphics
 					Marshal.Copy(rows, k * hdWidth, destination, hdWidth);
 					destination += stride;
 				}
+			}
+
+			this.ShowsWater = showsWater;
+		}
+
+		/// <summary>
+		/// One frame of moving water: a slow rolling swell on the open sea and a short ripple running along rivers, each
+		/// moving the painted water a few pixels, with a soft shimmer. The waves are sums of sines, kept in tables per
+		/// row, column and diagonal, so a frame costs little more than a still one.
+		/// </summary>
+		private class WaterFrame
+		{
+			private readonly int width, height;
+			private readonly int[] seaX, seaY, riverX, riverY;
+			private readonly float[] lightRowSin, lightRowCos, lightColumnSin, lightColumnCos, riverLight;
+
+			public WaterFrame(int width, int height)
+			{
+				this.width = width;
+				this.height = height;
+
+				float phase = (float)(_waterClock.Elapsed.TotalMilliseconds % WaterPeriod) / WaterPeriod * 2 * MathF.PI;
+				// the waves were drawn for 4x; at 2x they are half as big
+				float s = HDScale / 4f;
+
+				this.seaX = new int[height];
+				this.lightRowSin = new float[height];
+				this.lightRowCos = new float[height];
+
+				for (int y = 0; y < height; y++)
+				{
+					float yy = y / s;
+					this.seaX[y] = (int)MathF.Round(((2.0f * MathF.Sin((yy / 23f) + phase)) + (0.7f * MathF.Sin((yy / 7f) - (2 * phase)))) * s);
+					this.lightRowSin[y] = MathF.Sin(yy / 29f);
+					this.lightRowCos[y] = MathF.Cos(yy / 29f);
+				}
+
+				this.seaY = new int[width];
+				this.lightColumnSin = new float[width];
+				this.lightColumnCos = new float[width];
+
+				for (int x = 0; x < width; x++)
+				{
+					float xx = x / s;
+					this.seaY[x] = (int)MathF.Round(((1.5f * MathF.Cos((xx / 31f) + phase)) + (0.5f * MathF.Cos((xx / 9f) + (2 * phase)))) * s);
+					this.lightColumnSin[x] = MathF.Sin((xx / 17f) - (2 * phase));
+					this.lightColumnCos[x] = MathF.Cos((xx / 17f) - (2 * phase));
+				}
+
+				// rivers: indexed by x + y and by x - y + height
+				this.riverX = new int[width + height];
+				this.riverY = new int[width + height];
+				this.riverLight = new float[width + height];
+
+				for (int d = 0; d < width + height; d++)
+				{
+					float dd = d / s;
+					this.riverX[d] = (int)MathF.Round(MathF.Sin((dd / 5f) - (2 * phase)) * s * 1.2f);
+					this.riverLight[d] = 0.94f + (0.08f * MathF.Sin((dd / 9f) - (2 * phase)));
+				}
+
+				for (int d = 0; d < width + height; d++)
+					this.riverY[d] = (int)MathF.Round(MathF.Cos(((d - height) / s / 5f) - (2 * phase)) * s * 1.2f);
+			}
+
+			/// <summary>
+			/// The water pixel at x, y in this frame: the pixel the wave has moved there, if that is the same kind of water
+			/// </summary>
+			public uint Pixel(uint[] pixels, int x, int y, uint own, uint kind)
+			{
+				int sx, sy;
+				float light;
+
+				if (kind == SeaAlpha)
+				{
+					sx = x + this.seaX[y];
+					sy = y + this.seaY[x];
+					// sin(a + b) from the row and column tables
+					light = 0.93f + (0.07f * ((this.lightColumnSin[x] * this.lightRowCos[y]) + (this.lightColumnCos[x] * this.lightRowSin[y])));
+				}
+				else
+				{
+					sx = x + this.riverX[x + y];
+					sy = y + this.riverY[x - y + this.height];
+					light = this.riverLight[x + y];
+				}
+
+				uint color = own;
+
+				if (sx >= 0 && sx < this.width && sy >= 0 && sy < this.height)
+				{
+					uint moved = pixels[(sy * this.width) + sx];
+
+					if ((moved & 0xff000000) == kind)
+						color = moved;
+				}
+
+				uint red = (uint)Math.Clamp(((color >> 16) & 0xff) * light, 0, 255);
+				uint green = (uint)Math.Clamp(((color >> 8) & 0xff) * light, 0, 255);
+				uint blue = (uint)Math.Clamp((color & 0xff) * light, 0, 255);
+
+				return 0xff000000 | (red << 16) | (green << 8) | blue;
 			}
 		}
 
@@ -1147,6 +1282,9 @@ namespace OpenCivOne.Graphics
 		{
 			if ((color & 0xff000000) == MaterialAlpha)
 				return MaterialColor(color, indexColor);
+
+			if ((color & 0xff000000) == SeaAlpha || (color & 0xff000000) == RiverAlpha)
+				return color | 0xff000000;
 
 			return IsKeyColor(color) ? ShadeColor(indexColor, color) : BlendColor(color, indexColor);
 		}

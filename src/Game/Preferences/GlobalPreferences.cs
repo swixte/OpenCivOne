@@ -24,6 +24,11 @@ namespace OpenCivOne
 		/// </summary>
 		public string? Theme { get; set; } = null;
 
+		/// <summary>
+		/// Painted water (sea and rivers) moves
+		/// </summary>
+		public bool AnimateWater { get; set; } = true;
+
 		[XmlIgnore]
 		[JsonIgnore]
 		public bool SaveGameWarning { get => this._saveGameWarning; set => this._saveGameWarning = value; }

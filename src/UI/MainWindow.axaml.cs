@@ -39,6 +39,10 @@ namespace OpenCivOne.UI
 		private int bitmapIndex = 0;
 		private WriteableBitmap[] bitmaps = new WriteableBitmap[2];
 
+		// painted water moves at about ten frames a second, so screens that show it are drawn again that often
+		private readonly System.Diagnostics.Stopwatch waterClock = System.Diagnostics.Stopwatch.StartNew();
+		private const int WaterFrameMilliseconds = 100;
+
 		public MainWindow()
 		{
 			InitializeComponent();
@@ -653,6 +657,7 @@ namespace OpenCivOne.UI
 
 					int iNewScreenCount = 0;
 					bool bNeedsRedraw = false;
+					bool waterDue = GBitmap.AnimateWater && this.waterClock.ElapsedMilliseconds >= WaterFrameMilliseconds;
 
 					for (int i = 0; i < this.game.Graphics.Screens.Count; i++)
 					{
@@ -660,7 +665,7 @@ namespace OpenCivOne.UI
 						{
 							iNewScreenCount++;
 
-							if (this.game.Graphics.Screens[i].Value.Modified)
+							if (this.game.Graphics.Screens[i].Value.Modified || (waterDue && this.game.Graphics.Screens[i].Value.ShowsWater))
 								bNeedsRedraw = true;
 						}
 					}
@@ -674,6 +679,7 @@ namespace OpenCivOne.UI
 
 					if (bNeedsRedraw || forceRedraw)
 					{
+						this.waterClock.Restart();
 						WriteableBitmap currentBitmap = this.bitmaps[this.bitmapIndex];
 						int scale = GBitmap.HDScale;
 						int iPixelByteSize = 4;
