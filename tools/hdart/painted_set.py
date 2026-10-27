@@ -109,6 +109,108 @@ def unit(j):
     return img
 
 
+CELL = 16 * S
+PY, PX = np.mgrid[0:CELL, 0:CELL] + 0.5
+
+
+def rgba(hexcolor, alpha=255):
+    h = hexcolor.lstrip('#')
+    return np.array([int(h[i:i + 2], 16) for i in (0, 2, 4)] + [alpha], dtype=np.float64)
+
+
+def smooth_noise(seed, cells):
+    """Smooth noise in [0, 1] over the cell, `cells` features across."""
+    rng = np.random.default_rng(seed)
+    small = Image.fromarray(np.rint(rng.random((cells + 1, cells + 1)) * 255).astype(np.uint8))
+    return np.asarray(small.resize((CELL, CELL), Image.BICUBIC), dtype=np.float64) / 255
+
+
+def segment(direction):
+    """Distance from each pixel to the line from the cell centre toward a direction, and the position along it."""
+    dx, dy = o.DIRS[direction]
+    c = CELL / 2
+    ex, ey = c + dx * (CELL / 2 + 4), c + dy * (CELL / 2 + 4)
+    vx, vy = ex - c, ey - c
+    length2 = vx * vx + vy * vy
+    t = np.clip(((PX - c) * vx + (PY - c) * vy) / length2, 0, 1)
+    d = np.hypot(PX - (c + t * vx), PY - (c + t * vy))
+    return d, t * np.sqrt(length2)
+
+
+def paint(img, mask, color):
+    """Paints color (RGBA, alpha 0..255) where mask (0..1) is set, over what is there."""
+    a = (mask * color[3] / 255)[..., None]
+    out = img.astype(np.float64)
+    out[..., :3] = out[..., :3] * (1 - a) + color[:3] * a
+    out[..., 3:] = np.maximum(out[..., 3:], a * 255)
+    return out
+
+
+def finish(img):
+    return np.rint(np.clip(img, 0, 255)).astype(np.uint8)
+
+
+def print_road(direction):
+    """A thin pale dirt road with fine dark edges, slightly wavering."""
+    img = np.zeros((CELL, CELL, 4))
+    d, along = segment(direction)
+    d = d + np.sin(along / 7 + direction) * 0.7
+    img = paint(img, np.clip(4.4 - d, 0, 1), rgba('#4a3a28', 210))
+    img = paint(img, np.clip(3.3 - d, 0, 1), rgba('#e6d6ae'))
+    return finish(img)
+
+
+def print_railroad(direction):
+    """A thin dark railway: two fine rails on sleepers."""
+    img = np.zeros((CELL, CELL, 4))
+    d, along = segment(direction)
+    sleepers = (np.abs((along % 5) - 2.5) < 0.9) & (d < 4.5)
+    img = paint(img, sleepers.astype(np.float64), rgba('#5a3e24', 230))
+    rails = np.clip(1.1 - np.abs(d - 2.2), 0, 1)
+    img = paint(img, rails, rgba('#26221e'))
+    return finish(img)
+
+
+def print_irrigation():
+    """Irrigated fields: a patchwork of parcels with thin dikes and a bright channel, fading out at the cell edge."""
+    rng = np.random.default_rng(811)
+    seeds = rng.random((6, 2)) * CELL
+    dist = np.stack([np.hypot(PX - x, PY - y) for x, y in seeds])
+    order = np.sort(dist, 0)
+    nearest = np.argmin(dist, 0)
+    border = order[1] - order[0]
+    colors = [rgba(c) for c in ('#8fa055', '#c8a85a', '#a9b572', '#9a8a52', '#7f9a4a', '#bfae66')]
+    img = np.zeros((CELL, CELL, 4))
+    edge = np.minimum(np.minimum(PX, CELL - PX), np.minimum(PY, CELL - PY))
+    fade = np.clip((edge - 2) / 7, 0, 1)
+    for i, c in enumerate(colors):
+        # furrows running across each parcel
+        angle = rng.random() * np.pi
+        furrow = 0.86 + 0.14 * np.sin((PX * np.cos(angle) + PY * np.sin(angle)) / 1.3)
+        img = paint(img, (nearest == i) * fade, c * np.array([1, 1, 1, 0.8]))
+        img[..., :3] = np.where(((nearest == i) & (fade > 0))[..., None], img[..., :3] * furrow[..., None], img[..., :3])
+    img = paint(img, np.clip(1.6 - border, 0, 1) * fade, rgba('#4a3a28', 200))
+    # the channel meets itself at the cell edges, so neighbouring fields join up
+    channel = np.abs(PY - (CELL / 2 + np.sin(PX / CELL * 2 * np.pi) * 4))
+    img = paint(img, np.clip(2.6 - channel, 0, 1) * fade, rgba('#2c5f96'))
+    img = paint(img, np.clip(1.5 - channel, 0, 1) * fade, rgba('#5fa0d8'))
+    return finish(img)
+
+
+def print_pollution():
+    """Smog: grey-brown blotches with a fine key line."""
+    edge = np.minimum(np.minimum(PX, CELL - PX), np.minimum(PY, CELL - PY))
+    n = (smooth_noise(821, 4) * 0.7 + smooth_noise(822, 9) * 0.3) * np.clip(edge / 12, 0, 1) ** 0.5
+    blot = np.clip((n - 0.5) / 0.04, 0, 1)
+    img = np.zeros((CELL, CELL, 4))
+    img = paint(img, blot, rgba('#6b6256', 200))
+    shade = np.clip((n - 0.62) / 0.05, 0, 1)
+    img = paint(img, shade, rgba('#4c443a', 200))
+    line = np.clip(1 - np.abs(n - 0.5) / 0.012, 0, 1)
+    img = paint(img, line, rgba('#2a2420', 230))
+    return finish(img)
+
+
 def print_flag():
     """A small flag in the player's colors with key lines, on a dark pole, for the top left of a unit."""
     flag = c.Sprite(UNIT, UNIT, u.M)
@@ -129,6 +231,14 @@ def print_unit(j):
     shown = f[..., 3] > 0
     img[shown] = f[shown]
     return img
+
+
+def print_mine():
+    """The painted mine, a dug terrace with a headframe, inside a key line and a cream outline, filling a whole cell."""
+    img = np.zeros((CELL, CELL, 4), dtype=np.uint8)
+    fitted = style.fit(obj('mine'), width=CELL - 16, height=CELL - 16)
+    style.paste(img, fitted, CELL / 2, CELL - 8)
+    return outlined(img)
 
 
 def print_shield_bonus():
@@ -188,11 +298,12 @@ def city():
 def sprites():
     """Yields (sheet, x, y, suffix, image) for every sprite of the set."""
     for i in range(8):
-        yield 'SP257', i * 16, 48, '', up2(o.road(i + 1))
-        yield 'SP257', 128 + i * 16, 96, '', up2(o.railroad(i + 1))
-    yield 'SP257', 64, 32, '', up2(o.irrigation())
-    yield 'SP257', 80, 32, '', up2(o.mine())
-    yield 'SP257', 96, 32, '', up2(o.pollution())
+        yield 'SP257', i * 16, 48, '', print_road(i + 1) if PRINT else up2(o.road(i + 1))
+        yield 'SP257', 128 + i * 16, 96, '', print_railroad(i + 1) if PRINT else up2(o.railroad(i + 1))
+    yield 'SP257', 64, 32, '', print_irrigation() if PRINT else up2(o.irrigation())
+    mine = os.path.exists(os.path.join(OBJECTS, 'mine.png'))
+    yield 'SP257', 80, 32, '', print_mine() if PRINT and mine else up2(o.mine())
+    yield 'SP257', 96, 32, '', print_pollution() if PRINT else up2(o.pollution())
     for i, name in enumerate(RESOURCES):
         yield 'SP257', i * 16 + 1, 113, '', icon('res_' + name, 34, UNIT - 10)
     yield 'SP257', 12 * 16 + 1, 113, f'_t{CITY_UP // S}_k0-5', print_city() if PRINT else city()

@@ -4,7 +4,7 @@ Input folder (as written by generate_painted.py):
   tex_NAME.png    ground textures: grass, plains, desert, tundra, snow, ocean, shallow, swamp, floor, and optionally
                   forest, hills, mountains, jungle (a terrain's own ground)
   SET.png         sprite sheets on flat magenta: trees, jungle (jungle_green.png wins), hills, mountains
-  unit_*.png, res_*.png, hut.png, fortress.png, town.png, walls.png
+  unit_*.png, res_*.png, hut.png, fortress.png, town.png, walls.png, mine.png (optional)
                   single objects on flat magenta, for the 4x sprite set (painted_set.py)
   ui_grain.png, ui_stone.png, ui_slate.png
                   interface textures, for the 4x sprite set
@@ -110,7 +110,7 @@ def main(src, out):
             img = Image.open(path).convert('RGB')
             Image.fromarray(style.seamless(img, img.width)).convert('RGB').save(os.path.join(out, 'ui', f'{name}.png'))
     objects = sorted(f[:-4] for f in os.listdir(src)
-                     if f.endswith('.png') and (f.startswith(('unit_', 'res_')) or f[:-4] in ('hut', 'fortress', 'town', 'walls')))
+                     if f.endswith('.png') and (f.startswith(('unit_', 'res_')) or f[:-4] in ('hut', 'fortress', 'town', 'walls', 'mine')))
     if objects:
         os.makedirs(os.path.join(out, 'objects'), exist_ok=True)
         for name in objects:

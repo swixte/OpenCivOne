@@ -299,5 +299,12 @@
    "refs/objects/town.jpg",
    "refs/objects/city-grass.jpg"
   ]
+ },
+ "mine": {
+  "prompt": "Redraw the mine shown in the first reference image as one clean game piece, in exactly its woodblock drawing and colours, seen from the same high three-quarter angle, larger and crisper: a small dark terrace of dug earth and spoil with a timber headframe over a shaft and a little mine cart. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image; no ground under it, no cast shadow, no outline around it, no flag, no text, no frame.",
+  "refs": [
+   "refs/objects/mine.jpg",
+   "refs/v5-screen.jpg"
+  ]
  }
 }
