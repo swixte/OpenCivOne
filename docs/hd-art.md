@@ -57,11 +57,14 @@ On the painted map the city size is written in the top left corner of the city, 
 
 An optional `style.txt` in the painted art folder (lines of `name value`) changes how the art is painted:
 
-- `print 1` paints the map like a woodblock print: each terrain is a crisp area with an organic edge instead of a soft
-  blend; forest and jungle are masses of canopy (no scattered trees) with a fine key line around them, other terrains
-  fade into each other over a few pixels, the coast gets a key line, a cream beach and a band of cream foam, and nothing
-  casts a shadow. Grassland gets more, smaller trees. Terrain shapes have rounded corners: each pixel takes the terrain
-  that the nearby cells vote for, weighted by distance, so forests, ice and coasts do not show the square cells.
+- `print 1` paints the map like a woodblock print: each terrain is an area with an organic edge and rounded corners
+  (each pixel takes the terrain that the nearby cells vote for, weighted by distance, so the square cells do not show),
+  and neighbouring terrains fade into each other over a few pixels. Forest and jungle are built from tree crowns
+  packed edge to edge wherever the rounded terrain is wood, so the crowns make the scalloped edge of the wood. The coast
+  is a crisp ink line with a narrow cream beach inside it; the sea lightens towards the shore in a soft gradient that
+  follows the coastline, with one broken wave line along it. Rivers flow in smooth curves from side to side of their
+  cells, meandering gently, as an even ribbon inside inked banks, thin at their source. Scenery never covers the sea,
+  the feet of hills and mountains fade into the ground, nothing casts a shadow, and grassland gets more, smaller trees.
 - `pattern`, `seapattern`: how much larger the land and sea textures are drawn (smaller than 1 draws them smaller);
   `pattern forest 1.3` sets one terrain's own (by its texture name).
 - `paper`: how much colours lean towards cream paper.
