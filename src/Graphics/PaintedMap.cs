@@ -775,6 +775,44 @@ namespace OpenCivOne.Graphics
 		/// land side and a band of cream foam on the water side; rivers a light core inside dark banks. Textures are drawn
 		/// `pattern` times larger, and colours lean towards the paper by `paper`.
 		/// </summary>
+		/// <summary>
+		/// The terrain shown at a position in cells: each cell around it votes for its terrain with a weight that falls
+		/// off with distance from its centre, and the cell the position is in counts a little more. Edges stay where the
+		/// cells meet, but corners are rounded off, so the cell grid does not show in the shapes of forests, coasts and ice.
+		/// </summary>
+		private int RoundedTerrain(TerrainGrid grid, float fx, float fy)
+		{
+			const float Radius = 1.25f, OwnCell = 1.3f;
+			int ci = (int)MathF.Floor(fx), cj = (int)MathF.Floor(fy);
+			Span<float> votes = stackalloc float[16];
+			int best = -1;
+			float bestVote = 0;
+
+			for (int j = cj - 1; j <= cj + 1; j++)
+			{
+				for (int i = ci - 1; i <= ci + 1; i++)
+				{
+					float dx = (fx - (i + 0.5f)) / Radius, dy = (fy - (j + 0.5f)) / Radius;
+					float w = 1 - (dx * dx) - (dy * dy);
+
+					if (w <= 0)
+						continue;
+
+					int terrain = grid.At(i, j);
+					terrain = terrain == River ? Grassland : terrain;
+					float vote = votes[terrain] += w * w * ((i == ci && j == cj) ? OwnCell : 1);
+
+					if (vote > bestVote)
+					{
+						bestVote = vote;
+						best = terrain;
+					}
+				}
+			}
+
+			return best;
+		}
+
 		private uint[] PaintPrint(int cx, int cy, bool parallel)
 		{
 			int size = ChunkCells * this.cell;
@@ -804,9 +842,8 @@ namespace OpenCivOne.Graphics
 					float ox = ((this.Noise(wx, wy, 40 * k, 1) - 0.5f) * 2 * warpAmount) + ((this.Noise(wx, wy, 11 * k, 2) - 0.5f) * 0.5f * warpAmount);
 					float oy = ((this.Noise(wx, wy, 40 * k, 3) - 0.5f) * 2 * warpAmount) + ((this.Noise(wx, wy, 11 * k, 4) - 0.5f) * 0.5f * warpAmount);
 					float qx = wx + ox, qy = wy + oy;
-					int terrain = grid.At((int)MathF.Floor(qx / this.cell), (int)MathF.Floor(qy / this.cell));
 					int e = (ey * ext) + ex;
-					region[e] = terrain == River ? Grassland : terrain;
+					region[e] = this.RoundedTerrain(grid, qx / this.cell, qy / this.cell);
 					warpX[e] = qx;
 					warpY[e] = qy;
 				}

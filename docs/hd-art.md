@@ -60,7 +60,8 @@ An optional `style.txt` in the painted art folder (lines of `name value`) change
 - `print 1` paints the map like a woodblock print: each terrain is a crisp area with an organic edge instead of a soft
   blend; forest and jungle are masses of canopy (no scattered trees) with a fine key line around them, other terrains
   fade into each other over a few pixels, the coast gets a key line, a cream beach and a band of cream foam, and nothing
-  casts a shadow. Grassland gets more, smaller trees.
+  casts a shadow. Grassland gets more, smaller trees. Terrain shapes have rounded corners: each pixel takes the terrain
+  that the nearby cells vote for, weighted by distance, so forests, ice and coasts do not show the square cells.
 - `pattern`, `seapattern`: how much larger the land and sea textures are drawn (smaller than 1 draws them smaller);
   `pattern forest 1.3` sets one terrain's own (by its texture name).
 - `paper`: how much colours lean towards cream paper.
