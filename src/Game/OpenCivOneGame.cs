@@ -173,6 +173,14 @@ namespace OpenCivOne
 			this.paintedMap = PaintedMap.Load($"{hdPath}{separator}painted", 16 * GBitmap.HDScale,
 				(x, y) => (int)this.mapManagement!.GetTerrainType(x, y));
 
+			// a print paints resources and huts into the ground, with its trees and peaks
+			if (this.paintedMap != null)
+			{
+				this.paintedMap.FeatureAt = (x, y) =>
+					(this.mapManagement!.F0_2aea_1836_CellHasSpecialResource(x, y) ? PaintedMap.SpecialResource : 0) |
+					(this.mapManagement.F0_2aea_1894_CellHasMinorTribeHut(x, y, this.mapManagement.GetTerrainType(x, y)) ? PaintedMap.MinorTribeHut : 0);
+			}
+
 			#region Initialize Segments
 			this.CApi = new CAPI(this);
 			this.graphics = new GDriver(this);

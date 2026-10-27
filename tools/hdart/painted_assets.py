@@ -79,6 +79,27 @@ def cut_object(image, size=256):
     return img
 
 
+def river_strip(image, height=64, tint=(0.9, 1.0, 1.15)):
+    """A river strip for a print map, from a straight horizontal river painted on magenta: the band of water cut out
+    between its banks, its colour leaned towards the river blue, made to repeat along its length, `height` pixels
+    across. The renderer bends it along each river's course."""
+    rgba = key_out(image)
+    rows = np.nonzero(rgba[:, rgba.shape[1] // 4: 3 * rgba.shape[1] // 4, 3].mean(1) > 128)[0]
+    band = rgba[rows.min():rows.max() + 1]
+    # leave out the outermost columns, where the painting may fade at the image edge
+    margin = band.shape[1] // 20
+    band = band[:, margin:band.shape[1] - margin]
+    width = band.shape[1]
+    # repeat along the length: the last part fades into a copy of the first
+    overlap = width // 6
+    w = np.linspace(0, 1, overlap)[None, :, None]
+    band[:, width - overlap:] = band[:, width - overlap:] * (1 - w) + band[:, :overlap] * w
+    band = band[:, :width - overlap]
+    band[..., :3] = np.clip(band[..., :3] * np.array(tint), 0, 255)
+    img = Image.fromarray(np.rint(band).astype(np.uint8), 'RGBA')
+    return img.resize((max(1, round(img.width * height / img.height)), height), Image.LANCZOS)
+
+
 def main(src, out):
     os.makedirs(os.path.join(out, 'ground'), exist_ok=True)
     for name in TEXTURES:
@@ -109,6 +130,9 @@ def main(src, out):
             os.makedirs(os.path.join(out, 'ui'), exist_ok=True)
             img = Image.open(path).convert('RGB')
             Image.fromarray(style.seamless(img, img.width)).convert('RGB').save(os.path.join(out, 'ui', f'{name}.png'))
+    if os.path.exists(os.path.join(src, 'river_strip.png')):
+        river_strip(Image.open(os.path.join(src, 'river_strip.png'))).save(os.path.join(out, 'river.png'))
+        print('river strip')
     objects = sorted(f[:-4] for f in os.listdir(src)
                      if f.endswith('.png') and (f.startswith(('unit_', 'res_', 'icon_', 'citizen_', 'report_', 'news_')) or f[:-4] in ('hut', 'fortress', 'town', 'walls', 'mine')))
     if objects:

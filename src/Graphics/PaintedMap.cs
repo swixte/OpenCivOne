@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using SkiaSharp;
 
@@ -72,6 +73,15 @@ namespace OpenCivOne.Graphics
 		private readonly int worldHeight;
 		private readonly Dictionary<string, Texture> textures = new Dictionary<string, Texture>();
 		private readonly Dictionary<string, List<Sprite>> sprites = new Dictionary<string, List<Sprite>>();
+		// a print's resources (res_NAME) and huts (hut), painted into the map with its trees and peaks
+		private readonly Dictionary<string, Sprite> features = new Dictionary<string, Sprite>();
+		// a print's river: a straight painted strip (river.png), laid along each river's course
+		private Sprite? riverStrip = null;
+
+		// the resource of each terrain, by terrain id, as the objects are named
+		private static readonly string[] ResourceNames = { "oasis", "horses", "wheat", "pheasant", "coal", "gold", "caribou", "seal", "peat", "gems", "fish" };
+
+		public const int SpecialResource = 1, MinorTribeHut = 2;
 		private readonly Dictionary<(int X, int Y), Chunk> chunks = new Dictionary<(int X, int Y), Chunk>();
 
 		// The world is also painted on a background thread, nearest chunks first, so the map rarely waits for painting.
@@ -135,6 +145,8 @@ namespace OpenCivOne.Graphics
 			public bool Flip;
 			// hills and mountains in a print: the foot fades into the ground instead of ending in an edge
 			public bool FadeFoot;
+			// a resource of the sea, drawn over the water
+			public bool OnWater;
 		}
 
 		/// <param name="terrainAt">Terrain id (TerrainTypeEnum) of a map cell, x already wrapped and y inside the map</param>
@@ -147,6 +159,17 @@ namespace OpenCivOne.Graphics
 		}
 
 		public int CellSize => this.cell;
+
+		/// <summary>
+		/// What a map cell holds that a print paints into the ground: SpecialResource and MinorTribeHut flags; x already
+		/// wrapped and y inside the map
+		/// </summary>
+		public Func<int, int, int>? FeatureAt { get; set; }
+
+		/// <summary>
+		/// Resources and huts are painted into the map, so the game should not draw them over it
+		/// </summary>
+		public bool PaintsFeatures => this.print && this.FeatureAt != null && this.features.Count > 0;
 
 		/// <summary>
 		/// The art is painted like a woodblock print (print 1 in its style.txt); the city size then stands at the bottom left
@@ -193,6 +216,30 @@ namespace OpenCivOne.Graphics
 				}
 
 				map.sprites[set] = list;
+			}
+
+			string riverPath = Path.Combine(folder, "river.png");
+
+			if (File.Exists(riverPath))
+			{
+				using SKBitmap? image = SKBitmap.Decode(riverPath);
+
+				if (image != null)
+					map.riverStrip = LoadSprite(image);
+			}
+
+			string objects = Path.Combine(folder, "objects");
+
+			if (Directory.Exists(objects))
+			{
+				foreach (string name in ResourceNames.Select(n => "res_" + n).Append("hut"))
+				{
+					string path = Path.Combine(objects, name + ".png");
+					using SKBitmap? image = File.Exists(path) ? SKBitmap.Decode(path) : null;
+
+					if (image != null)
+						map.features[name] = LoadSprite(image);
+				}
 			}
 
 			string stylePath = Path.Combine(folder, "style.txt");
@@ -512,6 +559,9 @@ namespace OpenCivOne.Graphics
 				for (int x = (cx * ChunkCells) - 5; x < ((cx + 1) * ChunkCells) + 5; x++)
 				{
 					hash = (hash * 31) + this.Terrain(x, y);
+
+					if (this.PaintsFeatures)
+						hash = (hash * 7) + this.Feature(x, y);
 				}
 			}
 
@@ -521,6 +571,11 @@ namespace OpenCivOne.Graphics
 		private int WrapX(int x)
 		{
 			return ((x % MapWidth) + MapWidth) % MapWidth;
+		}
+
+		private int Feature(int x, int y)
+		{
+			return (this.FeatureAt == null || y < 0 || y >= MapHeight) ? 0 : this.FeatureAt(WrapX(x), y);
 		}
 
 		private int Terrain(int x, int y)
@@ -560,6 +615,11 @@ namespace OpenCivOne.Graphics
 			float a = Hash(x0, iy, seed), b = Hash(x1, iy, seed), c = Hash(x0, iy + 1, seed), d = Hash(x1, iy + 1, seed);
 
 			return a + ((b - a) * u) + ((c - a) * v) + ((a - b - c + d) * u * v);
+		}
+
+		private static float Lerp(float a, float b, float t)
+		{
+			return a + ((b - a) * t);
 		}
 
 		private static float Smooth(float edge0, float edge1, float x)
@@ -823,11 +883,17 @@ namespace OpenCivOne.Graphics
 		/// </summary>
 		private int PrintTerrain(TerrainGrid grid, float wx, float wy)
 		{
-			float k = this.cell / 64f, warpAmount = 22 * k;
-			float ox = ((this.Noise(wx, wy, 40 * k, 1) - 0.5f) * 2 * warpAmount) + ((this.Noise(wx, wy, 11 * k, 2) - 0.5f) * 0.5f * warpAmount);
-			float oy = ((this.Noise(wx, wy, 40 * k, 3) - 0.5f) * 2 * warpAmount) + ((this.Noise(wx, wy, 11 * k, 4) - 0.5f) * 0.5f * warpAmount);
+			this.PrintWarp(wx, wy, out float ox, out float oy);
 
 			return this.RoundedTerrain(grid, (wx + ox) / this.cell, (wy + oy) / this.cell);
+		}
+
+		// how far a print moves a pixel before looking up its terrain
+		private void PrintWarp(float wx, float wy, out float ox, out float oy)
+		{
+			float k = this.cell / 64f, warpAmount = 22 * k;
+			ox = ((this.Noise(wx, wy, 40 * k, 1) - 0.5f) * 2 * warpAmount) + ((this.Noise(wx, wy, 11 * k, 2) - 0.5f) * 0.5f * warpAmount);
+			oy = ((this.Noise(wx, wy, 40 * k, 3) - 0.5f) * 2 * warpAmount) + ((this.Noise(wx, wy, 11 * k, 4) - 0.5f) * 0.5f * warpAmount);
 		}
 
 		/// <summary>
@@ -835,11 +901,42 @@ namespace OpenCivOne.Graphics
 		/// </summary>
 		private static float[] WaterDistance(int[] region, int ext)
 		{
+			bool[] land = new bool[ext * ext];
+
+			for (int i = 0; i < land.Length; i++)
+				land[i] = region[i] != Water;
+
+			return ChamferDistance(land, ext);
+		}
+
+		/// <summary>
+		/// For each pixel of the region, about how far it is from the nearest pixel next to another terrain
+		/// </summary>
+		private static float[] BorderDistance(int[] region, int ext)
+		{
+			bool[] border = new bool[ext * ext];
+
+			for (int y = 0; y < ext; y++)
+			{
+				for (int x = 0; x < ext; x++)
+				{
+					int i = (y * ext) + x, own = region[i];
+					border[i] = (x > 0 && region[i - 1] != own) || (x < ext - 1 && region[i + 1] != own) ||
+						(y > 0 && region[i - ext] != own) || (y < ext - 1 && region[i + ext] != own);
+				}
+			}
+
+			return ChamferDistance(border, ext);
+		}
+
+		// distance from each pixel to the nearest seed pixel, by a two pass chamfer transform
+		private static float[] ChamferDistance(bool[] seeds, int ext)
+		{
 			const float Diagonal = 1.4142f;
 			float[] d = new float[ext * ext];
 
 			for (int i = 0; i < d.Length; i++)
-				d[i] = region[i] == Water ? float.MaxValue / 2 : 0;
+				d[i] = seeds[i] ? 0 : float.MaxValue / 2;
 
 			for (int y = 0; y < ext; y++)
 			{
@@ -886,23 +983,46 @@ namespace OpenCivOne.Graphics
 			Texture[] ground = Array.ConvertAll(this.groundParts, parts => this.TextureOr(parts[0].Name));
 			TerrainGrid grid = new TerrainGrid(this, cx, cy);
 
-			// pass 1: the terrain of every pixel (with a margin, for the lines), and the warped position
+			// pass 1: the terrain of every pixel (with a margin, for the lines and the shallows). The warp is smooth, so it is
+			// worked out every few pixels and blended in between.
+			const int WarpStep = 4;
+			int warpWidth = (ext / WarpStep) + 2;
+			float[] warpX = new float[warpWidth * warpWidth], warpY = new float[warpWidth * warpWidth];
+
+			Rows(warpWidth, parallel, gy =>
+			{
+				for (int gx = 0; gx < warpWidth; gx++)
+					this.PrintWarp(x0 - margin + (gx * WarpStep), y0 - margin + (gy * WarpStep), out warpX[(gy * warpWidth) + gx], out warpY[(gy * warpWidth) + gx]);
+			});
+
 			int[] region = new int[ext * ext];
 
 			Rows(ext, parallel, ey =>
 			{
 				int wy = y0 - margin + ey;
+				int gy = ey / WarpStep;
+				float fy = (ey % WarpStep) / (float)WarpStep;
 
 				for (int ex = 0; ex < ext; ex++)
 				{
 					int wx = x0 - margin + ex;
-					int e = (ey * ext) + ex;
-					region[e] = this.PrintTerrain(grid, wx, wy);
+					int gx = ex / WarpStep, g = (gy * warpWidth) + gx;
+					float fx = (ex % WarpStep) / (float)WarpStep;
+					float ox = Lerp(Lerp(warpX[g], warpX[g + 1], fx), Lerp(warpX[g + warpWidth], warpX[g + warpWidth + 1], fx), fy);
+					float oy = Lerp(Lerp(warpY[g], warpY[g + 1], fx), Lerp(warpY[g + warpWidth], warpY[g + warpWidth + 1], fx), fy);
+					region[(ey * ext) + ex] = this.RoundedTerrain(grid, (wx + ox) / this.cell, (wy + oy) / this.cell);
 				}
 			});
 
 			float[] seaDepth = WaterDistance(region, ext);
-			RiverCourses rivers = new RiverCourses(this, grid, cx, cy);
+			float[] border = BorderDistance(region, ext);
+			// a painted river strip is laid along the courses at its own proportions, riverStripWidth across
+			Sprite? strip = this.riverStrip;
+			float riverStripWidth = 7 * k, riverInk = 1.1f * k, riverBank = 1.6f * k;
+			float period = (strip != null) ? strip.Width * riverStripWidth / strip.Height : 64 * k;
+			RiverCourses rivers = new RiverCourses(this, grid, cx, cy, period);
+			// only pixels this close to a river are drawn differently
+			rivers.Reach = Math.Max((riverStripWidth / 2) + riverInk + riverBank, riverWidth + riverLine) + 2 + (3 * k);
 			float[] r = new float[size * size], g = new float[size * size], b = new float[size * size];
 			byte[] water = new byte[size * size];
 			int reach = (int)MathF.Ceiling(Math.Max(softWidth, beachWidth + coastLine)) + 1;
@@ -924,7 +1044,8 @@ namespace OpenCivOne.Graphics
 					float edge = float.MaxValue, coast = float.MaxValue;
 					int nearest = own;
 
-					for (int dy = -reach; dy <= reach; dy++)
+					// far from any border there is nothing to look for
+					for (int dy = (border[e] > (reach * 1.42f) + 1) ? reach + 1 : -reach; dy <= reach; dy++)
 					{
 						for (int dx = -reach; dx <= reach; dx++)
 						{
@@ -996,11 +1117,50 @@ namespace OpenCivOne.Graphics
 						cg += (220 - cg) * beach;
 						cb += (186 - cb) * beach;
 
-						// rivers: a ribbon of blue inside a fine ink line, lighter on the bank towards the light (top left) and deeper
-						// on the other, with a broken white line of flowing water along the light side
-						float d = rivers.Distance(wx, wy);
+						// rivers: the painted river strip, bent along each course; without one, a ribbon of blue inside a fine
+						// ink line, lighter on the bank towards the light (top left) and deeper on the other, with a broken white
+						// line of flowing water along the light side
+						float d = rivers.Locate(wx, wy, out float along);
 
-						if (d < riverWidth + riverLine + 1)
+						if (strip != null)
+						{
+							float half = riverStripWidth / 2;
+
+							// a pale bank outside a fine ink line, as the mockup draws its rivers
+							if (d < half + riverInk + riverBank + 1)
+							{
+								float bank = Smooth(half + riverInk + riverBank + 0.5f, half + riverInk + riverBank - 0.5f, d) * 0.75f;
+								cr += (232 - cr) * bank;
+								cg += (224 - cg) * bank;
+								cb += (196 - cb) * bank;
+								float ink = Smooth(half + riverInk + 0.5f, half + riverInk - 0.5f, d) * 0.92f;
+								cr += (30 - cr) * ink;
+								cg += (32 - cg) * ink;
+								cb += (40 - cb) * ink;
+							}
+
+							if (d < half + 1)
+							{
+								// the strip from its middle out to one bank: both banks are alike, so either side of the course
+								// takes the same half
+								float v = ((strip.Height - 1) / 2f) + (d / half * (strip.Height / 2f));
+								float u = (along - MathF.Floor(along)) * strip.Width;
+								SampleRepeating(strip, u, v, out float pr, out float pg, out float pb, out float pa);
+								// the water ends cleanly at the ink line
+								float inside = Smooth(half + 0.5f, half - 0.5f, d);
+								pr *= inside;
+								pg *= inside;
+								pb *= inside;
+								pa *= inside;
+								cr = pr + (cr * (1 - pa));
+								cg = pg + (cg * (1 - pa));
+								cb = pb + (cb * (1 - pa));
+
+								if (pa > 0.5f)
+									water[i] = 2;
+							}
+						}
+						else if (d < riverWidth + riverLine + 1)
 						{
 							float inLine = Smooth(riverWidth + riverLine + 0.5f, riverWidth + riverLine - 0.5f, d);
 							float inCore = Smooth(riverWidth + 0.5f, riverWidth - 0.5f, d);
@@ -1045,7 +1205,7 @@ namespace OpenCivOne.Graphics
 				}
 			});
 
-			this.PaintScenery(cx, cy, r, g, b, water, size, grid);
+			this.PaintScenery(cx, cy, r, g, b, water, size, grid, rivers);
 
 			// the paper: colours lean towards cream and lose a little saturation, with a faint fibrous grain
 			uint[] pixels = new uint[size * size];
@@ -1148,17 +1308,24 @@ namespace OpenCivOne.Graphics
 		private sealed class RiverCourses
 		{
 			private readonly int left, top, width, cell;
-			// per cell, its courses: x, y and a width adjustment (added to the distance) per point
+			// per cell, its courses: x, y, a width adjustment (added to the distance) and the position along the course in
+			// lengths of the river strip, per point
 			private readonly List<float[]>?[] courses;
+			// per cell, the box around all its courses: left, top, right, bottom
+			private readonly float[] boxes;
 
-			public RiverCourses(PaintedMap map, TerrainGrid grid, int cx, int cy)
+			/// <param name="period">The length of the river strip on the map, in pixels; each course is a whole number of
+			/// strip lengths long, so the strip runs on from one course into the next</param>
+			public RiverCourses(PaintedMap map, TerrainGrid grid, int cx, int cy, float period)
 			{
-				const int Reach = 2;
+				// as far as the scenery of a chunk reaches, plus a cell
+				const int Reach = 4;
 				this.cell = map.cell;
 				this.left = (cx * ChunkCells) - Reach;
 				this.top = (cy * ChunkCells) - Reach;
 				this.width = ChunkCells + (2 * Reach);
 				this.courses = new List<float[]>?[this.width * this.width];
+				this.boxes = new float[this.width * this.width * 4];
 				float k = this.cell / 64f, half = this.cell / 2f;
 				Span<int> ways = stackalloc int[4];
 
@@ -1187,7 +1354,7 @@ namespace OpenCivOne.Graphics
 						}
 
 						if (count == 0)
-							list.Add(new[] { ax, ay, -3 * k });
+							list.Add(new[] { ax, ay, -3 * k, 0 });
 						else if (count == 1)
 							list.Add(Curve(ax, ay, ax + (Sides[ways[0]].X * half * 0.5f), ay + (Sides[ways[0]].Y * half * 0.5f), ax + (Sides[ways[0]].X * half), ay + (Sides[ways[0]].Y * half), 2.5f * k, 0));
 
@@ -1208,15 +1375,47 @@ namespace OpenCivOne.Graphics
 
 						foreach (float[] course in list)
 						{
-							for (int n = 0; n < course.Length; n += 3)
+							for (int n = 0; n < course.Length; n += 4)
 							{
 								float x = course[n], y = course[n + 1];
 								course[n] = x + ((map.Noise(x, y, 44 * k, 31) - 0.5f) * 20 * k) + ((map.Noise(x, y, 20 * k, 33) - 0.5f) * 12 * k);
 								course[n + 1] = y + ((map.Noise(x, y, 44 * k, 32) - 0.5f) * 20 * k) + ((map.Noise(x, y, 20 * k, 34) - 0.5f) * 12 * k);
 							}
+
+							// the position along the course, stretched a little to a whole number of strip lengths
+							float length = 0;
+
+							for (int n = 4; n < course.Length; n += 4)
+							{
+								length += PaintedMap.Distance(course[n - 4], course[n - 3], course[n], course[n + 1]);
+								course[n + 3] = length;
+							}
+
+							float lengths = Math.Max(1, MathF.Round(length / period));
+
+							for (int n = 4; n < course.Length; n += 4)
+								course[n + 3] = (length > 0) ? course[n + 3] / length * lengths : 0;
 						}
 
-						this.courses[((j - this.top) * this.width) + (i - this.left)] = list;
+						int index = ((j - this.top) * this.width) + (i - this.left);
+						this.courses[index] = list;
+						float minX = float.MaxValue, minY = float.MaxValue, maxX = float.MinValue, maxY = float.MinValue;
+
+						foreach (float[] course in list)
+						{
+							for (int n = 0; n < course.Length; n += 4)
+							{
+								minX = Math.Min(minX, course[n]);
+								maxX = Math.Max(maxX, course[n]);
+								minY = Math.Min(minY, course[n + 1]);
+								maxY = Math.Max(maxY, course[n + 1]);
+							}
+						}
+
+						this.boxes[index * 4] = minX;
+						this.boxes[(index * 4) + 1] = minY;
+						this.boxes[(index * 4) + 2] = maxX;
+						this.boxes[(index * 4) + 3] = maxY;
 					}
 				}
 			}
@@ -1225,14 +1424,14 @@ namespace OpenCivOne.Graphics
 			private static float[] Curve(float px, float py, float cx, float cy, float qx, float qy, float from, float to)
 			{
 				const int Pieces = 12;
-				float[] points = new float[(Pieces + 1) * 3];
+				float[] points = new float[(Pieces + 1) * 4];
 
 				for (int n = 0; n <= Pieces; n++)
 				{
 					float t = n / (float)Pieces, u = 1 - t;
-					points[n * 3] = (u * u * px) + (2 * u * t * cx) + (t * t * qx);
-					points[(n * 3) + 1] = (u * u * py) + (2 * u * t * cy) + (t * t * qy);
-					points[(n * 3) + 2] = from + ((to - from) * t);
+					points[n * 4] = (u * u * px) + (2 * u * t * cx) + (t * t * qx);
+					points[(n * 4) + 1] = (u * u * py) + (2 * u * t * cy) + (t * t * qy);
+					points[(n * 4) + 2] = from + ((to - from) * t);
 				}
 
 				return points;
@@ -1241,10 +1440,22 @@ namespace OpenCivOne.Graphics
 			/// <summary>
 			/// Distance from a pixel to the nearest river course, less the course's width adjustment there
 			/// </summary>
-			public float Distance(float x, float y)
+			public float Distance(float x, float y) => this.Locate(x, y, out _);
+
+			/// <summary>
+			/// Pixels further than this from every course are not measured: Locate returns MaxValue for them
+			/// </summary>
+			public float Reach { get; set; } = float.MaxValue;
+
+			/// <summary>
+			/// Distance from a pixel to the nearest river course, less the course's width adjustment there, and the
+			/// position along that course, in strip lengths
+			/// </summary>
+			public float Locate(float x, float y, out float along)
 			{
 				int ci = (int)MathF.Floor(x / this.cell), cj = (int)MathF.Floor(y / this.cell);
 				float best = float.MaxValue;
+				along = 0;
 
 				for (int j = cj - 1; j <= cj + 1; j++)
 				{
@@ -1253,26 +1464,42 @@ namespace OpenCivOne.Graphics
 						if (i < this.left || j < this.top || i >= this.left + this.width || j >= this.top + this.width)
 							continue;
 
-						List<float[]>? list = this.courses[((j - this.top) * this.width) + (i - this.left)];
+						int index = ((j - this.top) * this.width) + (i - this.left);
+						List<float[]>? list = this.courses[index];
 
-						if (list == null)
+						// nothing of this cell's rivers comes near enough to matter
+						if (list == null || x < this.boxes[index * 4] - this.Reach || y < this.boxes[(index * 4) + 1] - this.Reach ||
+							x > this.boxes[(index * 4) + 2] + this.Reach || y > this.boxes[(index * 4) + 3] + this.Reach)
 							continue;
 
 						foreach (float[] c in list)
 						{
-							if (c.Length == 3)
+							if (c.Length == 4)
 							{
-								best = Math.Min(best, MathF.Sqrt(((x - c[0]) * (x - c[0])) + ((y - c[1]) * (y - c[1]))) + c[2]);
+								float d = MathF.Sqrt(((x - c[0]) * (x - c[0])) + ((y - c[1]) * (y - c[1]))) + c[2];
+
+								if (d < best)
+								{
+									best = d;
+									along = 0;
+								}
+
 								continue;
 							}
 
-							for (int n = 3; n < c.Length; n += 3)
+							for (int n = 4; n < c.Length; n += 4)
 							{
-								float ax = c[n - 3], ay = c[n - 2], bx = c[n], by = c[n + 1];
+								float ax = c[n - 4], ay = c[n - 3], bx = c[n], by = c[n + 1];
 								float dx = bx - ax, dy = by - ay, length = (dx * dx) + (dy * dy);
 								float t = length > 0 ? Math.Clamp((((x - ax) * dx) + ((y - ay) * dy)) / length, 0, 1) : 0;
 								float ex = x - (ax + (t * dx)), ey = y - (ay + (t * dy));
-								best = Math.Min(best, MathF.Sqrt((ex * ex) + (ey * ey)) + c[n - 1] + ((c[n + 2] - c[n - 1]) * t));
+								float d = MathF.Sqrt((ex * ex) + (ey * ey)) + c[n - 2] + ((c[n + 2] - c[n - 2]) * t);
+
+								if (d < best)
+								{
+									best = d;
+									along = c[n - 1] + ((c[n + 3] - c[n - 1]) * t);
+								}
 							}
 						}
 					}
@@ -1339,7 +1566,7 @@ namespace OpenCivOne.Graphics
 		/// mountains into the ground, and builds forest and jungle from tree crowns packed edge to edge, wherever its
 		/// rounded terrain is forest or jungle, so the crowns make the scalloped edge of the wood.
 		/// </summary>
-		private void PaintScenery(int cx, int cy, float[] r, float[] g, float[] b, byte[] water, int size, TerrainGrid? grid = null)
+		private void PaintScenery(int cx, int cy, float[] r, float[] g, float[] b, byte[] water, int size, TerrainGrid? grid = null, RiverCourses? rivers = null)
 		{
 			List<Placement> placements = new List<Placement>();
 			float k = this.cell / 64f;
@@ -1359,9 +1586,9 @@ namespace OpenCivOne.Graphics
 					Random random = new Random((WrapX(i) * 7919) + (j * 104729) + 17);
 					float left = i * this.cell, top = j * this.cell;
 
-					if (grid != null && (terrain == Forest || terrain == Jungle))
+					if (grid != null)
 					{
-						this.PlaceCanopy(placements, grid, random, terrain, left, top);
+						this.PlacePrintCell(placements, grid, rivers, random, i, j, terrain, left, top);
 						continue;
 					}
 
@@ -1422,10 +1649,88 @@ namespace OpenCivOne.Graphics
 		}
 
 		/// <summary>
-		/// The crowns of a forest or jungle cell for a print: a jittered grid of trees, each kept only where the print's
-		/// rounded terrain under its crown is the same wood
+		/// The scenery of one cell of a print. A resource or hut of the cell stands in the middle of it, a little forward,
+		/// and is drawn with the trees and peaks, back to front: a wood opens a clearing around it, hills and mountains
+		/// step back so it stands at their foot, and open land keeps its trees out of the way.
 		/// </summary>
-		private void PlaceCanopy(List<Placement> placements, TerrainGrid grid, Random random, int terrain, float left, float top)
+		private void PlacePrintCell(List<Placement> placements, TerrainGrid grid, RiverCourses? rivers, Random random, int i, int j, int terrain, float left, float top)
+		{
+			float k = this.cell / 64f;
+			int feature = this.PaintsFeatures ? this.Feature(i, j) : 0;
+			float fx = left + (32 * k), fy = top + (50 * k), clear = (feature != 0) ? 22 * k : 0;
+			// hills and peaks beside and in front of a resource or hut stay low enough not to hide it
+			bool besideFeature = this.PaintsFeatures && (this.Feature(i - 1, j) != 0 || this.Feature(i + 1, j) != 0 ||
+				this.Feature(i - 1, j - 1) != 0 || this.Feature(i, j - 1) != 0 || this.Feature(i + 1, j - 1) != 0);
+			float lower = besideFeature ? 0.55f : 1;
+
+			switch (terrain)
+			{
+				case Forest:
+				case Jungle:
+					this.PlaceCanopy(placements, grid, random, terrain, left, top, fx, fy, clear);
+					break;
+
+				case Hills:
+					for (int n = 0; n < 2; n++)
+					{
+						float baseY = (feature != 0) ? top + Range(random, 24, 36) * k : top + Range(random, 30, 60) * k;
+						this.Place(placements, "hills", random, left + Range(random, 16, 48) * k, baseY, Range(random, 36, 46) * k * Math.Max(lower, 0.75f), true);
+					}
+					break;
+
+				case Mountains:
+					if (feature != 0)
+						this.Place(placements, "mountains", random, left + Range(random, 26, 38) * k, top + Range(random, 38, 44) * k, Range(random, 64, 74) * k, true);
+					else
+						this.Place(placements, "mountains", random, left + Range(random, 26, 38) * k, top + Range(random, 54, 62) * k, Range(random, 78, 96) * k * lower, true);
+					break;
+
+				case Grassland:
+				case River:
+					// a print scatters more, smaller trees over open land
+					for (int n = random.Next(4); n >= 0; n--)
+					{
+						float x = left + Range(random, 6, 58) * k, baseY = top + Range(random, 12, 62) * k, height = Range(random, 17, 24) * k;
+
+						// nor do they stand in a river
+						bool dry = rivers == null || rivers.Distance(x, baseY) > 7 * k;
+
+						if (random.NextDouble() < 0.6 && Distance(x, baseY, fx, fy) >= clear * 1.2f && dry)
+							this.Place(placements, "trees", random, x, baseY, height);
+					}
+					break;
+			}
+
+			bool both = (feature & (SpecialResource | MinorTribeHut)) == (SpecialResource | MinorTribeHut);
+
+			if ((feature & SpecialResource) != 0 && terrain < ResourceNames.Length)
+				this.PlaceFeature(placements, "res_" + ResourceNames[terrain], fx - (both ? 12 * k : 0), fy, 38 * k, terrain == Water);
+
+			if ((feature & MinorTribeHut) != 0)
+				this.PlaceFeature(placements, "hut", fx + (both ? 12 * k : 0), fy + (2 * k), 42 * k, false);
+		}
+
+		private static float Distance(float ax, float ay, float bx, float by)
+		{
+			return MathF.Sqrt(((ax - bx) * (ax - bx)) + ((ay - by) * (ay - by)));
+		}
+
+		// a resource or hut standing at (x, baseY), fitted into a box of the given size
+		private void PlaceFeature(List<Placement> placements, string name, float x, float baseY, float box, bool onWater)
+		{
+			if (!this.features.TryGetValue(name, out Sprite? sprite))
+				return;
+
+			float height = box * Math.Min(1, (float)sprite.Height / sprite.Width), width = height * sprite.Width / sprite.Height;
+			placements.Add(new Placement { Sprite = sprite, X = x - (width / 2), Base = baseY, Width = width, Height = height, OnWater = onWater });
+		}
+
+		/// <summary>
+		/// The crowns of a forest or jungle cell for a print: a jittered grid of trees, each kept only where the print's
+		/// rounded terrain under its crown is the same wood, and none within `clear` of (fx, fy), where a resource or hut
+		/// stands in a clearing
+		/// </summary>
+		private void PlaceCanopy(List<Placement> placements, TerrainGrid grid, Random random, int terrain, float left, float top, float fx, float fy, float clear)
 		{
 			float k = this.cell / 64f;
 			bool forest = terrain == Forest;
@@ -1441,7 +1746,7 @@ namespace OpenCivOne.Graphics
 					float height = (forest ? Range(random, 28, 36) : Range(random, 30, 40)) * k;
 
 					// the crown, not the trunk, has to stand on the wood
-					if (this.PrintTerrain(grid, x, baseY - (height * 0.55f)) == terrain)
+					if (this.PrintTerrain(grid, x, baseY - (height * 0.55f)) == terrain && Distance(x, baseY, fx, fy) >= clear)
 						this.Place(placements, forest ? "trees" : "jungle", random, x, baseY, height);
 				}
 			}
@@ -1487,8 +1792,9 @@ namespace OpenCivOne.Graphics
 					Sample(s, u, v, out float sr, out float sg, out float sb, out float sa);
 					int i = (py * size) + px;
 
-					// a print keeps the sea clear, and lets the feet of hills and mountains fade into the ground
-					if (print && water[i] == 1)
+					// in a print, what stands on land does not reach into the sea in front of it, though its top may rise
+					// against the sea behind; the feet of hills and mountains fade into the ground
+					if (print && water[i] == 1 && !p.OnWater && v > s.Height * 0.7f)
 						continue;
 
 					if (p.FadeFoot)
@@ -1543,6 +1849,35 @@ namespace OpenCivOne.Graphics
 					r[i] *= 1 - k;
 					g[i] *= 1 - k;
 					b[i] *= 1 - k;
+				}
+			}
+		}
+
+		// Bilinear sample of premultiplied sprite colour, repeating across its width and transparent above and below it
+		private static void SampleRepeating(Sprite s, float u, float v, out float r, out float g, out float b, out float a)
+		{
+			int iu = (int)MathF.Floor(u), iv = (int)MathF.Floor(v);
+			float fu = u - iu, fv = v - iv;
+			r = g = b = a = 0;
+
+			for (int dy = 0; dy <= 1; dy++)
+			{
+				int y = iv + dy;
+
+				if (y < 0 || y >= s.Height)
+					continue;
+
+				float wy = (dy == 0) ? 1 - fv : fv;
+
+				for (int dx = 0; dx <= 1; dx++)
+				{
+					int x = (((iu + dx) % s.Width) + s.Width) % s.Width;
+					float w = wy * ((dx == 0) ? 1 - fu : fu);
+					int i = (y * s.Width) + x;
+					r += s.R[i] * w;
+					g += s.G[i] * w;
+					b += s.B[i] * w;
+					a += s.A[i] * w;
 				}
 			}
 		}

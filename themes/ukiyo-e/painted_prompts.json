@@ -1,127 +1,134 @@
 {
-  "tex_grass": {
-    "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the grassland: olive and sage green grass densely covered with tiny shrubs, tufts and a few small round trees in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the grassland: olive and sage green grass densely covered with tiny shrubs, tufts and a few small round trees: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
-    "refs": [
-      "refs/crops/grass_a.jpg",
-      "refs/crops/grass_b.jpg"
-    ]
-  },
-  "tex_plains": {
-    "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the plains: golden olive grass, drier and more ochre than the grassland, with small tufts and sparse shrubs in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the plains: golden olive grass, drier and more ochre than the grassland, with small tufts and sparse shrubs: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
-    "refs": [
-      "refs/crops/grass_a.jpg",
-      "refs/crops/desert_river.jpg"
-    ]
-  },
-  "tex_desert": {
-    "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the desert: pale sand with rows of fine dune lines and a few tiny desert shrubs in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the desert: pale sand with rows of fine dune lines and a few tiny desert shrubs: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
-    "refs": [
-      "refs/crops/desert.jpg",
-      "refs/crops/desert_river.jpg"
-    ]
-  },
-  "tex_tundra": {
-    "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the tundra: lilac-grey ground with the same pattern of stones, lichen and small hardy plants in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the tundra: lilac-grey ground with the same pattern of stones, lichen and small hardy plants: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
-    "refs": [
-      "refs/crops/tundra.jpg"
-    ]
-  },
-  "tex_snow": {
-    "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the arctic ice: cream-white ice floes with fine pale-blue cracks between them in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the arctic ice: cream-white ice floes with fine pale-blue cracks between them: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
-    "refs": [
-      "refs/crops/arctic.jpg"
-    ]
-  },
-  "tex_ocean": {
-    "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the deep sea: dark Prussian-blue water densely covered with small stylised wave crests and whitecaps in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the deep sea: dark Prussian-blue water densely covered with small stylised wave crests and whitecaps: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
-    "refs": [
-      "refs/crops/sea.jpg"
-    ]
-  },
-  "tex_shallow": {
-    "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the shallow coastal water: turquoise water with fine ripple lines and light glints, without any shore in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the shallow coastal water: turquoise water with fine ripple lines and light glints, without any shore: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
-    "refs": [
-      "refs/crops/coast.jpg"
-    ]
-  },
-  "tex_swamp": {
-    "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the swamp: marshy olive ground with dense reed tufts, rushes and small dark pools of water in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the swamp: marshy olive ground with dense reed tufts, rushes and small dark pools of water: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
-    "refs": [
-      "refs/crops/swamp.jpg"
-    ]
-  },
-  "tex_floor": {
-    "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the forest: a dense canopy of round dark green tree crowns in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the forest: a dense canopy of round dark green tree crowns: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
-    "refs": [
-      "refs/crops/forest.jpg"
-    ]
-  },
-  "tex_forest": {
-    "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the forest: a dense canopy of round dark green tree crowns packed together in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the forest: a dense canopy of round dark green tree crowns packed together: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
-    "refs": [
-      "refs/crops/forest.jpg"
-    ]
-  },
-  "tex_hills": {
-    "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the hill country: olive-green grassy slopes with fine curved contour hatching in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the hill country: olive-green grassy slopes with fine curved contour hatching: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
-    "refs": [
-      "refs/crops/hills.jpg"
-    ]
-  },
-  "tex_mountains": {
-    "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the rocky mountain ground: slate-grey rock and scree with fine hatching and small patches of snow, no individual peaks in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the rocky mountain ground: slate-grey rock and scree with fine hatching and small patches of snow, no individual peaks: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
-    "refs": [
-      "refs/crops/mountains.jpg"
-    ]
-  },
-  "tex_jungle": {
-    "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the jungle: a dense canopy of palms and broadleaf tropical trees in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the jungle: a dense canopy of palms and broadleaf tropical trees: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
-    "refs": [
-      "refs/crops/jungle.jpg"
-    ]
-  },
-  "trees": {
-    "prompt": "A sprite sheet in exactly the woodblock drawing, colours and scale of detail of the trees in the reference crops: 20 separate small round deciduous trees and a few conifers, seen from a high three-quarter top-down angle, each a dark green crown with a small trunk, varied sizes in a loose grid. Each is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background with clear magenta space between them so each can be cut out; no ground under them, no cast shadow, no text, no frame.",
-    "refs": [
-      "refs/crops/forest.jpg",
-      "refs/crops/grass_a.jpg"
-    ]
-  },
-  "jungle_green": {
-    "prompt": "A sprite sheet in exactly the woodblock drawing, colours and scale of detail of the jungle in the reference crops: 16 separate palms and broadleaf tropical trees seen from a high three-quarter top-down angle, varied sizes in a loose grid. Each is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background with clear magenta space between them so each can be cut out; no ground under them, no cast shadow, no text, no frame.",
-    "refs": [
-      "refs/crops/jungle.jpg"
-    ]
-  },
-  "hills": {
-    "prompt": "A sprite sheet in exactly the woodblock drawing, colours and scale of detail of the hills in the reference crops: 9 separate low rounded grassy hills with fine contour hatching, seen from a high three-quarter top-down angle, varied sizes. Each is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background with clear magenta space between them so each can be cut out; no ground under them, no cast shadow, no text, no frame.",
-    "refs": [
-      "refs/crops/hills.jpg",
-      "refs/crops/grass_b.jpg"
-    ]
-  },
-  "mountains": {
-    "prompt": "A sprite sheet in exactly the woodblock drawing, colours and scale of detail of the mountains in the reference crops: 6 separate slate-grey mountains with white snow caps and fine hatching, seen from a high three-quarter top-down angle, some single peaks and some clusters of two or three. Each is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background with clear magenta space between them so each can be cut out; no ground under them, no cast shadow, no text, no frame.",
-    "refs": [
-      "refs/crops/mountains.jpg"
-    ]
-  },
-  "ui_stone": {
-    "prompt": "Make a seamless tileable texture seen straight on, filling the whole square edge to edge with even, flat lighting: no objects, no pattern motifs, no vignette, no border, no text. The texture: handmade cream Japanese washi paper like the paper of the reference print, warm ivory #EFE6D0, with faint long plant fibres and a very soft mottling; very low contrast.",
-    "refs": [
-      "refs/v5-screen.jpg"
-    ]
-  },
-  "ui_slate": {
-    "prompt": "Make a seamless tileable texture seen straight on, filling the whole square edge to edge with even, flat lighting: no objects, no pattern motifs, no vignette, no border, no text. The texture: handmade paper dyed deep indigo #24324F, with faint lighter fibres and soft uneven dye mottling like an indigo woodblock print background; low contrast.",
-    "refs": [
-      "refs/v5-screen.jpg"
-    ]
-  },
-  "ui_grain": {
-    "prompt": "Make a seamless tileable texture seen straight on, filling the whole square edge to edge with even, flat lighting: no objects, no pattern motifs, no vignette, no border, no text. The texture: handmade washi paper fibre and grain in neutral mid grey only, faint long fibres and soft mottling, very low contrast.",
-    "refs": [
-      "refs/v5-screen.jpg"
-    ]
-  }
+ "tex_grass": {
+  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the grassland: olive and sage green grass densely covered with tiny shrubs, tufts and a few small round trees in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the grassland: olive and sage green grass densely covered with tiny shrubs, tufts and a few small round trees: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
+  "refs": [
+   "refs/crops/grass_a.jpg",
+   "refs/crops/grass_b.jpg"
+  ]
+ },
+ "tex_plains": {
+  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the plains: golden olive grass, drier and more ochre than the grassland, with small tufts and sparse shrubs in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the plains: golden olive grass, drier and more ochre than the grassland, with small tufts and sparse shrubs: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
+  "refs": [
+   "refs/crops/grass_a.jpg",
+   "refs/crops/desert_river.jpg"
+  ]
+ },
+ "tex_desert": {
+  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the desert: pale sand with rows of fine dune lines and a few tiny desert shrubs in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the desert: pale sand with rows of fine dune lines and a few tiny desert shrubs: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
+  "refs": [
+   "refs/crops/desert.jpg",
+   "refs/crops/desert_river.jpg"
+  ]
+ },
+ "tex_tundra": {
+  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the tundra: lilac-grey ground with the same pattern of stones, lichen and small hardy plants in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the tundra: lilac-grey ground with the same pattern of stones, lichen and small hardy plants: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
+  "refs": [
+   "refs/crops/tundra.jpg"
+  ]
+ },
+ "tex_snow": {
+  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the arctic ice: cream-white ice floes with fine pale-blue cracks between them in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the arctic ice: cream-white ice floes with fine pale-blue cracks between them: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
+  "refs": [
+   "refs/crops/arctic.jpg"
+  ]
+ },
+ "tex_ocean": {
+  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the deep sea: dark Prussian-blue water densely covered with small stylised wave crests and whitecaps in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the deep sea: dark Prussian-blue water densely covered with small stylised wave crests and whitecaps: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
+  "refs": [
+   "refs/crops/sea.jpg"
+  ]
+ },
+ "tex_shallow": {
+  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the shallow coastal water: turquoise water with fine ripple lines and light glints, without any shore in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the shallow coastal water: turquoise water with fine ripple lines and light glints, without any shore: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
+  "refs": [
+   "refs/crops/coast.jpg"
+  ]
+ },
+ "tex_swamp": {
+  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the swamp: marshy olive ground with dense reed tufts, rushes and small dark pools of water in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the swamp: marshy olive ground with dense reed tufts, rushes and small dark pools of water: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
+  "refs": [
+   "refs/crops/swamp.jpg"
+  ]
+ },
+ "tex_floor": {
+  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the forest: a dense canopy of round dark green tree crowns in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the forest: a dense canopy of round dark green tree crowns: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
+  "refs": [
+   "refs/crops/forest.jpg"
+  ]
+ },
+ "tex_forest": {
+  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the forest: a dense canopy of round dark green tree crowns packed together in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the forest: a dense canopy of round dark green tree crowns packed together: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
+  "refs": [
+   "refs/crops/forest.jpg"
+  ]
+ },
+ "tex_hills": {
+  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the hill country: olive-green grassy slopes with fine curved contour hatching in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the hill country: olive-green grassy slopes with fine curved contour hatching: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
+  "refs": [
+   "refs/crops/hills.jpg"
+  ]
+ },
+ "tex_mountains": {
+  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the rocky mountain ground: slate-grey rock and scree with fine hatching and small patches of snow, no individual peaks in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the rocky mountain ground: slate-grey rock and scree with fine hatching and small patches of snow, no individual peaks: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
+  "refs": [
+   "refs/crops/mountains.jpg"
+  ]
+ },
+ "tex_jungle": {
+  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the jungle: a dense canopy of palms and broadleaf tropical trees in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the jungle: a dense canopy of palms and broadleaf tropical trees: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
+  "refs": [
+   "refs/crops/jungle.jpg"
+  ]
+ },
+ "trees": {
+  "prompt": "A sprite sheet in exactly the woodblock drawing, colours and scale of detail of the trees in the reference crops: 20 separate small round deciduous trees and a few conifers, seen from a high three-quarter top-down angle, each a dark green crown with a small trunk, varied sizes in a loose grid. Each is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background with clear magenta space between them so each can be cut out; no ground under them, no cast shadow, no text, no frame.",
+  "refs": [
+   "refs/crops/forest.jpg",
+   "refs/crops/grass_a.jpg"
+  ]
+ },
+ "jungle_green": {
+  "prompt": "A sprite sheet in exactly the woodblock drawing, colours and scale of detail of the jungle in the reference crops: 16 separate palms and broadleaf tropical trees seen from a high three-quarter top-down angle, varied sizes in a loose grid. Each is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background with clear magenta space between them so each can be cut out; no ground under them, no cast shadow, no text, no frame.",
+  "refs": [
+   "refs/crops/jungle.jpg"
+  ]
+ },
+ "hills": {
+  "prompt": "A sprite sheet in exactly the woodblock drawing, colours and scale of detail of the hills in the reference crops: 9 separate low rounded grassy hills with fine contour hatching, seen from a high three-quarter top-down angle, varied sizes. Each is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background with clear magenta space between them so each can be cut out; no ground under them, no cast shadow, no text, no frame.",
+  "refs": [
+   "refs/crops/hills.jpg",
+   "refs/crops/grass_b.jpg"
+  ]
+ },
+ "mountains": {
+  "prompt": "A sprite sheet in exactly the woodblock drawing, colours and scale of detail of the mountains in the reference crops: 6 separate slate-grey mountains with white snow caps and fine hatching, seen from a high three-quarter top-down angle, some single peaks and some clusters of two or three. Each is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background with clear magenta space between them so each can be cut out; no ground under them, no cast shadow, no text, no frame.",
+  "refs": [
+   "refs/crops/mountains.jpg"
+  ]
+ },
+ "ui_stone": {
+  "prompt": "Make a seamless tileable texture seen straight on, filling the whole square edge to edge with even, flat lighting: no objects, no pattern motifs, no vignette, no border, no text. The texture: handmade cream Japanese washi paper like the paper of the reference print, warm ivory #EFE6D0, with faint long plant fibres and a very soft mottling; very low contrast.",
+  "refs": [
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "ui_slate": {
+  "prompt": "Make a seamless tileable texture seen straight on, filling the whole square edge to edge with even, flat lighting: no objects, no pattern motifs, no vignette, no border, no text. The texture: handmade paper dyed deep indigo #24324F, with faint lighter fibres and soft uneven dye mottling like an indigo woodblock print background; low contrast.",
+  "refs": [
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "ui_grain": {
+  "prompt": "Make a seamless tileable texture seen straight on, filling the whole square edge to edge with even, flat lighting: no objects, no pattern motifs, no vignette, no border, no text. The texture: handmade washi paper fibre and grain in neutral mid grey only, faint long fibres and soft mottling, very low contrast.",
+  "refs": [
+   "refs/v5-screen.jpg"
+  ]
+ },
+ "river_strip": {
+  "prompt": "Paint one straight river seen from directly above, in exactly the ukiyo-e woodblock print style of the river in the first reference image: a horizontal band of water running straight from the left edge to the right edge of the image, the same width everywhere, about one sixth of the image tall, centred vertically. The water is muted blue with fine flowing key-block lines along the current, a darker blue towards each bank and broken white strokes of flowing water along the middle; each bank is a fine dark ink line. Everything above and below the river is a perfectly flat, uniform pure magenta (#FF00FF) background: no grass, no ground, no shadow. The band is perfectly straight and horizontal and runs off both side edges; no bends, no text, no frame.",
+  "refs": [
+   "refs/crops/desert_river.jpg",
+   "refs/v5-screen.jpg"
+  ]
+ }
 }

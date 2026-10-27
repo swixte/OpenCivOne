@@ -63,9 +63,14 @@ An optional `style.txt` in the painted art folder (lines of `name value`) change
   packed edge to edge wherever the rounded terrain is wood, so the crowns make the scalloped edge of the wood. The coast
   is a crisp ink line with a narrow cream beach inside it; the sea lightens towards the shore in a soft gradient that
   follows the coastline, with one broken wave line along it. Rivers flow in smooth curves from side to side of their
-  cells, swinging in S-bends at an even width: a blue ribbon inside a fine ink line, lighter on the bank towards the
-  light and deeper on the other, with a broken white line of flowing water, thin at their source. Scenery never covers the sea,
-  the feet of hills and mountains fade into the ground, nothing casts a shadow, and grassland gets more, smaller trees.
+  cells, swinging in S-bends at an even width; with a `river.png` strip in the art folder (a straight painted river,
+  made from a generated one by `painted_assets.py`), the strip is laid along each course, inside a fine ink line and a
+  pale bank, as the mockup draws them; without one, a plain blue ribbon is drawn. Branches of a fork meet in one point.
+  Resources and huts are painted into the scenery (the game passes them in with `FeatureAt` and then does not draw
+  them over the map): back to front with the trees and peaks, in a clearing in a wood, at the foot of hills and
+  mountains, which stay low beside and in front of them, so they belong to the ground. Scenery never reaches into the sea in front
+  of it (a peak may rise against the sea behind it), trees keep out of rivers, the feet of hills and mountains fade into
+  the ground, nothing casts a shadow, and grassland gets more, smaller trees.
 - `pattern`, `seapattern`: how much larger the land and sea textures are drawn (smaller than 1 draws them smaller);
   `pattern forest 1.3` sets one terrain's own (by its texture name).
 - `paper`: how much colours lean towards cream paper.

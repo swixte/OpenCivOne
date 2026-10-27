@@ -587,7 +587,10 @@ namespace OpenCivOne
 				}
 
 				// Instruction address 0x2aea:0x0b11, size: 3
-				if (F0_2aea_1836_CellHasSpecialResource(x, y))
+				// a print paints resources and huts into the map itself
+				bool paintsFeatures = this.parent.PaintedMap != null && this.parent.PaintedMap.PaintsFeatures;
+
+				if (!paintsFeatures && F0_2aea_1836_CellHasSpecialResource(x, y))
 				{
 					// Draw special resources
 
@@ -596,7 +599,7 @@ namespace OpenCivOne
 				}
 
 				// Instruction address 0x2aea:0x0b3a, size: 3
-				if (F0_2aea_1894_CellHasMinorTribeHut(x, y, terrainType))
+				if (!paintsFeatures && F0_2aea_1894_CellHasMinorTribeHut(x, y, terrainType))
 				{
 					// Draw Minot tribe hut
 

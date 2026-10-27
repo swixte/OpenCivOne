@@ -529,9 +529,27 @@ GBitmap other4()
 	Check(!other.ShowsWater, "water: a screen without painted water does not");
 	GBitmap.HDScale = 2;
 
+	// resources and huts: a print paints them into its scenery
+	var featureCells = new Dictionary<(int, int), int> {
+		[(10, 5)] = PaintedMap.MinorTribeHut, [(13, 5)] = PaintedMap.MinorTribeHut, [(7, 5)] = PaintedMap.MinorTribeHut,
+		[(12, 5)] = PaintedMap.SpecialResource, [(23, 8)] = PaintedMap.SpecialResource, [(16, 3)] = PaintedMap.SpecialResource,
+		[(19, 5)] = PaintedMap.SpecialResource | PaintedMap.MinorTribeHut, [(6, 9)] = PaintedMap.SpecialResource };
+	PaintedMap featured = PaintedMap.Load(art, 64, (x, y) => map[x, y])!;
+	featured.FeatureAt = (x, y) => featureCells.TryGetValue((x, y), out int f) ? f : 0;
+	if (featured.Print)
+	{
+		Check(featured.PaintsFeatures, "features: a print with objects paints resources and huts");
+		Check(!Cell(painted, 10, 5).SequenceEqual(Cell(featured, 10, 5)), "features: a hut is painted into a forest cell");
+		Check(Cell(painted, 10, 9).SequenceEqual(Cell(featured, 10, 9)), "features: cells without one are unchanged");
+	}
+	else
+		Check(!featured.PaintsFeatures, "features: a painterly map leaves resources and huts to the game");
+
 	string? output = Environment.GetEnvironmentVariable("PAINTED_PREVIEW");
 	if (output != null)
 	{
+		painted = featured;
+		var clock = System.Diagnostics.Stopwatch.StartNew();
 		using var image = new SKBitmap(22 * 64, 12 * 64, SKColorType.Bgra8888, SKAlphaType.Premul);
 		for (int cy = 0; cy < 12; cy++)
 			for (int cx = 0; cx < 22; cx++)
@@ -541,6 +559,8 @@ GBitmap other4()
 					for (int x = 0; x < 64; x++)
 						image.SetPixel(cx * 64 + x, cy * 64 + y, new SKColor(c[y * 64 + x] | 0xff000000));
 			}
+		// 22 x 12 cells touch 9 chunks of 8 x 8 cells
+		Console.WriteLine($"preview: painted in {clock.ElapsedMilliseconds} ms");
 		using var file = File.OpenWrite(output);
 		image.Encode(file, SKEncodedImageFormat.Png, 100);
 	}
