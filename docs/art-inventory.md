@@ -29,11 +29,11 @@ Small sprites cut in `StartGameMenu.cs` (`F5_0000_1455_LoadBitmaps`):
 
 | Sheet | Rectangle | Count | Use |
 | --- | --- | --- | --- |
-| SP299 | x = 160 + 42i, y = 142, 41x58 | 3 | portraits beside report boxes (spies, diplomats, travelers) (`MenuBoxDialog.cs`) |
-| SP257 | x = 160 + 7i, y = 0 / 16 / 32, 7x15 | 3 rows of 20 | small palace parts, three styles (`GameEngine.cs`) |
+| SP299 | x = 160 + 42i, y = 142, 41x58 | 3 | portraits beside report boxes (spies, diplomats, travelers) (`MenuBoxDialog.cs`); painted in the ukiyo-e theme |
+| SP257 | x = 160 + 7i, y = 0 / 16 / 32, 7x15 | 3 rows of 20 | the mini palace on the status board: three styles, 4 levels x 5 slices (`GameEngine.cs`); drawn in the ukiyo-e theme |
 | SP257 | x = 129 + 8(i & 3), y = 33 + 2(i & 4), 7x7 | 8 | city screen icons: food, shield, trade, gold, science, unhappy face, luxury, and the shield bonus (`CityWorker.cs`); painted in the ukiyo-e theme |
 | SP257 | x = 8i, y = 128, 8x16 | 9 | city screen citizens: happy, content and unhappy (a man and a woman each), entertainer, tax collector, scientist (`CityWorker.cs`); painted in the ukiyo-e theme |
-| SP257 | 176, 128, 20x9 | 1 | figure on the news screen (`News.cs`) |
+| SP257 | 176, 128, 20x9 | 1 | the audience along the news screen (`News.cs`); painted in the ukiyo-e theme |
 | SP257 | 48, 32, 16x16 | 1 | marker in the city screen's lower panel (`CityWorker.cs`) |
 
 ## Picture sheets

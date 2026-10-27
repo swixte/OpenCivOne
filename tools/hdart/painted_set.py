@@ -9,7 +9,7 @@ Usage: python3 painted_set.py [OUTPUT_DIR] [OBJECTS_DIR]     (defaults: assets/h
 With `print 1` in the style.txt next to the objects folder (the painted art folder), the set is drawn for a woodblock
 print map: no cast shadows, every unit and object inside a dark key line and a cream outline so it reads on any ground,
 units a little smaller, the flag and the shield marker drawn with key lines, and the city on a ring of light cleared earth.
-With icon_* and citizen_* objects, the city screen icons and citizens are drawn from them too.
+With icon_*, citizen_*, report_* and news_crowd objects, the city screen icons and citizens, the report portraits and\nthe news audience are drawn from them too.
 """
 
 import os
@@ -244,6 +244,68 @@ def small(name, width, height, key=2, cream=1):
     return outlined(img, key, cream)
 
 
+# the mini palace on the status board: 3 styles x 4 levels x 5 slices, 7x15 at (160 + 7i, 16 * style),
+# i = 5 * level + slice (left edge, inner left, centre, inner right, right edge), joined side by side by the game
+PALACE_STYLES = [
+    # walls, wall shade, roof, detail
+    ((233, 221, 192), (201, 185, 148), (168, 69, 47), (58, 46, 40)),     # classical: cream stone, terracotta roof
+    ((242, 238, 228), (205, 196, 180), (62, 74, 99), (58, 46, 40)),      # eastern: white walls, indigo tiles, timber
+    ((191, 165, 110), (160, 136, 86), (79, 91, 102), (58, 46, 40)),      # castle: ochre stone, slate towers
+]
+
+
+def print_palace(style_index, level, section):
+    """One 7x15 slice of the mini palace, a woodblock building whose slices join without seams."""
+    wall, shade, roof, detail = PALACE_STYLES[style_index]
+    w, h = 7 * S, 15 * S
+    pad = 8
+    img = np.zeros((h, w + 2 * pad, 4), dtype=np.uint8)
+    x = np.arange(w + 2 * pad) - pad
+    top = h - (12 + 8 * level)                      # top of the walls
+    for cx in range(w + 2 * pad):
+        xi = x[cx]
+        t = top
+        if section == 0:
+            t = top + max(0, (10 - xi)) // 2         # the left edge steps down to the ground line
+        if section == 4:
+            t = top + max(0, (xi - (w - 11))) // 2
+        img[t:, cx] = (*wall, 255)
+        if xi % 14 in (2, 3) and style_index == 0:
+            img[t + 2:, cx, :3] = shade              # columns
+        # roof or crenellations
+        if style_index == 2:
+            if (xi // 4) % 2 == 0:
+                img[max(0, t - 4):t, cx] = (*wall, 255)
+        else:
+            rt = t - 7
+            img[max(0, rt):t, cx] = (*roof, 255)
+            if style_index == 1:
+                img[max(0, t - 2):t, cx, :3] = detail   # timber beam under the eaves
+    rows = range(top + 5, h - 6, 8)
+    for y in rows:                                   # windows, one per storey
+        img[y:y + 5, pad + 11:pad + 17] = (*detail, 255)
+    if section == 2:
+        mid = pad + w // 2
+        if style_index == 0:                         # a pediment over the centre
+            for k in range(10):
+                img[max(0, top - 7 - k):top - 7, mid - (14 - k):mid + (14 - k)] = (*roof, 255)
+        elif style_index == 1:                       # a tiered roof
+            img[max(0, top - 14):top - 7, mid - 9:mid + 9] = (*wall, 255)
+            img[max(0, top - 19):top - 14, mid - 12:mid + 12] = (*roof, 255)
+        else:                                        # a tower with a pointed roof
+            img[max(0, top - 10):top, mid - 8:mid + 8] = (*wall, 255)
+            for k in range(12):
+                img[max(0, top - 10 - k - 1):top - 10 - k, mid - (9 - k * 3 // 4):mid + (9 - k * 3 // 4)] = (*roof, 255)
+        img[h - 10:h, mid - 3:mid + 3] = (*detail, 255)   # the door
+    # key line and cream outline, but not across the joins between slices
+    if section != 0:
+        img[:, :pad] = img[:, pad:pad + 1]
+    if section != 4:
+        img[:, pad + w:] = img[:, pad + w - 1:pad + w]
+    out = outlined(img, 2, 1)
+    return out[:, pad:pad + w]
+
+
 # city screen icons, 7x7 at (129 + 8(i & 3), 33 + 2(i & 4)); the eighth, at (153, 41), is the shield bonus
 ICONS = ['food', 'shield', 'trade', 'gold', 'science', 'unhappy', 'luxury']
 # city screen citizens, 8x16 at (8i, 128): happy, content and unhappy (two each), then the three specialists
@@ -334,6 +396,14 @@ def sprites():
     if os.path.exists(os.path.join(OBJECTS, 'citizen_happy_m.png')):
         for i, name in enumerate(CITIZENS):
             yield 'SP257', 8 * i, 128, '', small('citizen_' + name, 8, 16)
+    if PRINT:
+        for style_index in range(3):
+            for level in range(4):
+                for section in range(5):
+                    yield 'SP257', 160 + 7 * (5 * level + section), 16 * style_index, '', print_palace(style_index, level, section)
+    if os.path.exists(os.path.join(OBJECTS, 'news_crowd.png')):
+        # the audience along the bottom of the news screen, 20x9
+        yield 'SP257', 176, 128, '', small('news_crowd', 20, 9, 1, 1)
     for i, direction in enumerate((1, 3, 5, 7)):
         yield 'SP257', 80 + i * 16, 128, '', up2(o.fog(direction))
     for i in range(8):
@@ -365,6 +435,10 @@ def tile(name, width, height, scale, mean, spread, tint=(1.0, 1.0, 1.0)):
 
 def ui():
     """Yields (sheet, x, y, suffix, image) for the interface patterns, and the grain for flat boxes as image files."""
+    if os.path.exists(os.path.join(OBJECTS, 'report_spy.png')):
+        # portraits beside report messages, 41x58 at (160 + 42i, 142): spies, diplomats, travelers
+        for i, name in enumerate(('spy', 'diplomat', 'traveler')):
+            yield 'SP299', 160 + 42 * i, 142, '', small('report_' + name, 41, 58)
     if PRINT:
         # paper: cream behind the sidebar and dialogs, indigo behind the city screen (it has light and colored text)
         yield 'SP299', 288, 120, '', tile('stone', 32 * S, 16 * S, 0.25, 226, 6, (0.98, 1.0, 1.03))

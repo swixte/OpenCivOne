@@ -418,5 +418,33 @@
    "refs/units/settlers.jpg",
    "refs/v5-palette.jpg"
   ]
+ },
+ "report_spy": {
+  "prompt": "Draw one small half-length portrait figure shown beside a game's report message, in exactly the woodblock drawing of the reference images: fine dark key-block lines, flat colour, a patterned garment, a clear face and a bold silhouette; it is shown only 41 by 58 pixels. The person belongs to no one culture. The figure: a spy in a dark hooded cloak, half his face hidden, peering sideways and holding a folded secret letter. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred, from the waist up, filling the height of the image; no ground, no shadow, no outline around it, no text, no frame.",
+  "refs": [
+   "refs/units/diplomat.jpg",
+   "refs/v5-palette.jpg"
+  ]
+ },
+ "report_diplomat": {
+  "prompt": "Draw one small half-length portrait figure shown beside a game's report message, in exactly the woodblock drawing of the reference images: fine dark key-block lines, flat colour, a patterned garment, a clear face and a bold silhouette; it is shown only 41 by 58 pixels. The person belongs to no one culture. The figure: a diplomat in a fine indigo robe with a gold chain of office, holding a sealed scroll, calm and dignified. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred, from the waist up, filling the height of the image; no ground, no shadow, no outline around it, no text, no frame.",
+  "refs": [
+   "refs/units/diplomat.jpg",
+   "refs/v5-palette.jpg"
+  ]
+ },
+ "report_traveler": {
+  "prompt": "Draw one small half-length portrait figure shown beside a game's report message, in exactly the woodblock drawing of the reference images: fine dark key-block lines, flat colour, a patterned garment, a clear face and a bold silhouette; it is shown only 41 by 58 pixels. The person belongs to no one culture. The figure: a weathered traveller with a wide-brimmed hat, a walking staff and a pack on his back, pointing into the distance. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred, from the waist up, filling the height of the image; no ground, no shadow, no outline around it, no text, no frame.",
+  "refs": [
+   "refs/units/diplomat.jpg",
+   "refs/v5-palette.jpg"
+  ]
+ },
+ "news_crowd": {
+  "prompt": "Draw a small group of three heads and shoulders of an audience seen from behind, side by side in one row, in a ukiyo-e woodblock print technique matching the reference: thick dark key-block lines, flat colour, dark hair and simple coloured garments; a wide, short shape, shown only 20 by 9 pixels. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred; no ground, no shadow, no outline around it, no text, no frame.",
+  "refs": [
+   "refs/v5-palette.jpg",
+   "refs/units/settlers.jpg"
+  ]
  }
 }
