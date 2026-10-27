@@ -53,6 +53,23 @@ On the painted map the city size is written in the top left corner of the city, 
 
 `tools/hdart/painted_set.py` builds the set from the painted objects in `assets/painted/objects`.
 
+### Print style
+
+An optional `style.txt` in the painted art folder (lines of `name value`) changes how the art is painted:
+
+- `print 1` paints the map like a woodblock print: each terrain is a crisp area with an organic edge instead of a soft
+  blend; forest and jungle are masses of canopy (no scattered trees) with a fine key line around them, other terrains
+  fade into each other over a few pixels, the coast gets a key line, a cream beach and a band of cream foam, and nothing
+  casts a shadow. Grassland gets more, smaller trees.
+- `pattern`, `seapattern`: how much larger the land and sea textures are drawn (smaller than 1 draws them smaller);
+  `pattern forest 1.3` sets one terrain's own (by its texture name).
+- `paper`: how much colours lean towards cream paper.
+- `clouds`, `grade`: the strength of the cloud shadows and the warm colour grade (1 each); `shallows`: the width of the
+  shallow water; `coastline 1`: the printed coast in the painterly mode too.
+
+A terrain can also have a ground texture of its own: `forest`, `hills`, `mountains` and `jungle` in `ground/` replace
+the mix those terrains use otherwise. `themes/ukiyo-e/hd/painted` uses all of this.
+
 ### Art
 
 The repository includes the art in `assets/painted`; copy it to `Civ1/hd/painted` (the stand-in build does this). The folder holds:

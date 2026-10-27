@@ -1,4 +1,10 @@
 clouds 0
 grade 0
-shallows 0.45
+shallows 0.6
 coastline 1
+print 1
+pattern 0.6
+seapattern 1
+paper 0.08
+pattern forest 1.3
+pattern jungle 1.2

@@ -430,14 +430,17 @@ GBitmap other4()
 	// mean colour step across the border between two horizontally adjacent cells, and inside the left one
 	(double Across, double Inside) Steps(PaintedMap m, int x, int y)
 	{
+		// inside: the largest of the last three steps, as art drawn larger than 1:1 alternates small and large steps
 		uint[] l = Cell(m, x, y), r = Cell(m, x + 1, y);
-		double across = 0, inside = 0;
+		double across = 0;
+		double[] inside = new double[3];
 		for (int i = 0; i < 64; i++)
 		{
 			across += Diff(l[i * 64 + 63], r[i * 64]);
-			inside += Diff(l[i * 64 + 62], l[i * 64 + 63]);
+			for (int s = 0; s < 3; s++)
+				inside[s] += Diff(l[i * 64 + 60 + s], l[i * 64 + 61 + s]);
 		}
-		return (across / 64, inside / 64);
+		return (across / 64, inside.Max() / 64);
 	}
 
 	PaintedMap small = PaintedMap.Load(art, 32, (x, y) => map[x, y])!;
@@ -445,9 +448,26 @@ GBitmap other4()
 	small.CopyCell(10, 6, smallCell, 0, 32);
 	Check(smallCell.Distinct().Count() > 100, "painted: paints at 2x too (32 pixels per cell)");
 
-	var chunkBorder = Steps(painted, 7, 7);
+	// other art (a print with crisp areas) is checked for seams on plain grassland, where content edges cannot fall on the seam
+	PaintedMap seamMap = Environment.GetEnvironmentVariable("PAINTED_ART") == null ? painted : PaintedMap.Load(art, 64, (x, y) => 2)!;
+	string? seamOut = Environment.GetEnvironmentVariable("PAINTED_SEAM");
+	if (seamOut != null)
+	{
+		using var seamImage = new SKBitmap(4 * 64, 2 * 64, SKColorType.Bgra8888, SKAlphaType.Premul);
+		for (int cy2 = 0; cy2 < 2; cy2++)
+			for (int cx2 = 0; cx2 < 4; cx2++)
+			{
+				uint[] c = Cell(seamMap, 6 + cx2, 7 + cy2);
+				for (int y = 0; y < 64; y++)
+					for (int x = 0; x < 64; x++)
+						seamImage.SetPixel(cx2 * 64 + x, cy2 * 64 + y, new SKColor(c[y * 64 + x] | 0xff000000));
+			}
+		using var seamFile = File.OpenWrite(seamOut);
+		seamImage.Encode(seamFile, SKEncodedImageFormat.Png, 100);
+	}
+	var chunkBorder = Steps(seamMap, 7, 7);
 	Check(chunkBorder.Across < chunkBorder.Inside * 2 + 4, $"painted: no seam between chunks ({chunkBorder.Across:0.0} across vs {chunkBorder.Inside:0.0} inside)");
-	var wrap = Steps(painted, 79, 22);
+	var wrap = Steps(seamMap, 79, 22);
 	Check(wrap.Across < wrap.Inside * 2 + 4, $"painted: no seam where the world wraps around ({wrap.Across:0.0} vs {wrap.Inside:0.0})");
 	Check(Cell(painted, 10, 6).SequenceEqual(Cell(painted, 10, 6)), "painted: a cell paints the same every time");
 	if (Environment.GetEnvironmentVariable("PAINTED_ART") == null)

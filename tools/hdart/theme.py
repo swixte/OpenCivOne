@@ -346,6 +346,10 @@ def install(theme_dir, game_dir):
     shutil.copytree(os.path.join(ASSETS, 'painted'), os.path.join(out, 'painted'))
     own = os.path.join(theme_dir, 'hd')
     if os.path.isdir(own):
+        # a theme's own painted sprite sets replace the shared ones rather than mixing with them
+        for folder in ('trees', 'jungle', 'hills', 'mountains'):
+            if os.path.isdir(os.path.join(own, 'painted', folder)):
+                shutil.rmtree(os.path.join(out, 'painted', folder), ignore_errors=True)
         shutil.copytree(own, out, dirs_exist_ok=True)
     print(f'Installed in {out}; set "Theme": "{name}" in ~/Games/OpenCivOne/Preferences.json to use it.')
 

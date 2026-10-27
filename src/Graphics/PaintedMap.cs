@@ -54,10 +54,17 @@ namespace OpenCivOne.Graphics
 		/// How the art wants to be painted, from an optional style.txt next to its folders (lines of "name value"):
 		/// clouds, the strength of the drifting cloud shadows (1); grade, the strength of the warm colour grade (1);
 		/// shallows, the width of the shallow water along coasts (1); coastline, 1 for a printed coast with a dark key line
-		/// and a cream beach instead of a dark rocky rim (0).
+		/// and a cream beach instead of a dark rocky rim (0); print, 1 to paint the map like a woodblock print (0, see
+		/// PaintPrint); pattern and seapattern, how much larger the land and sea motifs are drawn in print mode (1), and
+		/// "pattern TEXTURE size" for one terrain's own texture (forest, hills, ...); paper,
+		/// how much the
+		/// colours lean towards the cream of the paper in print mode (0).
 		/// </summary>
-		private float clouds = 1, grade = 1, shallows = 1;
-		private bool printedCoast = false;
+		private float clouds = 1, grade = 1, shallows = 1, pattern = 1, seaPattern = 1, paper = 0;
+
+		// per terrain motif sizes in print mode ("pattern forest 1.2"), the same as pattern unless set
+		private readonly float[] terrainPattern = new float[Ground.Length];
+		private bool printedCoast = false, print = false;
 
 		private readonly Func<int, int, int> terrainAt;
 		private readonly int cell;
@@ -189,6 +196,17 @@ namespace OpenCivOne.Graphics
 				{
 					string[] parts = line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
 
+					if (parts.Length == 3 && parts[0].ToLowerInvariant() == "pattern" &&
+						float.TryParse(parts[2], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float own))
+					{
+						int t = Array.IndexOf(OwnGround, parts[1].ToLowerInvariant());
+
+						if (t >= 0)
+							map.terrainPattern[t] = Math.Clamp(own, 0.25f, 8);
+
+						continue;
+					}
+
 					if (parts.Length < 2 || !float.TryParse(parts[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float value))
 						continue;
 
@@ -198,6 +216,10 @@ namespace OpenCivOne.Graphics
 						case "grade": map.grade = value; break;
 						case "shallows": map.shallows = Math.Max(0.1f, value); break;
 						case "coastline": map.printedCoast = value != 0; break;
+						case "print": map.print = value != 0; break;
+						case "pattern": map.pattern = Math.Clamp(value, 0.25f, 8); break;
+						case "seapattern": map.seaPattern = Math.Clamp(value, 0.25f, 8); break;
+						case "paper": map.paper = Math.Clamp(value, 0, 1); break;
 					}
 				}
 			}
@@ -478,7 +500,7 @@ namespace OpenCivOne.Graphics
 
 			for (int y = (cy * ChunkCells) - 2; y < ((cy + 1) * ChunkCells) + 3; y++)
 			{
-				for (int x = (cx * ChunkCells) - 2; x < ((cx + 1) * ChunkCells) + 2; x++)
+				for (int x = (cx * ChunkCells) - 3; x < ((cx + 1) * ChunkCells) + 3; x++)
 				{
 					hash = (hash * 31) + this.Terrain(x, y);
 				}
@@ -560,6 +582,9 @@ namespace OpenCivOne.Graphics
 		/// <param name="parallel">Paint rows on all cores, for a chunk the game is waiting for</param>
 		private uint[] Paint(int cx, int cy, bool parallel)
 		{
+			if (this.print)
+				return this.PaintPrint(cx, cy, parallel);
+
 			int size = ChunkCells * this.cell;
 			int x0 = cx * size, y0 = cy * size;
 			float k = this.cell / 64f;
@@ -739,6 +764,239 @@ namespace OpenCivOne.Graphics
 		}
 
 		/// <summary>
+		/// Paints a chunk like a woodblock print: every pixel takes the terrain of the cell at its warped position, so each
+		/// terrain is a crisp area with an organic edge, and a dark key line is drawn where two terrains meet. Grassland and
+		/// plains meet with a faint line, as two colour blocks of one print. Coasts get a key line and a cream beach on the
+		/// land side and a band of cream foam on the water side; rivers a light core inside dark banks. Textures are drawn
+		/// `pattern` times larger, and colours lean towards the paper by `paper`.
+		/// </summary>
+		private uint[] PaintPrint(int cx, int cy, bool parallel)
+		{
+			int size = ChunkCells * this.cell;
+			int x0 = cx * size, y0 = cy * size;
+			float k = this.cell / 64f;
+			int margin = (int)MathF.Ceiling(8 * k) + 2;
+			int ext = size + (2 * margin);
+			float warpAmount = 22 * k, depthRadius = 70 * k * this.shallows;
+			float lineWidth = 1.1f * k, beachWidth = 3.5f * k, foamWidth = 3.5f * k, softWidth = 7 * k;
+			float riverWidth = 3.6f * k, bankWidth = 5.5f * k;
+
+			Texture ocean = this.TextureOr("ocean"), shallow = this.TextureOr("shallow");
+			Texture[] ground = Array.ConvertAll(this.groundParts, parts => this.TextureOr(parts[0].Name));
+			TerrainGrid grid = new TerrainGrid(this, cx, cy);
+
+			// pass 1: the terrain of every pixel (with a margin, for the lines), and the warped position
+			int[] region = new int[ext * ext];
+			float[] warpX = new float[ext * ext], warpY = new float[ext * ext];
+
+			Rows(ext, parallel, ey =>
+			{
+				int wy = y0 - margin + ey;
+
+				for (int ex = 0; ex < ext; ex++)
+				{
+					int wx = x0 - margin + ex;
+					float ox = ((this.Noise(wx, wy, 40 * k, 1) - 0.5f) * 2 * warpAmount) + ((this.Noise(wx, wy, 11 * k, 2) - 0.5f) * 0.5f * warpAmount);
+					float oy = ((this.Noise(wx, wy, 40 * k, 3) - 0.5f) * 2 * warpAmount) + ((this.Noise(wx, wy, 11 * k, 4) - 0.5f) * 0.5f * warpAmount);
+					float qx = wx + ox, qy = wy + oy;
+					int terrain = grid.At((int)MathF.Floor(qx / this.cell), (int)MathF.Floor(qy / this.cell));
+					int e = (ey * ext) + ex;
+					region[e] = terrain == River ? Grassland : terrain;
+					warpX[e] = qx;
+					warpY[e] = qy;
+				}
+			});
+
+			float[] r = new float[size * size], g = new float[size * size], b = new float[size * size];
+			byte[] water = new byte[size * size];
+			int reach = (int)MathF.Ceiling(Math.Max(softWidth, Math.Max(beachWidth, foamWidth))) + 1;
+
+			// pass 2: colour, lines, coast and rivers
+			Rows(size, parallel, py =>
+			{
+				int wy = y0 + py;
+
+				for (int px = 0; px < size; px++)
+				{
+					int wx = x0 + px;
+					int i = (py * size) + px;
+					int e = ((py + margin) * ext) + px + margin;
+					int own = region[e];
+					bool isWater = own == Water;
+
+					// distance to the nearest other terrain and which it is, to the nearest outlined mass, and to the coast
+					float edge = float.MaxValue, outlined = float.MaxValue, coast = float.MaxValue;
+					int nearest = own;
+
+					for (int dy = -reach; dy <= reach; dy++)
+					{
+						for (int dx = -reach; dx <= reach; dx++)
+						{
+							int other = region[e + (dy * ext) + dx];
+
+							if (other == own)
+								continue;
+
+							float d = MathF.Sqrt((dx * dx) + (dy * dy));
+
+							if ((other == Water) != isWater)
+								coast = Math.Min(coast, d);
+							else if (IsOutlined(own) || IsOutlined(other))
+								outlined = Math.Min(outlined, d);
+
+							if (d < edge && other != Water && !isWater)
+							{
+								edge = d;
+								nearest = other;
+							}
+						}
+					}
+
+					float cr, cg, cb;
+					// texture positions, drawn larger by the pattern sizes
+					float tx = wx / this.pattern, ty = wy / this.pattern;
+					float sx = wx / this.seaPattern, sy = wy / this.seaPattern;
+
+					if (isWater)
+					{
+						// shallow near land, deep away from it
+						float near = 0;
+						int ui = (int)MathF.Floor((float)wx / this.cell), uj = (int)MathF.Floor((float)wy / this.cell);
+
+						for (int dj = -2; dj <= 2; dj++)
+						{
+							float wyD = this.Weight(wy, uj + dj, depthRadius);
+
+							if (wyD <= 0)
+								continue;
+
+							for (int di = -2; di <= 2; di++)
+							{
+								if (grid.At(ui + di, uj + dj) != Water)
+									near += wyD * this.Weight(wx, ui + di, depthRadius);
+							}
+						}
+
+						// a clean edge between the shallows and the deep sea, wobbling a little
+						float shallowness = Smooth(0.2f, 0.24f, near + ((this.Noise(wx, wy, 20 * k, 17) - 0.5f) * 0.08f));
+						Fetch(ocean, sx, sy, out float or, out float og, out float ob);
+						Fetch(shallow, sx, sy, out float sr, out float sg, out float sb);
+						cr = or + ((sr - or) * shallowness);
+						cg = og + ((sg - og) * shallowness);
+						cb = ob + ((sb - ob) * shallowness);
+
+						// a scalloped band of cream foam along the shore
+						float scallop = (this.Noise(wx, wy, 6 * k, 9) - 0.5f) * 2.5f * k;
+						float foam = Smooth(foamWidth + scallop, foamWidth + scallop - (1.2f * k), coast);
+						cr += (236 - cr) * foam;
+						cg += (230 - cg) * foam;
+						cb += (212 - cb) * foam;
+						water[i] = 1;
+					}
+					else
+					{
+						float ownPattern = this.terrainPattern[own] > 0 ? this.terrainPattern[own] : this.pattern;
+						Fetch(ground[own], wx / ownPattern, wy / ownPattern, out cr, out cg, out cb);
+
+						// open terrains fade into each other like bokashi, half way each side of the border
+						if (nearest != own && !IsOutlined(own) && !IsOutlined(nearest))
+						{
+							float nearestPattern = this.terrainPattern[nearest] > 0 ? this.terrainPattern[nearest] : this.pattern;
+							Fetch(ground[nearest], wx / nearestPattern, wy / nearestPattern, out float nr, out float ng, out float nb);
+							float fade = 0.5f * Smooth(softWidth, 0, edge);
+							cr += (nr - cr) * fade;
+							cg += (ng - cg) * fade;
+							cb += (nb - cb) * fade;
+						}
+
+						// a cream beach along the coast
+						float beach = Smooth(beachWidth, beachWidth * 0.4f, coast) * 0.85f;
+						cr += (232 - cr) * beach;
+						cg += (220 - cg) * beach;
+						cb += (186 - cb) * beach;
+
+						// rivers: a light core inside dark banks
+						int ci = (int)MathF.Floor(warpX[e] / this.cell), cj = (int)MathF.Floor(warpY[e] / this.cell);
+						float d = this.RiverDistance(grid, warpX[e], warpY[e], ci, cj);
+
+						if (d < bankWidth)
+						{
+							if (d < riverWidth - (0.8f * k))
+							{
+								Fetch(shallow, sx, sy, out float sr, out float sg, out float sb);
+								cr = (sr * 0.5f) + 40;
+								cg = (sg * 0.5f) + 72;
+								cb = (sb * 0.5f) + 108;
+								water[i] = 2;
+							}
+							else
+							{
+								float bank = Smooth(bankWidth, riverWidth, d);
+								cr += (30 - cr) * bank;
+								cg += (26 - cg) * bank;
+								cb += (22 - cb) * bank;
+							}
+						}
+					}
+
+					// a fine brown key line around forest and jungle masses and along the coast, on both sides of the border
+					float line = Smooth(lineWidth + 0.5f, lineWidth - 0.5f, Math.Min(outlined, coast) - 0.5f) * 0.7f;
+					cr += (52 - cr) * line;
+					cg += (40 - cg) * line;
+					cb += (28 - cb) * line;
+
+					r[i] = cr;
+					g[i] = cg;
+					b[i] = cb;
+				}
+			});
+
+			this.PaintScenery(cx, cy, r, g, b, water, size);
+
+			// the paper: colours lean towards cream and lose a little saturation, with a faint fibrous grain
+			uint[] pixels = new uint[size * size];
+
+			Rows(size, parallel, py =>
+			{
+				for (int px = 0; px < size; px++)
+				{
+					int i = (py * size) + px;
+					int wx = x0 + px, wy = y0 + py;
+					float grain = 1 + ((this.Noise(wx, wy, 3 * k, 10) - 0.5f) * 0.05f);
+					float l = ((r[i] * 0.3f) + (g[i] * 0.59f) + (b[i] * 0.11f)) * this.paper * 0.5f;
+					float rr = ((r[i] * (1 - this.paper)) + (((236 * 0.5f) + l) * this.paper * 0.9f)) * grain;
+					float gg = ((g[i] * (1 - this.paper)) + (((228 * 0.5f) + l) * this.paper * 0.9f)) * grain;
+					float bb = ((b[i] * (1 - this.paper)) + (((204 * 0.5f) + l) * this.paper * 0.9f)) * grain;
+					uint alpha = water[i] == 1 ? GBitmap.SeaAlpha : water[i] == 2 ? GBitmap.RiverAlpha : 0xff000000u;
+					pixels[i] = alpha | ((uint)Math.Clamp(rr, 0, 255) << 16) | ((uint)Math.Clamp(gg, 0, 255) << 8) | (uint)Math.Clamp(bb, 0, 255);
+				}
+			});
+
+			return pixels;
+		}
+
+		// Bilinear sample of a texture at a fractional position, repeating
+		private static void Fetch(Texture t, float x, float y, out float r, out float g, out float b)
+		{
+			int s = t.Size;
+			int x0 = (int)MathF.Floor(x), y0 = (int)MathF.Floor(y);
+			float fx = x - x0, fy = y - y0;
+			int xa = ((x0 % s) + s) % s, ya = ((y0 % s) + s) % s;
+			int xb = (xa + 1) % s, yb = (ya + 1) % s;
+			int i00 = (ya * s) + xa, i10 = (ya * s) + xb, i01 = (yb * s) + xa, i11 = (yb * s) + xb;
+			float w00 = (1 - fx) * (1 - fy), w10 = fx * (1 - fy), w01 = (1 - fx) * fy, w11 = fx * fy;
+			r = (t.R[i00] * w00) + (t.R[i10] * w10) + (t.R[i01] * w01) + (t.R[i11] * w11);
+			g = (t.G[i00] * w00) + (t.G[i10] * w10) + (t.G[i01] * w01) + (t.G[i11] * w11);
+			b = (t.B[i00] * w00) + (t.B[i10] * w10) + (t.B[i01] * w01) + (t.B[i11] * w11);
+		}
+
+		// forest and jungle are masses of canopy with a key line around them; other land fades into its neighbours
+		private static bool IsOutlined(int terrain)
+		{
+			return terrain == Forest || terrain == Jungle;
+		}
+
+		/// <summary>
 		/// Runs row(0 .. count - 1), in parallel on threads of its own. Not on the thread pool: the game's timer runs there,
 		/// and its callbacks can be waiting for the graphics lock that the painting thread holds.
 		/// </summary>
@@ -849,15 +1107,20 @@ namespace OpenCivOne.Graphics
 			List<Placement> placements = new List<Placement>();
 			float k = this.cell / 64f;
 
-			// art reaches about two cells up and one cell sideways, so cells beyond the chunk are placed too
+			// art reaches about two cells up and up to two cells sideways (clusters of peaks), so cells beyond the chunk are
+			// placed too
 			for (int j = (cy * ChunkCells) - 1; j < ((cy + 1) * ChunkCells) + 3; j++)
 			{
 				if (j < 0 || j >= MapHeight)
 					continue;
 
-				for (int i = (cx * ChunkCells) - 2; i < ((cx + 1) * ChunkCells) + 2; i++)
+				for (int i = (cx * ChunkCells) - 3; i < ((cx + 1) * ChunkCells) + 3; i++)
 				{
 					int terrain = this.Terrain(i, j);
+
+					// a print draws forest and jungle as outlined masses of canopy, not as single trees
+					if (this.print && (terrain == Forest || terrain == Jungle))
+						continue;
 					// the same cell always gets the same art, whichever chunk paints it
 					Random random = new Random((WrapX(i) * 7919) + (j * 104729) + 17);
 					float left = i * this.cell, top = j * this.cell;
@@ -885,8 +1148,19 @@ namespace OpenCivOne.Graphics
 
 						case Grassland:
 						case River:
-							if (random.NextDouble() < 0.25)
+							// a print scatters more, smaller trees over open land
+							if (this.print)
+							{
+								for (int n = random.Next(4); n >= 0; n--)
+								{
+									if (random.NextDouble() < 0.6)
+										this.Place(placements, "trees", random, left + Range(random, 6, 58) * k, top + Range(random, 12, 62) * k, Range(random, 17, 24) * k);
+								}
+							}
+							else if (random.NextDouble() < 0.25)
+							{
 								this.Place(placements, "trees", random, left + Range(random, 8, 56) * k, top + Range(random, 14, 60) * k, Range(random, 22, 28) * k);
+							}
 							break;
 					}
 				}
@@ -894,8 +1168,12 @@ namespace OpenCivOne.Graphics
 
 			int x0 = cx * size, y0 = cy * size;
 
-			foreach (Placement p in placements)
-				DrawShadow(p, r, g, b, size, x0, y0);
+			// a print has no cast shadows
+			if (!this.print)
+			{
+				foreach (Placement p in placements)
+					DrawShadow(p, r, g, b, size, x0, y0);
+			}
 
 			placements.Sort((a, c) => a.Base.CompareTo(c.Base));
 

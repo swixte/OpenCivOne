@@ -8,7 +8,8 @@ Usage: OPENAI_API_KEY=... python3 generate_painted.py CONCEPT.png OUT_DIR [NAME 
 
 A theme can give more reference images (PAINTED_REFS, paths separated by commas, used together with the concept) and
 its own prompts (PAINTED_PROMPTS, a JSON file of name: prompt that replace or add to the ones here). Its prompts can
-use {STYLE}, {TEXTURE}, {SHEET} and {OBJECT} for the shared parts.
+use {STYLE}, {TEXTURE}, {SHEET} and {OBJECT} for the shared parts. A prompt can also be {"prompt": ..., "refs": [...]}
+with reference images of its own (paths relative to the JSON file), used instead of the concept and PAINTED_REFS.
 """
 
 import base64
@@ -105,16 +106,22 @@ PROMPTS.update({
 PROMPTS.update({f'unit_{k}': STYLE + ' ' + OBJECT.format(v[0].upper() + v[1:]) for k, v in UNITS.items()})
 PROMPTS.update({k: STYLE + ' ' + OBJECT.format(v[0].upper() + v[1:]) for k, v in ICONS.items()})
 
+OWN_REFS = {}
+
 if os.environ.get('PAINTED_PROMPTS'):
     import json
+    base = os.path.dirname(os.path.abspath(os.environ['PAINTED_PROMPTS']))
     for name, prompt in json.load(open(os.environ['PAINTED_PROMPTS'])).items():
+        if isinstance(prompt, dict):
+            OWN_REFS[name] = [os.path.join(base, r) for r in prompt.get('refs', [])]
+            prompt = prompt['prompt']
         PROMPTS[name] = prompt.replace('{STYLE}', STYLE).replace('{TEXTURE}', TEXTURE).replace('{SHEET}', SHEET).replace('{OBJECT}', OBJECT)
 REFS = [p for p in os.environ.get('PAINTED_REFS', '').split(',') if p]
 
 
 def generate(key, concept, out, name):
     files = [('image[]', (os.path.basename(p), open(p, 'rb'), 'image/jpeg' if p.lower().endswith('.jpg') else 'image/png'))
-             for p in [concept] + REFS]
+             for p in (OWN_REFS.get(name) or [concept] + REFS)]
     try:
         r = requests.post('https://api.openai.com/v1/images/edits', headers={'Authorization': f'Bearer {key}'},
                           data={'model': 'gpt-image-2', 'prompt': PROMPTS[name], 'size': '1024x1024', 'quality': 'medium', 'n': '1'},
