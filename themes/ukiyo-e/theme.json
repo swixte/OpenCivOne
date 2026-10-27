@@ -42,7 +42,9 @@
     "Farms, paddies and mines are painted into the ground; railroads are thin.",
     "All factions and eras share the same ground language; only costume and architecture change."
   ],
-  "pictures": {},
+  "pictures": {
+    "BACK1M": "A 20th-century statesman's office with a large desk, tall windows over a city, and plain banners with no national emblems or flags of any real country."
+  },
   "map_references": [
     "refs/v5-screen.jpg",
     "refs/map-roman.jpg"
