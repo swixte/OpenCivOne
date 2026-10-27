@@ -1,0 +1,9 @@
+# Interface colors of the ukiyo-e theme: palette index, then the color that replaces it (RRGGBB).
+# Boxes, lines and text on the main screen take these colors; anything not listed keeps the painted tone.
+0  1E1A16   # black: sumi ink
+1  1B2740   # dark blue panels: deep indigo
+5  1E1A16   # magenta frames: sumi ink key line
+9  4E688C   # light blue buttons and tabs: pale indigo
+4  8E3324   # red buttons and shields: madder
+12 EE8C6E   # light red text: pale vermilion
+15 F4ECD8   # white text and highlights: cream

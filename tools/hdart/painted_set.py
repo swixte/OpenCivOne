@@ -342,6 +342,11 @@ def tile(name, width, height, scale, mean, spread, tint=(1.0, 1.0, 1.0)):
 
 def ui():
     """Yields (sheet, x, y, suffix, image) for the interface patterns, and the grain for flat boxes as image files."""
+    if PRINT:
+        # paper: cream behind the sidebar and dialogs, indigo behind the city screen (it has light and colored text)
+        yield 'SP299', 288, 120, '', tile('stone', 32 * S, 16 * S, 0.25, 226, 6, (0.98, 1.0, 1.03))
+        yield 'SP299', 208, 100, '', tile('slate', 16 * S, 16 * S, 0.25, 84, 6, (1.0, 1.0, 1.0))
+        return
     # SP299 32x16 at (288, 120): the stone behind the sidebar, status panel and dialogs; light enough for black text
     yield 'SP299', 288, 120, '', tile('stone', 32 * S, 16 * S, 0.17, 150, 22)
     # SP299 16x16 at (208, 100): the city screen background; dark for its light and colored text
@@ -378,4 +383,7 @@ if __name__ == '__main__':
     if len(sys.argv) > 2:
         OBJECTS = sys.argv[2]
     PRINT = print_style(OBJECTS)
+    # a theme's own interface textures, next to its objects
+    if os.path.isdir(os.path.join(OBJECTS, '..', 'ui')):
+        UI = os.path.join(OBJECTS, '..', 'ui')
     main(sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, '..', '..', 'assets', 'hd4'))

@@ -70,6 +70,10 @@ An optional `style.txt` in the painted art folder (lines of `name value`) change
 A terrain can also have a ground texture of its own: `forest`, `hills`, `mountains` and `jungle` in `ground/` replace
 the mix those terrains use otherwise. `themes/ukiyo-e/hd/painted` uses all of this.
 
+With `print 1`, `painted_set.py` also draws the sprites as print tokens (a dark key line and a cream outline, no
+shadows), and the interface on paper: cream washi behind the sidebar, menus and dialogs, and a mid indigo behind the
+city screen, from the textures in the theme's `hd/painted/ui` (`stone`, `slate`, `grain`) when it has them.
+
 ### Art
 
 The repository includes the art in `assets/painted`; copy it to `Civ1/hd/painted` (the stand-in build does this). The folder holds:
@@ -86,6 +90,7 @@ The 4x set also paints the interface:
 
 - The stone pattern behind the sidebar, status panel, menus and dialogs (SP299 32x16 at 288, 120) and the city screen background (SP299 16x16 at 208, 100) are painted textures. The stone is light enough for the black text on it.
 - With `hd/ui/material.png`, flat boxes on the main screen (dialogs, notes, city screen panels, buttons, bars) get a painted grain and darker edges, and boxes and lines are toned to the painted look: their palette colors are half desaturated and a little darker and warmer, so the bright EGA blues, greens and reds keep their hue but sit with the art. The grain is stored as HD pixels that take their color from the palette when shown, so menu highlights, color swaps and palette fades still work. Text drawn on a box keeps its exact color. Fills smaller than 6x6 pixels get the tone but no grain. The texture is a square grey image, mid grey (128) keeps a color, darker and lighter shade it.
+- With `hd/ui/colors.txt`, a theme gives the interface its own colors: each line is a palette index and the color that replaces it as `RRGGBB` (`#` starts a comment). On the main screen, boxes, lines and text of those indexes take the color as it is (boxes keep their grain) instead of the painted tone, and index 5 also colors the frame around the game. Player colors on HD sprites are not affected. The ukiyo-e theme turns black and the magenta frames into sumi ink, the blue panels and buttons into indigo, white text into cream and the reds into madder and vermilion.
 - With `hd/upscale.txt` containing `scale2x`, everything without HD art (text, lines, the minimap, pictures) is enlarged with Scale2x (Scale4x at 4x) instead of nearest-neighbour, which rounds the steps in text and diagonals while keeping the colors.
 
 - With the material, everything else on the main screen without HD art (text, the minimap, pictures) gets a gentler version of the same tone (a third desaturated, a little warmer), so the original colors sit with the painted art without losing their meaning.

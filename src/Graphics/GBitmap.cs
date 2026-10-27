@@ -57,6 +57,8 @@ namespace OpenCivOne.Graphics
 		// Optional painted grain for flat fills on screens (hd/ui/material.png): shades around 128, one per HD pixel
 		private static byte[]? _uiMaterial = null;
 		private static int _uiMaterialSize = 0;
+		// Optional theme colors for the same screens (hd/ui/colors.txt): a color per palette index, or 0 to keep the tone
+		private static uint[]? _uiColors = null;
 		private bool _useUIMaterial = false;
 		private static bool _smoothUpscale = false;
 
@@ -250,6 +252,39 @@ namespace OpenCivOne.Graphics
 			return true;
 		}
 
+		/// <summary>
+		/// Loads a theme's interface colors: lines of a palette index and the color that replaces it as RRGGBB, with # comments.
+		/// On screens with the UI material, boxes, lines and text of those indexes take these colors as they are, instead
+		/// of the painted tone. Returns false without the file.
+		/// </summary>
+		public static bool LoadUIColors(string path)
+		{
+			_uiColors = null;
+
+			if (!File.Exists(path))
+				return false;
+
+			uint[] colors = new uint[256];
+
+			foreach (string line in File.ReadAllLines(path))
+			{
+				string[] parts = line.Split('#')[0].Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+
+				if (parts.Length >= 2 && int.TryParse(parts[0], out int index) && index >= 0 && index < 256 &&
+					uint.TryParse(parts[1], System.Globalization.NumberStyles.HexNumber, null, out uint rgb))
+					colors[index] = 0xff000000 | (rgb & 0xffffff);
+			}
+
+			_uiColors = colors;
+
+			return true;
+		}
+
+		/// <summary>
+		/// The theme's interface color for a palette index (see LoadUIColors), or null when it has none
+		/// </summary>
+		public static uint? UIColor(int index) => (_uiColors != null && _uiColors[index] != 0) ? _uiColors[index] : null;
+
 		// HD pixels of painted boxes: the shade in red and blue, like a key color, marked by this alpha
 		private const uint MaterialAlpha = 0xfe000000;
 
@@ -276,8 +311,11 @@ namespace OpenCivOne.Graphics
 		/// Color of a painted box pixel: the box's palette color, toned down to the painted look (half desaturated,
 		/// a little darker and warmer, so the bright EGA colors keep their hue but sit with the art), and shaded by the grain
 		/// </summary>
-		private static uint MaterialColor(uint color, uint indexColor)
+		private static uint MaterialColor(uint color, uint indexColor, uint themed = 0)
 		{
+			if (themed != 0)
+				return ShadeColor(themed, color);
+
 			float shade = ((color >> 16) & 0xff) / 128f;
 			float r = (indexColor >> 16) & 0xff, g = (indexColor >> 8) & 0xff, b = indexColor & 0xff;
 			float grey = (r * 0.3f) + (g * 0.59f) + (b * 0.11f);
@@ -295,6 +333,7 @@ namespace OpenCivOne.Graphics
 		{
 			_uiMaterial = null;
 			_uiMaterialSize = 0;
+			_uiColors = null;
 		}
 
 		/// <summary>
@@ -923,8 +962,17 @@ namespace OpenCivOne.Graphics
 			// with the UI material, pixels without HD art (text, the minimap, pictures) get a gentler version of its tone
 			uint[] palette = new uint[256];
 
+			uint[]? themed = (this._useUIMaterial && _uiMaterial != null) ? _uiColors : null;
+
 			for (int c = 0; c < 256; c++)
-				palette[c] = (this._useUIMaterial && _uiMaterial != null) ? GradeColor(this.oPalette[(byte)c].ToUInt32()) : this.oPalette[(byte)c].ToUInt32();
+			{
+				uint original = this.oPalette[(byte)c].ToUInt32();
+
+				if (themed != null && themed[c] != 0)
+					palette[c] = (original & 0xff000000) | (themed[c] & 0xffffff);
+				else
+					palette[c] = (this._useUIMaterial && _uiMaterial != null) ? GradeColor(original) : original;
+			}
 
 			WaterFrame? water = (AnimateWater && this._hdPixels != null) ? new WaterFrame(hdWidth, this.iHeight * HDScale) : null;
 			bool showsWater = false;
@@ -957,7 +1005,7 @@ namespace OpenCivOne.Graphics
 								}
 
 								// keep the alpha of the palette color, so HD pixels are presented the same way as indexed ones
-								pixel = (ResolveHDColor(hd, color) & 0xffffff) | (color & 0xff000000);
+								pixel = (ResolveHDColor(hd, color, (themed != null) ? themed[this.aPixels[pixelAddress]] : 0) & 0xffffff) | (color & 0xff000000);
 							}
 
 							rows[(k * hdWidth) + (j * HDScale) + l] = (int)pixel;
@@ -1278,10 +1326,10 @@ namespace OpenCivOne.Graphics
 		/// <summary>
 		/// Color shown for an HD pixel over the color of its indexed pixel
 		/// </summary>
-		private static uint ResolveHDColor(uint color, uint indexColor)
+		private static uint ResolveHDColor(uint color, uint indexColor, uint themed = 0)
 		{
 			if ((color & 0xff000000) == MaterialAlpha)
-				return MaterialColor(color, indexColor);
+				return MaterialColor(color, indexColor, themed);
 
 			if ((color & 0xff000000) == SeaAlpha || (color & 0xff000000) == RiverAlpha)
 				return color | 0xff000000;

@@ -610,6 +610,17 @@ GBitmap other4()
 	var plain = new GBitmap(16, 16);
 	plain.FillRectangle(new GRectangle(0, 0, 16, 16), 4, PixelWriteModeEnum.Normal);
 	Check(Frame(plain)[5 * 64 + 5] == plain4, "material: bitmaps without UseUIMaterial (sprite sheets) are not affected");
+
+	string colors = Path.Combine(dir, "colors.txt");
+	File.WriteAllText(colors, "# theme colors\n2 336699  # boxes\n15 F0E0C0\n");
+	Check(GBitmap.LoadUIColors(colors) && GBitmap.UIColor(2) == 0xff336699 && GBitmap.UIColor(4) == null, "colors: a theme's interface colors load");
+	uint[] f4 = Frame(box);
+	uint themedBox = f4[(25 * 4) * 256 + 25 * 4];
+	Check(((themedBox & 0xff) > ((themedBox >> 16) & 0xff)) && f4[(25 * 4) * 256 + 25 * 4] != f4[(25 * 4) * 256 + 25 * 4 + 1], $"colors: a box takes the theme color and keeps its grain ({themedBox:x6})");
+	Check(Flat(f4, 20, 20) && (f4[(20 * 4) * 256 + 20 * 4] & 0xffffff) == 0xf0e0c0, "colors: text takes the theme color exactly");
+	Check(Frame(plain)[5 * 64 + 5] == plain4, "colors: bitmaps without UseUIMaterial keep their palette");
+	GBitmap.LoadUIColors(Path.Combine(dir, "none.txt"));
+	Check(GBitmap.UIColor(2) == null, "colors: without the file the painted tone is used");
 	GBitmap.ClearUIMaterial();
 	GBitmap.HDScale = 2;
 }

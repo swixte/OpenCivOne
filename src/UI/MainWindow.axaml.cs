@@ -65,6 +65,10 @@ namespace OpenCivOne.UI
 			// Initialize game state
 			this.game = new OpenCivOneGame(this);
 
+			// the frame around the game is magenta (palette index 5), unless the theme recolors it
+			if (GBitmap.UIColor(5) is uint frame)
+				this.mainImageBorder.BorderBrush = new SolidColorBrush(frame);
+
 			// Open large enough to show 4x HD art at its own size, if the screen has the room
 			if (GBitmap.HDScale > 2)
 			{

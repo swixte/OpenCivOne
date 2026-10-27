@@ -163,6 +163,7 @@ namespace OpenCivOne
 
 			// Optional painted grain for flat interface boxes, and smooth enlargement of pixel art without HD versions
 			GBitmap.LoadUIMaterial($"{hdPath}{separator}ui{separator}material.png");
+			GBitmap.LoadUIColors($"{hdPath}{separator}ui{separator}colors.txt");
 			string upscalePath = $"{hdPath}{separator}upscale.txt";
 			GBitmap.SmoothUpscale = File.Exists(upscalePath) && File.ReadAllText(upscalePath).Trim().ToLowerInvariant() == "scale2x";
 

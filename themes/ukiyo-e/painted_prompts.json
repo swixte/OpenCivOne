@@ -105,5 +105,23 @@
     "refs": [
       "refs/crops/mountains.jpg"
     ]
+  },
+  "ui_stone": {
+    "prompt": "Make a seamless tileable texture seen straight on, filling the whole square edge to edge with even, flat lighting: no objects, no pattern motifs, no vignette, no border, no text. The texture: handmade cream Japanese washi paper like the paper of the reference print, warm ivory #EFE6D0, with faint long plant fibres and a very soft mottling; very low contrast.",
+    "refs": [
+      "refs/v5-screen.jpg"
+    ]
+  },
+  "ui_slate": {
+    "prompt": "Make a seamless tileable texture seen straight on, filling the whole square edge to edge with even, flat lighting: no objects, no pattern motifs, no vignette, no border, no text. The texture: handmade paper dyed deep indigo #24324F, with faint lighter fibres and soft uneven dye mottling like an indigo woodblock print background; low contrast.",
+    "refs": [
+      "refs/v5-screen.jpg"
+    ]
+  },
+  "ui_grain": {
+    "prompt": "Make a seamless tileable texture seen straight on, filling the whole square edge to edge with even, flat lighting: no objects, no pattern motifs, no vignette, no border, no text. The texture: handmade washi paper fibre and grain in neutral mid grey only, faint long fibres and soft mottling, very low contrast.",
+    "refs": [
+      "refs/v5-screen.jpg"
+    ]
   }
 }
