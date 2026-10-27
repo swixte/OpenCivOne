@@ -1,0 +1,29 @@
+{
+  "name": "ukiyo-e",
+  "concept": "refs/map-roman.jpg",
+  "style": "a Japanese ukiyo-e woodblock print in the manner of Hokusai and Hiroshige: flat areas of colour inside fine black key-block outlines, Prussian blue and indigo, ochre and sage-green grounds, vermilion accents, cream paper showing through, subtle woodgrain and soft bokashi gradients, stylised curling waves and patterned foliage; flat, clear and decorative, never photographic or 3D-rendered",
+  "quality": "medium",
+  "references": {
+    "default": ["refs/map-roman.jpg", "refs/landscape-hokusai.jpg"],
+    "backdrop": ["refs/landscape-hokusai.jpg", "refs/landscape-hiroshige.jpg"],
+    "scene": ["refs/landscape-hokusai.jpg", "refs/map-roman.jpg"],
+    "bust": ["refs/portrait-caesar.jpg"],
+    "figure": ["refs/eras-sheet.jpg", "refs/portrait-caesar.jpg"],
+    "object": ["refs/eras-sheet.jpg", "refs/map-roman.jpg"]
+  },
+  "rules": {
+    "backdrop": "A woodblock landscape print: a bird's-eye view or a high horizon, the sky in bands of bokashi colour, stylised waves and clouds, a few small figures at most. Flat colour, no photographic depth.",
+    "scene": "A woodblock print scene: one to three figures doing one clear action, strong outlines, flat colour, patterned clothing, a simple setting. Every era keeps the print language: machines, ships and cities of later ages are drawn as woodblock prints too.",
+    "bust": "A woodblock portrait: one person's head and shoulders, strong outline, flat colour, patterned clothing, a plain cream ground.",
+    "figure": "A full-length woodblock figure like a game token: strong outline, flat colour, patterned clothing, a clear silhouette with a thin cream outline around it.",
+    "object": "A woodblock-print building or object seen from a high three-quarter angle like a game token: crisp black outlines, flat colour in terracotta, indigo and ochre, a thin cream outline around the silhouette, no ground under it."
+  },
+  "map_rules": [
+    "The map is one continuous painted ground seen straight down; the grid is never drawn.",
+    "Units are flat print tokens with a thin cream outline; a stack shows a numbered count seal, not more figures.",
+    "Cities are clearly bigger than units.",
+    "Farms, paddies and mines are painted into the ground; railroads are thin.",
+    "All factions and eras share the same ground language; only costume and architecture change."
+  ],
+  "pictures": {}
+}

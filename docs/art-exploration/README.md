@@ -35,6 +35,7 @@ Browse the **curated set** at the top of this folder first. `iterations/` holds 
 | `ukiyo-states/` | Unit states | Idle / moved / stacked looks, cream outline variants, merged unit sheets, count seals. |
 | `ukiyo-factions/` | Factions | Roman-ancient, modern, and Asian-medieval pieces on the **same** map style. |
 | `ukiyo-v2/` | v2 improvements | Larger cities, farmland and mines painted into the ground, thinner railroad, Roman / modern / Asian-medieval scenes, before/after sheets. |
+| `ukiyo-v3/` | v3: blending | Edits of the v2 screens: cities with no plinth grown out of the land (`roman-a`), walled-town vignettes in cleared earth (`roman-b`), modern sprawl (`modern-c`); farmland as curving or hedged fields that follow the land instead of a checkerboard; units about 15% smaller. `water-test.gif` animates the sea and rivers of `roman-b` (`scripts/water_test.py`). |
 | `iterations/` | Working takes | Distinct generations and process sheets; see below. |
 | `scripts/` | Generator scripts | How the plates were requested. They read `OPENAI_API_KEY` from the environment and do not contain a key. |
 
@@ -47,6 +48,8 @@ These are the notes that kept coming back while iterating. They are design rules
 - **Cities must dominate units.** A keep that is the same size as a horse disappears. Cities got larger in v2.
 - **Improvements are painted into the ground** (fields, paddies, mines, roads), not stamped on as separate tiles sitting on top of a checkerboard.
 - **Railroad is thin.** A fat rail band reads as a wall and breaks the print.
+- **Fields follow the land.** Square checkerboard plots look stamped on; curving or hedged fields along rivers and contours blend in (v3).
+- **No plinths under cities.** A city fades into cleared earth, lanes and outlying houses instead of standing on a raised base (v3).
 - **Factions share the map style.** Roman, modern, and Asian pieces change costume and architecture, not the ground language.
 
 ## Iterations

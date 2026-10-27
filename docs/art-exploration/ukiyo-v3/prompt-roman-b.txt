@@ -1,0 +1,4 @@
+Edit this ukiyo-e woodblock strategy-game screen. Keep the sidebar, the map layout, the coastline, the river, the forests, the mountains, the waves, the railroad, the unit positions and the woodblock print style exactly as they are. Change only the following.
+1) Cities: paint each city flat onto the map like a vignette on an old illustrated map: a walled town seen from above at a gentle angle, sitting in a soft ring of cleared earth, lanes and small fields that fade out into the terrain around it. No base plate, no outline, no drop shadow. Keep the small numbered size badges.
+2) Farmland: replace the square checkerboard with a small irregular patchwork of fields along the river, with hedgerows, a few farmhouses and footpaths, like a Hiroshige landscape seen from above, never a grid; every edge blends into the grass.
+3) Make every unit about 15 percent smaller.
