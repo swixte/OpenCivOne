@@ -36,6 +36,7 @@ Browse the **curated set** at the top of this folder first. `iterations/` holds 
 | `ukiyo-factions/` | Factions | Roman-ancient, modern, and Asian-medieval pieces on the **same** map style. |
 | `ukiyo-v2/` | v2 improvements | Larger cities, farmland and mines painted into the ground, thinner railroad, Roman / modern / Asian-medieval scenes, before/after sheets. |
 | `ukiyo-v3/` | v3: blending | Edits of the v2 screens: cities with no plinth grown out of the land (`roman-a`), walled-town vignettes in cleared earth (`roman-b`), modern sprawl (`modern-c`); farmland as curving or hedged fields that follow the land instead of a checkerboard; units about 15% smaller. `water-test.gif` animates the sea and rivers of `roman-b` (`scripts/water_test.py`). |
+| `ukiyo-v4/` | v4: concept sheets | Cities by era and size painted into the ground; terrain improvements (fields, mines, roads, rails, fortress, pollution, huts); every terrain in one continuous map; all 28 units as small tokens. Made from the v2 and v3 screens as references (`scripts/concept_v4.py`, prompts beside the images). |
 | `iterations/` | Working takes | Distinct generations and process sheets; see below. |
 | `scripts/` | Generator scripts | How the plates were requested. They read `OPENAI_API_KEY` from the environment and do not contain a key. |
 
