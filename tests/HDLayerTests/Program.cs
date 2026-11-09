@@ -468,6 +468,19 @@ GBitmap other4()
 	var chunkBorder = Steps(seamMap, 7, 7);
 	Check(chunkBorder.Across < chunkBorder.Inside * 2 + 4, $"painted: no seam between chunks ({chunkBorder.Across:0.0} across vs {chunkBorder.Inside:0.0} inside)");
 	var wrap = Steps(seamMap, 79, 22);
+	if (Environment.GetEnvironmentVariable("PAINTED_SEAM") is string wrapOut)
+	{
+		using var wrapImage = new SKBitmap(4 * 64, 64, SKColorType.Bgra8888, SKAlphaType.Premul);
+		foreach ((int cx3, int i3) in new[] { (77, 0), (78, 1), (79, 2), (0, 3) })
+		{
+			uint[] c = Cell(seamMap, cx3, 22);
+			for (int y = 0; y < 64; y++)
+				for (int x = 0; x < 64; x++)
+					wrapImage.SetPixel(i3 * 64 + x, y, new SKColor(c[y * 64 + x] | 0xff000000));
+		}
+		using var wrapFile = File.OpenWrite(wrapOut + ".wrap.png");
+		wrapImage.Encode(wrapFile, SKEncodedImageFormat.Png, 100);
+	}
 	Check(wrap.Across < wrap.Inside * 2 + 4, $"painted: no seam where the world wraps around ({wrap.Across:0.0} vs {wrap.Inside:0.0})");
 	Check(Cell(painted, 10, 6).SequenceEqual(Cell(painted, 10, 6)), "painted: a cell paints the same every time");
 	if (Environment.GetEnvironmentVariable("PAINTED_ART") == null)

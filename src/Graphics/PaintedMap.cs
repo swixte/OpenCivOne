@@ -278,6 +278,16 @@ namespace OpenCivOne.Graphics
 				}
 			}
 
+			// a texture has to repeat a whole number of times around the world, or its pattern breaks where the world wraps
+			map.pattern = WholeRepeats(map.pattern);
+			map.seaPattern = WholeRepeats(map.seaPattern);
+
+			for (int t = 0; t < map.terrainPattern.Length; t++)
+			{
+				if (map.terrainPattern[t] > 0)
+					map.terrainPattern[t] = WholeRepeats(map.terrainPattern[t]);
+			}
+
 			map.groundParts = new (string Name, float Weight)[Ground.Length][];
 
 			for (int t = 0; t < Ground.Length; t++)
@@ -292,6 +302,14 @@ namespace OpenCivOne.Graphics
 			map.TextureOr("shallow");
 
 			return map;
+		}
+
+		// the nearest texture scale at which a texture (TextureCells wide) repeats a whole number of times across the map
+		private static float WholeRepeats(float scale)
+		{
+			float across = MapWidth / (float)TextureCells;
+
+			return across / Math.Max(1, MathF.Round(across / scale));
 		}
 
 		private static Texture LoadTexture(SKBitmap image, int size)

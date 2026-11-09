@@ -1,35 +1,37 @@
 {
  "tex_grass": {
-  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the grassland: olive and sage green grass densely covered with tiny shrubs, tufts and a few small round trees in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the grassland: olive and sage green grass densely covered with tiny shrubs, tufts and a few small round trees: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
+  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, for a ukiyo-e woodblock print map, in exactly the drawing of the GRASSLAND area in the first reference image (the palette map) and the crop after it: fresh green grassland with a few small round shrubs and tufts of grass. Like a woodblock print it is mostly one calm, flat colour, fresh meadow green #8DB255, with only soft bokashi variation and a faint paper grain; the small motifs are few, widely spaced and evenly scattered with plenty of plain colour between them, drawn with fine dark key-block lines. Low contrast overall: no dense detail, no busy noise, no large shapes, no light or shadow, no border, no text, no labels.",
   "refs": [
-   "refs/crops/grass_a.jpg",
-   "refs/crops/grass_b.jpg"
+   "../../docs/art-exploration/ukiyo-v5/palette.jpg",
+   "refs/crops-v5/grass.jpg"
   ]
  },
  "tex_plains": {
-  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the plains: golden olive grass, drier and more ochre than the grassland, with small tufts and sparse shrubs in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the plains: golden olive grass, drier and more ochre than the grassland, with small tufts and sparse shrubs: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
+  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, for a ukiyo-e woodblock print map, in exactly the drawing of the PLAINS area in the first reference image (the palette map) and the crop after it: dry golden plains with a few small tufts and the odd small bush. Like a woodblock print it is mostly one calm, flat colour, warm golden ochre #D9B45A, with only soft bokashi variation and a faint paper grain; the small motifs are few, widely spaced and evenly scattered with plenty of plain colour between them, drawn with fine dark key-block lines. Low contrast overall: no dense detail, no busy noise, no large shapes, no light or shadow, no border, no text, no labels.",
   "refs": [
-   "refs/crops/grass_a.jpg",
-   "refs/crops/desert_river.jpg"
+   "../../docs/art-exploration/ukiyo-v5/palette.jpg",
+   "refs/crops-v5/plains.jpg"
   ]
  },
  "tex_desert": {
-  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the desert: pale sand with rows of fine dune lines and a few tiny desert shrubs in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the desert: pale sand with rows of fine dune lines and a few tiny desert shrubs: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
+  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, for a ukiyo-e woodblock print map, in exactly the drawing of the DESERT area in the first reference image (the palette map) and the crop after it: pale sand with a few soft dune ridges drawn as fine curved lines and the odd tiny desert shrub. Like a woodblock print it is mostly one calm, flat colour, pale sand #EAD9A6, with only soft bokashi variation and a faint paper grain; the small motifs are few, widely spaced and evenly scattered with plenty of plain colour between them, drawn with fine dark key-block lines. Low contrast overall: no dense detail, no busy noise, no large shapes, no light or shadow, no border, no text, no labels.",
   "refs": [
-   "refs/crops/desert.jpg",
-   "refs/crops/desert_river.jpg"
+   "../../docs/art-exploration/ukiyo-v5/palette.jpg",
+   "refs/crops-v5/desert.jpg"
   ]
  },
  "tex_tundra": {
-  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the tundra: lilac-grey ground with the same pattern of stones, lichen and small hardy plants in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the tundra: lilac-grey ground with the same pattern of stones, lichen and small hardy plants: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
+  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, for a ukiyo-e woodblock print map, in exactly the drawing of the TUNDRA area in the first reference image (the palette map) and the crop after it: cold lilac-grey ground with a few small stones and tufts of lichen. Like a woodblock print it is mostly one calm, flat colour, lilac grey #B4A3B8, with only soft bokashi variation and a faint paper grain; the small motifs are few, widely spaced and evenly scattered with plenty of plain colour between them, drawn with fine dark key-block lines. Low contrast overall: no dense detail, no busy noise, no large shapes, no light or shadow, no border, no text, no labels.",
   "refs": [
-   "refs/crops/tundra.jpg"
+   "../../docs/art-exploration/ukiyo-v5/palette.jpg",
+   "refs/crops-v5/tundra.jpg"
   ]
  },
  "tex_snow": {
-  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the arctic ice: cream-white ice floes with fine pale-blue cracks between them in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the arctic ice: cream-white ice floes with fine pale-blue cracks between them: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
+  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, for a ukiyo-e woodblock print map, in exactly the drawing of the ARCTIC ICE area in the first reference image (the palette map) and the crop after it: cream-white ice with a few long fine pale-blue cracks. Like a woodblock print it is mostly one calm, flat colour, ice white #F2F2EE, with only soft bokashi variation and a faint paper grain; the small motifs are few, widely spaced and evenly scattered with plenty of plain colour between them, drawn with fine dark key-block lines. Low contrast overall: no dense detail, no busy noise, no large shapes, no light or shadow, no border, no text, no labels.",
   "refs": [
-   "refs/crops/arctic.jpg"
+   "../../docs/art-exploration/ukiyo-v5/palette.jpg",
+   "refs/crops-v5/arctic.jpg"
   ]
  },
  "tex_ocean": {
@@ -45,9 +47,10 @@
   ]
  },
  "tex_swamp": {
-  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the swamp: marshy olive ground with dense reed tufts, rushes and small dark pools of water in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the swamp: marshy olive ground with dense reed tufts, rushes and small dark pools of water: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
+  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, for a ukiyo-e woodblock print map, in exactly the drawing of the SWAMP area in the first reference image (the palette map) and the crop after it: dark marsh with a few clumps of reeds and small still pools. Like a woodblock print it is mostly one calm, flat colour, muddy olive-green #6B6B45, with only soft bokashi variation and a faint paper grain; the small motifs are few, widely spaced and evenly scattered with plenty of plain colour between them, drawn with fine dark key-block lines. Low contrast overall: no dense detail, no busy noise, no large shapes, no light or shadow, no border, no text, no labels.",
   "refs": [
-   "refs/crops/swamp.jpg"
+   "../../docs/art-exploration/ukiyo-v5/palette.jpg",
+   "refs/crops-v5/swamp.jpg"
   ]
  },
  "tex_floor": {
@@ -63,9 +66,10 @@
   ]
  },
  "tex_hills": {
-  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, that continues the hill country: olive-green grassy slopes with fine curved contour hatching in the reference crops exactly: the same woodblock drawing, the same colours, the same scale and density of fine hand-drawn detail, as if more of that same map. Only the hill country: olive-green grassy slopes with fine curved contour hatching: no roads, paths, rivers, buildings, people, animals, flags, ships, text, frames or borders, and no single large feature; the detail is spread evenly so the tile repeats without seams.",
+  "prompt": "Make a seamless tileable ground texture, seen straight from above, filling the whole square edge to edge, for a ukiyo-e woodblock print map, in exactly the drawing of the HILLS area in the first reference image (the palette map) and the crop after it: olive hill-country ground with a few fine curved contour strokes and small tufts. Like a woodblock print it is mostly one calm, flat colour, olive ochre #A08A4E, with only soft bokashi variation and a faint paper grain; the small motifs are few, widely spaced and evenly scattered with plenty of plain colour between them, drawn with fine dark key-block lines. Low contrast overall: no dense detail, no busy noise, no large shapes, no light or shadow, no border, no text, no labels.",
   "refs": [
-   "refs/crops/hills.jpg"
+   "../../docs/art-exploration/ukiyo-v5/palette.jpg",
+   "refs/crops-v5/hills.jpg"
   ]
  },
  "tex_mountains": {
@@ -94,10 +98,10 @@
   ]
  },
  "hills": {
-  "prompt": "A sprite sheet in exactly the woodblock drawing, colours and scale of detail of the hills in the reference crops: 9 separate low rounded grassy hills with fine contour hatching, seen from a high three-quarter top-down angle, varied sizes. Each is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background with clear magenta space between them so each can be cut out; no ground under them, no cast shadow, no text, no frame.",
+  "prompt": "A sprite sheet of 9 separate grass-covered rolling hills, drawn exactly like the HILLS in the first reference image (the palette map) and the crop after it, in a ukiyo-e woodblock print technique, seen from a high three-quarter top-down angle. Each is a broad, softly rounded grassy down covered in green-olive grass (#A08A4E lit, #6F6A3A shaded), its lit side lighter and its shaded side darker green, with several fine curved key-block contour strokes following the slope, a few small grass tufts and sometimes one or two tiny round trees on top, inside a fine dark key-block outline. They are green and grassy like downs, never bare earth, sand, dirt or rock; wider than tall, varied sizes, some single and some in pairs. Each is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background with clear magenta space between them so each can be cut out; no ground under them, no cast shadows, no text, no frame.",
   "refs": [
-   "refs/crops/hills.jpg",
-   "refs/crops/grass_b.jpg"
+   "../../docs/art-exploration/ukiyo-v5/palette.jpg",
+   "refs/crops-v5/hills.jpg"
   ]
  },
  "mountains": {
