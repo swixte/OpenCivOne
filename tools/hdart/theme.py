@@ -280,7 +280,7 @@ def city_streets(out, force=False):
     w, h = 24 * S, 8 * S
     yy, xx = np.mgrid[0:h, 0:w] + 0.5
     # the diamond: 1 inside, falling to 0 over its last fifth
-    diamond = np.clip((1 - (np.abs(xx - w / 2) / (w / 2) + np.abs(yy - h / 2) / (h / 2))) / 0.2, 0, 1)
+    diamond = np.clip((1 - (np.abs(xx - w / 2) / (w / 2) + np.abs(yy - h / 2) / (h / 2))) / 0.45, 0, 1)
     for era, top in enumerate((65, 81)):
         for i in range(16):
             rect = ((i % 8) * 24, top + (i - i % 8), 24, 8)
@@ -301,7 +301,8 @@ def city_streets(out, force=False):
                 # rows of setts: fine dark joints
                 joints = ((yy.astype(int) % (2 * S)) == 0) | (((xx.astype(int) + (yy.astype(int) // (2 * S)) * S) % (3 * S)) == 0)
                 tone[joints] *= 0.72
-            img = np.dstack([np.clip(tone, 0, 255), diamond * 235]).astype(np.uint8)
+            # see-through, so the lanes sit in the landscape rather than on it
+            img = np.dstack([np.clip(tone, 0, 255), diamond * 150]).astype(np.uint8)
             region(out, 'CITYPIX1', rect, Image.fromarray(img, 'RGBA'), False)
             written += 1
     return written

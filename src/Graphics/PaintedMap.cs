@@ -645,11 +645,11 @@ namespace OpenCivOne.Graphics
 			return a + ((b - a) * u) + ((c - a) * v) + ((a - b - c + d) * u * v);
 		}
 
-		// arctic ice, tundra and swamp keep crisp edges against other land, where a soft fade would look like a stain;
-		// forest and jungle edges are made by their crowns
+		// open terrains meet in crisp, inked edges, where a soft fade would look airbrushed; forest and jungle edges are
+		// made by their crowns
 		private static bool IsCrisp(int a, int b)
 		{
-			return a == Arctic || b == Arctic || a == Swamp || b == Swamp || ((a == Tundra || b == Tundra) && a != Mountains && b != Mountains);
+			return a != Forest && b != Forest && a != Jungle && b != Jungle;
 		}
 
 		private static float Lerp(float a, float b, float t)
@@ -1123,13 +1123,19 @@ namespace OpenCivOne.Graphics
 						// the sea lightens towards the shore like a bokashi gradient that follows the coast, reaching a little
 						// further out in some places than others
 						float depth = seaDepth[e];
-						float range = shallowRange * (0.7f + (0.6f * this.Noise(wx, wy, 90 * k, 17)));
-						float shallowness = Smooth(range, 0, depth);
+						float range = shallowRange * (0.4f + (1.2f * this.Noise(wx, wy, 120 * k, 17)));
+						// a defined band of shallow water along the shore, its outer edge drawn with a faint darker line
+						float band = range * 0.6f;
+						float shallowness = Smooth(band + (1.2f * k), band - (1.2f * k), depth);
 						Fetch(ocean, sx, sy, out float or, out float og, out float ob);
 						Fetch(shallow, sx, sy, out float sr, out float sg, out float sb);
 						cr = or + ((sr - or) * shallowness);
 						cg = og + ((sg - og) * shallowness);
 						cb = ob + ((sb - ob) * shallowness);
+						float dropOff = Smooth(1.6f * k, 0.4f * k, MathF.Abs(depth - band - (1.4f * k))) * 0.35f;
+						cr += (26 - cr) * dropOff;
+						cg += (44 - cg) * dropOff;
+						cb += (70 - cb) * dropOff;
 
 						// one broken pale wave line running along the shore
 						float waveOffset = (this.Noise(wx, wy, 25 * k, 23) - 0.5f) * 3 * k;
@@ -1142,18 +1148,33 @@ namespace OpenCivOne.Graphics
 					}
 					else
 					{
-						float ownPattern = this.terrainPattern[own] > 0 ? this.terrainPattern[own] : this.pattern;
-						Fetch(ground[own], wx / ownPattern, wy / ownPattern, out cr, out cg, out cb);
+						// a lone peak rises from foothills, not from a patch of bare rock: rock ground is for ranges
+						int groundOf = own;
 
-						// terrains fade into each other like bokashi, half way each side of the border; forest and jungle are
-						// edged by their tree crowns, drawn over the ground later
-						// tundra and ice meet other land with a crisp edge and a fine ink line instead, like a print's ice field
+						if (own == Mountains)
+						{
+							int mci = (int)MathF.Floor((float)wx / this.cell), mcj = (int)MathF.Floor((float)wy / this.cell), range = 0;
+
+							for (int nj = -1; nj <= 1; nj++)
+								for (int ni = -1; ni <= 1; ni++)
+									if ((ni != 0 || nj != 0) && grid.At(mci + ni, mcj + nj) == Mountains)
+										range++;
+
+							if (range < 2)
+								groundOf = Hills;
+						}
+
+						float ownPattern = this.terrainPattern[groundOf] > 0 ? this.terrainPattern[groundOf] : this.pattern;
+						Fetch(ground[groundOf], wx / ownPattern, wy / ownPattern, out cr, out cg, out cb);
+
+						// like the colour blocks of a woodblock print, terrains meet in a cut edge with a fine key line; under
+						// forest and jungle, whose crowns make their edge, the ground fades instead
 						if (nearest != own && IsCrisp(own, nearest))
 						{
-							float ink = Smooth(1.6f * k, 0.6f * k, edge) * 0.55f;
-							cr += (60 - cr) * ink;
-							cg += (56 - cg) * ink;
-							cb += (58 - cb) * ink;
+							float ink = Smooth(1.5f * k, 0.5f * k, edge) * ((own == Arctic || nearest == Arctic || own == Swamp || nearest == Swamp) ? 0.55f : 0.42f);
+							cr += (58 - cr) * ink;
+							cg += (52 - cg) * ink;
+							cb += (44 - cb) * ink;
 						}
 						else if (nearest != own)
 						{
