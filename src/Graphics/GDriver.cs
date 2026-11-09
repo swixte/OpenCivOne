@@ -503,6 +503,17 @@ namespace OpenCivOne.Graphics
 			}
 		}
 
+		public void DrawPaintedFog(CRectangle rect, int x, int y, PaintedMap map, int mapX, int mapY)
+		{
+			if (this.screens.ContainsKey(rect.ScreenID))
+			{
+				lock (VCPU.GraphicsLock)
+				{
+					this.screens.GetValueByKey(rect.ScreenID).DrawPaintedFog(rect.Left + x, rect.Top + y, map, mapX, mapY);
+				}
+			}
+		}
+
 		public void DrawPaintedCell(CRectangle rect, int x, int y, PaintedMap map, int mapX, int mapY)
 		{
 			if (this.screens.ContainsKey(rect.ScreenID))

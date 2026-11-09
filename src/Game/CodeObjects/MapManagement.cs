@@ -170,7 +170,8 @@ namespace OpenCivOne
 					else
 					{
 						// Instruction address 0x2aea:0x0094, size: 5
-						this.parent.DrawTools.FillRectangle(this.parent.Var_aa_Screen0_Rectangle, 80 + (cellXPos * 16), 8 + (cellYPos * 16), 16, 16, 0);
+						this.DrawUnexploredCell(80 + (cellXPos * 16), 8 + (cellYPos * 16),
+							this.parent.MapManagement.AdjustXPosition(this.parent.Var_d4cc_MapViewX + cellXPos), this.parent.Var_d75e_MapViewY + cellYPos);
 					}
 				}
 
@@ -204,7 +205,7 @@ namespace OpenCivOne
 					else
 					{
 						// Instruction address 0x2aea:0x0094, size: 5
-						this.parent.DrawTools.FillRectangle(this.parent.Var_aa_Screen0_Rectangle, 80 + (i * 16), 8 + (j * 16), 16, 16, 0);
+						this.DrawUnexploredCell(80 + (i * 16), 8 + (j * 16), mapX, mapY);
 					}
 				}
 			}
@@ -1454,6 +1455,18 @@ namespace OpenCivOne
 				this.gameData.Map.SetPixel(x, y + 150, 
 					(byte)(((~((int)improvements >> 4)) & this.gameData.Map.GetPixel(x, y + 150)) & 0xff), 0);
 			}		
+		}
+
+		/// <summary>
+		/// An unexplored map cell: black, which a print paints as dark paper with bands of mist
+		/// </summary>
+		private void DrawUnexploredCell(int scrX, int scrY, int mapX, int mapY)
+		{
+			this.parent.DrawTools.FillRectangle(this.parent.Var_aa_Screen0_Rectangle, scrX, scrY, 16, 16, 0);
+			PaintedMap? paintedMap = this.parent.PaintedMap;
+
+			if (paintedMap != null && paintedMap.Print)
+				this.parent.Graphics.DrawPaintedFog(this.parent.Var_aa_Screen0_Rectangle, scrX, scrY, paintedMap, mapX, mapY);
 		}
 
 		public void SetMiniMapCell(int x, int y, int value)

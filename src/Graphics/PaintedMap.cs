@@ -420,6 +420,71 @@ namespace OpenCivOne.Graphics
 		}
 
 		/// <summary>
+		/// Paints an unexplored map cell of a print: dark paper with soft bands of stylised mist (kasumi), painted from
+		/// the world position so neighbouring unexplored cells join without a grid
+		/// </summary>
+		public void CopyFogCell(int x, int y, uint[] destination, int destinationOffset, int destinationStride)
+		{
+			x = WrapX(x);
+			float k = this.cell / 64f;
+
+			for (int py = 0; py < this.cell; py++)
+			{
+				int wy = (y * this.cell) + py;
+
+				for (int px = 0; px < this.cell; px++)
+				{
+					int wx = (x * this.cell) + px;
+					// kasumi: long flat bands of cloud with rounded ends, in rows, each row's clouds placed by a hash so the
+					// pattern repeats around the world without a break
+					float cloud = this.FogCloud(wx, wy, k);
+					float fill = Smooth(0.6f * k, -0.6f * k, cloud);
+					float rim = Smooth(1.4f * k, 0.3f * k, MathF.Abs(cloud + (1.2f * k)));
+					float grain = (this.Noise(wx, wy, 3 * k, 53) - 0.5f) * 6;
+					float r = 27 + (17 * fill) + (14 * rim) + grain, g = 28 + (17 * fill) + (14 * rim) + grain, b = 36 + (21 * fill) + (16 * rim) + grain;
+					destination[destinationOffset + (py * destinationStride) + px] = 0xff000000 | ((uint)Math.Clamp(r, 0, 255) << 16) | ((uint)Math.Clamp(g, 0, 255) << 8) | (uint)Math.Clamp(b, 0, 255);
+				}
+			}
+		}
+
+		// signed distance (negative inside) to the nearest band of mist at a world pixel
+		private float FogCloud(int wx, int wy, float k)
+		{
+			float row = 52 * k, half = 8.5f * k, span = 256 * k;
+			int segments = Math.Max(1, (int)MathF.Round(this.worldWidth / span));
+			span = this.worldWidth / (float)segments;
+			float best = float.MaxValue;
+			int n0 = (int)MathF.Floor(wy / row);
+
+			for (int n = n0 - 1; n <= n0 + 1; n++)
+			{
+				float centreY = (n * row) + (row * 0.4f);
+				float shift = Hash(n, 7, 61) * span;
+
+				for (int d = -1; d <= 1; d++)
+				{
+					int seg = ((int)MathF.Floor(((wx - shift) % this.worldWidth + this.worldWidth) % this.worldWidth / span) + d + segments) % segments;
+					float h1 = Hash(seg, n, 62), h2 = Hash(seg, n, 63);
+
+					if (h2 < 0.25f)
+						continue;
+
+					float length = span * (0.35f + (0.45f * h1)), centreX = shift + (seg * span) + (span * 0.5f);
+					// the nearest copy of the cloud around the world
+					float dx = wx - centreX;
+					dx -= MathF.Round(dx / this.worldWidth) * this.worldWidth;
+					dx = Math.Max(0, MathF.Abs(dx) - (length / 2));
+					// a scalloped top edge
+					float top = (wy < centreY) ? MathF.Abs(MathF.Sin((wx + (n * 31)) / (11 * k))) * 3 * k : 0;
+					float dy = wy - centreY;
+					best = Math.Min(best, MathF.Sqrt((dx * dx) + (dy * dy)) - half - top);
+				}
+			}
+
+			return best;
+		}
+
+		/// <summary>
 		/// Forgets all painted chunks, for example when a different map is loaded
 		/// </summary>
 		public void Clear()

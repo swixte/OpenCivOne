@@ -7,3 +7,4 @@
 4  8E3324   # red buttons and shields: madder
 12 EE8C6E   # light red text: pale vermilion
 15 F4ECD8   # white text and highlights: cream
+8  2E3446   # dark grey report backgrounds and shadows: indigo-grey

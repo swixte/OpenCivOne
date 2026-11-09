@@ -708,6 +708,25 @@ namespace OpenCivOne.Graphics
 			this.bModified = true;
 		}
 
+		/// <summary>
+		/// Shows an unexplored cell of a print over the 16x16 indexed pixels at (x, y), see PaintedMap.CopyFogCell
+		/// </summary>
+		public void DrawPaintedFog(int x, int y, PaintedMap map, int mapX, int mapY)
+		{
+			if (map.CellSize != 16 * HDScale || x < 0 || y < 0 || x + 16 > this.iWidth || y + 16 > this.iHeight)
+				return;
+
+			this.EnsureHDLayer();
+			map.CopyFogCell(mapX, mapY, this._hdPixels!, this.GetHDAddress(x, y), this.iWidth * HDScale);
+
+			for (int i = 0; i < 16; i++)
+			{
+				Array.Fill(this._hdMask!, true, ((y + i) * this.iWidth) + x, 16);
+			}
+
+			this.bModified = true;
+		}
+
 		public void DrawPaintedCell(int x, int y, PaintedMap map, int mapX, int mapY)
 		{
 			if (map.CellSize != 16 * HDScale || x < 0 || y < 0 || x + 16 > this.iWidth || y + 16 > this.iHeight)
