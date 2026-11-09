@@ -162,6 +162,14 @@ namespace OpenCivOne.Graphics
 
 		public int CellSize => this.cell;
 
+		// a print's minimap colours by terrain id: the palette of the print's map, not the original EGA colours
+		private static readonly uint[] PrintMiniMap = { 0xEAD9A6, 0xD9B45A, 0x8DB255, 0x2E5A43, 0xA08A4E, 0x6E7C8C, 0xB4A3B8, 0xF2F2EE, 0x6B6B45, 0x2F8A4E, 0x1F3A5F, 0x3F7FBF };
+
+		/// <summary>
+		/// The colour the minimap shows for a terrain in a print (RRGGBB), or 0 to keep the game's own colour
+		/// </summary>
+		public uint MiniMapColor(int terrain) => (this.print && terrain >= 0 && terrain < PrintMiniMap.Length) ? PrintMiniMap[terrain] : 0;
+
 		/// <summary>
 		/// What a map cell holds that a print paints into the ground: SpecialResource and MinorTribeHut flags; x already
 		/// wrapped and y inside the map
@@ -637,10 +645,11 @@ namespace OpenCivOne.Graphics
 			return a + ((b - a) * u) + ((c - a) * v) + ((a - b - c + d) * u * v);
 		}
 
-		// arctic ice and tundra keep crisp edges against other land; forest and jungle edges are made by their crowns
+		// arctic ice, tundra and swamp keep crisp edges against other land, where a soft fade would look like a stain;
+		// forest and jungle edges are made by their crowns
 		private static bool IsCrisp(int a, int b)
 		{
-			return a == Arctic || b == Arctic || ((a == Tundra || b == Tundra) && a != Mountains && b != Mountains);
+			return a == Arctic || b == Arctic || a == Swamp || b == Swamp || ((a == Tundra || b == Tundra) && a != Mountains && b != Mountains);
 		}
 
 		private static float Lerp(float a, float b, float t)

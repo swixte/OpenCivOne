@@ -492,6 +492,17 @@ namespace OpenCivOne.Graphics
 		/// <summary>
 		/// Shows the painted map's cell (mapX, mapY) over the 16x16 pixels at (x, y) of the rectangle's screen
 		/// </summary>
+		public void ColorHD(CRectangle rect, int x, int y, int width, int height, Func<byte, uint> colorOf)
+		{
+			if (this.screens.ContainsKey(rect.ScreenID))
+			{
+				lock (VCPU.GraphicsLock)
+				{
+					this.screens.GetValueByKey(rect.ScreenID).ColorHD(rect.Left + x, rect.Top + y, width, height, colorOf);
+				}
+			}
+		}
+
 		public void DrawPaintedCell(CRectangle rect, int x, int y, PaintedMap map, int mapX, int mapY)
 		{
 			if (this.screens.ContainsKey(rect.ScreenID))

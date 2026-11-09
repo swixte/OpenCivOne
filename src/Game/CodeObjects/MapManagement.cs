@@ -314,6 +314,15 @@ namespace OpenCivOne
 				}
 			}
 
+			// a print shows its minimap in the colours of its map
+			PaintedMap? printMap = this.parent.PaintedMap;
+
+			if (printMap != null && printMap.Print)
+			{
+				this.parent.Graphics.ColorHD(this.parent.Var_aa_Screen0_Rectangle, 0, 8, 80, 50, index =>
+					(index > 0 && index < this.parent.PixelValuesToTerrainTypes.Length) ? printMap.MiniMapColor((int)this.parent.PixelValuesToTerrainTypes[index]) : 0);
+			}
+
 			for (int i = 0; i < 128; i++)
 			{
 				City city = this.parent.GameData.Cities[i];

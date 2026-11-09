@@ -678,6 +678,36 @@ namespace OpenCivOne.Graphics
 		/// <summary>
 		/// Shows the painting of a map cell (see PaintedMap) over the 16x16 indexed pixels at (x, y)
 		/// </summary>
+		/// <summary>
+		/// Shows each pixel of an area in the colour colorOf gives for its palette index (RRGGBB), as solid HD pixels;
+		/// pixels it gives 0 for keep their palette colour. Drawing over a pixel later shows that drawing again.
+		/// </summary>
+		public void ColorHD(int left, int top, int width, int height, Func<byte, uint> colorOf)
+		{
+			this.EnsureHDLayer();
+			int hdWidth = this.iWidth * HDScale;
+
+			for (int y = Math.Max(0, top); y < Math.Min(this.iHeight, top + height); y++)
+			{
+				for (int x = Math.Max(0, left); x < Math.Min(this.iWidth, left + width); x++)
+				{
+					uint color = colorOf(this.aPixels[(y * this.iWidth) + x]);
+
+					if (color == 0)
+						continue;
+
+					int address = this.GetHDAddress(x, y);
+
+					for (int k = 0; k < HDScale; k++)
+						Array.Fill(this._hdPixels!, 0xff000000 | color, address + (k * hdWidth), HDScale);
+
+					this._hdMask![(y * this.iWidth) + x] = true;
+				}
+			}
+
+			this.bModified = true;
+		}
+
 		public void DrawPaintedCell(int x, int y, PaintedMap map, int mapX, int mapY)
 		{
 			if (map.CellSize != 16 * HDScale || x < 0 || y < 0 || x + 16 > this.iWidth || y + 16 > this.iHeight)
