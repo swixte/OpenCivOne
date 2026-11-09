@@ -147,6 +147,8 @@ namespace OpenCivOne.Graphics
 			public bool FadeFoot;
 			// a resource of the sea, drawn over the water
 			public bool OnWater;
+			// how opaque it is drawn (0 means fully: the default)
+			public float Fade;
 		}
 
 		/// <param name="terrainAt">Terrain id (TerrainTypeEnum) of a map cell, x already wrapped and y inside the map</param>
@@ -1006,6 +1008,17 @@ namespace OpenCivOne.Graphics
 			Texture ocean = this.TextureOr("ocean"), shallow = this.TextureOr("shallow");
 			Texture[] ground = Array.ConvertAll(this.groundParts, parts => this.TextureOr(parts[0].Name));
 			TerrainGrid grid = new TerrainGrid(this, cx, cy);
+			// the resources of the chunk's cells and their neighbours, painted into the ground
+			const int FeatureMargin = 2;
+			int featureLeft = (cx * ChunkCells) - FeatureMargin, featureTop = (cy * ChunkCells) - FeatureMargin, featureWidth = ChunkCells + (2 * FeatureMargin);
+			bool[] resources = new bool[featureWidth * featureWidth];
+
+			if (this.PaintsFeatures)
+			{
+				for (int fj = 0; fj < featureWidth; fj++)
+					for (int fi = 0; fi < featureWidth; fi++)
+						resources[(fj * featureWidth) + fi] = (this.Feature(featureLeft + fi, featureTop + fj) & SpecialResource) != 0;
+			}
 
 			// pass 1: the terrain of every pixel (with a margin, for the lines and the shallows). The warp is smooth, so it is
 			// worked out every few pixels and blended in between.
@@ -1141,6 +1154,19 @@ namespace OpenCivOne.Graphics
 							cr += (nr - cr) * fade;
 							cg += (ng - cg) * fade;
 							cb += (nb - cb) * fade;
+						}
+
+						// a resource is painted into the ground of its cell: a field, a pond, a seam, a glade
+						int rci = (int)MathF.Floor((float)wx / this.cell), rcj = (int)MathF.Floor((float)wy / this.cell);
+						int rfi = rci - featureLeft, rfj = rcj - featureTop;
+
+						if (rfi >= 0 && rfj >= 0 && rfi < featureWidth && rfj < featureWidth && resources[(rfj * featureWidth) + rfi])
+						{
+							int kind = grid.At(rci, rcj);
+							kind = kind == River ? Grassland : kind;
+
+							if (this.PaintResourceGround(kind, wx, wy, rci, rcj, ground, shallow, ocean, sx, sy, ref cr, ref cg, ref cb))
+								water[i] = (byte)(kind == Arctic ? 1 : 2);
 						}
 
 						// a narrow cream beach inside the coast line; below hills and mountains a shore of grey rock
@@ -1759,7 +1785,7 @@ namespace OpenCivOne.Graphics
 			bool both = (feature & (SpecialResource | MinorTribeHut)) == (SpecialResource | MinorTribeHut);
 
 			if ((feature & SpecialResource) != 0 && terrain < ResourceNames.Length)
-				this.PlaceFeature(placements, "res_" + ResourceNames[terrain], fx - (both ? 12 * k : 0), fy, 38 * k, terrain == Water);
+				this.PlaceResource(placements, random, terrain, fx - (both ? 12 * k : 0), fy);
 
 			if ((feature & MinorTribeHut) != 0)
 				this.PlaceFeature(placements, "hut", fx + (both ? 12 * k : 0), fy + (2 * k), 42 * k, false);
@@ -1771,13 +1797,182 @@ namespace OpenCivOne.Graphics
 		}
 
 		// a resource or hut standing at (x, baseY), fitted into a box of the given size
-		private void PlaceFeature(List<Placement> placements, string name, float x, float baseY, float box, bool onWater)
+		private void PlaceFeature(List<Placement> placements, string name, float x, float baseY, float box, bool onWater, bool flip = false, float fade = 0)
 		{
 			if (!this.features.TryGetValue(name, out Sprite? sprite))
 				return;
 
 			float height = box * Math.Min(1, (float)sprite.Height / sprite.Width), width = height * sprite.Width / sprite.Height;
-			placements.Add(new Placement { Sprite = sprite, X = x - (width / 2), Base = baseY, Width = width, Height = height, OnWater = onWater });
+			placements.Add(new Placement { Sprite = sprite, X = x - (width / 2), Base = baseY, Width = width, Height = height, OnWater = onWater, Flip = flip, Fade = fade });
+		}
+
+		/// <summary>
+		/// Paints the ground of a resource into a pixel of its cell: an oasis pond, a wheat field, a greener pasture, a
+		/// glade in a wood, a coal seam, gold flecks, a breathing hole in the ice, cut peat beds. Returns true where the
+		/// pixel became water.
+		/// </summary>
+		private bool PaintResourceGround(int kind, int wx, int wy, int ci, int cj, Texture[] ground, Texture shallow, Texture ocean,
+			float sx, float sy, ref float cr, ref float cg, ref float cb)
+		{
+			float k = this.cell / 64f;
+			float dx = wx - ((ci * this.cell) + (32 * k)), dy = wy - ((cj * this.cell) + (46 * k));
+			float wobble = (this.Noise(wx, wy, 9 * k, 45) - 0.5f) * 0.3f;
+			// distance from the middle of the design, 1 at its edge, in an organic oval
+			float Oval(float radius) => (MathF.Sqrt((dx * dx) + (dy * dy * 1.6f)) / (radius * k)) + wobble;
+			void Mix(float r, float g, float b, float amount, ref float cr, ref float cg, ref float cb)
+			{
+				cr += (r - cr) * amount;
+				cg += (g - cg) * amount;
+				cb += (b - cb) * amount;
+			}
+			float ink;
+
+			switch (kind)
+			{
+				case Desert:
+				{
+					// an oasis: a pond with an inked rim inside a ring of green
+					float d = Oval(13);
+					Fetch(ground[Grassland], wx / this.pattern, wy / this.pattern, out float gr, out float gg, out float gb);
+					Mix(gr, gg, gb, Smooth(1.9f, 1.2f, d) * 0.85f, ref cr, ref cg, ref cb);
+					ink = Smooth(1.12f, 1.0f, d) * Smooth(0.82f, 0.94f, d);
+
+					if (d < 1)
+					{
+						Fetch(shallow, sx, sy, out float sr, out float sg, out float sb);
+						cr = sr;
+						cg = sg;
+						cb = sb;
+					}
+
+					Mix(40, 40, 46, ink * 0.85f, ref cr, ref cg, ref cb);
+					return d < 0.95f;
+				}
+
+				case Grassland:
+				{
+					// wheat: two strips of field side by side, one ripe gold and one still green-gold, ploughed in clear
+					// furrows, with soft rounded corners and a fine ink edge
+					bool second = dx > 0;
+					float sdx = second ? dx - (12 * k) : dx + (12 * k);
+					float edge = MathF.Pow(MathF.Pow(MathF.Abs(sdx) / (11 * k), 4) + MathF.Pow(MathF.Abs(dy) / (14 * k), 4), 0.25f) + (wobble * 0.3f);
+					float furrow = MathF.Abs(MathF.Sin((second ? wy : wx) / (1.6f * k)));
+					float field = Smooth(1.0f, 0.92f, edge);
+					if (second)
+						Mix(214 - (60 * furrow), 196 - (46 * furrow), 104 - (40 * furrow), field * 0.95f, ref cr, ref cg, ref cb);
+					else
+						Mix(232 - (66 * furrow), 188 - (58 * furrow), 78 - (36 * furrow), field * 0.95f, ref cr, ref cg, ref cb);
+					Mix(70, 58, 36, Smooth(1.08f, 1.0f, edge) * Smooth(0.9f, 1.0f, edge) * 0.75f, ref cr, ref cg, ref cb);
+					return false;
+				}
+
+				case Plains:
+				{
+					// horses: a greener pasture
+					Fetch(ground[Grassland], wx / this.pattern, wy / this.pattern, out float gr, out float gg, out float gb);
+					Mix(gr, gg, gb, Smooth(1.5f, 0.8f, Oval(22)) * 0.75f, ref cr, ref cg, ref cb);
+					return false;
+				}
+
+				case Forest:
+				case Jungle:
+				{
+					// a glade in the wood, open grass where the bird or the gems are
+					Fetch(ground[Grassland], wx / this.pattern, wy / this.pattern, out float gr, out float gg, out float gb);
+					Mix(gr, gg, gb, Smooth(1.3f, 0.8f, Oval(20)) * 0.9f, ref cr, ref cg, ref cb);
+					return false;
+				}
+
+				case Hills:
+				{
+					// coal: a grey-brown outcrop of bare earth around the coal heap, a few dark stones in it
+					float d = Oval(17);
+					Mix(118, 104, 86, Smooth(1.2f, 0.75f, d) * 0.7f, ref cr, ref cg, ref cb);
+					Mix(48, 44, 42, Smooth(0.74f, 0.8f, this.Noise(wx, wy, 1.6f * k, 46)) * Smooth(1.0f, 0.7f, d) * 0.8f, ref cr, ref cg, ref cb);
+					return false;
+				}
+
+				case Mountains:
+				{
+					// gold: bright flecks in the rock at the foot
+					float fleck = Smooth(0.66f, 0.74f, this.Noise(wx, wy, 1.8f * k, 47)) * Smooth(1.2f, 0.6f, Oval(18));
+					Mix(232, 188, 70, fleck, ref cr, ref cg, ref cb);
+					return false;
+				}
+
+				case Arctic:
+				{
+					// a seal's breathing hole in the ice
+					float d = Oval(8);
+
+					if (d < 1)
+					{
+						Fetch(ocean, sx, sy, out float or, out float og, out float ob);
+						cr = or;
+						cg = og;
+						cb = ob;
+					}
+
+					Mix(40, 44, 56, Smooth(1.15f, 1.0f, d) * Smooth(0.85f, 0.97f, d) * 0.8f, ref cr, ref cg, ref cb);
+					return d < 0.95f;
+				}
+
+				case Swamp:
+				{
+					// peat: dark cut beds in rows
+					float bed = Smooth(1.0f, 0.9f, Math.Max(MathF.Abs(dx) / (20 * k), MathF.Abs(dy) / (14 * k)) + (wobble * 0.4f));
+					float row = MathF.Abs(MathF.Sin(wy / (3.2f * k))) > 0.35f ? 1 : 0.55f;
+					Mix(78 * row, 56 * row, 38 * row, bed * 0.85f, ref cr, ref cg, ref cb);
+					return false;
+				}
+			}
+
+			return false;
+		}
+
+		/// <summary>
+		/// The objects of a resource for a print: drawn smaller and without an outline, alone or in a small group, so
+		/// they belong to the painted ground of their design
+		/// </summary>
+		private void PlaceResource(List<Placement> placements, Random random, int terrain, float fx, float fy)
+		{
+			float k = this.cell / 64f;
+			string name = "res_" + ResourceNames[terrain];
+
+			switch (terrain)
+			{
+				case Desert:
+					// palms around the pond
+					this.Place(placements, "jungle", random, fx - (17 * k), fy - (2 * k), 30 * k);
+					this.Place(placements, "jungle", random, fx + (15 * k), fy + (3 * k), 26 * k);
+					break;
+
+				case Grassland:
+					// the field is the design; a sheaf stands at its edge
+					this.PlaceFeature(placements, name, fx + (16 * k), fy - (6 * k), 18 * k, false);
+					break;
+
+				case Plains:
+				case Tundra:
+					// a small herd
+					this.PlaceFeature(placements, name, fx - (9 * k), fy - (4 * k), 24 * k, false);
+					this.PlaceFeature(placements, name, fx + (11 * k), fy + (2 * k), 21 * k, false, true);
+					break;
+
+				case Water:
+					// a shoal seen through the water
+					this.PlaceFeature(placements, name, fx - (8 * k), fy - (6 * k), 26 * k, true, false, 0.45f);
+					this.PlaceFeature(placements, name, fx + (10 * k), fy + (4 * k), 22 * k, true, true, 0.45f);
+					break;
+
+				case Arctic:
+					this.PlaceFeature(placements, name, fx + (12 * k), fy - (4 * k), 24 * k, false);
+					break;
+
+				default:
+					this.PlaceFeature(placements, name, fx, fy - (4 * k), 24 * k, false);
+					break;
+			}
 		}
 
 		/// <summary>
@@ -1873,6 +2068,14 @@ namespace OpenCivOne.Graphics
 						sg *= foot;
 						sb *= foot;
 						sa *= foot;
+					}
+
+					if (p.Fade > 0)
+					{
+						sr *= 1 - p.Fade;
+						sg *= 1 - p.Fade;
+						sb *= 1 - p.Fade;
+						sa *= 1 - p.Fade;
 					}
 
 					if (sa <= 0.003f)

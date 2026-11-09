@@ -547,6 +547,16 @@ GBitmap other4()
 		[(10, 5)] = PaintedMap.MinorTribeHut, [(13, 5)] = PaintedMap.MinorTribeHut, [(7, 5)] = PaintedMap.MinorTribeHut,
 		[(12, 5)] = PaintedMap.SpecialResource, [(23, 8)] = PaintedMap.SpecialResource, [(16, 3)] = PaintedMap.SpecialResource,
 		[(19, 5)] = PaintedMap.SpecialResource | PaintedMap.MinorTribeHut, [(6, 9)] = PaintedMap.SpecialResource };
+	// and in the preview, one resource on each kind of terrain
+	if (Environment.GetEnvironmentVariable("PAINTED_PREVIEW") != null)
+	{
+		var seen = new HashSet<int>();
+		for (int y = 3; y < 13; y++)
+			for (int x = 6; x < 26; x++)
+				if ((x, y) != (10, 9) && !featureCells.ContainsKey((x, y)) && seen.Add(map[x, y]) &&
+					!featureCells.ContainsKey((x - 1, y)) && !featureCells.ContainsKey((x, y - 1)))
+					featureCells[(x, y)] = PaintedMap.SpecialResource;
+	}
 	PaintedMap featured = PaintedMap.Load(art, 64, (x, y) => map[x, y])!;
 	featured.FeatureAt = (x, y) => featureCells.TryGetValue((x, y), out int f) ? f : 0;
 	if (featured.Print)

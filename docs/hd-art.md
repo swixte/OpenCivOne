@@ -68,7 +68,10 @@ An optional `style.txt` in the painted art folder (lines of `name value`) change
   pale bank, as the mockup draws them; without one, a plain blue ribbon is drawn. Branches of a fork meet in one point.
   Resources and huts are painted into the scenery (the game passes them in with `FeatureAt` and then does not draw
   them over the map): back to front with the trees and peaks, in a clearing in a wood, at the foot of hills and
-  mountains, which stay low beside and in front of them, so they belong to the ground. Hills and mountains by the water step back from it onto a shore of grey rock, and a column of a peak whose foot stands in water is not drawn over water: a peak may rise against the water behind it but never hangs over the water beside or in front of it. Tundra and ice keep crisp, inked edges against other land; rivers swell and narrow a little, and branches of a fork curve into each other. Scenery never reaches into the sea in front
+  mountains, which stay low beside and in front of them, so they belong to the ground. Each resource is a design of its own painted into
+  its cell's ground, its object drawn smaller and without an outline: an oasis pond with palms, wheat as two strips
+  of ploughed field, a greener pasture with a pair of horses, a glade in a wood, a coal outcrop, gold flecks in the
+  rock, a seal's breathing hole in the ice, cut peat beds, caribou in a pair, a shoal of fish seen through the water. Hills and mountains by the water step back from it onto a shore of grey rock, and a column of a peak whose foot stands in water is not drawn over water: a peak may rise against the water behind it but never hangs over the water beside or in front of it. Tundra and ice keep crisp, inked edges against other land; rivers swell and narrow a little, and branches of a fork curve into each other. Scenery never reaches into the sea in front
   of it (a peak may rise against the sea behind it), trees keep out of rivers, the feet of hills and mountains fade into
   the ground, nothing casts a shadow, and grassland gets more, smaller trees.
 - `pattern`, `seapattern`: how much larger the land and sea textures are drawn (smaller than 1 draws them smaller);
