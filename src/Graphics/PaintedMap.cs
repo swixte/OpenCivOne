@@ -635,6 +635,12 @@ namespace OpenCivOne.Graphics
 			return a + ((b - a) * u) + ((c - a) * v) + ((a - b - c + d) * u * v);
 		}
 
+		// arctic ice and tundra keep crisp edges against other land; forest and jungle edges are made by their crowns
+		private static bool IsCrisp(int a, int b)
+		{
+			return a == Arctic || b == Arctic || ((a == Tundra || b == Tundra) && a != Mountains && b != Mountains);
+		}
+
 		private static float Lerp(float a, float b, float t)
 		{
 			return a + ((b - a) * t);
@@ -1119,7 +1125,15 @@ namespace OpenCivOne.Graphics
 
 						// terrains fade into each other like bokashi, half way each side of the border; forest and jungle are
 						// edged by their tree crowns, drawn over the ground later
-						if (nearest != own)
+						// tundra and ice meet other land with a crisp edge and a fine ink line instead, like a print's ice field
+						if (nearest != own && IsCrisp(own, nearest))
+						{
+							float ink = Smooth(1.6f * k, 0.6f * k, edge) * 0.55f;
+							cr += (60 - cr) * ink;
+							cg += (56 - cg) * ink;
+							cb += (58 - cb) * ink;
+						}
+						else if (nearest != own)
 						{
 							float nearestPattern = this.terrainPattern[nearest] > 0 ? this.terrainPattern[nearest] : this.pattern;
 							Fetch(ground[nearest], wx / nearestPattern, wy / nearestPattern, out float nr, out float ng, out float nb);
@@ -1129,11 +1143,13 @@ namespace OpenCivOne.Graphics
 							cb += (nb - cb) * fade;
 						}
 
-						// a narrow cream beach inside the coast line
+						// a narrow cream beach inside the coast line; below hills and mountains a shore of grey rock
 						float beach = Smooth(coastLine + beachWidth, coastLine + (beachWidth * 0.3f), coast) * 0.6f;
-						cr += (232 - cr) * beach;
-						cg += (220 - cg) * beach;
-						cb += (186 - cb) * beach;
+						bool rocky = own == Mountains || own == Hills;
+						float rock = rocky ? 0.8f + (0.4f * this.Noise(wx, wy, 2.5f * k, 41)) : 1;
+						cr += ((rocky ? 150 * rock : 232) - cr) * beach;
+						cg += ((rocky ? 146 * rock : 220) - cg) * beach;
+						cb += ((rocky ? 136 * rock : 186) - cb) * beach;
 
 						// rivers: the painted river strip, bent along each course; without one, a ribbon of blue inside a fine
 						// ink line, lighter on the bank towards the light (top left) and deeper on the other, with a broken white
@@ -1142,7 +1158,8 @@ namespace OpenCivOne.Graphics
 
 						if (strip != null)
 						{
-							float half = riverStripWidth / 2;
+							// the river swells and narrows a little along its course
+							float half = riverStripWidth / 2 * (0.82f + (0.36f * this.Noise(wx, wy, 70 * k, 43)));
 
 							// a pale bank outside a fine ink line, as the mockup draws its rivers
 							if (d < half + riverInk + riverBank + 1)
@@ -1383,11 +1400,23 @@ namespace OpenCivOne.Graphics
 						}
 						else if (count > 2)
 						{
-							// a fork: every branch runs into the centre, so the branches meet in one point, not a loop
+							// a fork: every branch runs into the centre, bending on its way towards the others so it joins them
+							// in a curve, and the branches meet in one point, not a loop
 							for (int a = 0; a < count; a++)
 							{
 								float ex = ax + (Sides[ways[a]].X * half), ey = ay + (Sides[ways[a]].Y * half);
-								list.Add(Curve(ex, ey, (ex + ax) / 2, (ey + ay) / 2, ax, ay, 0, 0));
+								float ox = 0, oy = 0;
+
+								for (int c = 0; c < count; c++)
+								{
+									if (c != a)
+									{
+										ox += Sides[ways[c]].X;
+										oy += Sides[ways[c]].Y;
+									}
+								}
+
+								list.Add(Curve(ex, ey, ((ex + ax) / 2) + (ox * half * 0.35f), ((ey + ay) / 2) + (oy * half * 0.35f), ax, ay, 0, 0));
 							}
 						}
 
@@ -1663,7 +1692,7 @@ namespace OpenCivOne.Graphics
 			placements.Sort((a, c) => a.Base.CompareTo(c.Base));
 
 			foreach (Placement p in placements)
-				DrawSprite(p, r, g, b, water, size, x0, y0, grid != null);
+				DrawSprite(p, r, g, b, water, size, x0, y0, grid == null ? null : (x, y) => this.PrintTerrain(grid, x, y) == Water);
 		}
 
 		/// <summary>
@@ -1681,6 +1710,13 @@ namespace OpenCivOne.Graphics
 				this.Feature(i - 1, j - 1) != 0 || this.Feature(i, j - 1) != 0 || this.Feature(i + 1, j - 1) != 0);
 			float lower = besideFeature ? 0.55f : 1;
 
+			// hills and peaks by the water step back from it and stand a little lower, so they rise from a rocky shore
+			// rather than hang over the water
+			bool waterLeft = this.Terrain(i - 1, j) == Water, waterRight = this.Terrain(i + 1, j) == Water;
+			bool waterBelow = this.Terrain(i, j + 1) == Water;
+			float awayX = ((waterLeft ? 9 : 0) - (waterRight ? 9 : 0)) * k, awayY = waterBelow ? -9 * k : 0;
+			float shore = (waterLeft || waterRight || waterBelow) ? 0.82f : 1;
+
 			switch (terrain)
 			{
 				case Forest:
@@ -1692,15 +1728,16 @@ namespace OpenCivOne.Graphics
 					for (int n = 0; n < 2; n++)
 					{
 						float baseY = (feature != 0) ? top + Range(random, 24, 36) * k : top + Range(random, 30, 60) * k;
-						this.Place(placements, "hills", random, left + Range(random, 16, 48) * k, baseY, Range(random, 36, 46) * k * Math.Max(lower, 0.75f), true);
+						this.Place(placements, "hills", random, left + (Range(random, 16, 48) * k) + awayX, baseY + awayY,
+							Range(random, 36, 46) * k * Math.Max(lower, 0.75f) * shore, true);
 					}
 					break;
 
 				case Mountains:
 					if (feature != 0)
-						this.Place(placements, "mountains", random, left + Range(random, 26, 38) * k, top + Range(random, 38, 44) * k, Range(random, 64, 74) * k, true);
+						this.Place(placements, "mountains", random, left + (Range(random, 26, 38) * k) + awayX, top + (Range(random, 38, 44) * k) + awayY, Range(random, 64, 74) * k * shore, true);
 					else
-						this.Place(placements, "mountains", random, left + Range(random, 26, 38) * k, top + Range(random, 54, 62) * k, Range(random, 78, 96) * k * lower, true);
+						this.Place(placements, "mountains", random, left + (Range(random, 26, 38) * k) + awayX, top + (Range(random, 54, 62) * k) + awayY, Range(random, 78, 96) * k * lower * shore, true);
 					break;
 
 				case Grassland:
@@ -1789,12 +1826,26 @@ namespace OpenCivOne.Graphics
 			placements.Add(new Placement { Sprite = sprite, X = x - (width / 2), Base = baseY, Width = width, Height = height, Flip = flip, FadeFoot = fadeFoot });
 		}
 
-		private static void DrawSprite(Placement p, float[] r, float[] g, float[] b, byte[] water, int size, int x0, int y0, bool print = false)
+		/// <param name="waterAt">In a print, whether a print's terrain is water at a point: a column of the sprite whose foot
+		/// stands in water is not drawn over water, so the sprite may rise against water behind it but not hang over water
+		/// beside or in front of it</param>
+		private static void DrawSprite(Placement p, float[] r, float[] g, float[] b, byte[] water, int size, int x0, int y0, Func<float, float, bool>? waterAt = null)
 		{
 			Sprite s = p.Sprite;
 			float top = p.Base - p.Height;
 			int fromX = Math.Max(0, (int)MathF.Floor(p.X) - x0), toX = Math.Min(size, (int)MathF.Ceiling(p.X + p.Width) - x0);
 			int fromY = Math.Max(0, (int)MathF.Floor(top) - y0), toY = Math.Min(size, (int)MathF.Ceiling(p.Base) - y0);
+			bool print = waterAt != null;
+			// per column: does its foot (a little above the base, where the drawing is solid) stand in water
+			bool[]? wetFoot = null;
+
+			if (print && !p.OnWater && toX > fromX)
+			{
+				wetFoot = new bool[toX - fromX];
+
+				for (int px = fromX; px < toX; px++)
+					wetFoot[px - fromX] = waterAt!(px + x0 + 0.5f, p.Base - (p.Height * 0.12f));
+			}
 
 			for (int py = fromY; py < toY; py++)
 			{
@@ -1810,9 +1861,9 @@ namespace OpenCivOne.Graphics
 					Sample(s, u, v, out float sr, out float sg, out float sb, out float sa);
 					int i = (py * size) + px;
 
-					// in a print, what stands on land does not reach into the sea in front of it, though its top may rise
-					// against the sea behind; the feet of hills and mountains fade into the ground
-					if (print && water[i] == 1 && !p.OnWater && v > s.Height * 0.7f)
+					// in a print, what stands on land does not reach into the water beside or in front of it, though its top may
+					// rise against the water behind; the feet of hills and mountains fade into the ground
+					if (wetFoot != null && water[i] != 0 && wetFoot[px - fromX])
 						continue;
 
 					if (p.FadeFoot)

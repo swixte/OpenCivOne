@@ -325,14 +325,13 @@ def print_mine():
 def print_shield_bonus():
     """The shield marker for the print map: a small red seal stamped into the paper, like the seals on a woodblock print,
     with no outline and a slightly worn edge, so it marks the ground without sitting on it."""
-    s = c.Sprite(14, 14, dict(seal=c.ramp('#7a3a26', '#8e4430', '#a2513a', '#b46048', '#c47258'),
-                              paper=c.ramp('#c9a88a', '#d6b89a', '#e0c6aa', '#e8d2b8', '#efdcc6')))
-    s.poly([(2, 2), (12, 2), (12, 7), (7, 12), (2, 7)], 'seal', 0)
-    s.poly([(5, 4), (9, 4), (9, 7), (7, 9), (5, 7)], 'paper', 0)
+    # small and faint, low in the cell: it marks the ground without dotting the whole map with pins
+    s = c.Sprite(14, 14, dict(seal=c.ramp('#7a3a26', '#8e4430', '#a2513a', '#b46048', '#c47258')))
+    s.poly([(4, 6), (10, 6), (10, 9), (7, 12), (4, 9)], 'seal', 0)
     img = s.render(outline=None, auto_light=False).copy()
-    # stamped ink: a little see-through, unevenly
+    # stamped ink: see-through, unevenly
     noise = smooth_noise(7, 18)[:img.shape[0], :img.shape[1]]
-    img[..., 3] = (img[..., 3] * (0.8 + 0.18 * noise)).astype(np.uint8)
+    img[..., 3] = (img[..., 3] * (0.42 + 0.16 * noise)).astype(np.uint8)
     return img
 
 
