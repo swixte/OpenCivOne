@@ -493,9 +493,10 @@ namespace OpenCivOne.Graphics
 
 							wgt = wgt * wgt * wgt;
 							// past the poles the ice cap carries on, rather than a dark void at the world's edge
+							// (shown once the pole beside it is explored; until then the mist carries on too)
 							bool offMap = y < 0 || y >= MapHeight;
 							int t = offMap ? Arctic : TerrainAt(x, y);
-							bool known = offMap || (t >= 0 && ExploredAt(x, y));
+							bool known = offMap ? ExploredAt(x, Math.Clamp(y, 0, MapHeight - 1)) : (t >= 0 && ExploredAt(x, y));
 							total += wgt;
 
 							if (!known)
@@ -1590,7 +1591,10 @@ namespace OpenCivOne.Graphics
 				fill.Color = new SKColor(240, 230, 204);
 				canvas.DrawRect(left + box, top, nameWidth + 12, box, fill);
 				canvas.DrawRect(left + box, top, nameWidth + 12, box, outline);
-				fill.Color = new SKColor(244, 236, 216);
+				// the size in a colour that stands out on the civilization's: dark on a light colour, cream on a dark one
+				uint cc = c.Colour;
+				float lum = ((((cc >> 16) & 0xff) * 0.3f) + (((cc >> 8) & 0xff) * 0.59f) + ((cc & 0xff) * 0.11f)) / 255;
+				fill.Color = lum > 0.6f ? new SKColor(40, 34, 28) : new SKColor(244, 236, 216);
 				canvas.DrawText(size, left + (box / 2) - (font.MeasureText(size) / 2), top + 13.5f, font, fill);
 				fill.Color = new SKColor(40, 34, 28);
 				canvas.DrawText(c.Name, left + box + 6, top + 13.5f, font, fill);
