@@ -739,6 +739,13 @@ namespace OpenCivOne.Graphics
 					return;
 
 				SKPoint p = Screen(x + fx, y + fy);
+
+				// nothing stands in the sea: woods and scrub follow the painted shoreline, not the cells
+				int sx = (int)p.X, sy = (int)p.Y;
+
+				if (sx >= 0 && sy >= 0 && sx < w && sy < h && kind[(sy * w) + sx] == Sea)
+					return;
+
 				items.Add((p.Y + lift, p.X, b));
 			}
 
