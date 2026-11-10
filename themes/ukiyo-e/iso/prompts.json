@@ -106,5 +106,12 @@
   "refs": [
    "../refs/v5-screen.jpg"
   ]
+ },
+ "iso_fieldplots": {
+  "prompt": "Use the reference images only for their art style and colours: a woodblock-print strategy map with fine dark key-block lines, muted earthy olive and yellow-green colours, dense hand-drawn detail, light from the top left. The second reference is a close-up of the crop fields to copy. Paint a 4 by 4 grid of 16 square farm plots seen straight from above (top-down, not at an angle), each plot an exact square filling its grid cell edge to edge, the grid lines between them thin and straight. Each plot is a field of crops exactly like the fields in the second reference: yellow-green leafy crops drawn with bold dark green leaf-vein strokes and bright yellow highlights; vary them: some plots with leaves radiating from the centre in four quarters on a dark cross, some with parallel furrow rows of leafy crops, some with chevron rows, some with young shoots in rows. Muted greens from olive to yellow-green, no bright gold, no hedges, no paths, no buildings, no text, no frame.",
+  "refs": [
+   "../refs/v5-screen.jpg",
+   "../refs/crops-mock/fields_a.png"
+  ]
  }
 }

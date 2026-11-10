@@ -1,5 +1,5 @@
 """Builds a theme's isometric map art (hd/iso) from its generated isometric sheets (raw-iso/iso_*.png): every sheet cut
-into separate sprites, one folder per set, and the inked grass and sand grounds made into seamless 400-pixel textures
+into separate sprites, one folder per set, the painted crop plots cut from their grid, and the inked grass and sand grounds made into seamless 400-pixel textures
 (400 divides the isometric width of the world, so the ground repeats without a seam where the world wraps).
 
 Usage: python3 iso_assets.py THEME_DIR
@@ -19,6 +19,7 @@ import style
 SETS = ['trees', 'peaks', 'hills2', 'jungle', 'town', 'tufts', 'tundra', 'reeds', 'ice', 'dunes', 'plots', 'hamlet']
 GROUNDS = {'grass': ('iso_tex_grass', (1.0, 1.0, 1.0)), 'sand': ('iso_tex_sand', (1.0, 0.94, 0.80))}
 TEXTURE = 400
+PLOT = 32  # the painted crop plots (iso_fieldplots, a 4 x 4 grid seen from above), mapped onto each field plot
 
 
 def lighten(img):
@@ -55,6 +56,17 @@ def main(theme):
         tile = np.asarray(Image.fromarray(style.seamless(img, img.width)).convert('RGB').resize((TEXTURE, TEXTURE), Image.LANCZOS), dtype=np.float64)
         Image.fromarray(np.clip(tile * np.array(tint), 0, 255).astype(np.uint8)).save(os.path.join(out, 'ground', name + '.png'))
     print('grounds', len(GROUNDS))
+    plots = os.path.join(raw, 'iso_fieldplots.png')
+    if os.path.exists(plots):
+        os.makedirs(os.path.join(out, 'fieldplots'), exist_ok=True)
+        img = Image.open(plots).convert('RGB')
+        cell = img.width / 4
+        inset = cell * 0.05
+        for i in range(16):
+            x, y = (i % 4) * cell, (i // 4) * cell
+            img.crop((round(x + inset), round(y + inset), round(x + cell - inset), round(y + cell - inset))).resize(
+                (PLOT, PLOT), Image.LANCZOS).save(os.path.join(out, 'fieldplots', f'{i}.png'))
+        print('fieldplots', 16)
 
 
 if __name__ == '__main__':

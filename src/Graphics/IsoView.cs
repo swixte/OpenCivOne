@@ -37,6 +37,10 @@ namespace OpenCivOne.Graphics
 
 		private readonly int width, height;
 		private readonly uint[] grass, sand, snow, sea, shallow;
+
+		// the painted crop plots (seen from above, FieldPlot pixels square), mapped onto each plot of a field
+		private const int FieldPlot = 32;
+		private readonly List<uint[]> fieldPlots = new List<uint[]>();
 		private readonly Dictionary<string, List<SKBitmap>> sets = new Dictionary<string, List<SKBitmap>>();
 		private readonly Dictionary<string, SKBitmap> objects = new Dictionary<string, SKBitmap>();
 		private uint[] pixels;
@@ -131,6 +135,34 @@ namespace OpenCivOne.Graphics
 				ReadTexture(Path.Combine(painted, "snow.png"), new[] { 236f, 234f, 224f }, 1f),
 				ReadTexture(Path.Combine(painted, "ocean.png"), new[] { 54f, 102f, 122f }, 0.12f),
 				ReadTexture(Path.Combine(painted, "shallow.png"), new[] { 84f, 142f, 150f }, 0.35f));
+
+			string plotFolder = Path.Combine(iso, "fieldplots");
+
+			if (Directory.Exists(plotFolder))
+			{
+				string[] files = Directory.GetFiles(plotFolder, "*.png");
+				Array.Sort(files, (a, b) => int.Parse(Path.GetFileNameWithoutExtension(a)).CompareTo(int.Parse(Path.GetFileNameWithoutExtension(b))));
+
+				foreach (string file in files)
+				{
+					using SKBitmap? b = SKBitmap.Decode(file);
+
+					if (b == null)
+						continue;
+
+					using SKBitmap sized = b.Resize(new SKImageInfo(FieldPlot, FieldPlot), new SKSamplingOptions(SKCubicResampler.Mitchell));
+					uint[] px = new uint[FieldPlot * FieldPlot];
+
+					for (int i = 0; i < px.Length; i++)
+					{
+						SKColor c = sized.GetPixel(i % FieldPlot, i / FieldPlot);
+						// lifted to the mockup's sunlit yellow-greens: the painted sheet comes out darker, with more soil
+						px[i] = Pack(c.Red * 1.36f, c.Green * 1.42f, c.Blue * 1.4f);
+					}
+
+					view.fieldPlots.Add(px);
+				}
+			}
 
 			// every set at one scale, so a single tree stays smaller than a clump: its widest sprite gets the width given
 			(string Set, float Width)[] scales = {
@@ -602,6 +634,23 @@ namespace OpenCivOne.Graphics
 							float detail = ((r + g + b) / 3 / 120f) - 1;
 							float shade = (1 + (MathF.Max(0, 0.35f - vein) * 0.6f) - (MathF.Min(1, vein) * 0.52f)) * (1.1f - (rad * 0.14f));
 							float fr = (pr * shade) + (detail * 18), fg = (pg * shade) + (detail * 18), fb = (pb * shade) + (detail * 10);
+
+							// with the theme's painted crop plots, each plot shows one of them, turned one of four ways
+							if (this.fieldPlots.Count > 0)
+							{
+								uint[] tex = this.fieldPlots[(int)(Hash(plotX, plotY, 54) * this.fieldPlots.Count) % this.fieldPlots.Count];
+								int turn = (int)(Hash(plotX, plotY, 55) * 4) & 3;
+								float tu = (su + 1) / 2, tv = (sv + 1) / 2;
+								(tu, tv) = turn switch { 1 => (1 - tv, tu), 2 => (1 - tu, 1 - tv), 3 => (tv, 1 - tu), _ => (tu, tv) };
+								float qx = Math.Clamp((tu * FieldPlot) - 0.5f, 0, FieldPlot - 1.001f), qy = Math.Clamp((tv * FieldPlot) - 0.5f, 0, FieldPlot - 1.001f);
+								int x0 = (int)qx, y0 = (int)qy;
+								float ax = qx - x0, ay = qy - y0;
+								uint c00 = tex[(y0 * FieldPlot) + x0], c10 = tex[(y0 * FieldPlot) + x0 + 1], c01 = tex[((y0 + 1) * FieldPlot) + x0], c11 = tex[((y0 + 1) * FieldPlot) + x0 + 1];
+								float Mix(int sh) => ((((c00 >> sh) & 0xff) * (1 - ax)) + (((c10 >> sh) & 0xff) * ax)) * (1 - ay) + ((((c01 >> sh) & 0xff) * (1 - ax)) + (((c11 >> sh) & 0xff) * ax)) * ay;
+								fr = Mix(16);
+								fg = Mix(8);
+								fb = Mix(0);
+							}
 
 							// a thin grey-cream lane, edged by a dark hedge line on the plot's side, both antialiased so they do
 							// not break into steps
