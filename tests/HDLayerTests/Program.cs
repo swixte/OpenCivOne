@@ -568,6 +568,29 @@ GBitmap other4()
 	else
 		Check(!featured.PaintsFeatures, "features: a painterly map leaves resources and huts to the game");
 
+	// ISO_PREVIEW renders the isometric view of the test map with a theme's hd folder (ISO_THEME)
+	if (Environment.GetEnvironmentVariable("ISO_PREVIEW") is string isoOut && Environment.GetEnvironmentVariable("ISO_THEME") is string isoTheme)
+	{
+		var iso = OpenCivOne.Graphics.IsoView.Load(isoTheme, 960, 768)!;
+		var isoScene = new OpenCivOne.Graphics.IsoView.Scene
+		{
+			Terrain = (x, y) => map[x, y],
+			Explored = (x, y) => x < 22,
+			Improvements = (x, y) => (x, y) == (10, 7) ? 0x1 : ((x == 8 || x == 9) && y == 7) || (x, y) == (11, 7) ? 0x8 : (x == 9 && y == 8) ? 0x2 : 0,
+			Feature = (x, y) => (x, y) == (7, 8) ? 1 : (x, y) == (13, 6) ? 2 : 0,
+		};
+		isoScene.Cities.Add((10, 7, "Kyoto", 5, 0xffc43a2cu));
+		isoScene.Units.Add((9, 9, 0, 0xffc43a2cu));
+		isoScene.Units.Add((12, 8, 1, 0xff345caau));
+		var clock = System.Diagnostics.Stopwatch.StartNew();
+		iso.Render(11.5f, 7.5f, isoScene);
+		Console.WriteLine($"iso: rendered in {clock.ElapsedMilliseconds} ms");
+		using var isoImage = new SKBitmap(960, 768, SKColorType.Bgra8888, SKAlphaType.Premul);
+		Marshal.Copy(Array.ConvertAll(iso.Pixels, v => unchecked((int)v)), 0, isoImage.GetPixels(), iso.Pixels.Length);
+		using var isoFile = File.OpenWrite(isoOut);
+		isoImage.Encode(isoFile, SKEncodedImageFormat.Png, 100);
+	}
+
 	string? output = Environment.GetEnvironmentVariable("PAINTED_PREVIEW");
 	if (output != null)
 	{

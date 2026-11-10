@@ -30,6 +30,7 @@ namespace OpenCivOne
 		private LanguageTools languageTools;
 		private MapManagement mapManagement;
 		private PaintedMap? paintedMap = null;
+		private IsoView? isoView = null;
 		private UnitManagement unitManagement;
 		private UnitGoTo unitGoTo;
 		private Actions oSegment_2459;
@@ -172,6 +173,10 @@ namespace OpenCivOne
 			// A painted map (hd/painted) replaces the terrain tiles of map cells with one painting of the whole world
 			this.paintedMap = PaintedMap.Load($"{hdPath}{separator}painted", 16 * GBitmap.HDScale,
 				(x, y) => (int)this.mapManagement!.GetTerrainType(x, y));
+
+			// a theme with isometric art (hd/iso) shows the map window as an isometric view, at the HD size of the window
+			if (GBitmap.HDScale > 1)
+				this.isoView = IsoView.Load(hdPath, 240 * GBitmap.HDScale, 192 * GBitmap.HDScale);
 
 			// a print paints resources and huts into the ground, with its trees and peaks
 			if (this.paintedMap != null)
@@ -622,6 +627,11 @@ namespace OpenCivOne
 		/// <summary>
 		/// The painted world map, or null when the map is drawn from terrain tiles
 		/// </summary>
+		/// <summary>
+		/// The isometric view of the map window, when the theme has isometric art
+		/// </summary>
+		public IsoView? IsoView => this.isoView;
+
 		public PaintedMap? PaintedMap
 		{
 			get => this.paintedMap;

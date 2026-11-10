@@ -136,6 +136,7 @@ namespace OpenCivOne
 
 			// function body
 			this.parent.Var_1ae0 = 0;
+			this.drawingMap = true;
 
 			this.parent.Menus.F0_1238_0fea_DrawMainMenu();
 			this.parent.GameEngine.F0_1238_107e_ReportHumanTaxAndPopulation();
@@ -242,6 +243,9 @@ namespace OpenCivOne
 					this.parent.LanguageTools.F0_2f4d_04f7_TrimStringToWidth(this.parent.Segment_2459.F0_2459_08c6_GetCityName(cityInfo.CityID), 327 - cityInfo.ScreenPos.X),
 					this.parent.CommonTools.CheckValueRange(cityInfo.ScreenPos.X - 8, 80, 999), cityInfo.ScreenPos.Y + 16, 11);
 			}
+
+			this.drawingMap = false;
+			this.ShowIsoMap(playerID);
 
 			int xMap = x - 32;
 			int yMap = y - 19;
@@ -357,6 +361,14 @@ namespace OpenCivOne
 		/// <param name="y"></param>
 		/// <returns></returns>
 		public bool F0_2aea_03ba_DrawCell(int x, int y)
+		{
+			bool drawn = this.DrawCellClassic(x, y);
+			this.RefreshIso(x, y);
+
+			return drawn;
+		}
+
+		private bool DrawCellClassic(int x, int y)
 		{
 			//this.oCPU.Log.EnterBlock($"F0_2aea_03ba({x}, {y})");
 
@@ -822,6 +834,15 @@ namespace OpenCivOne
 		/// <param name="unitID"></param>
 		/// <returns>true if unit is drawn, otherwise false</returns>
 		public bool F0_2aea_0e29_DrawUnit(int playerID, int unitID)
+		{
+			bool drawn = this.DrawUnitClassic(playerID, unitID);
+			Unit drawnUnit = this.parent.GameData.Players[playerID].Units[unitID];
+			this.RefreshIso(drawnUnit.Position.X, drawnUnit.Position.Y);
+
+			return drawn;
+		}
+
+		private bool DrawUnitClassic(int playerID, int unitID)
 		{
 			//this.oCPU.Log.EnterBlock($"F0_2aea_0e29({playerID}, {unitID})");
 
@@ -1455,6 +1476,133 @@ namespace OpenCivOne
 				this.gameData.Map.SetPixel(x, y + 150, 
 					(byte)(((~((int)improvements >> 4)) & this.gameData.Map.GetPixel(x, y + 150)) & 0xff), 0);
 			}		
+		}
+
+		/// <summary>
+		/// With a theme's isometric art, the map window shows the isometric view of the same part of the world over the
+		/// classic map the game has just drawn; anything the game draws over the map window afterwards (a dialog, a
+		/// moving unit) shows through, as the overlay only covers pixels still as they were
+		/// </summary>
+		private void ShowIsoMap(int playerID)
+		{
+			IsoView? iso = this.parent.IsoView;
+			GBitmap screen = this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID);
+
+			if (iso == null)
+			{
+				screen.Over = null;
+				return;
+			}
+
+			int mask = 0x1 << this.parent.GameData.HumanPlayerID;
+			bool debug = this.parent.GlobalPreferences.Debug.DebugMode;
+			IsoView.Scene scene = new IsoView.Scene
+			{
+				Terrain = (x, y) => (int)GetTerrainType(x, y),
+				Explored = (x, y) => debug || (this.parent.GameData.MapVisibility[x, y] & mask) != 0,
+				Improvements = (x, y) => (int)F0_2aea_1585_GetVisibleTerrainImprovements(x, y),
+				Feature = (x, y) => (F0_2aea_1836_CellHasSpecialResource(x, y) ? 1 : 0) | (F0_2aea_1894_CellHasMinorTribeHut(x, y, GetTerrainType(x, y)) ? 2 : 0),
+			};
+			uint[] colours = { 0xffc43a2c, 0xfff2ece0, 0xff3c9a46, 0xff3e5bd8, 0xffe0b830, 0xff2fb6c8, 0xffc84ab4, 0xff6a6a72 };
+
+			for (int i = 0; i < 128; i++)
+			{
+				City city = this.parent.GameData.Cities[i];
+
+				if (city.Status != CityStatusEnum.Invalid && (debug || city.VisibleSize != 0 || city.PlayerID == this.parent.GameData.HumanPlayerID))
+					scene.Cities.Add((city.Position.X, city.Position.Y, this.parent.Segment_2459.F0_2459_08c6_GetCityName(i),
+						(debug || city.PlayerID == this.parent.GameData.HumanPlayerID) ? city.ActualSize : city.VisibleSize, colours[city.PlayerID & 7]));
+			}
+
+			for (int y = 0; y < 50; y++)
+			{
+				for (int x = 0; x < 80; x++)
+				{
+					if (!scene.Explored(x, y) || F0_2aea_1585_GetVisibleTerrainImprovements(x, y).HasFlag(TerrainImprovementFlagsEnum.City))
+						continue;
+
+					int unitID = F0_2aea_1458_GetCellActiveUnitID(x, y);
+
+					if (unitID == -1)
+						continue;
+
+					int owner = F0_2aea_14e0_GetCellActiveUnitPlayerID(x, y);
+					Unit unit = this.parent.GameData.Players[owner].Units[unitID];
+
+					if (debug || owner == this.parent.GameData.HumanPlayerID || (unit.VisibleByPlayer & mask) != 0)
+						scene.Units.Add((x, y, (int)unit.UnitType, colours[owner & 7]));
+				}
+			}
+
+			// the view is centred on the middle of the classic map window (15 x 12 cells)
+			float cx = this.parent.Var_d4cc_MapViewX + 7.5f, cy = this.parent.Var_d75e_MapViewY + 6f;
+			iso.Render(cx, cy, scene);
+			this.IsoCentre = (cx, cy);
+			GRectangle area = new GRectangle(80, 8, 240, 192);
+			screen.Over = new GBitmap.Overlay { Area = area, Pixels = iso.Pixels, Snapshot = screen.CopyPixels(area) };
+		}
+
+		// set while the whole map is drawn, so the cells drawn one by one do not each repaint the isometric view
+		private bool drawingMap = false;
+
+		/// <summary>
+		/// After the game redraws a cell or a unit on the map, the isometric view is brought up to date over the whole
+		/// window (it repaints only if something it shows changed), so the classic cell does not show through
+		/// </summary>
+		private void RefreshIso(int x, int y)
+		{
+			if (this.drawingMap || this.parent.IsoView == null)
+				return;
+
+			GBitmap screen = this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID);
+			GBitmap.Overlay? old = screen.Over;
+
+			if (old == null)
+				return;
+
+			// only the redrawn cell's square takes the new snapshot: anything else drawn over the window (a dialog) stays
+			int column = AdjustXPosition(x - this.parent.Var_d4cc_MapViewX), row = y - this.parent.Var_d75e_MapViewY;
+			this.ShowIsoMap(this.parent.GameData.HumanPlayerID);
+			GBitmap.Overlay? fresh = screen.Over;
+
+			if (fresh == null)
+				return;
+
+			byte[] snapshot = (byte[])old.Snapshot.Clone();
+
+			if (column >= 0 && column < 15 && row >= 0 && row < 12)
+			{
+				for (int j = 0; j < 16; j++)
+					Array.Copy(fresh.Snapshot, (((row * 16) + j) * 240) + (column * 16), snapshot, (((row * 16) + j) * 240) + (column * 16), 16);
+			}
+
+			fresh.Snapshot = snapshot;
+		}
+
+		/// <summary>
+		/// The centre of the isometric view the map window last showed, in map cells
+		/// </summary>
+		public (float X, float Y) IsoCentre { get; private set; }
+
+		/// <summary>
+		/// The original screen position a point of the map window stands for: with the isometric view, the classic map's
+		/// position of the cell shown under the point; otherwise the point itself
+		/// </summary>
+		public GPoint MapClick(GPoint point)
+		{
+			IsoView? iso = this.parent.IsoView;
+
+			if (iso == null || point.X < 80 || point.Y < 8)
+				return point;
+
+			(int cellX, int cellY) = iso.CellAt((point.X - 80) * iso.Width / 240f, (point.Y - 8) * iso.Height / 192f, this.IsoCentre.X, this.IsoCentre.Y);
+			int column = AdjustXPosition(cellX - this.parent.Var_d4cc_MapViewX), row = cellY - this.parent.Var_d75e_MapViewY;
+
+			// a cell outside the classic window: its nearest edge cell, so the game scrolls towards it
+			column = Math.Clamp(column, 0, 14);
+			row = Math.Clamp(row, 0, 11);
+
+			return new GPoint(80 + (column * 16) + 8, 8 + (row * 16) + 8);
 		}
 
 		/// <summary>

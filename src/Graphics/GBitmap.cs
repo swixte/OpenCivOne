@@ -1002,9 +1002,37 @@ namespace OpenCivOne.Graphics
 		/// </summary>
 		/// <param name="destination">Address of the top left pixel</param>
 		/// <param name="stride">Length of one destination row, in bytes</param>
+		/// <summary>
+		/// An overlay shown over part of this bitmap when it is written out: a picture at HD resolution for an area of
+		/// original pixels, shown wherever the original pixels still hold what Snapshot recorded (anything drawn over the
+		/// area since, such as a dialog, shows instead)
+		/// </summary>
+		public sealed class Overlay
+		{
+			public GRectangle Area = new GRectangle(0, 0, 0, 0);
+			public uint[] Pixels = Array.Empty<uint>();
+			public byte[] Snapshot = Array.Empty<byte>();
+		}
+
+		public Overlay? Over { get; set; }
+
+		/// <summary>
+		/// The original pixels of an area, for an Overlay's Snapshot
+		/// </summary>
+		public byte[] CopyPixels(GRectangle area)
+		{
+			byte[] copy = new byte[area.Width * area.Height];
+
+			for (int y = 0; y < area.Height; y++)
+				Array.Copy(this.aPixels, ((area.Y + y) * this.iWidth) + area.X, copy, y * area.Width, area.Width);
+
+			return copy;
+		}
+
 		public void WriteScaledPixels(IntPtr destination, int stride)
 		{
 			int hdWidth = this.iWidth * HDScale;
+			Overlay? over = this.Over;
 			int[] rows = new int[hdWidth * HDScale];
 			int pixelAddress = 0;
 			byte[]? smooth = _smoothUpscale ? this.ScaleIndexes() : null;
@@ -1056,6 +1084,10 @@ namespace OpenCivOne.Graphics
 								// keep the alpha of the palette color, so HD pixels are presented the same way as indexed ones
 								pixel = (ResolveHDColor(hd, color, (themed != null) ? themed[this.aPixels[pixelAddress]] : 0) & 0xffffff) | (color & 0xff000000);
 							}
+
+							if (over != null && j >= over.Area.X && j < over.Area.X + over.Area.Width && i >= over.Area.Y && i < over.Area.Y + over.Area.Height &&
+								over.Snapshot[((i - over.Area.Y) * over.Area.Width) + (j - over.Area.X)] == this.aPixels[pixelAddress])
+								pixel = over.Pixels[((((i - over.Area.Y) * HDScale) + k) * over.Area.Width * HDScale) + ((j - over.Area.X) * HDScale) + l];
 
 							rows[(k * hdWidth) + (j * HDScale) + l] = (int)pixel;
 						}
