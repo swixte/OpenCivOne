@@ -270,17 +270,18 @@ namespace OpenCivOne.Graphics
 			foreach (string name in Array.ConvertAll(UnitNames, n => "unit_" + n))
 				view.LoadObject(objectsFolder, name, height: 56);
 
+			// resources, huts and mines a little smaller than a unit, so a busy map is not dominated by them
 			foreach (string name in Array.ConvertAll(ResourceNames, n => "res_" + n))
-				view.LoadObject(objectsFolder, name, height: 44, halo: true);
+				view.LoadObject(objectsFolder, name, height: 34, halo: true);
 
 			view.LoadObject(objectsFolder, "res_fish", height: 26);
 
 			if (view.objects.Remove("res_fish", out SKBitmap? small))
 				view.objects["fish"] = small;
 
-			view.LoadObject(objectsFolder, "res_fish", height: 44, halo: true);
-			view.LoadObject(objectsFolder, "hut", height: 48, halo: true);
-			view.LoadObject(objectsFolder, "mine", height: 44, halo: true);
+			view.LoadObject(objectsFolder, "res_fish", height: 34, halo: true);
+			view.LoadObject(objectsFolder, "hut", height: 40, halo: true);
+			view.LoadObject(objectsFolder, "mine", height: 32, halo: true);
 			view.LoadObject(objectsFolder, "fortress", height: 46, halo: true);
 
 			// the fortress in grey stone, so it is not taken for the hut's thatch
@@ -491,8 +492,10 @@ namespace OpenCivOne.Graphics
 								continue;
 
 							wgt = wgt * wgt * wgt;
-							int t = TerrainAt(x, y);
-							bool known = t >= 0 && ExploredAt(x, y);
+							// past the poles the ice cap carries on, rather than a dark void at the world's edge
+							bool offMap = y < 0 || y >= MapHeight;
+							int t = offMap ? Arctic : TerrainAt(x, y);
+							bool known = offMap || (t >= 0 && ExploredAt(x, y));
 							total += wgt;
 
 							if (!known)
@@ -911,7 +914,50 @@ namespace OpenCivOne.Graphics
 					if (IsRiver(x, y))
 						nodes[(x, y)] = Screen(x + 0.5f + ((Hash(Wrap(x), y, 33) - 0.5f) * 0.3f), y + 0.5f + ((Hash(Wrap(x), y, 34) - 0.5f) * 0.3f));
 
-				foreach (((int x, int y), SKPoint _) in nodes)
+				// the river cells are joined as a tree, never in loops: where river cells lie side by side the links that
+				// would close a ring are left out (straight links are taken before diagonal ones), so a river is always
+				// one course with branches, not a ladder
+				var parent = new Dictionary<(int, int), (int, int)>();
+
+				(int, int) Root((int, int) c)
+				{
+					while (parent.TryGetValue(c, out var p) && p != c)
+						c = p;
+
+					return c;
+				}
+
+				var keep = new HashSet<((int, int), (int, int))>();
+				var order = new List<(int X, int Y)>(nodes.Keys);
+				order.Sort((a, b) => a.Y != b.Y ? a.Y.CompareTo(b.Y) : a.X.CompareTo(b.X));
+
+				foreach (bool diagonal in new[] { false, true })
+				{
+					foreach ((int x, int y) in order)
+					{
+						foreach ((int dx, int dy) in four)
+						{
+							if ((dx != 0 && dy != 0) != diagonal || dy < 0 || (dy == 0 && dx < 0) || !nodes.ContainsKey((x + dx, y + dy)))
+								continue;
+
+							if (diagonal && (IsRiver(x + dx, y) || IsRiver(x, y + dy) || TerrainAt(x + dx, y) == Water || TerrainAt(x, y + dy) == Water))
+								continue;
+
+							(int, int) ra = Root((x, y)), rb = Root((x + dx, y + dy));
+
+							if (ra == rb)
+								continue;
+
+							parent[ra] = rb;
+							keep.Add(((x, y), (x + dx, y + dy)));
+							keep.Add(((x + dx, y + dy), (x, y)));
+						}
+					}
+				}
+
+				var mouthed = new HashSet<(int, int)>();
+
+				foreach ((int x, int y) in order)
 				{
 					var list = new List<SKPoint>();
 					var seaSides = new List<(int, int)>();
@@ -922,13 +968,13 @@ namespace OpenCivOne.Graphics
 						if (dx != 0 && dy != 0 && (IsRiver(x + dx, y) || IsRiver(x, y + dy) || TerrainAt(x + dx, y) == Water || TerrainAt(x, y + dy) == Water))
 							continue;
 
-						if (nodes.TryGetValue((x + dx, y + dy), out SKPoint q))
+						if (nodes.TryGetValue((x + dx, y + dy), out SKPoint q) && keep.Contains(((x, y), (x + dx, y + dy))))
 						{
 							list.Add(q);
 							upX -= dx;
 							upY -= dy;
 						}
-						else if (TerrainAt(x + dx, y + dy) == Water && dx * dy == 0)
+						else if (!nodes.ContainsKey((x + dx, y + dy)) && TerrainAt(x + dx, y + dy) == Water && dx * dy == 0)
 						{
 							seaSides.Add((dx, dy));
 						}
@@ -936,7 +982,8 @@ namespace OpenCivOne.Graphics
 
 					// one mouth to a cell, never a delta around an island: on the side of the sea that carries the river's
 					// flow on, so it does not hook back before it reaches the shore
-					if (seaSides.Count > 0)
+					// (and one mouth to a river, so it never reaches the sea by two ways round)
+					if (seaSides.Count > 0 && mouthed.Add(Root((x, y))))
 					{
 						(int sx, int sy) = seaSides[0];
 						float bestDot = float.MinValue;

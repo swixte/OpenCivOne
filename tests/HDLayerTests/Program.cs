@@ -884,10 +884,10 @@ GBitmap other4()
 
 					int t = terr[x, y];
 
-					if ((t is Grassland or Plains or Desert or River) && H(x, y, 51) < 0.25f + (size * 0.05f))
+					if ((t is Grassland or Plains or Desert or River) && H(x, y, 51) < 0.12f + (size * 0.035f))
 						imp[x, y] |= 0x2;
 
-					if ((t is Hills or Mountains) && H(x, y, 52) < 0.6f)
+					if ((t is Hills or Mountains) && H(x, y, 52) < 0.3f)
 						imp[x, y] |= 0x4;
 				}
 			}
@@ -969,7 +969,7 @@ GBitmap other4()
 				{
 					int x = (c.X + dx + MW) % MW, y = c.Y + dy;
 
-					if (y > 0 && y < MH && terr[x, y] == Hills && Math.Max(Math.Abs(dx), Math.Abs(dy)) == 3 && H(x, y, 61) < 0.12f)
+					if (y > 0 && y < MH && terr[x, y] == Hills && Math.Max(Math.Abs(dx), Math.Abs(dy)) == 3 && H(x, y, 61) < 0.04f)
 						imp[x, y] |= 0x20;
 				}
 		}
