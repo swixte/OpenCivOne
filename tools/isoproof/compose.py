@@ -1,13 +1,16 @@
-"""Look proof for an isometric (rotated diamond) map view: composes one screen from the test scene with the theme's
-ground textures, blended between terrains with soft masks, and real sprites for trees, peaks, hills, jungle, a town
-and a unit, drawn back to front.
+"""Look proof for an isometric (rotated diamond) map view.
+
+Composes one screen from the test scene: one shared warm olive ground for the land, with terrains told apart mostly by
+what stands on them (dunes, reeds and pools, stones and lichen, trees, peaks, hills), fields, hamlets and roads around a
+city, continuous rivers, a calm sea with foam only at the shore, and a city plate and flags. Everything is drawn back to
+front at one scale: a tree clump fills about a tile, a city about two.
 
 Usage: python3 compose.py THEME_DIR OUT.png
 """
 import os
 import sys
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from scipy import ndimage
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -17,10 +20,15 @@ from painted_assets import cut_sprites, cut_object  # noqa: E402
 SCENE = ["oooooooooooooooooooooo", "oooooaaaaooooooooooooo", "ooootttttaoooooggooooo", "ooogttffhmmooogppgoooo",
          "oogggffhhmmmooggpffooo", "oogpgrrrhhmooggprfffoo", "ooppgrggggmooogprgfjoo", "oodppgrfffjoooogrgjjjo",
          "oodddprssjjjooooorjjoo", "ooodddrsssjooooooooooo", "oooodddrsooooooooooooo", "oooooooooooooooooooooo"]
-GROUND = {'d': 'desert', 'p': 'plains', 'g': 'grass', 'f': 'grass', 'h': 'hills', 'm': 'hills', 't': 'tundra',
-          'a': 'snow', 's': 'swamp', 'j': 'grass', 'r': 'grass', 'o': 'ocean'}
-TW, TH = 128, 64            # diamond tile size
+# the ground of each terrain: one shared olive, nudged a little per terrain (multipliers on the olive base)
+TINT = {'g': (1.00, 1.04, 0.92), 'r': (1.00, 1.04, 0.92), 'p': (1.10, 1.04, 0.80), 'd': (1.30, 1.20, 1.00),
+        'f': (0.86, 0.94, 0.82), 'j': (0.86, 0.98, 0.80), 'h': (1.02, 0.98, 0.84), 'm': (0.98, 0.96, 0.92),
+        't': (1.02, 1.00, 1.02), 's': (0.78, 0.88, 0.80), 'a': None, 'o': None}
+TW, TH = 192, 96            # diamond tile size
 W, H = 1280, 800
+CITY = (6, 5)               # cell of the city (x, y)
+CITY_NAME, CITY_SIZE = 'Kyoto', 5
+PLAYER = (196, 58, 44)      # the player's colour (flags, plate)
 
 
 def at(x, y):
@@ -36,168 +44,237 @@ def noise(shape, scale, seed):
                       dtype=np.float64)[:shape[0], :shape[1]] / 255
 
 
+def calm(tex, mean, contrast):
+    """A texture recoloured to a mean colour, its detail kept at a fraction of its contrast."""
+    lum = tex.mean(-1, keepdims=True)
+    return np.clip(np.array(mean, dtype=np.float64) + (lum - lum.mean()) * contrast, 0, 255)
+
+
 def main(theme, out):
-    ground_dir = os.path.join(theme, 'hd', 'painted', 'ground')
-    tex = {n: np.asarray(Image.open(os.path.join(ground_dir, n + '.png')).convert('RGB'), dtype=np.float64)
-           for n in set(GROUND.values()) | {'shallow'}}
-    # the view: centred on the middle of the island
-    cx0, cy0 = 6.5, 5.5
-    ox = W / 2 - (cx0 - cy0) * TW / 2
-    oy = H / 2 - (cx0 + cy0) * TH / 2
+    gdir = os.path.join(theme, 'hd', 'painted', 'ground')
+    load = lambda n: np.asarray(Image.open(os.path.join(gdir, n + '.png')).convert('RGB'), dtype=np.float64)
+    olive = calm(load('grass'), (128, 120, 72), 0.85)
+    snow = calm(load('snow'), (232, 230, 220), 0.9)
+    sea = calm(load('ocean'), (52, 98, 116), 0.28)
+    shallow = calm(load('shallow'), (84, 142, 150), 0.35)
+
+    def scr(x, y):
+        return ox + (x - y) * TW / 2, oy + (x + y) * TH / 2
+    # the view: centred a little above the city
+    ox, oy = 0, 0
+    c = scr(CITY[0] + 0.5, CITY[1] + 0.5)
+    ox, oy = W / 2 - c[0], H / 2 - c[1] + 40
+
     yy, xx = np.mgrid[0:H, 0:W].astype(np.float64)
-    # continuous game coordinates of each pixel, wobbled a little so edges are organic
-    wob = 0.32
-    u = (xx - ox) / (TW / 2) + ((noise((H, W), 60, 1) - 0.5) * wob * 2) + ((noise((H, W), 17, 3) - 0.5) * wob * 0.6)
-    v = (yy - oy) / (TH / 2) + ((noise((H, W), 60, 2) - 0.5) * wob * 2) + ((noise((H, W), 17, 4) - 0.5) * wob * 0.6)
+    wob = 0.3
+    u = (xx - ox) / (TW / 2) + ((noise((H, W), 80, 1) - 0.5) * wob * 2) + ((noise((H, W), 24, 3) - 0.5) * wob * 0.6)
+    v = (yy - oy) / (TH / 2) + ((noise((H, W), 80, 2) - 0.5) * wob * 2) + ((noise((H, W), 24, 4) - 0.5) * wob * 0.6)
     gx, gy = (u + v) / 2, (v - u) / 2
     ix, iy = np.floor(gx).astype(int), np.floor(gy).astype(int)
-    # per pixel terrain letter, and soft blend masks between neighbouring terrains
-    keys = sorted(set(GROUND.values()))
-    weights = np.zeros((H, W, len(keys)))
+    letters = sorted(TINT)
+    weights = np.zeros((H, W, len(letters)))
     for dj in (-1, 0, 1):
         for di in (-1, 0, 1):
             cxs, cys = ix + di, iy + dj
             d = np.sqrt((gx - (cxs + 0.5)) ** 2 + (gy - (cys + 0.5)) ** 2)
             w = np.clip(1.2 - d * 1.15, 0, None) ** 3
-            letters = np.vectorize(lambda a, b: GROUND[at(a, b)])(cxs, cys)
-            for k, name in enumerate(keys):
-                weights[..., k] += w * (letters == name)
-    weights /= weights.sum(-1, keepdims=True) + 1e-9
-    # sharpen a little: a soft but narrow transition
-    weights = weights ** 2.2
+            lab = np.vectorize(at)(cxs, cys)
+            for k, ch in enumerate(letters):
+                weights[..., k] += w * (lab == ch)
+    weights = (weights / (weights.sum(-1, keepdims=True) + 1e-9)) ** 2.2
     weights /= weights.sum(-1, keepdims=True)
-    img = np.zeros((H, W, 3))
-    for k, name in enumerate(keys):
-        t = tex[name]
-        s = t.shape[0]
-        img += t[(yy.astype(int)) % s, (xx.astype(int)) % s] * weights[..., k:k + 1]
-    # shallows: a turquoise band of water along the land
-    water = weights[..., keys.index('ocean')] > 0.5
-    dist = ndimage.distance_transform_edt(water)
-    band = np.clip(1 - (dist - 4) / 26, 0, 1)[..., None] * water[..., None]
-    sh = tex['shallow']
-    img = img * (1 - band) + sh[yy.astype(int) % sh.shape[0], xx.astype(int) % sh.shape[0]] * band
-    # an ink line on the coast and a beach
-    coast = (dist > 0) & (dist < 2.2)
-    img[coast] = img[coast] * 0.3 + np.array([40, 34, 28]) * 0.7
-    landdist = ndimage.distance_transform_edt(~water)
-    beach = (landdist > 0) & (landdist < 4)
-    img[beach] = img[beach] * 0.55 + np.array([232, 220, 186]) * 0.45
-    canvas = Image.fromarray(np.clip(img, 0, 255).astype(np.uint8)).convert('RGBA')
 
-    # rivers: the theme's painted river strip laid along smooth courses through the river cells, on to the sea
-    def scr(x, y):
-        return ox + (x - y) * TW / 2, oy + (x + y) * TH / 2
-    strip = np.asarray(Image.open(os.path.join(theme, 'hd', 'painted', 'river.png')).convert('RGBA'), dtype=np.float64)
-    sh_, sw_ = strip.shape[:2]
-    half = 7.5
-    best = np.full((H, W), np.inf)
-    along = np.zeros((H, W))
-    for y in range(len(SCENE)):
-        for x in range(len(SCENE[0])):
-            if at(x, y) != 'r':
-                continue
-            for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1)):
-                n = at(x + dx, y + dy)
-                if n not in 'ro':
-                    continue
-                reach = 0.5 if n == 'o' else 0.5
-                a = np.array(scr(x + 0.5, y + 0.5))
-                b = np.array(scr(x + 0.5 + dx * reach, y + 0.5 + dy * reach))
-                # a gentle S-bend
-                ts = np.linspace(0, 1, 16)
-                perp = np.array([-(b - a)[1], (b - a)[0]]) / (np.linalg.norm(b - a) + 1e-9)
-                pts = [a + (b - a) * t + perp * np.sin(t * np.pi) * 4 * (1 if (x + y) % 2 else -1) for t in ts]
-                for k in range(len(pts) - 1):
-                    p0, p1 = pts[k], pts[k + 1]
-                    x0, x1 = int(min(p0[0], p1[0]) - 12), int(max(p0[0], p1[0]) + 12)
-                    y0, y1 = int(min(p0[1], p1[1]) - 12), int(max(p0[1], p1[1]) + 12)
-                    x0, y0, x1, y1 = max(0, x0), max(0, y0), min(W, x1), min(H, y1)
-                    if x1 <= x0 or y1 <= y0:
-                        continue
-                    py, px = np.mgrid[y0:y1, x0:x1].astype(np.float64)
-                    d = p1 - p0
-                    L = (d ** 2).sum() + 1e-9
-                    t = np.clip(((px - p0[0]) * d[0] + (py - p0[1]) * d[1]) / L, 0, 1)
-                    dist = np.hypot(px - (p0[0] + t * d[0]), py - (p0[1] + t * d[1]))
-                    sub = best[y0:y1, x0:x1]
-                    m = dist < sub
-                    sub[m] = dist[m]
-                    along[y0:y1, x0:x1][m] = ((px[m] + py[m]) * 0.6)
-    near = best < half + 2.5
-    vv = np.clip((sh_ - 1) / 2 + best[near] / half * (sh_ / 2), 0, sh_ - 1).astype(int)
-    uu = (along[near] * 0.8).astype(int) % sw_
-    px_ = strip[vv, uu]
-    a_ = (px_[:, 3:4] / 255) * np.clip(half + 0.5 - best[near], 0, 1)[:, None]
-    cur = np.asarray(canvas, dtype=np.float64)
-    ink = np.clip(1 - np.abs(best - (half + 0.9)) / 1.0, 0, 1)
-    cur[..., :3] = cur[..., :3] * (1 - ink[..., None] * 0.8) + np.array([34, 36, 44.]) * ink[..., None] * 0.8
-    sel = cur[near]
-    sel[:, :3] = sel[:, :3] * (1 - a_) + px_[:, :3] * a_
-    cur[near] = sel
-    canvas = Image.fromarray(np.clip(cur, 0, 255).astype(np.uint8), 'RGBA')
+    def sample(t):
+        s = t.shape[0]
+        return t[yy.astype(int) % s, xx.astype(int) % s]
+    o_s, sn_s, sea_s, sh_s = sample(olive), sample(snow), sample(sea), sample(shallow)
+    img = np.zeros((H, W, 3))
+    for k, ch in enumerate(letters):
+        if ch == 'o':
+            img += sea_s * weights[..., k:k + 1]
+        elif ch == 'a':
+            img += sn_s * weights[..., k:k + 1]
+        else:
+            img += o_s * np.array(TINT[ch]) * weights[..., k:k + 1]
+    water = weights[..., letters.index('o')] > 0.5
+    dist = ndimage.distance_transform_edt(water)
+    band = np.clip(1 - (dist - 2) / 30, 0, 1)[..., None] * water[..., None]
+    img = img * (1 - band) + sh_s * band
+    # foam only at the shore: a broken pale line just off the coast
+    foam = water & (np.abs(dist - 5) < 1.4) & (noise((H, W), 9, 5) > 0.45)
+    img[foam] = img[foam] * 0.35 + np.array([236, 232, 214]) * 0.65
+    coast = water & (dist < 2.2)
+    img[coast] = img[coast] * 0.25 + np.array([40, 34, 28]) * 0.75
+    landd = ndimage.distance_transform_edt(~water)
+    beach = (~water) & (landd < 5)
+    img[beach] = img[beach] * 0.55 + np.array([214, 198, 150]) * 0.45
+    canvas = Image.fromarray(np.clip(img, 0, 255).astype(np.uint8)).convert('RGBA')
+    dr = ImageDraw.Draw(canvas)
+
+    # rivers: one continuous smooth course from the spring through every river cell to the sea
+    river = {(x, y) for y in range(len(SCENE)) for x in range(len(SCENE[0])) if at(x, y) == 'r'}
+
+    def neighbours(p):
+        return [(p[0] + dx, p[1] + dy) for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1))]
+    courses, seen = [], set()
+    for start in sorted(river):
+        if start in seen or sum(n in river for n in neighbours(start)) != 1:
+            continue
+        path, p = [start], start
+        seen.add(p)
+        while True:
+            nxt = [n for n in neighbours(p) if n in river and n not in seen]
+            if not nxt:
+                sea_n = [n for n in neighbours(p) if at(*n) == 'o']
+                if sea_n:
+                    path.append(sea_n[0])
+                break
+            p = nxt[0]
+            seen.add(p)
+            path.append(p)
+        courses.append(path)
+    rng_r = np.random.default_rng(3)
+    for path in courses:
+        ctrl = [np.array(scr(x + 0.5 + rng_r.uniform(-0.12, 0.12), y + 0.5 + rng_r.uniform(-0.12, 0.12))) for x, y in path]
+        if at(*path[-1]) == 'o':
+            ctrl[-1] = (ctrl[-1] + ctrl[-2]) / 2
+        ctrl = [ctrl[0]] + ctrl + [ctrl[-1]]
+        pts = []
+        for i in range(1, len(ctrl) - 2):
+            p0, p1, p2, p3 = ctrl[i - 1], ctrl[i], ctrl[i + 1], ctrl[i + 2]
+            for t in np.linspace(0, 1, 14, endpoint=False):
+                t2, t3 = t * t, t * t * t
+                pts.append(tuple(0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3)))
+        pts.append(tuple(ctrl[-2]))
+        dr.line(pts, fill=(214, 204, 168, 255), width=14, joint='curve')      # pale bank
+        dr.line(pts, fill=(40, 44, 52, 255), width=9, joint='curve')          # ink
+        dr.line(pts, fill=(86, 134, 160, 255), width=6, joint='curve')        # water
+        dr.line(pts, fill=(176, 208, 222, 255), width=1, joint='curve')       # glint
 
     raw = os.path.join(theme, 'raw-iso')
-    sets = {n: cut_sprites(Image.open(os.path.join(raw, f'iso_{n}.png'))) for n in ('trees', 'peaks', 'hills2', 'jungle', 'town', 'tufts', 'tundra', 'reeds', 'ice')}
-    sets['hills'] = sets['hills2']
+    names = ('trees', 'peaks', 'hills2', 'jungle', 'town', 'tufts', 'tundra', 'reeds', 'ice', 'dunes', 'fields', 'hamlet')
+    sets = {n: cut_sprites(Image.open(os.path.join(raw, f'iso_{n}.png'))) for n in names}
     settler = cut_object(Image.open(os.path.join(theme, 'raw', 'unit_settlers.png')))
-
     rng = np.random.default_rng(7)
-    items = []          # (base y, x, sprite, width)
+    ground_items, items = [], []        # (sort y, x, sprite, width): flat decals first, then tall props back to front
 
-    def put(name, x, y, width, i=None):
+    def pick(name):
         lst = sets[name]
-        spr = lst[i if i is not None else rng.integers(len(lst))]
-        items.append((y, x, spr, width))
+        return lst[int(rng.integers(len(lst)))]
 
-    def inside(x, y):
-        # a random point inside the diamond of cell (x, y), in game coordinates
-        return x + rng.uniform(0.15, 0.85), y + rng.uniform(0.15, 0.85)
-    for y in range(-2, len(SCENE) + 2):
-        for x in range(-2, len(SCENE[0]) + 2):
-            c = at(x, y)
-            if c == 'f':
-                for _ in range(9):
-                    px, py = scr(*inside(x, y))
-                    put('trees', px, py, rng.uniform(34, 52), i=int(rng.choice([0, 1, 2, 3, 4, 12, 14, 15])))
-            elif c == 'j':
+    def inside(x, y, m=0.18):
+        return scr(x + rng.uniform(m, 1 - m), y + rng.uniform(m, 1 - m))
+
+    # roads from the city: two lanes running out across open land
+    road_cells = []
+    for dx, dy, n in ((1, 0, 3), (0, 1, 3), (-1, -1, 2)):
+        x, y = CITY
+        for _ in range(n):
+            x, y = x + dx, y + dy
+            if at(x, y) in 'gprdh':
+                road_cells.append(((x - dx, y - dy), (x, y)))
+    for a, b in road_cells:
+        pa, pb = np.array(scr(a[0] + 0.5, a[1] + 0.5)), np.array(scr(b[0] + 0.5, b[1] + 0.5))
+        mid = (pa + pb) / 2 + np.array([rng.uniform(-10, 10), rng.uniform(-5, 5)])
+        line = [tuple(pa), tuple(mid), tuple(pb)]
+        dr.line(line, fill=(70, 58, 40, 255), width=9, joint='curve')
+        dr.line(line, fill=(206, 186, 140, 255), width=6, joint='curve')
+
+    # around the city: fields and hamlets on open land within its working radius
+    for y in range(CITY[1] - 2, CITY[1] + 3):
+        for x in range(CITY[0] - 2, CITY[0] + 3):
+            if (x, y) == CITY or at(x, y) not in 'gpr':
+                continue
+            if rng.random() < 0.6:
+                px, py = scr(x + 0.5, y + 0.5)
+                ground_items.append((py, px, pick('fields'), TW * 0.86, TH * 0.43))
+            if rng.random() < 0.45:
+                px, py = inside(x, y, 0.3)
+                items.append((py, px, pick('hamlet'), rng.uniform(34, 46)))
+
+    for y in range(-3, len(SCENE) + 3):
+        for x in range(-3, len(SCENE[0]) + 3):
+            ch = at(x, y)
+            if (x, y) == CITY:
+                continue
+            if ch == 'f':
+                for _ in range(7):
+                    px, py = inside(x, y, 0.1)
+                    items.append((py, px, pick('trees'), rng.uniform(120, 150)))
+            elif ch == 'j':
                 for _ in range(6):
-                    px, py = scr(*inside(x, y))
-                    put('jungle', px, py, rng.uniform(38, 56))
-            elif c == 'm':
-                px, py = scr(x + 0.55, y + 0.55)
-                put('peaks', px, py + 8, rng.uniform(140, 170))
-            elif c == 'h':
+                    px, py = inside(x, y, 0.1)
+                    items.append((py, px, pick('jungle'), rng.uniform(120, 150)))
+            elif ch == 'm':
+                px, py = scr(x + 0.55, y + 0.6)
+                items.append((py + 10, px, pick('peaks'), rng.uniform(220, 250)))
+            elif ch == 'h':
                 for _ in range(2):
-                    px, py = scr(*inside(x, y))
-                    put('hills', px, py + 6, rng.uniform(78, 104))
-            elif c in 'gpr':
-                for _ in range(rng.integers(1, 4) if c != 'p' else rng.integers(0, 2)):
-                    px, py = scr(*inside(x, y))
-                    put('trees', px, py, rng.uniform(16, 26), i=int(rng.integers(0, 4)))
-                for _ in range(rng.integers(3, 7)):
-                    px, py = scr(*inside(x, y))
-                    put('tufts', px, py, rng.uniform(9, 15))
-            elif c == 't':
-                for _ in range(rng.integers(4, 8)):
-                    px, py = scr(*inside(x, y))
-                    put('tundra', px, py, rng.uniform(12, 20))
-            elif c == 's':
-                for _ in range(rng.integers(9, 13)):
-                    px, py = scr(*inside(x, y))
-                    put('reeds', px, py, rng.uniform(22, 34))
-            elif c == 'a':
-                for _ in range(rng.integers(2, 4)):
-                    px, py = scr(*inside(x, y))
-                    put('ice', px, py, rng.uniform(28, 46))
-    tx, ty = scr(5.5, 6.5)
-    items.append((ty + 22, tx, sets['town'][0], 190))
-    ux, uy = scr(4.5, 4.5)
-    items.append((uy + 14, ux, settler, 40))
+                    px, py = inside(x, y, 0.25)
+                    items.append((py + 8, px, pick('hills2'), rng.uniform(120, 150)))
+            elif ch == 'd':
+                for _ in range(int(rng.integers(2, 4))):
+                    px, py = inside(x, y)
+                    items.append((py, px, pick('dunes'), rng.uniform(60, 90)))
+            elif ch == 's':
+                for _ in range(int(rng.integers(6, 9))):
+                    px, py = inside(x, y)
+                    items.append((py, px, pick('reeds'), rng.uniform(30, 44)))
+            elif ch == 't':
+                for _ in range(int(rng.integers(5, 8))):
+                    px, py = inside(x, y)
+                    items.append((py, px, pick('tundra'), rng.uniform(18, 28)))
+            elif ch == 'a':
+                for _ in range(int(rng.integers(2, 4))):
+                    px, py = inside(x, y)
+                    items.append((py, px, pick('ice'), rng.uniform(44, 70)))
+            elif ch in 'gpr':
+                for _ in range(int(rng.integers(0, 3))):
+                    px, py = inside(x, y)
+                    items.append((py, px, sets['trees'][int(rng.integers(0, 4))], rng.uniform(30, 44)))
+                for _ in range(int(rng.integers(4, 8))):
+                    px, py = inside(x, y, 0.08)
+                    items.append((py, px, pick('tufts'), rng.uniform(14, 22)))
+
+    tx, ty = scr(CITY[0] + 0.5, CITY[1] + 0.5)
+    city = sets['town'][0]
+    items.append((ty + 34, tx, city, TW * 1.45))
+    ux, uy = scr(CITY[0] - 1 + 0.5, CITY[1] + 1 + 0.5)
+    items.append((uy + 16, ux, settler, 58))
+
+    for base, x, spr, w, h in ground_items:
+        s = spr.resize((int(w), int(h)), Image.LANCZOS)
+        canvas.alpha_composite(s, (int(x - s.width / 2), int(base - s.height / 2)))
+    # one scale per sprite set: the widest sprite of a set gets the width asked for, the others keep their size relative
+    # to it, so a single tree stays smaller than a clump
+    widest = {id(spr): max(o.width for o in lst) for lst in sets.values() for spr in lst}
     for base, x, spr, width in sorted(items, key=lambda t: t[0]):
-        h = int(spr.height * width / spr.width)
-        s = spr.resize((int(width), max(1, h)), Image.LANCZOS)
+        k = width / widest.get(id(spr), spr.width)
+        s = spr.resize((max(1, int(spr.width * k)), max(1, int(spr.height * k))), Image.LANCZOS)
         canvas.alpha_composite(s, (int(x - s.width / 2), int(base - s.height)))
+
+    # flags in the player's colour: on the city and on the unit
+    def flag(x, y, size):
+        d = ImageDraw.Draw(canvas)
+        d.line([(x, y), (x, y - size * 1.9)], fill=(40, 34, 28, 255), width=max(2, size // 8))
+        top = y - size * 1.9
+        d.polygon([(x, top), (x + size * 1.15, top + size * 0.15), (x + size * 0.95, top + size * 0.45), (x + size * 1.15, top + size * 0.75), (x, top + size * 0.65)],
+                  fill=PLAYER + (255,), outline=(40, 34, 28, 255))
+    flag(tx + 14, ty - 112, 20)
+    flag(ux - 16, uy - 46, 13)
+
+    # the city plate: a size number in the player's colour and the name on cream
+    try:
+        font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf', 22)
+    except OSError:
+        font = ImageFont.load_default()
+    d = ImageDraw.Draw(canvas)
+    name_w = d.textlength(CITY_NAME, font=font)
+    px0, py0 = tx - (name_w + 44) / 2, ty + 40
+    d.rectangle([px0, py0, px0 + 32, py0 + 32], fill=PLAYER + (255,), outline=(40, 34, 28, 255), width=2)
+    d.text((px0 + 16, py0 + 16), str(CITY_SIZE), fill=(244, 236, 216, 255), font=font, anchor='mm')
+    d.rectangle([px0 + 32, py0, px0 + 44 + name_w + 10, py0 + 32], fill=(240, 230, 204, 255), outline=(40, 34, 28, 255), width=2)
+    d.text((px0 + 40, py0 + 16), CITY_NAME, fill=(40, 34, 28, 255), font=font, anchor='lm')
     canvas.convert('RGB').save(out)
 
 
