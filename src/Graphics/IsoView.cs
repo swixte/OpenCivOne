@@ -584,6 +584,17 @@ namespace OpenCivOne.Graphics
 				return f;
 			}
 
+			// a field's outline is ragged, not square: about half the plots along its outer edge, where the next cell is
+			// not a field, are left as open ground
+			bool RaggedEdge(int fcx, int fcy, float gx0, float gy0)
+			{
+				int nu = Hash(Wrap(fcx), 0, 61) < 0.5f ? 2 : 3, nv = Hash(0, fcy, 62) < 0.5f ? 2 : 3;
+				int pu = Math.Min(nu - 1, (int)((gx0 - fcx) * nu)), pv = Math.Min(nv - 1, (int)((gy0 - fcy) * nv));
+				bool outer = (pu == 0 && !IsFieldCell(fcx - 1, fcy)) || (pu == nu - 1 && !IsFieldCell(fcx + 1, fcy)) ||
+					(pv == 0 && !IsFieldCell(fcx, fcy - 1)) || (pv == nv - 1 && !IsFieldCell(fcx, fcy + 1));
+				return outer && Hash((Wrap(fcx) * 3) + pu, (fcy * 3) + pv, 56) < 0.5f;
+			}
+
 			// pass 2: the shallows, foam, coast line, beach, and an ink line where two kinds of ground meet
 			float[] seaDist = Distance(kind, w, h, k => k != Sea);
 			float[] snowDist = Distance(kind, w, h, k => k != Snow);
@@ -638,7 +649,7 @@ namespace OpenCivOne.Graphics
 					{
 						int fcx = (int)MathF.Floor(gx0), fcy = (int)MathF.Floor(gy0);
 
-						if (IsFieldCell(fcx, fcy))
+						if (IsFieldCell(fcx, fcy) && !RaggedEdge(fcx, fcy, gx0, gy0))
 						{
 							// two or three plots across each cell, chosen per column and per row, so the lanes run on unbroken
 							// through the field but the plots are not all one size
