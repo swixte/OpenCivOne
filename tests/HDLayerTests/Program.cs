@@ -568,6 +568,46 @@ GBitmap other4()
 	else
 		Check(!featured.PaintsFeatures, "features: a painterly map leaves resources and huts to the game");
 
+	// ISO_LEGEND renders a terrain legend from the isometric renderer: one row per terrain, plain and with its special
+	// resource, a road, irrigation, a mine and a hut
+	if (Environment.GetEnvironmentVariable("ISO_LEGEND") is string legendOut && Environment.GetEnvironmentVariable("ISO_THEME") is string legendTheme)
+	{
+		string[] names = { "Desert", "Plains", "Grassland", "Forest", "Hills", "Mountains", "Tundra", "Arctic", "Swamp", "Jungle", "Ocean", "River" };
+		string[] columns = { "plain", "resource", "road", "irrigation", "mine", "fortress", "pollution", "hut" };
+		const int cw = 220, ch = 150, lw = 110;
+		using var sheet = new SKBitmap(lw + (columns.Length * cw), 30 + (names.Length * ch));
+		using var sc = new SKCanvas(sheet);
+		sc.Clear(new SKColor(30, 26, 22));
+		using var font = new SKFont(SKTypeface.Default, 16);
+		using var ink = new SKPaint { Color = new SKColor(244, 236, 216), IsAntialias = true };
+		for (int c = 0; c < columns.Length; c++)
+			sc.DrawText(columns[c], lw + (c * cw) + 10, 20, font, ink);
+		for (int t = 0; t < names.Length; t++)
+		{
+			sc.DrawText(names[t], 8, 30 + (t * ch) + (ch / 2), font, ink);
+			for (int c = 0; c < columns.Length; c++)
+			{
+				var view = OpenCivOne.Graphics.IsoView.Load(legendTheme, cw, ch)!;
+				int terrain = t, column = c;
+				// a 5 x 5 patch of the terrain (ocean around ocean, grassland around the rest) with the sample in the middle
+				var sceneL = new OpenCivOne.Graphics.IsoView.Scene
+				{
+					Terrain = (x, y) => (Math.Abs(x - 40) <= 1 && Math.Abs(y - 25) <= 1 && terrain != 11) || terrain == 10 ? terrain : (terrain == 11 && x == 40 && Math.Abs(y - 25) <= 2 ? 11 : (terrain == 11 && x == 40 && y == 28 ? 10 : 2)),
+					Improvements = (x, y) => (x, y) != (40, 25) ? (column == 2 && y == 25 && Math.Abs(x - 40) <= 1 ? 0x8 : 0) :
+						column switch { 2 => 0x8, 3 => 0x2, 4 => 0x4, 5 => 0x20, 6 => 0x40, _ => 0 },
+					Feature = (x, y) => (x, y) != (40, 25) ? 0 : column == 1 ? 1 : column == 7 ? 2 : 0,
+				};
+				view.Render(40.5f, 25.5f, sceneL);
+				using var cell = new SKBitmap(cw, ch, SKColorType.Bgra8888, SKAlphaType.Premul);
+				Marshal.Copy(Array.ConvertAll(view.Pixels, v => unchecked((int)v)), 0, cell.GetPixels(), view.Pixels.Length);
+				sc.DrawBitmap(cell, lw + (c * cw), 30 + (t * ch));
+			}
+		}
+		using var legendFile = File.OpenWrite(legendOut);
+		sheet.Encode(legendFile, SKEncodedImageFormat.Png, 100);
+		Console.WriteLine("legend written");
+	}
+
 	// ISO_PREVIEW renders the isometric view of the test map with a theme's hd folder (ISO_THEME)
 	if (Environment.GetEnvironmentVariable("ISO_PREVIEW") is string isoOut && Environment.GetEnvironmentVariable("ISO_THEME") is string isoTheme)
 	{
