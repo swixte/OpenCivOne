@@ -284,39 +284,22 @@ namespace OpenCivOne.Graphics
 			view.LoadObject(objectsFolder, "mine", height: 32, halo: true);
 			view.LoadObject(objectsFolder, "fortress", height: 46, halo: true);
 
-			// the fortress in grey stone, so it is not taken for the hut's thatch
+			// the fortress as painted, an earthwork with a timber stockade, toned a little darker and earthier than the
+			// huts' thatch so the two are not taken for each other
 			if (view.objects.TryGetValue("fortress", out SKBitmap? fortress))
 			{
-				SKBitmap stone = new SKBitmap(fortress.Width, fortress.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
-				using SKCanvas c = new SKCanvas(stone);
+				SKBitmap earth = new SKBitmap(fortress.Width, fortress.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
+				using SKCanvas c = new SKCanvas(earth);
 				c.Clear(SKColors.Transparent);
-				using SKPaint grey = new SKPaint { ColorFilter = SKColorFilter.CreateColorMatrix(new float[] {
-					0.28f, 0.50f, 0.10f, 0, 0,
-					0.28f, 0.50f, 0.10f, 0, 0,
-					0.26f, 0.48f, 0.10f, 0, 0,
+				using SKPaint tone = new SKPaint { ColorFilter = SKColorFilter.CreateColorMatrix(new float[] {
+					0.80f, 0.04f, 0, 0, 0,
+					0.02f, 0.80f, 0, 0, 0,
+					0, 0.04f, 0.70f, 0, 0,
 					0, 0, 0, 1, 0 }) };
-				c.DrawBitmap(fortress, 0, 0, grey);
+				c.DrawBitmap(fortress, 0, 0, tone);
 				fortress.Dispose();
-				view.objects["fortress"] = stone;
+				view.objects["fortress"] = earth;
 			}
-
-			// pollution: a drawn patch of grey-brown smog
-			SKBitmap smog = new SKBitmap(56, 30, SKColorType.Bgra8888, SKAlphaType.Premul);
-
-			using (SKCanvas sc = new SKCanvas(smog))
-			{
-				sc.Clear(SKColors.Transparent);
-				using SKPaint puff = new SKPaint { IsAntialias = true, Color = new SKColor(84, 72, 60, 150) };
-				using SKPaint rim = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.2f, Color = new SKColor(40, 34, 28, 200) };
-
-				foreach ((float px, float py, float pr) in new[] { (14f, 18f, 9f), (27f, 13f, 11f), (41f, 18f, 9f), (28f, 21f, 8f) })
-				{
-					sc.DrawCircle(px, py, pr, puff);
-					sc.DrawCircle(px, py, pr, rim);
-				}
-			}
-
-			view.objects["smog"] = smog;
 
 			return view;
 		}
@@ -1525,8 +1508,11 @@ namespace OpenCivOne.Graphics
 
 				DrawRoutes(canvas, overMountains, new List<SKPoint[]>());
 
-				// pollution (parked: small and neutral for now): a small dark patch at the tile's centre
-				using (SKPaint patch = new SKPaint { IsAntialias = true, Color = new SKColor(60, 52, 42, 170) })
+				// pollution, drawn as the print would: a sooty stain spread over the ground, and two thin wisps of smoke
+				// curling up from it, pale grey with a dark key line
+				using (SKPaint soot = new SKPaint { IsAntialias = true, Color = new SKColor(52, 44, 36, 90) })
+				using (SKPaint smokeFill = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 3.2f, Color = new SKColor(196, 190, 176, 230), StrokeCap = SKStrokeCap.Round })
+				using (SKPaint smokeInk = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 4.6f, Color = new SKColor(52, 46, 40, 220), StrokeCap = SKStrokeCap.Round })
 				{
 					foreach ((int x, int y) in cells)
 					{
@@ -1534,7 +1520,28 @@ namespace OpenCivOne.Graphics
 							continue;
 
 						SKPoint c = Screen(x + 0.5f, y + 0.5f);
-						canvas.DrawOval(new SKRect(c.X - 9, c.Y - 4, c.X + 9, c.Y + 4), patch);
+
+						// the stain: a few overlapping blots, so its edge is irregular
+						for (int k = 0; k < 4; k++)
+						{
+							float ox = (Hash(Wrap(x), y, 81 + k) - 0.5f) * 22, oy = (Hash(Wrap(x), y, 85 + k) - 0.5f) * 9;
+							float rx = 8 + (Hash(Wrap(x), y, 89 + k) * 7);
+							canvas.DrawOval(new SKRect(c.X + ox - rx, c.Y + oy - (rx * 0.5f), c.X + ox + rx, c.Y + oy + (rx * 0.5f)), soot);
+						}
+
+						// the smoke: two wisps curling up and drifting to one side
+						float drift = Hash(Wrap(x), y, 93) < 0.5f ? 1 : -1;
+
+						foreach ((float sx, float tall) in new[] { (-5f, 22f), (6f, 16f) })
+						{
+							using SKPath wisp = new SKPath();
+							float bx = c.X + sx, by = c.Y;
+							wisp.MoveTo(bx, by);
+							wisp.CubicTo(bx - (4 * drift), by - (tall * 0.35f), bx + (6 * drift), by - (tall * 0.6f), bx + (3 * drift), by - (tall * 0.85f));
+							wisp.QuadTo(bx, by - tall, bx + (5 * drift), by - (tall * 1.08f));
+							canvas.DrawPath(wisp, smokeInk);
+							canvas.DrawPath(wisp, smokeFill);
+						}
 					}
 				}
 
