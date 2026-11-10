@@ -647,8 +647,9 @@ GBitmap other4()
 		Console.WriteLine("transitions written");
 	}
 
-	// ISO_SCENE renders a judging scene at the default zoom: a city with eight irrigated tiles, a road to a second city
-	// that branches towards the hills, and a river to the sea
+	// ISO_SCENE renders a judging scene at the default zoom: a city with eight irrigated tiles and roads leaving it on
+	// three sides, a road to a second city that branches towards the hills and crosses a river, a junction in the
+	// woods, and a railroad from the second city along the coast
 	if (Environment.GetEnvironmentVariable("ISO_SCENE") is string sceneOut && Environment.GetEnvironmentVariable("ISO_THEME") is string sceneTheme)
 	{
 		int SceneTerrain(int x, int y)
@@ -662,12 +663,15 @@ GBitmap other4()
 			return 2;
 		}
 		(int X, int Y) rome = (38, 26), nara = (44, 29);
-		var roadCells = new HashSet<(int, int)> { (39, 26), (40, 27), (41, 27), (42, 28), (43, 28), (43, 27), (44, 26), (45, 25), (45, 24) };
+		var roadCells = new HashSet<(int, int)> { (39, 26), (40, 27), (41, 27), (42, 28), (43, 28), (43, 27), (44, 26), (45, 25), (45, 24),
+			(37, 26), (36, 26), (35, 27), (34, 27), (38, 25), (38, 24), (37, 23), (39, 23) };
+		// a railroad from Nara along the coast and up into the hills
+		var railCells = new HashSet<(int, int)> { (45, 28), (46, 27), (47, 26), (47, 25), (47, 24), (46, 24) };
 		var view = OpenCivOne.Graphics.IsoView.Load(sceneTheme, 960, 768)!;
 		var sceneS = new OpenCivOne.Graphics.IsoView.Scene
 		{
 			Terrain = SceneTerrain,
-			Improvements = (x, y) => (x, y) == rome || (x, y) == nara ? 0x9 : roadCells.Contains((x, y)) ? 0x8 :
+			Improvements = (x, y) => (x, y) == rome || (x, y) == nara ? 0x9 : railCells.Contains((x, y)) ? 0x18 : roadCells.Contains((x, y)) ? 0x8 | (x == 36 && y == 26 ? 0x2 : 0) :
 				(Math.Abs(x - rome.X) <= 1 && Math.Abs(y - rome.Y) <= 2 && SceneTerrain(x, y) != 10) || (x, y) == (36, 25) || (x, y) == (36, 26) ? 0x2 : 0,
 			Feature = (x, y) => (x, y) == (35, 29) ? 1 : 0,
 		};

@@ -819,13 +819,29 @@ namespace OpenCivOne.Graphics
 			// link's node to q; at an end or a junction it points straight at q
 			SKPoint Tangent(SKPoint p, SKPoint q, List<SKPoint> links)
 			{
-				if (links.Count == 2)
+				SKPoint toQ = Unit(q.X - p.X, q.Y - p.Y);
+
+				// a junction keeps its through route smooth: the link most nearly opposite this one carries on through the
+				// node, and a branch meets that route head on
+				SKPoint? through = null;
+				float best = links.Count == 2 ? 2 : -0.3f;
+
+				foreach (SKPoint o in links)
 				{
-					SKPoint other = MathF.Abs(links[0].X - q.X) + MathF.Abs(links[0].Y - q.Y) < 0.01f ? links[1] : links[0];
-					return Unit(q.X - other.X, q.Y - other.Y);
+					if (MathF.Abs(o.X - q.X) + MathF.Abs(o.Y - q.Y) < 0.01f)
+						continue;
+
+					SKPoint toO = Unit(o.X - p.X, o.Y - p.Y);
+					float dot = (toQ.X * toO.X) + (toQ.Y * toO.Y);
+
+					if (dot < best)
+					{
+						best = dot;
+						through = o;
+					}
 				}
 
-				return Unit(q.X - p.X, q.Y - p.Y);
+				return through is SKPoint t ? Unit(q.X - t.X, q.Y - t.Y) : toQ;
 			}
 
 			// samples the link from a to b, with a sideways meander of the given amplitude that is still at both ends
@@ -879,11 +895,14 @@ namespace OpenCivOne.Graphics
 				return path;
 			}
 
+			var riverCourses = new List<(SKPoint[] Pts, float Wa, float Wb)>();
+			var riverNodes = new Dictionary<(int, int), SKPoint>();
+
 			// rivers, as in the mockup: a muted grey-blue water course that meanders, narrow at its source and wider
 			// downstream, over a pale bank and a thin dark edge so it looks cut into the land, with a few ripple marks
 			{
 				bool IsRiver(int x, int y) => TerrainAt(x, y) == River && ExploredAt(x, y);
-				var nodes = new Dictionary<(int, int), SKPoint>();
+				var nodes = riverNodes;
 				var links = new Dictionary<(int, int), List<SKPoint>>();
 				var mouths = new List<((int X, int Y) From, SKPoint To)>();
 				(int, int)[] four = { (1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1) };
@@ -895,6 +914,8 @@ namespace OpenCivOne.Graphics
 				foreach (((int x, int y), SKPoint _) in nodes)
 				{
 					var list = new List<SKPoint>();
+					var seaSides = new List<(int, int)>();
+					float upX = 0, upY = 0; // the direction the river flows in here: away from its other cells
 
 					foreach ((int dx, int dy) in four)
 					{
@@ -904,13 +925,36 @@ namespace OpenCivOne.Graphics
 						if (nodes.TryGetValue((x + dx, y + dy), out SKPoint q))
 						{
 							list.Add(q);
+							upX -= dx;
+							upY -= dy;
 						}
-						else if (TerrainAt(x + dx, y + dy) == Water)
+						else if (TerrainAt(x + dx, y + dy) == Water && dx * dy == 0)
 						{
-							SKPoint mouth = Screen(x + 0.5f + (dx * 0.66f), y + 0.5f + (dy * 0.66f));
-							list.Add(mouth);
-							mouths.Add(((x, y), mouth));
+							seaSides.Add((dx, dy));
 						}
+					}
+
+					// one mouth to a cell, never a delta around an island: on the side of the sea that carries the river's
+					// flow on, so it does not hook back before it reaches the shore
+					if (seaSides.Count > 0)
+					{
+						(int sx, int sy) = seaSides[0];
+						float bestDot = float.MinValue;
+
+						foreach ((int dx, int dy) in seaSides)
+						{
+							float dot = (dx * upX) + (dy * upY);
+
+							if (dot > bestDot)
+							{
+								bestDot = dot;
+								(sx, sy) = (dx, dy);
+							}
+						}
+
+						SKPoint mouth = Screen(x + 0.5f + (sx * 1.05f), y + 0.5f + (sy * 1.05f));
+						list.Add(mouth);
+						mouths.Add(((x, y), mouth));
 					}
 
 					links[(x, y)] = list;
@@ -934,7 +978,7 @@ namespace OpenCivOne.Graphics
 				}
 
 				float Width(int x, int y) => toSea.TryGetValue((x, y), out int d) ? MathF.Max(3.4f, 6.6f - (d * 0.4f)) : 4.2f;
-				var courses = new List<(SKPoint[] Pts, float Wa, float Wb)>();
+				var courses = riverCourses;
 
 				foreach (((int x, int y), SKPoint a) in nodes)
 				{
@@ -951,7 +995,8 @@ namespace OpenCivOne.Graphics
 				foreach (var m in mouths)
 				{
 					float wd = Width(m.From.X, m.From.Y);
-					courses.Add((Link(nodes[m.From], m.To, links[m.From], new List<SKPoint>(), 1.5f, 10), wd, wd + 1.2f));
+					// the mouth opens out into the sea; everything past the shore is cut away below
+					courses.Add((Link(nodes[m.From], m.To, links[m.From], new List<SKPoint>(), 0, 12), wd, wd + 7));
 				}
 
 				using SKPaint bank = new SKPaint { IsAntialias = true, Color = new SKColor(212, 202, 162) };
@@ -988,16 +1033,59 @@ namespace OpenCivOne.Graphics
 						canvas.DrawLine(a.X - (d.Y * side), a.Y + (d.X * side), b.X - (d.Y * side), b.Y + (d.X * side), ripple);
 					}
 				}
+
+				// the river stops at the shore: over the sea the ground as painted comes back, so the mouth opens cleanly
+				// into the shallows, its banks ending at the beach, instead of a tube lying on the water
+				if (mouths.Count > 0)
+				{
+					canvas.Flush();
+					int[] shore = new int[w * h];
+					System.Runtime.InteropServices.Marshal.Copy(bitmap.GetPixels(), shore, 0, shore.Length);
+
+					// the river's water fans out a little into the shallows at its mouth, fading as it goes
+					var plume = new List<SKPoint>();
+
+					foreach (var m in mouths)
+						plume.Add(m.To);
+
+					for (int i = 0; i < shore.Length; i++)
+					{
+						if (kind[i] != Sea)
+							continue;
+
+						uint c = img[i];
+						float px = i % w, py = i / w, fade = 0;
+
+						foreach (SKPoint m in plume)
+						{
+							float ddx = (px - m.X) / 1.6f, ddy = py - m.Y;
+							fade = MathF.Max(fade, 1 - (MathF.Sqrt((ddx * ddx) + (ddy * ddy)) / 15));
+						}
+
+						fade = MathF.Max(0, fade) * Math.Clamp(1 - (seaDist[i] / 12), 0, 1) * 0.6f;
+						float cr = (c >> 16) & 0xff, cg = (c >> 8) & 0xff, cb = c & 0xff;
+						shore[i] = unchecked((int)Pack(cr + ((66 - cr) * fade), cg + ((112 - cg) * fade), cb + ((142 - cb) * fade)));
+					}
+
+					System.Runtime.InteropServices.Marshal.Copy(shore, 0, bitmap.GetPixels(), shore.Length);
+				}
 			}
 
-			var overRoads = new List<SKPath>();
+			// the points every road, railroad and river passes through, so trees and scrub that would hide them are left out
+			var routePoints = new List<SKPoint>();
+
+			foreach (var c in riverCourses)
+				routePoints.AddRange(c.Pts);
+			var overMountains = new List<(SKPoint[] Pts, bool Rail)>();
 
 			// roads and railroads, as in the mockup: a cream path with a thin darker edge on both sides, bending in smooth
-			// curves through the network and into the city gates. Diagonal links are left out where the two cells beside
-			// them already join the ends, so roads never form a lattice.
-			using (SKPaint edge = Stroke(new SKColor(92, 74, 46), 5.0f), path = Stroke(new SKColor(218, 202, 154), 3.3f), rail = Stroke(new SKColor(60, 52, 44), 1.1f))
+			// curves through the network. A road runs to its city's walls, ending at a gate on the side it comes from, so
+			// a city can be entered from every side. Where three or more meet there is a small open junction; where a
+			// road crosses a river, a bridge. Railroads are a gravel bed with sleepers and two rails. Diagonal links are
+			// left out where the two cells beside them already join the ends, so routes never form a lattice.
 			{
 				bool Road(int x, int y) => ExploredAt(x, y) && ((Improvements(x, y) & 0x19) != 0 || CityCell(x, y));
+				bool Rail(int x, int y) => ExploredAt(x, y) && ((Improvements(x, y) & 0x10) != 0 || CityCell(x, y));
 				(int, int)[] eight = { (1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1) };
 				var nodes = new Dictionary<(int, int), SKPoint>();
 				var links = new Dictionary<(int, int), List<(int, int)>>();
@@ -1008,7 +1096,37 @@ namespace OpenCivOne.Graphics
 						continue;
 
 					float j = CityCell(x, y) ? 0 : 0.22f;
-					nodes[(x, y)] = Screen(x + 0.5f + ((Hash(Wrap(x), y, 43) - 0.5f) * j), y + 0.5f + ((Hash(Wrap(x), y, 44) - 0.5f) * j));
+					float ox = (Hash(Wrap(x), y, 43) - 0.5f) * j, oy = (Hash(Wrap(x), y, 44) - 0.5f) * j;
+
+					// on a river the road keeps to one bank, clear of the water, and crosses it only on its way out
+					// (the bank facing the roads it joins, so a road along a river stays on one side of it)
+					if (!CityCell(x, y) && riverNodes.ContainsKey((x, y)))
+					{
+						var rn = new List<(int X, int Y)>();
+						float ax = 0, ay = 0;
+
+						foreach ((int dx, int dy) in eight)
+						{
+							if (riverNodes.ContainsKey((x + dx, y + dy)) && (dx == 0 || dy == 0))
+								rn.Add((dx, dy));
+
+							if (Road(x + dx, y + dy) && !riverNodes.ContainsKey((x + dx, y + dy)))
+							{
+								ax += dx;
+								ay += dy;
+							}
+						}
+
+						float tx = rn.Count >= 2 ? rn[1].X - rn[0].X : rn.Count == 1 ? rn[0].X : 1;
+						float ty = rn.Count >= 2 ? rn[1].Y - rn[0].Y : rn.Count == 1 ? rn[0].Y : 0;
+						SKPoint perp = Unit(-ty, tx);
+						float dot = (ax * perp.X) + (ay * perp.Y);
+						float side = dot > 0.01f ? 1 : dot < -0.01f ? -1 : (perp.X + perp.Y >= 0 ? 1 : -1);
+						ox = perp.X * 0.3f * side;
+						oy = perp.Y * 0.3f * side;
+					}
+
+					nodes[(x, y)] = Screen(x + 0.5f + ox, y + 0.5f + oy);
 				}
 
 				foreach (((int x, int y), SKPoint _) in nodes)
@@ -1033,8 +1151,18 @@ namespace OpenCivOne.Graphics
 					links[(x, y)] = list;
 				}
 
-				List<SKPoint> Points((int, int) cell) => links[cell].ConvertAll(k => nodes[k]);
-				var pieces = new List<(SKPath Path, bool Rail, bool Over)>();
+				// where a link meets a city it ends at the gate: on the city's edge, on the side the link comes from
+				SKPoint End((int X, int Y) cell, (int X, int Y) other)
+				{
+					if (!CityCell(cell.X, cell.Y))
+						return nodes[cell];
+
+					return Screen(cell.X + 0.5f + ((other.X - cell.X) * 0.36f), cell.Y + 0.5f + ((other.Y - cell.Y) * 0.36f));
+				}
+
+				// the tangents at a node come from its other links; a gate has none, so the road arrives head on
+				List<SKPoint> Around((int X, int Y) cell) => CityCell(cell.X, cell.Y) ? new List<SKPoint>() : links[cell].ConvertAll(k => nodes[k]);
+				var routes = new List<(SKPoint[] Pts, bool Rail, bool Mountain)>();
 
 				foreach (((int x, int y), List<(int, int)> list) in links)
 				{
@@ -1043,38 +1171,79 @@ namespace OpenCivOne.Graphics
 						if (by < y || (by == y && bx < x))
 							continue;
 
-						SKPoint[] pts = Link(nodes[(x, y)], nodes[(bx, by)], Points((x, y)), Points((bx, by)), 0, 14);
-						SKPath p = new SKPath();
-						p.AddPoly(pts, false);
+						SKPoint a = End((x, y), (bx, by)), b = End((bx, by), (x, y));
+						List<SKPoint> aAround = Around((x, y)), bAround = Around((bx, by));
+
+						// a gate's road leaves the wall straight, towards the next node
+						SKPoint[] pts = Link(a, b, aAround, bAround, 0, 14);
 						int ta = TerrainAt(x, y), tb = TerrainAt(bx, by);
-						pieces.Add((p, (Improvements(x, y) & 0x10) != 0 && (Improvements(bx, by) & 0x10) != 0,
-							ta == Forest || ta == Jungle || ta == Mountains || tb == Forest || tb == Jungle || tb == Mountains));
+						bool rail = Rail(x, y) && Rail(bx, by) && !(CityCell(x, y) && CityCell(bx, by)) && ((Improvements(x, y) & 0x10) != 0 || (Improvements(bx, by) & 0x10) != 0);
+						routes.Add((pts, rail, (ta == Mountains && !CityCell(x, y)) || (tb == Mountains && !CityCell(bx, by))));
+						routePoints.AddRange(pts);
 					}
 				}
 
-				foreach (var piece in pieces)
-					canvas.DrawPath(piece.Path, edge);
-
-				foreach (var piece in pieces)
+				// bridges: where a route crosses a river's course, a short deck spanning the water and its banks
+				static bool Cross(SKPoint p1, SKPoint p2, SKPoint q1, SKPoint q2, out float t)
 				{
-					canvas.DrawPath(piece.Path, path);
+					float d = ((p2.X - p1.X) * (q2.Y - q1.Y)) - ((p2.Y - p1.Y) * (q2.X - q1.X));
+					t = 0;
 
-					if (piece.Rail)
-						canvas.DrawPath(piece.Path, rail);
+					if (MathF.Abs(d) < 1e-6f)
+						return false;
+
+					t = (((q1.X - p1.X) * (q2.Y - q1.Y)) - ((q1.Y - p1.Y) * (q2.X - q1.X))) / d;
+					float u = (((q1.X - p1.X) * (p2.Y - p1.Y)) - ((q1.Y - p1.Y) * (p2.X - p1.X))) / d;
+					return t >= 0 && t <= 1 && u >= 0 && u <= 1;
 				}
 
-				// through woods and mountains the road is drawn again over the trees and peaks, as a cut through them
-				foreach (var piece in pieces)
+				var bridges = new List<SKPoint[]>();
+
+				foreach (var r in routes)
 				{
-					if (piece.Over)
-						overRoads.Add(piece.Path);
-					else
-						piece.Path.Dispose();
+					for (int i = 1; i < r.Pts.Length; i++)
+					{
+						foreach (var c in riverCourses)
+						{
+							for (int k = 1; k < c.Pts.Length; k++)
+							{
+								if (!Cross(r.Pts[i - 1], r.Pts[i], c.Pts[k - 1], c.Pts[k], out float t))
+									continue;
+
+								SKPoint at = new SKPoint(r.Pts[i - 1].X + ((r.Pts[i].X - r.Pts[i - 1].X) * t), r.Pts[i - 1].Y + ((r.Pts[i].Y - r.Pts[i - 1].Y) * t));
+								SKPoint dir = Unit(r.Pts[i].X - r.Pts[i - 1].X, r.Pts[i].Y - r.Pts[i - 1].Y);
+								float span = ((c.Wa + c.Wb) / 4) + 4.4f;
+								bridges.Add(new[] { new SKPoint(at.X - (dir.X * span), at.Y - (dir.Y * span)), new SKPoint(at.X + (dir.X * span), at.Y + (dir.Y * span)) });
+							}
+						}
+					}
 				}
+
+				DrawRoutes(canvas, routes.ConvertAll(r => (r.Pts, r.Rail)), bridges);
+
+				// through mountains the road is drawn again over the peaks, as a pass cut through them
+				foreach (var r in routes)
+					if (r.Mountain)
+						overMountains.Add((r.Pts, r.Rail));
 			}
 
 			// everything that stands on the ground, back to front
-			var items = new List<(float Base, float X, SKBitmap Bitmap)>(hamletsNearCities);
+			bool HidesRoute(float x, float baseY, SKBitmap b)
+			{
+				float half = b.Width * 0.42f, top = baseY - (b.Height * 0.85f);
+
+				foreach (SKPoint r in routePoints)
+					if (MathF.Abs(r.X - x) < half && r.Y > top && r.Y < baseY + 3)
+						return true;
+
+				return false;
+			}
+
+			var items = new List<(float Base, float X, SKBitmap Bitmap)>();
+
+			foreach (var hamlet in hamletsNearCities)
+				if (!HidesRoute(hamlet.X, hamlet.Base, hamlet.Bitmap))
+					items.Add(hamlet);
 			// mines, fortresses, resources and huts: drawn over the props, so trees and peaks never hide them
 			var topLayer = new List<(float Base, float X, SKBitmap Bitmap)>();
 
@@ -1106,6 +1275,10 @@ namespace OpenCivOne.Graphics
 				int sx = (int)p.X, sy = (int)p.Y;
 
 				if (sx >= 0 && sy >= 0 && sx < w && sy < h && kind[(sy * w) + sx] == Sea)
+					return;
+
+				// roads stay in view: a tree, bush or hill whose sprite would cover one is left out
+				if (set != "peaks" && HidesRoute(p.X, p.Y + lift, b))
 					return;
 
 				items.Add((p.Y + lift, p.X, b));
@@ -1291,17 +1464,7 @@ namespace OpenCivOne.Graphics
 				foreach (var item in items)
 					canvas.DrawBitmap(item.Bitmap, item.X - (item.Bitmap.Width / 2f), item.Base - item.Bitmap.Height, sprite);
 
-				using (SKPaint edge = Stroke(new SKColor(92, 74, 46), 5.0f), path = Stroke(new SKColor(218, 202, 154), 3.3f))
-				{
-					foreach (SKPath p in overRoads)
-						canvas.DrawPath(p, edge);
-
-					foreach (SKPath p in overRoads)
-					{
-						canvas.DrawPath(p, path);
-						p.Dispose();
-					}
-				}
+				DrawRoutes(canvas, overMountains, new List<SKPoint[]>());
 
 				// pollution (parked: small and neutral for now): a small dark patch at the tile's centre
 				using (SKPaint patch = new SKPaint { IsAntialias = true, Color = new SKColor(60, 52, 42, 170) })
@@ -1401,6 +1564,101 @@ namespace OpenCivOne.Graphics
 		private static (int X, int Y) Nearest(int x, int y, float cx)
 		{
 			return (x + ((int)MathF.Round((cx - x) / MapWidth) * MapWidth), y);
+		}
+
+		// draws roads (a darker edge, then a cream path over it) and railroads (a gravel bed, sleepers, two rails), then
+		// bridges over them where they cross a river: a timber deck with dark parapets
+		private static void DrawRoutes(SKCanvas canvas, List<(SKPoint[] Pts, bool Rail)> routes, List<SKPoint[]> bridges)
+		{
+			using SKPaint edge = Stroke(new SKColor(92, 74, 46), 5.0f), path = Stroke(new SKColor(218, 202, 154), 3.3f);
+			using SKPaint bed = Stroke(new SKColor(70, 62, 52), 5.6f), gravel = Stroke(new SKColor(134, 122, 104), 4.2f);
+			using SKPaint sleeper = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.1f, Color = new SKColor(70, 52, 36) };
+			using SKPaint steel = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 0.9f, Color = new SKColor(40, 38, 40), StrokeJoin = SKStrokeJoin.Round };
+
+			SKPath Poly(SKPoint[] pts)
+			{
+				SKPath p = new SKPath();
+				p.AddPoly(pts, false);
+				return p;
+			}
+
+			foreach (var r in routes)
+			{
+				using SKPath p = Poly(r.Pts);
+				canvas.DrawPath(p, r.Rail ? bed : edge);
+			}
+
+			foreach (var r in routes)
+			{
+				using SKPath p = Poly(r.Pts);
+
+				if (!r.Rail)
+				{
+					canvas.DrawPath(p, path);
+					continue;
+				}
+
+				canvas.DrawPath(p, gravel);
+
+				// sleepers across the bed every few pixels, then the two rails along it
+				float carry = 0;
+				var left = new SKPoint[r.Pts.Length];
+				var right = new SKPoint[r.Pts.Length];
+
+				for (int i = 0; i < r.Pts.Length; i++)
+				{
+					SKPoint a = r.Pts[Math.Max(0, i - 1)], b = r.Pts[Math.Min(r.Pts.Length - 1, i + 1)];
+					float dx = b.X - a.X, dy = b.Y - a.Y, l = MathF.Max(0.001f, MathF.Sqrt((dx * dx) + (dy * dy)));
+					float nx = -dy / l, ny = dx / l;
+					left[i] = new SKPoint(r.Pts[i].X + (nx * 1.3f), r.Pts[i].Y + (ny * 1.3f));
+					right[i] = new SKPoint(r.Pts[i].X - (nx * 1.3f), r.Pts[i].Y - (ny * 1.3f));
+
+					if (i == 0)
+						continue;
+
+					float sx = r.Pts[i].X - r.Pts[i - 1].X, sy = r.Pts[i].Y - r.Pts[i - 1].Y;
+					carry += MathF.Sqrt((sx * sx) + (sy * sy));
+
+					while (carry >= 3.2f)
+					{
+						carry -= 3.2f;
+						float t = 1 - (carry / MathF.Max(0.001f, MathF.Sqrt((sx * sx) + (sy * sy))));
+						float px = r.Pts[i - 1].X + (sx * t), py = r.Pts[i - 1].Y + (sy * t);
+						canvas.DrawLine(px + (nx * 2.4f), py + (ny * 2.4f), px - (nx * 2.4f), py - (ny * 2.4f), sleeper);
+					}
+				}
+
+				using SKPath lp = Poly(left), rp = Poly(right);
+				canvas.DrawPath(lp, steel);
+				canvas.DrawPath(rp, steel);
+			}
+
+			// a bridge: the road carries straight on over the water, with a thin dark parapet rail along each side that
+			// flares out a little at both ends, onto the banks
+			using SKPaint parapet = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.2f, Color = new SKColor(46, 36, 28), StrokeCap = SKStrokeCap.Round, StrokeJoin = SKStrokeJoin.Round };
+			using SKPaint shade = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2.2f, Color = new SKColor(30, 44, 56, 110), StrokeCap = SKStrokeCap.Butt };
+
+			foreach (SKPoint[] b in bridges)
+			{
+				SKPoint a = b[0], z = b[^1];
+				float dx = z.X - a.X, dy = z.Y - a.Y, l = MathF.Max(0.001f, MathF.Sqrt((dx * dx) + (dy * dy)));
+				float ux = dx / l, uy = dy / l, nx = -uy, ny = ux;
+				const float off = 2.8f, flare = 1.6f;
+
+				// the bridge's shadow on the water, on its lower side
+				float sx = ny >= 0 ? nx : -nx, sy = ny >= 0 ? ny : -ny;
+				canvas.DrawLine(a.X + (ux * 2) + (sx * 3.6f), a.Y + (uy * 2) + (sy * 3.6f), z.X - (ux * 2) + (sx * 3.6f), z.Y - (uy * 2) + (sy * 3.6f), shade);
+
+				foreach (float side in new[] { 1f, -1f })
+				{
+					using SKPath rail = new SKPath();
+					rail.MoveTo(a.X - (ux * 1.6f) + (nx * side * (off + flare)), a.Y - (uy * 1.6f) + (ny * side * (off + flare)));
+					rail.LineTo(a.X + (ux * 1.4f) + (nx * side * off), a.Y + (uy * 1.4f) + (ny * side * off));
+					rail.LineTo(z.X - (ux * 1.4f) + (nx * side * off), z.Y - (uy * 1.4f) + (ny * side * off));
+					rail.LineTo(z.X + (ux * 1.6f) + (nx * side * (off + flare)), z.Y + (uy * 1.6f) + (ny * side * (off + flare)));
+					canvas.DrawPath(rail, parapet);
+				}
+			}
 		}
 
 		private static SKPaint Stroke(SKColor colour, float width)
