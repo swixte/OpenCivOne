@@ -217,6 +217,12 @@ namespace OpenCivOne.Graphics
 			foreach (string name in Array.ConvertAll(ResourceNames, n => "res_" + n))
 				view.LoadObject(objectsFolder, name, height: 44, halo: true);
 
+			view.LoadObject(objectsFolder, "res_fish", height: 26);
+
+			if (view.objects.Remove("res_fish", out SKBitmap? small))
+				view.objects["fish"] = small;
+
+			view.LoadObject(objectsFolder, "res_fish", height: 44, halo: true);
 			view.LoadObject(objectsFolder, "hut", height: 48, halo: true);
 			view.LoadObject(objectsFolder, "mine", height: 44, halo: true);
 			view.LoadObject(objectsFolder, "fortress", height: 46, halo: true);
@@ -859,7 +865,19 @@ namespace OpenCivOne.Graphics
 				// special resources and huts
 				int feature = scene.Feature(Wrap(x), y);
 
-				if ((feature & 1) != 0 && t < ResourceNames.Length && this.objects.TryGetValue("res_" + ResourceNames[t], out SKBitmap? res))
+				// fish only near land, where a city could work them, and smaller, so the open sea is not dotted with them
+				bool nearLand = t != Water;
+
+				for (int dy = -2; dy <= 2 && !nearLand; dy++)
+					for (int dx = -2; dx <= 2 && !nearLand; dx++)
+						nearLand = TerrainAt(x + dx, y + dy) is >= 0 and not Water;
+
+				if ((feature & 1) != 0 && t == Water && nearLand && this.objects.TryGetValue("fish", out SKBitmap? fish))
+				{
+					SKPoint p = Screen(x + 0.5f, y + 0.55f);
+					items.Add((p.Y + 4, p.X, fish));
+				}
+				else if ((feature & 1) != 0 && t != Water && t < ResourceNames.Length && this.objects.TryGetValue("res_" + ResourceNames[t], out SKBitmap? res))
 				{
 					SKPoint p = Screen(x + 0.6f, y + 0.6f);
 					topLayer.Add((p.Y + 4, p.X, res));
@@ -1010,6 +1028,10 @@ namespace OpenCivOne.Graphics
 			{
 				(int x, int y) = Nearest(c.X, c.Y, cx);
 				SKPoint p = Screen(x + 0.5f, y + 0.5f);
+				// only cities in view get a plate
+				if (p.X < -40 || p.X > w + 40 || p.Y < -40 || p.Y > h + 40)
+					continue;
+
 				Flag(canvas, p.X + 14, p.Y - 30, 13, c.Colour, 2.3f);
 				string size = c.Size.ToString();
 				float nameWidth = font.MeasureText(c.Name);
