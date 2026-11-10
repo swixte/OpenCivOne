@@ -86,5 +86,25 @@
   "refs": [
    "../refs/v5-screen.jpg"
   ]
+ },
+ "iso_tex_grass": {
+  "prompt": "Make a seamless tileable ground texture filling the whole square edge to edge, for an isometric strategy map, in exactly the drawing of the open ground in the reference image: warm olive-green grassland (#8E8A4E) densely covered with small inked grass tufts, stipple dots and short hatch strokes, like the grass between the fields and trees of the reference, drawn crisply with the same fine dark ink line as the objects in the reference (not blurred, not airbrushed, not painterly): many small drawn marks evenly covering everything, with flat even lighting, no large shapes, no objects, no trees, no border, no text.",
+  "refs": [
+   "../refs/v5-screen.jpg",
+   "../refs/crops/grass_a.jpg"
+  ]
+ },
+ "iso_tex_sand": {
+  "prompt": "Make a seamless tileable ground texture filling the whole square edge to edge, for an isometric strategy map, in exactly the drawing of the open ground in the reference image: pale ochre desert sand (#D8BE84) covered with fine inked ripple lines and stipple dots, drawn crisply with the same fine dark ink line as the objects in the reference (not blurred, not airbrushed, not painterly): many small drawn marks evenly covering everything, with flat even lighting, no large shapes, no objects, no trees, no border, no text.",
+  "refs": [
+   "../refs/v5-screen.jpg",
+   "../refs/crops-v5/desert.jpg"
+  ]
+ },
+ "iso_plots": {
+  "prompt": "A sprite sheet in exactly the drawing style of the first reference image (a woodblock-print strategy map seen from a high three-quarter isometric angle): 8 separate diamond-shaped blocks of farmland, each a full 2:1 isometric diamond completely filled with bold crop plots in strong greens and golds with furrow lines, divided by thick dark-green hedgerows with small round bushes along them, solid and opaque, exactly like the field grids around the cities in the reference. Each is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background with clear magenta space between them; no cast shadows, no text, no frame.",
+  "refs": [
+   "../refs/v5-screen.jpg"
+  ]
  }
 }
