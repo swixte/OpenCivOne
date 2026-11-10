@@ -689,7 +689,13 @@ namespace OpenCivOne.Graphics
 
 							// a thin grey-cream lane, edged by a dark hedge line on the plot's side, both antialiased so they do
 							// not break into steps
-							float laneW = Math.Clamp(1.0f - lane, 0, 1), hedgeW = Math.Clamp(1.9f - lane, 0, 1) * (1 - laneW);
+							// the pale lanes run only between cells; the plots inside a cell are parted by a thin hedge alone, so
+							// from a distance a field reads as blocks of plots rather than a grid
+							float ex = gx0 - fcx, ey = gy0 - fcy;
+							float cellEdge = MathF.Min(MathF.Min(ex, 1 - ex), MathF.Min(ey, 1 - ey)) * cellPx;
+							bool outer = cellEdge <= lane + 0.01f;
+							float laneW = outer ? Math.Clamp(1.0f - lane, 0, 1) : 0;
+							float hedgeW = (outer ? Math.Clamp(1.9f - lane, 0, 1) : Math.Clamp(1.1f - lane, 0, 1) * 0.85f) * (1 - laneW);
 							float plotW = 1 - laneW - hedgeW;
 							fr = (fr * plotW) + (172 * laneW) + (54 * hedgeW);
 							fg = (fg * plotW) + (162 * laneW) + (66 * hedgeW);
