@@ -593,8 +593,9 @@ GBitmap other4()
 				var sceneL = new OpenCivOne.Graphics.IsoView.Scene
 				{
 					Terrain = (x, y) => (Math.Abs(x - 40) <= 1 && Math.Abs(y - 25) <= 1 && terrain != 11) || terrain == 10 ? terrain : (terrain == 11 && x == 40 && Math.Abs(y - 25) <= 2 ? 11 : (terrain == 11 && x == 40 && y == 28 ? 10 : 2)),
-					Improvements = (x, y) => (x, y) != (40, 25) ? (column == 2 && y == 25 && Math.Abs(x - 40) <= 1 ? 0x8 : 0) :
-						column switch { 2 => 0x8, 3 => 0x2, 4 => 0x4, 5 => 0x20, 6 => 0x40, _ => 0 },
+					// road, irrigation and pollution cover the block (so roads join and fields meet); mine and fortress the middle
+					Improvements = (x, y) => (Math.Abs(x - 40) > 1 || Math.Abs(y - 25) > 1) ? 0 :
+						column switch { 2 => 0x8, 3 => 0x2, 6 => 0x40, 4 when (x, y) == (40, 25) => 0x4, 5 when (x, y) == (40, 25) => 0x20, _ => 0 },
 					Feature = (x, y) => (x, y) != (40, 25) ? 0 : column == 1 ? 1 : column == 7 ? 2 : 0,
 				};
 				view.Render(40.5f, 25.5f, sceneL);
@@ -606,6 +607,44 @@ GBitmap other4()
 		using var legendFile = File.OpenWrite(legendOut);
 		sheet.Encode(legendFile, SKEncodedImageFormat.Png, 100);
 		Console.WriteLine("legend written");
+	}
+
+	// ISO_TRANSITIONS renders each land terrain bordering grassland, ocean and its neighbour in the list, and an
+	// unexplored edge
+	if (Environment.GetEnvironmentVariable("ISO_TRANSITIONS") is string trOut && Environment.GetEnvironmentVariable("ISO_THEME") is string trTheme)
+	{
+		string[] names = { "Desert", "Plains", "Grassland", "Forest", "Hills", "Mountains", "Tundra", "Arctic", "Swamp", "Jungle" };
+		string[] columns = { "| grassland", "| ocean", "| next terrain", "| unexplored" };
+		const int cw = 300, ch = 170, lw = 110;
+		using var sheet = new SKBitmap(lw + (columns.Length * cw), 30 + (names.Length * ch));
+		using var sc = new SKCanvas(sheet);
+		sc.Clear(new SKColor(30, 26, 22));
+		using var font = new SKFont(SKTypeface.Default, 16);
+		using var ink = new SKPaint { Color = new SKColor(244, 236, 216), IsAntialias = true };
+		for (int c = 0; c < columns.Length; c++)
+			sc.DrawText(columns[c], lw + (c * cw) + 10, 20, font, ink);
+		for (int t = 0; t < names.Length; t++)
+		{
+			sc.DrawText(names[t], 8, 30 + (t * ch) + (ch / 2), font, ink);
+			for (int c = 0; c < columns.Length; c++)
+			{
+				var view = OpenCivOne.Graphics.IsoView.Load(trTheme, cw, ch)!;
+				int terrain = t, column = c, neighbour = c switch { 0 => 2, 1 => 10, 2 => (t + 1) % 10, _ => t };
+				// the terrain on the left half (x < 40), the other on the right; a ragged diagonal border
+				var sceneT = new OpenCivOne.Graphics.IsoView.Scene
+				{
+					Terrain = (x, y) => (x - y + ((x * 7 + y * 3) % 2)) < 15 ? terrain : neighbour,
+					Explored = (x, y) => column != 3 || (x - y + ((x * 5 + y) % 2)) < 15,
+				};
+				view.Render(40.5f, 25.5f, sceneT);
+				using var cell = new SKBitmap(cw, ch, SKColorType.Bgra8888, SKAlphaType.Premul);
+				Marshal.Copy(Array.ConvertAll(view.Pixels, v => unchecked((int)v)), 0, cell.GetPixels(), view.Pixels.Length);
+				sc.DrawBitmap(cell, lw + (c * cw), 30 + (t * ch));
+			}
+		}
+		using var trFile = File.OpenWrite(trOut);
+		sheet.Encode(trFile, SKEncodedImageFormat.Png, 100);
+		Console.WriteLine("transitions written");
 	}
 
 	// ISO_PREVIEW renders the isometric view of the test map with a theme's hd folder (ISO_THEME)
