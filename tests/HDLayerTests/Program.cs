@@ -687,6 +687,354 @@ GBitmap other4()
 		Console.WriteLine("scene written");
 	}
 
+	// ISO_SHOWCASE renders a developed world into a folder: a large continent with every terrain, rivers from the
+	// mountains to the sea, cities of many sizes joined by roads and a railroad, irrigated fields, mines, a fortress,
+	// pollution, huts, resources and units; an overview and close views of three cities, so the art can be judged as
+	// it would look in a game well under way. ISO_SEED picks another world.
+	if (Environment.GetEnvironmentVariable("ISO_SHOWCASE") is string showDir && Environment.GetEnvironmentVariable("ISO_THEME") is string showTheme)
+	{
+		int seed = int.TryParse(Environment.GetEnvironmentVariable("ISO_SEED"), out int sd) ? sd : 7;
+		const int MW = 80, MH = 50;
+		const int Desert = 0, Plains = 1, Grassland = 2, Forest = 3, Hills = 4, Mountains = 5, Tundra = 6, Arctic = 7, Swamp = 8, Jungle = 9, Water = 10, River = 11;
+
+		float H(int x, int y, int s)
+		{
+			unchecked
+			{
+				uint h = ((uint)x * 374761393u) + ((uint)y * 668265263u) + ((uint)(s + (seed * 7919)) * 1013904223u);
+				h = (h ^ (h >> 15)) * 2246822519u;
+				h = (h ^ (h >> 13)) * 3266489917u;
+				h ^= h >> 16;
+				return (h & 0xffffff) / (float)0x1000000;
+			}
+		}
+
+		float Noise(float x, float y, int s)
+		{
+			int x0 = (int)MathF.Floor(x), y0 = (int)MathF.Floor(y);
+			float fx = x - x0, fy = y - y0;
+			fx = fx * fx * (3 - (2 * fx));
+			fy = fy * fy * (3 - (2 * fy));
+			float a = H(x0, y0, s), b = H(x0 + 1, y0, s), c = H(x0, y0 + 1, s), d = H(x0 + 1, y0 + 1, s);
+			return (a + ((b - a) * fx)) + (((c + ((d - c) * fx)) - (a + ((b - a) * fx))) * fy);
+		}
+
+		float Fbm(float x, float y, int s) => (Noise(x, y, s) * 0.55f) + (Noise(x * 2.1f, y * 2.1f, s + 1) * 0.3f) + (Noise(x * 4.3f, y * 4.3f, s + 2) * 0.15f);
+
+		var terr = new int[MW, MH];
+		var elev = new float[MW, MH];
+
+		for (int y = 0; y < MH; y++)
+		{
+			for (int x = 0; x < MW; x++)
+			{
+				float dx = (x - 40) / 27f, dy = (y - 25) / 17f;
+				float e = (Fbm(x / 6f, y / 6f, 1) * 0.9f) + ((1 - ((dx * dx) + (dy * dy))) * 0.5f) - 0.5f;
+				// ridges: mountains follow narrow bands where a second noise crosses its middle
+				float ridge = MathF.Abs(Fbm(x / 9f, y / 9f, 5) - 0.5f);
+				elev[x, y] = e;
+				float m = Fbm(x / 8f, y / 8f, 9);
+				int t;
+
+				if (y <= 1 || y >= 48)
+					t = Arctic; // the polar ice
+				else if (e <= 0)
+					t = Water;
+				else if (y <= 2 || y >= 47)
+					t = Arctic;
+				else if (e > 0.1f && ridge < 0.022f)
+					t = Mountains;
+				else if (e > 0.04f && ridge < 0.055f)
+					t = Hills;
+				else if (y <= 6 || y >= 43)
+					t = Tundra;
+				else if (m < 0.4f)
+					t = Math.Abs(y - 25) < 12 ? Desert : Plains;
+				else if (m < 0.47f)
+					t = Plains;
+				else if (m < 0.57f)
+					t = Grassland;
+				else if (m < 0.63f)
+					t = Forest;
+				else if (e < 0.08f)
+					t = Swamp;
+				else
+					t = Math.Abs(y - 25) < 9 ? Jungle : Forest;
+
+				terr[x, y] = t;
+			}
+		}
+
+		// rivers: from springs in the hills and mountains, downhill to the sea
+		bool Land(int x, int y) => y >= 0 && y < MH && terr[(x + MW) % MW, y] != Water;
+		(int, int)[] four = { (1, 0), (0, 1), (-1, 0), (0, -1) };
+		var springs = new List<(int, int)>();
+
+		for (int y = 4; y < MH - 4; y++)
+			for (int x = 0; x < MW; x++)
+				if ((terr[x, y] == Hills || terr[x, y] == Mountains) && H(x, y, 31) < 0.06f)
+					springs.Add((x, y));
+
+		foreach ((int sx, int sy) in springs.Take(7))
+		{
+			int x = sx, y = sy;
+			var seen = new HashSet<(int, int)>();
+			var course = new List<(int, int)>();
+
+			for (int step = 0; step < 40; step++)
+			{
+				seen.Add((x, y));
+				course.Add((x, y));
+				(int, int) next = (-1, -1);
+				float best = float.MaxValue;
+				bool reached = false;
+
+				foreach ((int dx, int dy) in four)
+				{
+					int nx = (x + dx + MW) % MW, ny = y + dy;
+
+					if (ny < 0 || ny >= MH || seen.Contains((nx, ny)))
+						continue;
+
+					if (terr[nx, ny] == Water)
+					{
+						reached = true;
+						break;
+					}
+
+					float e = elev[nx, ny] + (H(nx, ny, 33) * 0.08f);
+
+					if (e < best)
+					{
+						best = e;
+						next = (nx, ny);
+					}
+				}
+
+				if (reached || next.Item1 < 0)
+					break;
+
+				(x, y) = next;
+			}
+
+			// a river shows below the mountains: the spring's own peaks stay peaks
+			foreach ((int cx, int cy) in course)
+				if (terr[cx, cy] != Mountains)
+					terr[cx, cy] = River;
+		}
+
+		// cities on good land, spread out
+		string[] names = { "Kyoto", "Osaka", "Nara", "Edo", "Sakai", "Nagoya", "Kobe", "Sendai", "Hakata", "Kamakura", "Nikko", "Hiroshima" };
+		int[] sizes = { 12, 8, 6, 3, 10, 5, 2, 7, 4, 1, 9, 6 };
+		var cities = new List<(int X, int Y)>();
+		var candidates = new List<(float Score, int X, int Y)>();
+
+		for (int y = 5; y < MH - 5; y++)
+		{
+			for (int x = 0; x < MW; x++)
+			{
+				int t = terr[x, y];
+
+				if (t != Grassland && t != Plains && t != River && t != Hills)
+					continue;
+
+				float score = H(x, y, 41) * 2;
+
+				for (int dy = -2; dy <= 2; dy++)
+				{
+					for (int dx = -2; dx <= 2; dx++)
+					{
+						int n = Land(x + dx, y + dy) ? terr[(x + dx + MW) % MW, y + dy] : Water;
+						score += n is Grassland or Plains or River ? 1 : n == Water ? 0.6f : n is Forest or Hills ? 0.5f : 0;
+					}
+				}
+
+				candidates.Add((score, x, y));
+			}
+		}
+
+		candidates.Sort((a, b) => b.Score.CompareTo(a.Score));
+
+		foreach (var c in candidates)
+		{
+			if (cities.Count >= names.Length)
+				break;
+
+			if (cities.Exists(o => Math.Max(Math.Min(Math.Abs(o.X - c.X), MW - Math.Abs(o.X - c.X)), Math.Abs(o.Y - c.Y)) < 5))
+				continue;
+
+			cities.Add((c.X, c.Y));
+		}
+
+		var imp = new int[MW, MH];
+
+		foreach ((int cx, int cy) in cities)
+		{
+			imp[cx, cy] = 0x9;
+			int size = sizes[cities.IndexOf((cx, cy))];
+
+			for (int dy = -2; dy <= 2; dy++)
+			{
+				for (int dx = -2; dx <= 2; dx++)
+				{
+					int x = (cx + dx + MW) % MW, y = cy + dy;
+
+					if (y < 0 || y >= MH || (dx == 0 && dy == 0))
+						continue;
+
+					int t = terr[x, y];
+
+					if ((t is Grassland or Plains or Desert or River) && H(x, y, 51) < 0.25f + (size * 0.05f))
+						imp[x, y] |= 0x2;
+
+					if ((t is Hills or Mountains) && H(x, y, 52) < 0.6f)
+						imp[x, y] |= 0x4;
+				}
+			}
+		}
+
+		// roads: each city to its two nearest, by the cheapest way over land; a railroad joins the three largest
+		float Cost(int x, int y) => terr[x, y] switch { Mountains => 4, Forest or Jungle or Swamp => 2.2f, Hills => 1.8f, River => 1.4f, _ => 1 };
+
+		List<(int, int)>? Route((int X, int Y) a, (int X, int Y) b)
+		{
+			var dist = new Dictionary<(int, int), float> { [a] = 0 };
+			var prev = new Dictionary<(int, int), (int, int)>();
+			var open = new PriorityQueue<(int, int), float>();
+			open.Enqueue(a, 0);
+			(int, int)[] eight = { (1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1) };
+
+			while (open.TryDequeue(out var cur, out float d))
+			{
+				if (cur == b)
+					break;
+
+				if (d > dist[cur])
+					continue;
+
+				foreach ((int dx, int dy) in eight)
+				{
+					int nx = (cur.Item1 + dx + MW) % MW, ny = cur.Item2 + dy;
+
+					if (ny < 0 || ny >= MH || terr[nx, ny] == Water)
+						continue;
+
+					float nd = d + (Cost(nx, ny) * (dx != 0 && dy != 0 ? 1.15f : 1)) - ((imp[nx, ny] & 0x8) != 0 ? 0.6f : 0);
+
+					if (!dist.TryGetValue((nx, ny), out float old) || nd < old)
+					{
+						dist[(nx, ny)] = nd;
+						prev[(nx, ny)] = cur;
+						open.Enqueue((nx, ny), nd);
+					}
+				}
+			}
+
+			if (!prev.ContainsKey(b))
+				return null;
+
+			var path = new List<(int, int)>();
+
+			for ((int, int) p = b; p != a; p = prev[p])
+				path.Add(p);
+
+			return path;
+		}
+
+		int Dist((int X, int Y) a, (int X, int Y) b) => Math.Max(Math.Min(Math.Abs(a.X - b.X), MW - Math.Abs(a.X - b.X)), Math.Abs(a.Y - b.Y));
+
+		foreach (var c in cities)
+		{
+			foreach (var o in cities.Where(o => o != c).OrderBy(o => Dist(c, o)).Take(2))
+			{
+				if (Dist(c, o) > 14)
+					continue;
+
+				foreach ((int x, int y) in Route(c, o) ?? new List<(int, int)>())
+					imp[x, y] |= 0x8;
+			}
+		}
+
+		var largest = cities.OrderByDescending(c => sizes[cities.IndexOf(c)]).Take(3).ToList();
+
+		for (int i = 0; i + 1 < largest.Count; i++)
+			foreach ((int x, int y) in Route(largest[i], largest[i + 1]) ?? new List<(int, int)>())
+				imp[x, y] |= 0x18;
+
+		// a fortress on a hill, pollution beside the largest city
+		foreach (var c in cities)
+		{
+			for (int dy = -3; dy <= 3; dy++)
+				for (int dx = -3; dx <= 3; dx++)
+				{
+					int x = (c.X + dx + MW) % MW, y = c.Y + dy;
+
+					if (y > 0 && y < MH && terr[x, y] == Hills && Math.Max(Math.Abs(dx), Math.Abs(dy)) == 3 && H(x, y, 61) < 0.12f)
+						imp[x, y] |= 0x20;
+				}
+		}
+
+		var big = largest[0];
+		imp[(big.X + 1) % MW, big.Y + 1] |= 0x40;
+		imp[(big.X + MW - 1) % MW, big.Y] |= 0x40;
+
+		var showScene = new OpenCivOne.Graphics.IsoView.Scene
+		{
+			Terrain = (x, y) => terr[x, y],
+			Improvements = (x, y) => imp[x, y],
+			Feature = (x, y) =>
+			{
+				if (cities.Contains((x, y)))
+					return 0;
+
+				bool coast = false;
+
+				foreach ((int dx, int dy) in four)
+					coast |= Land(x + dx, y + dy);
+
+				if (terr[x, y] == Water)
+					return coast && H(x, y, 71) < 0.08f ? 1 : 0;
+
+				return H(x, y, 72) < 0.035f ? 1 : H(x, y, 73) < 0.015f && cities.TrueForAll(c => Dist(c, (x, y)) > 3) ? 2 : 0;
+			},
+		};
+
+		uint[] colours = { 0xffc43a2cu, 0xff3e5bd8u, 0xffe0b830u };
+
+		for (int i = 0; i < cities.Count; i++)
+			showScene.Cities.Add((cities[i].X, cities[i].Y, names[i], sizes[i], colours[i % 3 == 2 ? 1 : 0]));
+
+		int unitIndex = 0;
+
+		foreach (var c in cities)
+		{
+			showScene.Units.Add(((c.X + 1) % MW, c.Y - 1, new[] { 2, 3, 7, 0, 4, 6 }[unitIndex % 6], colours[unitIndex % 3 == 2 ? 1 : 0]));
+			unitIndex++;
+		}
+
+		Directory.CreateDirectory(showDir);
+
+		void Shot(string file, int width, int height, float cx, float cy)
+		{
+			var view = OpenCivOne.Graphics.IsoView.Load(showTheme, width, height)!;
+			view.Render(cx, cy, showScene);
+			using var img = new SKBitmap(width, height, SKColorType.Bgra8888, SKAlphaType.Premul);
+			Marshal.Copy(Array.ConvertAll(view.Pixels, v => unchecked((int)v)), 0, img.GetPixels(), view.Pixels.Length);
+			using var f = File.Create(Path.Combine(showDir, file));
+			img.Encode(f, SKEncodedImageFormat.Png, 100);
+		}
+
+		// the overview: the continent's middle, at the game's own zoom, four game screens wide
+		Shot("overview.png", 1920, 1536, 40, 25);
+
+		for (int i = 0; i < Math.Min(3, cities.Count); i++)
+			Shot($"city{i + 1}.png", 960, 768, largest.Count > i ? largest[i].X + 1.5f : cities[i].X, largest.Count > i ? largest[i].Y + 1 : cities[i].Y);
+
+		var counts = new int[12];
+		foreach (int t in terr) counts[t]++;
+		Console.WriteLine($"showcase written: {cities.Count} cities, {springs.Count} springs, terrain counts {string.Join(",", counts)}");
+	}
+
 	// ISO_PREVIEW renders the isometric view of the test map with a theme's hd folder (ISO_THEME)
 	if (Environment.GetEnvironmentVariable("ISO_PREVIEW") is string isoOut && Environment.GetEnvironmentVariable("ISO_THEME") is string isoTheme)
 	{
