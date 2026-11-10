@@ -221,6 +221,22 @@ namespace OpenCivOne.Graphics
 			view.LoadObject(objectsFolder, "mine", height: 44, halo: true);
 			view.LoadObject(objectsFolder, "fortress", height: 46, halo: true);
 
+			// the fortress in grey stone, so it is not taken for the hut's thatch
+			if (view.objects.TryGetValue("fortress", out SKBitmap? fortress))
+			{
+				SKBitmap stone = new SKBitmap(fortress.Width, fortress.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
+				using SKCanvas c = new SKCanvas(stone);
+				c.Clear(SKColors.Transparent);
+				using SKPaint grey = new SKPaint { ColorFilter = SKColorFilter.CreateColorMatrix(new float[] {
+					0.30f, 0.50f, 0.12f, 0, -0.02f,
+					0.30f, 0.50f, 0.12f, 0, -0.01f,
+					0.32f, 0.52f, 0.16f, 0, 0.02f,
+					0, 0, 0, 1, 0 }) };
+				c.DrawBitmap(fortress, 0, 0, grey);
+				fortress.Dispose();
+				view.objects["fortress"] = stone;
+			}
+
 			// pollution: a drawn patch of grey-brown smog
 			SKBitmap smog = new SKBitmap(56, 30, SKColorType.Bgra8888, SKAlphaType.Premul);
 
@@ -267,20 +283,19 @@ namespace OpenCivOne.Graphics
 			SKBitmap ringed = new SKBitmap(sized.Width + 8, sized.Height + 8, SKColorType.Bgra8888, SKAlphaType.Premul);
 
 			using (SKCanvas c = new SKCanvas(ringed))
-			using (SKPaint cream = new SKPaint { ColorFilter = SKColorFilter.CreateBlendMode(new SKColor(244, 236, 216), SKBlendMode.SrcIn) })
+			using (SKPaint cream = new SKPaint { ColorFilter = SKColorFilter.CreateBlendMode(new SKColor(226, 214, 184, 200), SKBlendMode.SrcIn) })
 			using (SKPaint key = new SKPaint { ColorFilter = SKColorFilter.CreateBlendMode(new SKColor(40, 34, 28), SKBlendMode.SrcIn) })
 			{
 				c.Clear(SKColors.Transparent);
 
-				for (int dy = -4; dy <= 4; dy += 2)
-					for (int dx = -4; dx <= 4; dx += 2)
-						if ((dx * dx) + (dy * dy) <= 16)
-							c.DrawBitmap(sized, 4 + dx, 4 + dy, cream);
-
 				for (int dy = -2; dy <= 2; dy++)
 					for (int dx = -2; dx <= 2; dx++)
-						if ((dx * dx) + (dy * dy) <= 4)
-							c.DrawBitmap(sized, 4 + dx, 4 + dy, key);
+						if ((dx * dx) + (dy * dy) <= 5)
+							c.DrawBitmap(sized, 4 + dx, 4 + dy, cream);
+
+				for (int dy = -1; dy <= 1; dy++)
+					for (int dx = -1; dx <= 1; dx++)
+						c.DrawBitmap(sized, 4 + dx, 4 + dy, key);
 
 				c.DrawBitmap(sized, 4, 4);
 			}
@@ -607,26 +622,6 @@ namespace OpenCivOne.Graphics
 						}
 					}
 
-					if ((Improvements(x, y) & 0x40) != 0)
-					{
-						// a dark smear of sludge across the land, with dead stalks
-						SKPoint c = Screen(x + 0.5f, y + 0.5f);
-						using SKPath stain = new SKPath();
-						for (int k = 0; k <= 12; k++)
-						{
-							float a = k / 12f * MathF.PI * 2, rr = 0.75f + (Hash(Wrap(x) + k, y, 800) * 0.35f);
-							SKPoint q = new SKPoint(c.X + (MathF.Cos(a) * halfW * 0.62f * rr), c.Y + (MathF.Sin(a) * halfH * 0.62f * rr));
-							if (k == 0) stain.MoveTo(q); else stain.LineTo(q);
-						}
-						stain.Close();
-						canvas.DrawPath(stain, sludge);
-						canvas.DrawPath(stain, sludgeEdge);
-						for (int k = 0; k < 4; k++)
-						{
-							float sx = c.X - 14 + (k * 9), sy = c.Y - 2 + ((k & 1) * 4);
-							canvas.DrawLine(sx, sy, sx + 2, sy - 7, dead);
-						}
-					}
 				}
 			}
 
@@ -672,6 +667,8 @@ namespace OpenCivOne.Graphics
 				}
 			}
 
+			var overRoads = new List<(SKPoint A, SKPoint M, SKPoint B, bool Rail)>();
+
 			// roads and railroads: a cream path with a dark edge between neighbouring road cells and cities
 			using (SKPaint edge = Stroke(new SKColor(70, 56, 36), 6), path = Stroke(new SKColor(222, 204, 158), 3.8f), rail = Stroke(new SKColor(60, 52, 44), 1.4f))
 			{
@@ -695,9 +692,16 @@ namespace OpenCivOne.Graphics
 						p.QuadTo(m, b);
 						canvas.DrawPath(p, edge);
 						canvas.DrawPath(p, path);
+						bool railed = (Improvements(x, y) & 0x10) != 0 && (Improvements(x + dx, y + dy) & 0x10) != 0;
 
-						if ((Improvements(x, y) & 0x10) != 0 && (Improvements(x + dx, y + dy) & 0x10) != 0)
+						if (railed)
 							canvas.DrawPath(p, rail);
+
+						// through woods and mountains the road is drawn again over the trees and peaks, as a cut through them
+						int ta = TerrainAt(x, y), tb = TerrainAt(x + dx, y + dy);
+
+						if (ta == Forest || ta == Jungle || ta == Mountains || tb == Forest || tb == Jungle || tb == Mountains)
+							overRoads.Add((a, m, b, railed));
 					}
 				}
 			}
@@ -899,6 +903,62 @@ namespace OpenCivOne.Graphics
 			{
 				foreach (var item in items)
 					canvas.DrawBitmap(item.Bitmap, item.X - (item.Bitmap.Width / 2f), item.Base - item.Bitmap.Height, sprite);
+
+				using (SKPaint edge = Stroke(new SKColor(70, 56, 36), 6), path = Stroke(new SKColor(222, 204, 158), 3.8f), rail = Stroke(new SKColor(60, 52, 44), 1.4f))
+				{
+					foreach (var r in overRoads)
+					{
+						using SKPath p = new SKPath();
+						p.MoveTo(r.A);
+						p.QuadTo(r.M, r.B);
+						canvas.DrawPath(p, edge);
+						canvas.DrawPath(p, path);
+
+						if (r.Rail)
+							canvas.DrawPath(p, rail);
+					}
+				}
+
+				// pollution: a wide irregular smear of sludge over the tile, over the props, with dead stalks
+				using (SKPaint sludge = new SKPaint { IsAntialias = true, Color = new SKColor(56, 46, 34, 200) },
+					sludgeEdge = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.4f, Color = new SKColor(28, 22, 16) },
+					oil = new SKPaint { IsAntialias = true, Color = new SKColor(34, 28, 22, 220) },
+					dead = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.4f, Color = new SKColor(160, 138, 96) })
+				{
+					foreach ((int x, int y) in cells)
+					{
+						if ((Improvements(x, y) & 0x40) == 0 || !ExploredAt(x, y))
+							continue;
+
+						SKPoint c = Screen(x + 0.5f, y + 0.5f);
+						using SKPath stain = new SKPath();
+
+						for (int k = 0; k <= 16; k++)
+						{
+							float a = k / 16f * MathF.PI * 2, rr = 0.7f + (Hash(Wrap(x) + k, y, 800) * 0.4f);
+							SKPoint q = new SKPoint(c.X + (MathF.Cos(a) * halfW * 0.82f * rr), c.Y + (MathF.Sin(a) * halfH * 0.82f * rr));
+
+							if (k == 0)
+								stain.MoveTo(q);
+							else
+								stain.LineTo(q);
+						}
+
+						stain.Close();
+						canvas.DrawPath(stain, sludge);
+						canvas.DrawPath(stain, sludgeEdge);
+
+						for (int k = 0; k < 4; k++)
+							canvas.DrawOval(new SKRect(c.X - 18 + (k * 10), c.Y - 4 + ((k & 1) * 5), c.X - 10 + (k * 10), c.Y + ((k & 1) * 5)), oil);
+
+						for (int k = 0; k < 6; k++)
+						{
+							float sx = c.X - 22 + (k * 9), sy = c.Y - 3 + ((k % 3) * 4);
+							canvas.DrawLine(sx, sy, sx + 3, sy - 9, dead);
+							canvas.DrawLine(sx + 3, sy - 9, sx + 6, sy - 6, dead);
+						}
+					}
+				}
 
 				foreach (var item in topLayer)
 					canvas.DrawBitmap(item.Bitmap, item.X - (item.Bitmap.Width / 2f), item.Base - item.Bitmap.Height, sprite);
