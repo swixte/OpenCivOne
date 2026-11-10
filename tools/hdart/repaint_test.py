@@ -11,12 +11,15 @@ import sys
 
 import requests
 
-PROMPT = ('Repaint the first image as a finished map in exactly the style of the second image: the same woodblock-print '
-          'technique, fine dark key-block lines, the same muted colours, the same dense hand-drawn detail of small trees, '
-          'tufts, fields and hatching, as one coherent illustration seen from a high top-down angle. Keep the layout of '
-          'the first image exactly: every coastline, lake, river, forest, mountain range, hill, desert, ice and grassland '
-          'stays where it is, with the same shape and size, and the small objects (huts, animals, fields) stay in their '
-          'places. Do not add cities, roads, units, flags, labels, text, a frame or a border.')
+PROMPT = ('The first image is a flat colour plan of a region of a strategy game map: dark blue is deep sea, light blue '
+          'is shallow coast, white is arctic ice, lilac is tundra, green is grassland, gold is plains, pale cream is '
+          'desert, dark green is forest, bright green with palms is jungle, grey is mountains, olive is hills, dark olive '
+          'is swamp, blue lines are rivers. Paint this region as a finished map in exactly the style of the second image: '
+          'the same woodblock-print technique with fine dark key-block lines, the same muted colours, and the same dense, '
+          'hand-drawn detail filling every part of the land: many small round trees, tufts, hatching, ridged hills, '
+          'snow-capped peaks drawn as in the second image, dense forests of tree crowns, waves on the sea. Keep the '
+          'layout of the plan: coastlines, lakes, rivers and the areas of each terrain stay where they are, at the same '
+          'size. Do not add cities, roads, fields, units, flags, labels, text, a frame or a border.')
 
 
 def main(layout, mockup, out):
