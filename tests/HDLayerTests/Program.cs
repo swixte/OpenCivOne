@@ -647,6 +647,41 @@ GBitmap other4()
 		Console.WriteLine("transitions written");
 	}
 
+	// ISO_SCENE renders a judging scene at the default zoom: a city with eight irrigated tiles and a road to a second city
+	if (Environment.GetEnvironmentVariable("ISO_SCENE") is string sceneOut && Environment.GetEnvironmentVariable("ISO_THEME") is string sceneTheme)
+	{
+		int SceneTerrain(int x, int y)
+		{
+			if (x + y > 74 || x - y > 22) return 10;                   // sea to the south-east and east
+			if (Math.Abs((x - 34) - (y - 20)) <= 1 && x + y >= 54 && x < 40) return 3;  // a wood
+			if (x >= 44 && y <= 22) return 4;                           // hills
+			if (x >= 46 && y <= 19) return 5;                           // mountains
+			if ((x * 7 + y * 13) % 11 == 0) return 1;                   // patches of plains
+			if (x == 41 && y >= 18 && y <= 33) return 11;               // a river from the hills to the sea
+			return 2;
+		}
+		(int X, int Y) rome = (38, 26), nara = (44, 29);
+		var roadCells = new HashSet<(int, int)> { (39, 26), (40, 27), (41, 27), (42, 28), (43, 28) };
+		var view = OpenCivOne.Graphics.IsoView.Load(sceneTheme, 960, 768)!;
+		var sceneS = new OpenCivOne.Graphics.IsoView.Scene
+		{
+			Terrain = SceneTerrain,
+			Improvements = (x, y) => (x, y) == rome || (x, y) == nara ? 0x9 : roadCells.Contains((x, y)) ? 0x8 :
+				(Math.Abs(x - rome.X) <= 1 && Math.Abs(y - rome.Y) <= 2 && SceneTerrain(x, y) != 10) || (x, y) == (36, 25) || (x, y) == (36, 26) ? 0x2 : 0,
+			Feature = (x, y) => (x, y) == (35, 29) ? 1 : 0,
+		};
+		sceneS.Cities.Add((rome.X, rome.Y, "Rome", 6, 0xffc43a2cu));
+		sceneS.Cities.Add((nara.X, nara.Y, "Nara", 3, 0xffc43a2cu));
+		sceneS.Units.Add((40, 24, 7, 0xffc43a2cu));
+		sceneS.Units.Add((37, 29, 2, 0xff345caau));
+		view.Render(41f, 27.5f, sceneS);
+		using var img = new SKBitmap(960, 768, SKColorType.Bgra8888, SKAlphaType.Premul);
+		Marshal.Copy(Array.ConvertAll(view.Pixels, v => unchecked((int)v)), 0, img.GetPixels(), view.Pixels.Length);
+		using var sceneFile = File.OpenWrite(sceneOut);
+		img.Encode(sceneFile, SKEncodedImageFormat.Png, 100);
+		Console.WriteLine("scene written");
+	}
+
 	// ISO_PREVIEW renders the isometric view of the test map with a theme's hd folder (ISO_THEME)
 	if (Environment.GetEnvironmentVariable("ISO_PREVIEW") is string isoOut && Environment.GetEnvironmentVariable("ISO_THEME") is string isoTheme)
 	{

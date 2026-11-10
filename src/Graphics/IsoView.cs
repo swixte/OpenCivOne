@@ -234,9 +234,9 @@ namespace OpenCivOne.Graphics
 				using SKCanvas c = new SKCanvas(stone);
 				c.Clear(SKColors.Transparent);
 				using SKPaint grey = new SKPaint { ColorFilter = SKColorFilter.CreateColorMatrix(new float[] {
-					0.30f, 0.50f, 0.12f, 0, -0.02f,
-					0.30f, 0.50f, 0.12f, 0, -0.01f,
-					0.32f, 0.52f, 0.16f, 0, 0.02f,
+					0.28f, 0.50f, 0.10f, 0, 0,
+					0.28f, 0.50f, 0.10f, 0, 0,
+					0.26f, 0.48f, 0.10f, 0, 0,
 					0, 0, 0, 1, 0 }) };
 				c.DrawBitmap(fortress, 0, 0, grey);
 				fortress.Dispose();
@@ -474,6 +474,45 @@ namespace OpenCivOne.Graphics
 				}
 			}
 
+			// fields: irrigated land, and some of the worked land around cities, painted into the ground in pass 2
+			var cityCells = new HashSet<(int, int)>();
+
+			foreach (var c in scene.Cities)
+				cityCells.Add((c.X, c.Y));
+
+			bool CityCell(int x, int y) => cityCells.Contains((Wrap(x), y));
+
+			bool FieldCell(int x, int y)
+			{
+				int t = TerrainAt(x, y);
+
+				if (!ExploredAt(x, y) || CityCell(x, y) || (t != Grassland && t != Plains && t != Desert && t != River && t != Hills))
+					return false;
+
+				if ((scene.Improvements(Wrap(x), y) & 0x2) != 0)
+					return true;
+
+				if (t == Desert || t == Hills)
+					return false;
+
+				for (int dy = -1; dy <= 1; dy++)
+					for (int dx = -1; dx <= 1; dx++)
+						if (CityCell(x + dx, y + dy))
+							return Hash(Wrap(x), y, 21) < 0.6f;
+
+				return false;
+			}
+
+			var fieldCache = new Dictionary<(int, int), bool>();
+
+			bool IsFieldCell(int x, int y)
+			{
+				if (!fieldCache.TryGetValue((x, y), out bool f))
+					fieldCache[(x, y)] = f = FieldCell(x, y);
+
+				return f;
+			}
+
 			// pass 2: the shallows, foam, coast line, beach, and an ink line where two kinds of ground meet
 			float[] seaDist = Distance(kind, w, h, k => k != Sea);
 			float[] snowDist = Distance(kind, w, h, k => k != Snow);
@@ -519,6 +558,63 @@ namespace OpenCivOne.Graphics
 						r = (r * 0.55f) + (214 * 0.45f);
 						g = (g * 0.55f) + (198 * 0.45f);
 						b = (b * 0.55f) + (150 * 0.45f);
+					}
+
+					// fields, as in the mockup: each field cell divided into 3 x 3 plots along the cell's axes, yellow-greens from
+					// the ground's olive family, each plot crossed by a dark midrib and leaf-vein rows, edged by a dark hedge line
+					// inside a grey-cream lane; neighbouring field cells share their lanes, so fields join into one patchwork
+					if (kind[i] != Sea)
+					{
+						int fcx = (int)MathF.Floor(gx0), fcy = (int)MathF.Floor(gy0);
+
+						if (IsFieldCell(fcx, fcy))
+						{
+							// two or three plots across each cell, chosen per column and per row, so the lanes run on unbroken
+							// through the field but the plots are not all one size
+							const float cellPx = 35.8f; // a cell's width across, in screen pixels
+							int nu = Hash(Wrap(fcx), 0, 61) < 0.5f ? 2 : 3, nv = Hash(0, fcy, 62) < 0.5f ? 2 : 3;
+							float pxU = cellPx / nu, pxV = cellPx / nv;
+							float fu = (gx0 - fcx) * nu, fv = (gy0 - fcy) * nv;
+							int pu = Math.Min(nu - 1, (int)fu), pv = Math.Min(nv - 1, (int)fv);
+							float su = ((fu - pu) * 2) - 1, sv = ((fv - pv) * 2) - 1;
+							float lane = MathF.Min((1 - MathF.Abs(su)) * pxU, (1 - MathF.Abs(sv)) * pxV) / 2;
+							int plotX = (Wrap(fcx) * 3) + pu, plotY = (fcy * 3) + pv;
+							float pick = Hash(plotX, plotY, 51);
+							(float pr, float pg, float pb) = pick < 0.3f ? (126f, 140f, 54f) : pick < 0.55f ? (110f, 128f, 46f) : pick < 0.8f ? (136f, 146f, 60f) : (102f, 122f, 42f);
+							float vein, rad = MathF.Sqrt((su * su) + (sv * sv));
+
+							if (Hash(plotX, plotY, 52) < 0.6f)
+							{
+								// leaves radiating from the middle on a faint cross, as the mockup's plots
+								float ang = MathF.Atan2(sv, su) * 4f / 3.14159f;
+								float spoke = MathF.Abs((ang * 2) - MathF.Round(ang * 2));
+								float cross = MathF.Min(MathF.Abs(su) * pxU, MathF.Abs(sv) * pxV) / 2;
+								vein = (MathF.Max(0, 1 - (spoke / 0.3f)) * MathF.Min(1, rad * 2.5f) * 0.8f) + (cross < 0.6f ? 0.5f : 0);
+							}
+							else
+							{
+								// soft crop rows along one axis
+								float along = (Hash(plotX, plotY, 53) < 0.5f ? su * pxU : sv * pxV) / 2 / 2.6f;
+								vein = MathF.Max(0, 1 - (MathF.Abs(along - MathF.Round(along)) / 0.36f)) * 0.9f;
+							}
+
+							// sunlit in the middle, darker toward the hedges; the ground's own marks show through, mottling it
+							float detail = ((r + g + b) / 3 / 120f) - 1;
+							float shade = (1 + (MathF.Max(0, 0.35f - vein) * 0.6f) - (MathF.Min(1, vein) * 0.52f)) * (1.1f - (rad * 0.14f));
+							float fr = (pr * shade) + (detail * 18), fg = (pg * shade) + (detail * 18), fb = (pb * shade) + (detail * 10);
+
+							// a thin grey-cream lane, edged by a dark hedge line on the plot's side, both antialiased so they do
+							// not break into steps
+							float laneW = Math.Clamp(1.0f - lane, 0, 1), hedgeW = Math.Clamp(1.9f - lane, 0, 1) * (1 - laneW);
+							float plotW = 1 - laneW - hedgeW;
+							fr = (fr * plotW) + (172 * laneW) + (54 * hedgeW);
+							fg = (fg * plotW) + (162 * laneW) + (66 * hedgeW);
+							fb = (fb * plotW) + (116 * laneW) + (24 * hedgeW);
+
+							r = fr;
+							g = fg;
+							b = fb;
+						}
 					}
 
 					bool edge = (px + 1 < w && kind[i + 1] != kind[i]) || (py + 1 < h && kind[i + w] != kind[i]);
@@ -594,17 +690,6 @@ namespace OpenCivOne.Graphics
 					}
 				}
 
-				if (irrigated || (nearCity && t != Desert && Hash(Wrap(x), y, 21) < 0.7f))
-				{
-					List<SKBitmap> plots = this.sets[irrigated ? "gold" : "plots"];
-
-					if (plots.Count == 0)
-						continue;
-
-					SKBitmap p = plots[(int)(Hash(Wrap(x), y, 22) * plots.Count)];
-					SKPoint c = Screen(x + 0.5f, y + 0.5f);
-					canvas.DrawBitmap(p, c.X - (p.Width / 2f), c.Y - (p.Height / 2f));
-				}
 			}
 
 			// swamp pools and pollution stains lie on the ground
@@ -673,42 +758,61 @@ namespace OpenCivOne.Graphics
 				}
 			}
 
-			var overRoads = new List<(SKPoint A, SKPoint M, SKPoint B, bool Rail)>();
+			var overRoads = new List<SKPath>();
 
-			// roads and railroads: a cream path with a dark edge between neighbouring road cells and cities
-			using (SKPaint edge = Stroke(new SKColor(70, 56, 36), 6), path = Stroke(new SKColor(222, 204, 158), 3.8f), rail = Stroke(new SKColor(60, 52, 44), 1.4f))
+			// roads and railroads, as in the mockup: a narrow cream path with a thin dark edge, one gently curved piece per
+			// connection from the tile's centre to the edge it shares with the neighbour, meeting in the centre. Diagonal
+			// connections are left out where the two cells beside them already join the ends, so roads never form a lattice.
+			using (SKPaint edge = Stroke(new SKColor(74, 62, 40), 4.6f), path = Stroke(new SKColor(214, 198, 150), 2.9f), rail = Stroke(new SKColor(60, 52, 44), 1.1f))
 			{
 				bool Road(int x, int y) => (Improvements(x, y) & 0x19) != 0 && ExploredAt(x, y);
+				var pieces = new List<(SKPath Path, bool Rail, bool Over)>();
 
 				foreach ((int x, int y) in cells)
 				{
 					if (!Road(x, y))
 						continue;
 
-					foreach ((int dx, int dy) in new[] { (1, 0), (0, 1), (1, 1), (1, -1) })
+					foreach ((int dx, int dy) in new[] { (1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1) })
 					{
 						if (!Road(x + dx, y + dy))
 							continue;
 
-						SKPoint a = Screen(x + 0.5f, y + 0.5f), b = Screen(x + dx + 0.5f, y + dy + 0.5f);
-						float bend = (Hash(Wrap(x) * 3 + dx, (y * 3) + dy, 41) - 0.5f) * 10;
-						SKPoint m = new SKPoint(((a.X + b.X) / 2) + bend, ((a.Y + b.Y) / 2) + (bend * 0.4f));
-						using SKPath p = new SKPath();
+						if (dx != 0 && dy != 0 && (Road(x + dx, y) || Road(x, y + dy)))
+							continue;
+
+						SKPoint a = Screen(x + 0.5f, y + 0.5f), b = Screen(x + 0.5f + (dx * 0.5f), y + 0.5f + (dy * 0.5f));
+						// the bend belongs to the connection, so both halves of it curve the same way
+						int kx = Math.Min(Wrap(x), Wrap(x + dx)) * 4, ky = (Math.Min(y, y + dy) * 4) + (dx * 2) + dy;
+						float bend = (Hash(kx, ky, 41) - 0.5f) * 7 * ((dx, dy).CompareTo((0, 0)) > 0 ? 1 : -1);
+						SKPoint m = new SKPoint(((a.X + b.X) / 2) - ((b.Y - a.Y) / 20 * bend), ((a.Y + b.Y) / 2) + ((b.X - a.X) / 20 * bend));
+						SKPath p = new SKPath();
 						p.MoveTo(a);
 						p.QuadTo(m, b);
-						canvas.DrawPath(p, edge);
-						canvas.DrawPath(p, path);
-						bool railed = (Improvements(x, y) & 0x10) != 0 && (Improvements(x + dx, y + dy) & 0x10) != 0;
-
-						if (railed)
-							canvas.DrawPath(p, rail);
-
-						// through woods and mountains the road is drawn again over the trees and peaks, as a cut through them
-						int ta = TerrainAt(x, y), tb = TerrainAt(x + dx, y + dy);
-
-						if (ta == Forest || ta == Jungle || ta == Mountains || tb == Forest || tb == Jungle || tb == Mountains)
-							overRoads.Add((a, m, b, railed));
+						int ta = TerrainAt(x, y);
+						pieces.Add((p, (Improvements(x, y) & 0x10) != 0 && (Improvements(x + dx, y + dy) & 0x10) != 0,
+							ta == Forest || ta == Jungle || ta == Mountains));
 					}
+				}
+
+				foreach (var piece in pieces)
+					canvas.DrawPath(piece.Path, edge);
+
+				foreach (var piece in pieces)
+				{
+					canvas.DrawPath(piece.Path, path);
+
+					if (piece.Rail)
+						canvas.DrawPath(piece.Path, rail);
+				}
+
+				// through woods and mountains the road is drawn again over the trees and peaks, as a cut through them
+				foreach (var piece in pieces)
+				{
+					if (piece.Over)
+						overRoads.Add(piece.Path);
+					else
+						piece.Path.Dispose();
 				}
 			}
 
@@ -729,7 +833,8 @@ namespace OpenCivOne.Graphics
 			{
 				SKBitmap? b = Pick(set, x, y, n);
 
-				if (b == null)
+				// fields are open ground, as in the mockup: nothing grows on them but the crops
+				if (b == null || (set != "peaks" && set != "hamlet" && IsFieldCell(x, y)))
 					return;
 
 				float fx = margin + (Hash(Wrap(x), y, 200 + n) * (1 - (2 * margin))), fy = margin + (Hash(Wrap(x), y, 300 + n) * (1 - (2 * margin)));
@@ -929,26 +1034,20 @@ namespace OpenCivOne.Graphics
 				foreach (var item in items)
 					canvas.DrawBitmap(item.Bitmap, item.X - (item.Bitmap.Width / 2f), item.Base - item.Bitmap.Height, sprite);
 
-				using (SKPaint edge = Stroke(new SKColor(70, 56, 36), 6), path = Stroke(new SKColor(222, 204, 158), 3.8f), rail = Stroke(new SKColor(60, 52, 44), 1.4f))
+				using (SKPaint edge = Stroke(new SKColor(74, 62, 40), 4.6f), path = Stroke(new SKColor(214, 198, 150), 2.9f))
 				{
-					foreach (var r in overRoads)
-					{
-						using SKPath p = new SKPath();
-						p.MoveTo(r.A);
-						p.QuadTo(r.M, r.B);
+					foreach (SKPath p in overRoads)
 						canvas.DrawPath(p, edge);
-						canvas.DrawPath(p, path);
 
-						if (r.Rail)
-							canvas.DrawPath(p, rail);
+					foreach (SKPath p in overRoads)
+					{
+						canvas.DrawPath(p, path);
+						p.Dispose();
 					}
 				}
 
-				// pollution: a wide irregular smear of sludge over the tile, over the props, with dead stalks
-				using (SKPaint sludge = new SKPaint { IsAntialias = true, Color = new SKColor(56, 46, 34, 200) },
-					sludgeEdge = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.4f, Color = new SKColor(28, 22, 16) },
-					oil = new SKPaint { IsAntialias = true, Color = new SKColor(34, 28, 22, 220) },
-					dead = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.4f, Color = new SKColor(160, 138, 96) })
+				// pollution (parked: small and neutral for now): a small dark patch at the tile's centre
+				using (SKPaint patch = new SKPaint { IsAntialias = true, Color = new SKColor(60, 52, 42, 170) })
 				{
 					foreach ((int x, int y) in cells)
 					{
@@ -956,32 +1055,7 @@ namespace OpenCivOne.Graphics
 							continue;
 
 						SKPoint c = Screen(x + 0.5f, y + 0.5f);
-						using SKPath stain = new SKPath();
-
-						for (int k = 0; k <= 16; k++)
-						{
-							float a = k / 16f * MathF.PI * 2, rr = 0.7f + (Hash(Wrap(x) + k, y, 800) * 0.4f);
-							SKPoint q = new SKPoint(c.X + (MathF.Cos(a) * halfW * 0.82f * rr), c.Y + (MathF.Sin(a) * halfH * 0.82f * rr));
-
-							if (k == 0)
-								stain.MoveTo(q);
-							else
-								stain.LineTo(q);
-						}
-
-						stain.Close();
-						canvas.DrawPath(stain, sludge);
-						canvas.DrawPath(stain, sludgeEdge);
-
-						for (int k = 0; k < 4; k++)
-							canvas.DrawOval(new SKRect(c.X - 18 + (k * 10), c.Y - 4 + ((k & 1) * 5), c.X - 10 + (k * 10), c.Y + ((k & 1) * 5)), oil);
-
-						for (int k = 0; k < 6; k++)
-						{
-							float sx = c.X - 22 + (k * 9), sy = c.Y - 3 + ((k % 3) * 4);
-							canvas.DrawLine(sx, sy, sx + 3, sy - 9, dead);
-							canvas.DrawLine(sx + 3, sy - 9, sx + 6, sy - 6, dead);
-						}
+						canvas.DrawOval(new SKRect(c.X - 9, c.Y - 4, c.X + 9, c.Y + 4), patch);
 					}
 				}
 
