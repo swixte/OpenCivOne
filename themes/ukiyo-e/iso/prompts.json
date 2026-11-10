@@ -1,0 +1,36 @@
+{
+ "iso_trees": {
+  "prompt": "A sprite sheet in exactly the drawing style of the first reference image (a woodblock-print strategy map seen from a high three-quarter isometric angle): fine dark key-block outlines, muted earthy colours, light from the top left, dense hand-drawn detail. 16 separate clumps of deciduous and conifer trees, from a single tree to tight groups of five, round dark green crowns with small trunks, exactly like the forests in the reference, varied sizes in a loose grid. Each is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background with clear magenta space between them so each can be cut out; no ground patch under them, no cast shadows, no text, no frame.",
+  "refs": [
+   "../refs/v5-screen.jpg",
+   "../refs/crops/forest.jpg"
+  ]
+ },
+ "iso_peaks": {
+  "prompt": "A sprite sheet in exactly the drawing style of the first reference image (a woodblock-print strategy map seen from a high three-quarter isometric angle): fine dark key-block outlines, muted earthy colours, light from the top left, dense hand-drawn detail. 8 separate mountains seen from the same isometric angle, grey-violet rock with white snow caps and fine hatching exactly like the mountains in the reference, some single peaks and some clusters of two or three, each wider at its base than tall. Each is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background with clear magenta space between them so each can be cut out; no ground patch under them, no cast shadows, no text, no frame.",
+  "refs": [
+   "../refs/v5-screen.jpg",
+   "../refs/crops/mountains.jpg"
+  ]
+ },
+ "iso_hills": {
+  "prompt": "A sprite sheet in exactly the drawing style of the first reference image (a woodblock-print strategy map seen from a high three-quarter isometric angle): fine dark key-block outlines, muted earthy colours, light from the top left, dense hand-drawn detail. 9 separate grassy rolling hills seen from the same isometric angle, olive-green with fine curved hatching on the shaded side and a few small tufts, exactly like the hills in the reference; low and broad, never bare earth or sand. Each is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background with clear magenta space between them so each can be cut out; no ground patch under them, no cast shadows, no text, no frame.",
+  "refs": [
+   "../refs/v5-screen.jpg",
+   "../refs/crops/hills.jpg"
+  ]
+ },
+ "iso_jungle": {
+  "prompt": "A sprite sheet in exactly the drawing style of the first reference image (a woodblock-print strategy map seen from a high three-quarter isometric angle): fine dark key-block outlines, muted earthy colours, light from the top left, dense hand-drawn detail. 12 separate clumps of palms and broadleaf tropical trees, from one palm to groups of four, bright green, in the same isometric drawing. Each is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background with clear magenta space between them so each can be cut out; no ground patch under them, no cast shadows, no text, no frame.",
+  "refs": [
+   "../refs/v5-screen.jpg",
+   "../refs/crops/jungle.jpg"
+  ]
+ },
+ "iso_town": {
+  "prompt": "A sprite sheet in exactly the drawing style of the first reference image (a woodblock-print strategy map seen from a high three-quarter isometric angle): fine dark key-block outlines, muted earthy colours, light from the top left, dense hand-drawn detail. 4 separate small walled medieval towns seen from the same isometric angle, red-tiled roofs, a church spire, a low round stone wall, exactly like the towns in the reference, each fitting a diamond-shaped footprint. Each is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background with clear magenta space between them so each can be cut out; no ground patch under them, no cast shadows, no text, no frame.",
+  "refs": [
+   "../refs/v5-screen.jpg"
+  ]
+ }
+}
