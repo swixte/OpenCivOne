@@ -221,6 +221,30 @@ namespace OpenCivOne.Graphics
 
 			view.sets["lone"] = lone;
 
+			// the scattered bushes and lone trees in the ground's olive family, not blue-green, so they do not speckle it
+			foreach (string set in new[] { "tufts", "lone" })
+			{
+				List<SKBitmap> toned = new List<SKBitmap>();
+
+				foreach (SKBitmap b in view.sets[set])
+				{
+					SKBitmap t = new SKBitmap(b.Width, b.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
+					using SKCanvas c = new SKCanvas(t);
+					c.Clear(SKColors.Transparent);
+					const float k = 0.62f, l = 1 - k;
+					using SKPaint warm = new SKPaint { ColorFilter = SKColorFilter.CreateColorMatrix(new float[] {
+						(0.3f * l) + k, 0.59f * l, 0.11f * l, 0, 0.05f,
+						0.3f * l, (0.59f * l) + k, 0.11f * l, 0, 0.03f,
+						0.3f * l, 0.59f * l, (0.11f * l) + (k * 0.8f), 0, 0,
+						0, 0, 0, 1, 0 }) };
+					c.DrawBitmap(b, 0, 0, warm);
+					toned.Add(t);
+					b.Dispose();
+				}
+
+				view.sets[set] = toned;
+			}
+
 			// irrigated fields: the plots ripened to gold, so they stand out on green grassland
 			List<SKBitmap> gold = new List<SKBitmap>();
 
@@ -499,7 +523,18 @@ namespace OpenCivOne.Graphics
 					int ti = ((((ty % TextureSize) + TextureSize) % TextureSize) * TextureSize) + (((tx % TextureSize) + TextureSize) % TextureSize);
 					uint c = g switch { Sand => this.sand[ti], Snow => this.snow[ti], Sea => this.sea[ti], _ => this.grass[ti] };
 					float[] tint = Tint[best];
-					img[i] = Pack(((c >> 16) & 0xff) * tint[0], ((c >> 8) & 0xff) * tint[1], (c & 0xff) * tint[2]);
+					float cr = ((c >> 16) & 0xff) * tint[0], cg = ((c >> 8) & 0xff) * tint[1], cb = (c & 0xff) * tint[2];
+
+					// the land toned to the mockup's khaki-olive: a quarter less saturated, warmed towards yellow
+					if (g != Sea && g != Snow)
+					{
+						float grey = (cr + cg + cb) / 3;
+						cr = (grey + ((cr - grey) * 0.74f) + 10) * 1.04f;
+						cg = (grey + ((cg - grey) * 0.74f) + 1) * 1.04f;
+						cb = (grey + ((cb - grey) * 0.74f) + 6) * 1.04f;
+					}
+
+					img[i] = Pack(cr, cg, cb);
 
 					if (g == Sea)
 						kind[i] = Sea;
@@ -765,82 +800,249 @@ namespace OpenCivOne.Graphics
 				}
 			}
 
-			// rivers: from cell to cell through a bent midpoint, and on into the sea; each layer drawn for every piece
-			// before the next, so the water is one continuous ribbon
-			List<SKPath> riverPaths = new List<SKPath>();
-
-			foreach ((int x, int y) in cells)
+			// rivers and roads are routed as smooth splines: each cell of the network gets a node near its centre, nudged a
+			// little so no route runs dead straight, and each link between two nodes is a cubic whose tangent runs on
+			// through the node, so the route bends from one link into the next without a corner
+			static SKPoint Unit(float x, float y)
 			{
-				if (TerrainAt(x, y) != River || !ExploredAt(x, y))
-					continue;
-
-				foreach ((int dx, int dy) in new[] { (1, 0), (0, 1), (-1, 0), (0, -1) })
-				{
-					int t = TerrainAt(x + dx, y + dy);
-					bool toSea = t == Water;
-
-					if (!(t == River && (dx > 0 || dy > 0)) && !toSea)
-						continue;
-
-					SKPoint a = Screen(x + 0.5f, y + 0.5f), b = Screen(x + 0.5f + (dx * (toSea ? 0.62f : 1)), y + 0.5f + (dy * (toSea ? 0.62f : 1)));
-					float bend = (Hash(Wrap(x) * 2 + dx, (y * 2) + dy, 31) - 0.5f) * 30;
-					SKPoint m = new SKPoint(((a.X + b.X) / 2) - ((b.Y - a.Y) / 40 * bend), ((a.Y + b.Y) / 2) + ((b.X - a.X) / 40 * bend));
-					SKPath path = new SKPath();
-					path.MoveTo(a);
-					path.QuadTo(m, b);
-					riverPaths.Add(path);
-				}
+				float l = MathF.Max(0.001f, MathF.Sqrt((x * x) + (y * y)));
+				return new SKPoint(x / l, y / l);
 			}
 
-			using (SKPaint bank = Stroke(new SKColor(214, 204, 168), 9), ink = Stroke(new SKColor(34, 40, 56), 6.5f), water = Stroke(new SKColor(64, 124, 190), 4.4f))
+			// the tangent at node p, leaving towards q: through a node with two links it follows the line from the other
+			// link's node to q; at an end or a junction it points straight at q
+			SKPoint Tangent(SKPoint p, SKPoint q, List<SKPoint> links)
 			{
-				foreach (SKPath path in riverPaths)
-					canvas.DrawPath(path, bank);
-
-				foreach (SKPath path in riverPaths)
-					canvas.DrawPath(path, ink);
-
-				foreach (SKPath path in riverPaths)
+				if (links.Count == 2)
 				{
-					canvas.DrawPath(path, water);
-					path.Dispose();
+					SKPoint other = MathF.Abs(links[0].X - q.X) + MathF.Abs(links[0].Y - q.Y) < 0.01f ? links[1] : links[0];
+					return Unit(q.X - other.X, q.Y - other.Y);
+				}
+
+				return Unit(q.X - p.X, q.Y - p.Y);
+			}
+
+			// samples the link from a to b, with a sideways meander of the given amplitude that is still at both ends
+			SKPoint[] Link(SKPoint a, SKPoint b, List<SKPoint> aLinks, List<SKPoint> bLinks, float meander, int samples)
+			{
+				float len = MathF.Sqrt(((b.X - a.X) * (b.X - a.X)) + ((b.Y - a.Y) * (b.Y - a.Y)));
+				SKPoint ta = Tangent(a, b, aLinks), tb = Tangent(b, a, bLinks);
+				SKPoint c1 = new SKPoint(a.X + (ta.X * len / 3), a.Y + (ta.Y * len / 3)), c2 = new SKPoint(b.X + (tb.X * len / 3), b.Y + (tb.Y * len / 3));
+				SKPoint n = Unit(-(b.Y - a.Y), b.X - a.X);
+				var pts = new SKPoint[samples + 1];
+
+				for (int i = 0; i <= samples; i++)
+				{
+					float t = i / (float)samples, u = 1 - t;
+					float x = (u * u * u * a.X) + (3 * u * u * t * c1.X) + (3 * u * t * t * c2.X) + (t * t * t * b.X);
+					float y = (u * u * u * a.Y) + (3 * u * u * t * c1.Y) + (3 * u * t * t * c2.Y) + (t * t * t * b.Y);
+					float off = meander * MathF.Sin(t * 6.2832f) * MathF.Sin(t * 3.1416f);
+					pts[i] = new SKPoint(x + (n.X * off), y + (n.Y * off));
+				}
+
+				return pts;
+			}
+
+			// a ribbon whose width runs from wa to wb along the points, with round ends so links join smoothly
+			SKPath Ribbon(SKPoint[] pts, float wa, float wb)
+			{
+				SKPath path = new SKPath();
+				int last = pts.Length - 1;
+				var left = new SKPoint[pts.Length];
+				var right = new SKPoint[pts.Length];
+
+				for (int i = 0; i <= last; i++)
+				{
+					SKPoint d = Unit(pts[Math.Min(last, i + 1)].X - pts[Math.Max(0, i - 1)].X, pts[Math.Min(last, i + 1)].Y - pts[Math.Max(0, i - 1)].Y);
+					float half = (wa + ((wb - wa) * i / last)) / 2;
+					left[i] = new SKPoint(pts[i].X - (d.Y * half), pts[i].Y + (d.X * half));
+					right[i] = new SKPoint(pts[i].X + (d.Y * half), pts[i].Y - (d.X * half));
+				}
+
+				path.MoveTo(left[0]);
+
+				for (int i = 1; i <= last; i++)
+					path.LineTo(left[i]);
+
+				for (int i = last; i >= 0; i--)
+					path.LineTo(right[i]);
+
+				path.Close();
+				path.AddCircle(pts[0].X, pts[0].Y, wa / 2);
+				path.AddCircle(pts[last].X, pts[last].Y, wb / 2);
+				return path;
+			}
+
+			// rivers, as in the mockup: a muted grey-blue water course that meanders, narrow at its source and wider
+			// downstream, over a pale bank and a thin dark edge so it looks cut into the land, with a few ripple marks
+			{
+				bool IsRiver(int x, int y) => TerrainAt(x, y) == River && ExploredAt(x, y);
+				var nodes = new Dictionary<(int, int), SKPoint>();
+				var links = new Dictionary<(int, int), List<SKPoint>>();
+				var mouths = new List<((int X, int Y) From, SKPoint To)>();
+				(int, int)[] four = { (1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1) };
+
+				foreach ((int x, int y) in cells)
+					if (IsRiver(x, y))
+						nodes[(x, y)] = Screen(x + 0.5f + ((Hash(Wrap(x), y, 33) - 0.5f) * 0.3f), y + 0.5f + ((Hash(Wrap(x), y, 34) - 0.5f) * 0.3f));
+
+				foreach (((int x, int y), SKPoint _) in nodes)
+				{
+					var list = new List<SKPoint>();
+
+					foreach ((int dx, int dy) in four)
+					{
+						if (dx != 0 && dy != 0 && (IsRiver(x + dx, y) || IsRiver(x, y + dy) || TerrainAt(x + dx, y) == Water || TerrainAt(x, y + dy) == Water))
+							continue;
+
+						if (nodes.TryGetValue((x + dx, y + dy), out SKPoint q))
+						{
+							list.Add(q);
+						}
+						else if (TerrainAt(x + dx, y + dy) == Water)
+						{
+							SKPoint mouth = Screen(x + 0.5f + (dx * 0.66f), y + 0.5f + (dy * 0.66f));
+							list.Add(mouth);
+							mouths.Add(((x, y), mouth));
+						}
+					}
+
+					links[(x, y)] = list;
+				}
+
+				// how far downstream each cell is from the sea, through the river
+				var toSea = new Dictionary<(int, int), int>();
+				var queue = new Queue<(int, int)>();
+
+				foreach (var m in mouths)
+					if (toSea.TryAdd(m.From, 0))
+						queue.Enqueue(m.From);
+
+				while (queue.Count > 0)
+				{
+					(int x, int y) = queue.Dequeue();
+
+					foreach ((int dx, int dy) in four)
+						if (nodes.ContainsKey((x + dx, y + dy)) && links[(x, y)].Contains(nodes[(x + dx, y + dy)]) && toSea.TryAdd((x + dx, y + dy), toSea[(x, y)] + 1))
+							queue.Enqueue((x + dx, y + dy));
+				}
+
+				float Width(int x, int y) => toSea.TryGetValue((x, y), out int d) ? MathF.Max(3.4f, 6.6f - (d * 0.4f)) : 4.2f;
+				var courses = new List<(SKPoint[] Pts, float Wa, float Wb)>();
+
+				foreach (((int x, int y), SKPoint a) in nodes)
+				{
+					foreach ((int dx, int dy) in four)
+					{
+						if (dy < 0 || (dy == 0 && dx < 0) || !nodes.TryGetValue((x + dx, y + dy), out SKPoint b) || !links[(x, y)].Contains(b))
+							continue;
+
+						float amp = (Hash(Wrap(x) * 2 + dx, (y * 2) + dy, 35) < 0.5f ? -1 : 1) * 3.2f;
+						courses.Add((Link(a, b, links[(x, y)], links[(x + dx, y + dy)], amp, 16), Width(x, y), Width(x + dx, y + dy)));
+					}
+				}
+
+				foreach (var m in mouths)
+				{
+					float wd = Width(m.From.X, m.From.Y);
+					courses.Add((Link(nodes[m.From], m.To, links[m.From], new List<SKPoint>(), 1.5f, 10), wd, wd + 1.2f));
+				}
+
+				using SKPaint bank = new SKPaint { IsAntialias = true, Color = new SKColor(212, 202, 162) };
+				using SKPaint edgeInk = new SKPaint { IsAntialias = true, Color = new SKColor(42, 52, 60) };
+				using SKPaint water = new SKPaint { IsAntialias = true, Color = new SKColor(66, 112, 142) };
+				using SKPaint ripple = Stroke(new SKColor(132, 168, 186), 0.9f);
+
+				foreach (var c in courses)
+				{
+					using SKPath p = Ribbon(c.Pts, c.Wa + 4.2f, c.Wb + 4.2f);
+					canvas.DrawPath(p, bank);
+				}
+
+				foreach (var c in courses)
+				{
+					using SKPath p = Ribbon(c.Pts, c.Wa + 1.5f, c.Wb + 1.5f);
+					canvas.DrawPath(p, edgeInk);
+				}
+
+				foreach (var c in courses)
+				{
+					using SKPath p = Ribbon(c.Pts, c.Wa, c.Wb);
+					canvas.DrawPath(p, water);
+				}
+
+				// short ripple marks along the water, a little off its middle
+				foreach (var c in courses)
+				{
+					for (int i = 2; i + 2 < c.Pts.Length; i += 5)
+					{
+						SKPoint a = c.Pts[i], b = c.Pts[i + 2];
+						SKPoint d = Unit(b.X - a.X, b.Y - a.Y);
+						float side = (i % 2 == 0 ? 1 : -1) * 0.18f * (c.Wa + c.Wb) / 2;
+						canvas.DrawLine(a.X - (d.Y * side), a.Y + (d.X * side), b.X - (d.Y * side), b.Y + (d.X * side), ripple);
+					}
 				}
 			}
 
 			var overRoads = new List<SKPath>();
 
-			// roads and railroads, as in the mockup: a narrow cream path with a thin dark edge, one gently curved piece per
-			// connection from the tile's centre to the edge it shares with the neighbour, meeting in the centre. Diagonal
-			// connections are left out where the two cells beside them already join the ends, so roads never form a lattice.
-			using (SKPaint edge = Stroke(new SKColor(74, 62, 40), 4.6f), path = Stroke(new SKColor(214, 198, 150), 2.9f), rail = Stroke(new SKColor(60, 52, 44), 1.1f))
+			// roads and railroads, as in the mockup: a cream path with a thin darker edge on both sides, bending in smooth
+			// curves through the network and into the city gates. Diagonal links are left out where the two cells beside
+			// them already join the ends, so roads never form a lattice.
+			using (SKPaint edge = Stroke(new SKColor(92, 74, 46), 5.0f), path = Stroke(new SKColor(218, 202, 154), 3.3f), rail = Stroke(new SKColor(60, 52, 44), 1.1f))
 			{
-				bool Road(int x, int y) => (Improvements(x, y) & 0x19) != 0 && ExploredAt(x, y);
-				var pieces = new List<(SKPath Path, bool Rail, bool Over)>();
+				bool Road(int x, int y) => ExploredAt(x, y) && ((Improvements(x, y) & 0x19) != 0 || CityCell(x, y));
+				(int, int)[] eight = { (1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1) };
+				var nodes = new Dictionary<(int, int), SKPoint>();
+				var links = new Dictionary<(int, int), List<(int, int)>>();
 
 				foreach ((int x, int y) in cells)
 				{
 					if (!Road(x, y))
 						continue;
 
-					foreach ((int dx, int dy) in new[] { (1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1) })
+					float j = CityCell(x, y) ? 0 : 0.22f;
+					nodes[(x, y)] = Screen(x + 0.5f + ((Hash(Wrap(x), y, 43) - 0.5f) * j), y + 0.5f + ((Hash(Wrap(x), y, 44) - 0.5f) * j));
+				}
+
+				foreach (((int x, int y), SKPoint _) in nodes)
+				{
+					var list = new List<(int, int)>();
+
+					foreach ((int dx, int dy) in eight)
 					{
-						if (!Road(x + dx, y + dy))
+						if (!nodes.ContainsKey((x + dx, y + dy)))
 							continue;
 
 						if (dx != 0 && dy != 0 && (Road(x + dx, y) || Road(x, y + dy)))
 							continue;
 
-						SKPoint a = Screen(x + 0.5f, y + 0.5f), b = Screen(x + 0.5f + (dx * 0.5f), y + 0.5f + (dy * 0.5f));
-						// the bend belongs to the connection, so both halves of it curve the same way
-						int kx = Math.Min(Wrap(x), Wrap(x + dx)) * 4, ky = (Math.Min(y, y + dy) * 4) + (dx * 2) + dy;
-						float bend = (Hash(kx, ky, 41) - 0.5f) * 7 * ((dx, dy).CompareTo((0, 0)) > 0 ? 1 : -1);
-						SKPoint m = new SKPoint(((a.X + b.X) / 2) - ((b.Y - a.Y) / 20 * bend), ((a.Y + b.Y) / 2) + ((b.X - a.X) / 20 * bend));
+						// two cities side by side are not joined by a road of their own
+						if (CityCell(x, y) && CityCell(x + dx, y + dy))
+							continue;
+
+						list.Add((x + dx, y + dy));
+					}
+
+					links[(x, y)] = list;
+				}
+
+				List<SKPoint> Points((int, int) cell) => links[cell].ConvertAll(k => nodes[k]);
+				var pieces = new List<(SKPath Path, bool Rail, bool Over)>();
+
+				foreach (((int x, int y), List<(int, int)> list) in links)
+				{
+					foreach ((int bx, int by) in list)
+					{
+						if (by < y || (by == y && bx < x))
+							continue;
+
+						SKPoint[] pts = Link(nodes[(x, y)], nodes[(bx, by)], Points((x, y)), Points((bx, by)), 0, 14);
 						SKPath p = new SKPath();
-						p.MoveTo(a);
-						p.QuadTo(m, b);
-						int ta = TerrainAt(x, y);
-						pieces.Add((p, (Improvements(x, y) & 0x10) != 0 && (Improvements(x + dx, y + dy) & 0x10) != 0,
-							ta == Forest || ta == Jungle || ta == Mountains));
+						p.AddPoly(pts, false);
+						int ta = TerrainAt(x, y), tb = TerrainAt(bx, by);
+						pieces.Add((p, (Improvements(x, y) & 0x10) != 0 && (Improvements(bx, by) & 0x10) != 0,
+							ta == Forest || ta == Jungle || ta == Mountains || tb == Forest || tb == Jungle || tb == Mountains));
 					}
 				}
 
@@ -983,7 +1185,7 @@ namespace OpenCivOne.Graphics
 					case Grassland:
 					case River:
 						// lush: lone trees, bushes and flowers
-						count = 2 + (int)(Hash(Wrap(x), y, 7) * 3);
+						count = 1 + (int)(Hash(Wrap(x), y, 7) * 2.6f);
 						for (int n = 0; n < count; n++)
 							Put(Hash(Wrap(x), y, 400 + n) < 0.4f ? "lone" : "tufts", x, y, n, 0.1f);
 						break;
@@ -1083,7 +1285,7 @@ namespace OpenCivOne.Graphics
 				foreach (var item in items)
 					canvas.DrawBitmap(item.Bitmap, item.X - (item.Bitmap.Width / 2f), item.Base - item.Bitmap.Height, sprite);
 
-				using (SKPaint edge = Stroke(new SKColor(74, 62, 40), 4.6f), path = Stroke(new SKColor(214, 198, 150), 2.9f))
+				using (SKPaint edge = Stroke(new SKColor(92, 74, 46), 5.0f), path = Stroke(new SKColor(218, 202, 154), 3.3f))
 				{
 					foreach (SKPath p in overRoads)
 						canvas.DrawPath(p, edge);
