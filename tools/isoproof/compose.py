@@ -85,39 +85,61 @@ def main(theme, out):
     img[beach] = img[beach] * 0.55 + np.array([232, 220, 186]) * 0.45
     canvas = Image.fromarray(np.clip(img, 0, 255).astype(np.uint8)).convert('RGBA')
 
-    # rivers: a wavy line through the centres of river cells, on to the sea
-    from PIL import ImageDraw
-    dr = ImageDraw.Draw(canvas)
-
+    # rivers: the theme's painted river strip laid along smooth courses through the river cells, on to the sea
     def scr(x, y):
         return ox + (x - y) * TW / 2, oy + (x + y) * TH / 2
+    strip = np.asarray(Image.open(os.path.join(theme, 'hd', 'painted', 'river.png')).convert('RGBA'), dtype=np.float64)
+    sh_, sw_ = strip.shape[:2]
+    half = 7.5
+    best = np.full((H, W), np.inf)
+    along = np.zeros((H, W))
     for y in range(len(SCENE)):
         for x in range(len(SCENE[0])):
             if at(x, y) != 'r':
                 continue
             for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1)):
-                if at(x + dx, y + dy) in 'ro':
-                    a = scr(x + 0.5, y + 0.5)
-                    b = scr(x + 0.5 + dx * (0.5 if at(x + dx, y + dy) == 'o' else 1), y + 0.5 + dy * (0.5 if at(x + dx, y + dy) == 'o' else 1))
-                    pts = [(a[0] + (b[0] - a[0]) * t + np.sin(t * 6.28) * 6, a[1] + (b[1] - a[1]) * t + np.cos(t * 6.28) * 3) for t in np.linspace(0, 1, 12)]
-                    dr.line(pts, fill=(36, 40, 52, 255), width=9, joint='curve')
-                    dr.line(pts, fill=(84, 130, 170, 255), width=6, joint='curve')
-                    dr.line(pts, fill=(170, 206, 226, 255), width=1, joint='curve')
+                n = at(x + dx, y + dy)
+                if n not in 'ro':
+                    continue
+                reach = 0.5 if n == 'o' else 0.5
+                a = np.array(scr(x + 0.5, y + 0.5))
+                b = np.array(scr(x + 0.5 + dx * reach, y + 0.5 + dy * reach))
+                # a gentle S-bend
+                ts = np.linspace(0, 1, 16)
+                perp = np.array([-(b - a)[1], (b - a)[0]]) / (np.linalg.norm(b - a) + 1e-9)
+                pts = [a + (b - a) * t + perp * np.sin(t * np.pi) * 4 * (1 if (x + y) % 2 else -1) for t in ts]
+                for k in range(len(pts) - 1):
+                    p0, p1 = pts[k], pts[k + 1]
+                    x0, x1 = int(min(p0[0], p1[0]) - 12), int(max(p0[0], p1[0]) + 12)
+                    y0, y1 = int(min(p0[1], p1[1]) - 12), int(max(p0[1], p1[1]) + 12)
+                    x0, y0, x1, y1 = max(0, x0), max(0, y0), min(W, x1), min(H, y1)
+                    if x1 <= x0 or y1 <= y0:
+                        continue
+                    py, px = np.mgrid[y0:y1, x0:x1].astype(np.float64)
+                    d = p1 - p0
+                    L = (d ** 2).sum() + 1e-9
+                    t = np.clip(((px - p0[0]) * d[0] + (py - p0[1]) * d[1]) / L, 0, 1)
+                    dist = np.hypot(px - (p0[0] + t * d[0]), py - (p0[1] + t * d[1]))
+                    sub = best[y0:y1, x0:x1]
+                    m = dist < sub
+                    sub[m] = dist[m]
+                    along[y0:y1, x0:x1][m] = ((px[m] + py[m]) * 0.6)
+    near = best < half + 2.5
+    vv = np.clip((sh_ - 1) / 2 + best[near] / half * (sh_ / 2), 0, sh_ - 1).astype(int)
+    uu = (along[near] * 0.8).astype(int) % sw_
+    px_ = strip[vv, uu]
+    a_ = (px_[:, 3:4] / 255) * np.clip(half + 0.5 - best[near], 0, 1)[:, None]
+    cur = np.asarray(canvas, dtype=np.float64)
+    ink = np.clip(1 - np.abs(best - (half + 0.9)) / 1.0, 0, 1)
+    cur[..., :3] = cur[..., :3] * (1 - ink[..., None] * 0.8) + np.array([34, 36, 44.]) * ink[..., None] * 0.8
+    sel = cur[near]
+    sel[:, :3] = sel[:, :3] * (1 - a_) + px_[:, :3] * a_
+    cur[near] = sel
+    canvas = Image.fromarray(np.clip(cur, 0, 255).astype(np.uint8), 'RGBA')
 
     raw = os.path.join(theme, 'raw-iso')
-    sets = {n: cut_sprites(Image.open(os.path.join(raw, f'iso_{n}.png'))) for n in ('trees', 'peaks', 'hills', 'jungle', 'town')}
-    # hills: grassy olive-green instead of bare earth
-    greened = []
-    for spr in sets['hills']:
-        a = np.asarray(spr.convert('RGBA')).astype(float)
-        lum = (a[..., 0] * 0.3 + a[..., 1] * 0.59 + a[..., 2] * 0.11) / 255
-        xs = np.linspace(0, 1, a.shape[1])[None, :]
-        t = np.clip(lum * 1.2 - 0.15 * (xs - 0.5), 0, 1)[..., None]
-        col = np.array([92, 96, 52.]) + (np.array([172, 166, 92.]) - np.array([92, 96, 52.])) * t
-        dark = (lum < 0.28)[..., None]
-        a[..., :3] = np.where(dark, np.array([44, 40, 28.]) + (col - np.array([44, 40, 28.])) * (lum[..., None] / 0.28), col)
-        greened.append(Image.fromarray(np.clip(a, 0, 255).astype(np.uint8), 'RGBA'))
-    sets['hills'] = greened
+    sets = {n: cut_sprites(Image.open(os.path.join(raw, f'iso_{n}.png'))) for n in ('trees', 'peaks', 'hills2', 'jungle', 'town', 'tufts', 'tundra', 'reeds', 'ice')}
+    sets['hills'] = sets['hills2']
     settler = cut_object(Image.open(os.path.join(theme, 'raw', 'unit_settlers.png')))
 
     rng = np.random.default_rng(7)
@@ -148,11 +170,26 @@ def main(theme, out):
             elif c == 'h':
                 for _ in range(2):
                     px, py = scr(*inside(x, y))
-                    put('hills', px, py + 6, rng.uniform(70, 96))
+                    put('hills', px, py + 6, rng.uniform(78, 104))
             elif c in 'gpr':
                 for _ in range(rng.integers(1, 4) if c != 'p' else rng.integers(0, 2)):
                     px, py = scr(*inside(x, y))
                     put('trees', px, py, rng.uniform(16, 26), i=int(rng.integers(0, 4)))
+                for _ in range(rng.integers(3, 7)):
+                    px, py = scr(*inside(x, y))
+                    put('tufts', px, py, rng.uniform(9, 15))
+            elif c == 't':
+                for _ in range(rng.integers(4, 8)):
+                    px, py = scr(*inside(x, y))
+                    put('tundra', px, py, rng.uniform(12, 20))
+            elif c == 's':
+                for _ in range(rng.integers(9, 13)):
+                    px, py = scr(*inside(x, y))
+                    put('reeds', px, py, rng.uniform(22, 34))
+            elif c == 'a':
+                for _ in range(rng.integers(2, 4)):
+                    px, py = scr(*inside(x, y))
+                    put('ice', px, py, rng.uniform(28, 46))
     tx, ty = scr(5.5, 6.5)
     items.append((ty + 22, tx, sets['town'][0], 190))
     ux, uy = scr(4.5, 4.5)
