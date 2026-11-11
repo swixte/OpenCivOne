@@ -239,7 +239,12 @@ def pictures():
         elif upper == 'TORCH':
             yield upper, torch()
         elif upper.startswith('CBRUSH'):
-            yield upper, placeholder(upper, 48, 32, n)
+            # the palace garden's plantings, drawn as sprites at the left (even) or right (odd) edge, from row 105
+            # (CBRUSH0-1) or 94 (the rest) down to the bottom: fully transparent here, so a theme's art defines them
+            yield upper, np.zeros((95 if upper in ('CBRUSH0', 'CBRUSH1') else 106, 136), dtype=np.uint8)
+        elif upper.startswith('CBACKS'):
+            # the palace forecourt's path, loaded over the backdrop from row 135 down
+            yield upper, placeholder(upper, 320, 65, n)
         else:
             yield upper, placeholder(upper, 320, 200, n)
 
