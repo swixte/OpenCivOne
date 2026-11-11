@@ -108,8 +108,50 @@ def measure(g):
     return m
 
 
+# the classic game's yield of each terrain without improvements: food, shields, trade
+YIELD = {DESERT: (0, 1, 0), PLAINS: (1, 1, 0), GRASS: (2, 0, 0), FOREST: (1, 2, 0), HILLS: (1, 0, 0), MOUNTAINS: (0, 1, 0),
+         TUNDRA: (1, 0, 0), ARCTIC: (0, 0, 0), SWAMP: (1, 0, 0), JUNGLE: (1, 0, 0), RIVER: (2, 0, 1)}
+
+
+def load_features(path):
+    return [[int(c.split(':')[1]) for c in line.split()] for line in open(path)]
+
+
+def balance(classic, smoothed, cf, sf):
+    """Section E: the smoothed world against its classic twin. Name -> difference (0 or a percentage)."""
+    m = {}
+    land = lambda g: [(x, y) for y in range(H) for x in range(W) if g[y][x] != WATER]
+    m['E1 land tiles changed (count)'] = abs(len(land(classic)) - len(land(smoothed)))
+    coast = lambda g: sum(1 for x, y in land(g) if WATER in neighbours(g, x, y, FOUR))
+    m['E2 coastline tiles changed (count)'] = abs(coast(classic) - coast(smoothed))
+    rivers = lambda g: {(x, y) for y in range(H) for x in range(W) if g[y][x] == RIVER}
+    m['E3 river tiles changed (count)'] = len(rivers(classic) ^ rivers(smoothed))
+    n = max(1, len(land(classic)))
+    share = max(abs(sum(row.count(t) for row in classic) - sum(row.count(t) for row in smoothed)) * 100 / n for t in LAND)
+    m['E4 largest change in a terrain share (points)'] = share
+    for i, what in enumerate(('food', 'shields', 'trade')):
+        total = lambda g: sum(YIELD[g[y][x]][i] for x, y in land(g))
+        a, b = total(classic), total(smoothed)
+        m[f'E5 total {what} changed (%)'] = abs(a - b) * 100 / max(1, a)
+    for bit, what in ((1, 'special resources'), (2, 'huts')):
+        count = lambda f: sum(1 for row in f for v in row if v & bit)
+        a, b = count(cf), count(sf)
+        m[f'E6 {what} changed (%)'] = abs(a - b) * 100 / max(1, a)
+    continents = lambda g: sum(1 for t, c in regions(g, lambda p, q: (p == WATER) == (q == WATER)) if t != WATER)
+    m['E7 continents changed (count)'] = abs(continents(classic) - continents(smoothed))
+    return m
+
+
 def target(name):
     """(description, test) for a check."""
+    if name.startswith(('E1', 'E2', 'E3', 'E7')):
+        return '0', lambda v: v == 0
+    if name.startswith('E4'):
+        return '<= 2', lambda v: v <= 2
+    if name.startswith('E5'):
+        return '<= 3', lambda v: v <= 3
+    if name.startswith('E6'):
+        return '<= 10', lambda v: v <= 10
     if name.startswith('A1'):
         need = 3 if 'Mountains' in name else 2 if 'Swamp' in name else 4
         return f'>= {need}', lambda v: v >= need
@@ -160,6 +202,18 @@ def main(dumps, out, commit=''):
             fails[mode] += 0 if passed else 1
             cells.append(f'{wv:.0f} / {med:.0f} {"PASS" if passed else "FAIL"}')
         lines.append(f'| {name} | ' + ' | '.join(cells) + f' | {desc} |')
+    if 'smoothed' in modes:
+        lines += ['', '## E. Balance: smoothed against classic, same world', '', '| Check | worst / median | Target |', '|---|---|---|']
+        bal = [balance(load(os.path.join(dumps, f"{w['name']}-classic.txt")), load(os.path.join(dumps, f"{w['name']}-smoothed.txt")),
+                       load_features(os.path.join(dumps, f"{w['name']}-classic.txt")), load_features(os.path.join(dumps, f"{w['name']}-smoothed.txt")))
+               for w in fixtures]
+        for name in bal[0]:
+            desc, ok = target(name)
+            values = [b[name] for b in bal]
+            wv = max(values)
+            passed = ok(wv)
+            fails['smoothed'] += 0 if passed else 1
+            lines.append(f'| {name} | {wv:.1f} / {statistics.median(values):.1f} {"PASS" if passed else "FAIL"} | {desc} |')
     lines += ['', 'Failed checks: ' + ', '.join(f'{mode} {n} of {len(checks)}' for mode, n in fails.items()), '']
     open(out, 'w').write('\n'.join(lines) + '\n')
     print('\n'.join(lines[-2:]))

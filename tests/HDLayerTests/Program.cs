@@ -739,7 +739,7 @@ GBitmap other4()
 
 	// ISO_GENWORLDS generates the terrain QA fixtures (tools/isoproof/terrain-qa/fixtures.json) with the game's own map
 	// generator, without a screen, and writes each world as a dump (terrain:features per cell) into the folder given:
-	// NAME-classic.txt with its settings, and NAME-young.txt with the youngest age
+	// NAME-classic.txt with its settings, NAME-young.txt with the youngest age and NAME-smoothed.txt with terrain smoothing
 	if (Environment.GetEnvironmentVariable("ISO_GENWORLDS") is string genOut)
 	{
 		string fixturesPath = Path.Combine(AppContext.BaseDirectory, "../../../../../tools/isoproof/terrain-qa/fixtures.json");
@@ -751,8 +751,9 @@ GBitmap other4()
 		{
 			string name = world.GetProperty("name").GetString()!;
 
-			foreach ((string mode, bool young) in new[] { ("classic", false), ("young", true) })
+			foreach ((string mode, bool young) in new[] { ("classic", false), ("young", true), ("smoothed", false) })
 			{
+				OpenCivOne.MapInitAndIntro.ForceTerrainSmoothing = mode == "smoothed";
 				// a fresh game for every world, as a new game starts with empty tables of continents and oceans
 				var game = new OpenCivOne.OpenCivOneGame(null!);
 				game.GameData.RandomSeed = (ushort)world.GetProperty("seed").GetInt32();

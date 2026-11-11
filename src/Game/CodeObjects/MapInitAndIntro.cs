@@ -566,6 +566,23 @@ namespace OpenCivOne
 					AdvanceAnimation();
 				}
 				#endregion
+
+				// the optional terrain smoothing, before continents, oceans and city sites are worked out from the terrain
+				if (ForceTerrainSmoothing ?? this.parent.GlobalPreferences.TerrainSmoothing)
+				{
+					int[,] terrain = new int[80, 50];
+
+					for (int sx = 0; sx < 80; sx++)
+						for (int sy = 0; sy < 50; sy++)
+							terrain[sx, sy] = (int)this.map.GetTerrainType(sx, sy);
+
+					TerrainSmoothing.Apply(terrain);
+
+					for (int sx = 0; sx < 80; sx++)
+						for (int sy = 0; sy < 50; sy++)
+							if (terrain[sx, sy] != (int)this.map.GetTerrainType(sx, sy))
+								this.map.SetTerrainType(sx, sy, (TerrainTypeEnum)terrain[sx, sy]);
+				}
 			}
 
 			// !!! This needs to be reworked, map could have more than 14 groups
@@ -1299,6 +1316,11 @@ namespace OpenCivOne
 		/// Set by tools that generate worlds without a screen (the terrain QA fixtures): the story animation is skipped
 		/// </summary>
 		public static bool SkipAnimation = false;
+
+		/// <summary>
+		/// Set by tools to generate a map with or without terrain smoothing, whatever the preferences say; null follows them
+		/// </summary>
+		public static bool? ForceTerrainSmoothing = null;
 
 		public bool AdvanceAnimation()
 		{

@@ -29,6 +29,12 @@ namespace OpenCivOne
 		/// </summary>
 		public bool AnimateWater { get; set; } = true;
 
+		/// <summary>
+		/// Smooths the terrain of new maps after the classic generator (see TerrainSmoothing): off by default, as the
+		/// classic game makes its maps
+		/// </summary>
+		public bool TerrainSmoothing { get; set; } = false;
+
 		[XmlIgnore]
 		[JsonIgnore]
 		public bool SaveGameWarning { get => this._saveGameWarning; set => this._saveGameWarning = value; }
