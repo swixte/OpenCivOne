@@ -1,5 +1,12 @@
 # Terrain QA, round 3: the field-based re-layout
 
+## Status for review
+- **Ready to judge:** the terrain layout. That covers the scorecard (`scorecard.md`), the render checks (`render-checks.tsv`) and the pictures in `pack/`, s01 first.
+- **The pictures in `pack/`** were rendered before the open-land detail (meadow patches, small copses, low rises) was added; `pack/open-land-before-after.jpg` shows that change on its own.
+- **Not finished:**
+  - The section 5 play test (300 turns with the re-layout on) is still running. The first two runs found three crashes in the original port, unrelated to the terrain; all three are fixed.
+  - The real save-and-reload test (G3) is still owed. Section G below explains why.
+
 Simon's working rule said: if majority-filter smoothing can't reach the targets, build the field-based alternative. The user said go. The smoothing switch (`TerrainSmoothing` in preferences, still off by default) now runs `TerrainRelayout` (`src/Game/TerrainRelayout.cs`) in place of the majority filter. The lone-tundra clean-up on the polar rows stays.
 
 ## How it works
