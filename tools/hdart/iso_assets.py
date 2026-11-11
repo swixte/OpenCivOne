@@ -16,7 +16,7 @@ from PIL import Image
 from painted_assets import cut_sprites
 import style
 
-SETS = ['trees', 'peaks', 'hills2', 'jungle', 'town', 'tufts', 'tundra', 'reeds', 'ice', 'dunes', 'plots', 'hamlet']
+SETS = ['trees', 'broadleaf', 'peaks', 'hills2', 'jungle', 'town', 'tufts', 'tundra', 'reeds', 'ice', 'dunes', 'plots', 'hamlet']
 GROUNDS = {'grass': ('iso_tex_grass', (1.0, 1.0, 1.0)), 'sand': ('iso_tex_sand', (1.0, 0.94, 0.80))}
 TEXTURE = 400
 PLOT = 32  # the painted crop plots (iso_fieldplots, a 4 x 4 grid seen from above), mapped onto each field plot

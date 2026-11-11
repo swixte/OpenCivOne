@@ -1496,6 +1496,25 @@ namespace OpenCivOne
 
 			int mask = 0x1 << this.parent.GameData.HumanPlayerID;
 			bool debug = this.parent.GlobalPreferences.Debug.DebugMode;
+
+			// ISO_DUMP: writes the generated world (terrain ids, then resources and huts) to a file once, so the test
+			// harness can render a real game's map with the theme's art
+			if (Environment.GetEnvironmentVariable("ISO_DUMP") is string dumpPath && !File.Exists(dumpPath))
+			{
+				var lines = new List<string>();
+
+				for (int dy = 0; dy < 50; dy++)
+				{
+					var row = new List<string>();
+
+					for (int dx = 0; dx < 80; dx++)
+						row.Add($"{(int)GetTerrainType(dx, dy)}:{(F0_2aea_1836_CellHasSpecialResource(dx, dy) ? 1 : 0) | (F0_2aea_1894_CellHasMinorTribeHut(dx, dy, GetTerrainType(dx, dy)) ? 2 : 0)}");
+
+					lines.Add(string.Join(" ", row));
+				}
+
+				File.WriteAllLines(dumpPath, lines);
+			}
 			IsoView.Scene scene = new IsoView.Scene
 			{
 				Terrain = (x, y) => (int)GetTerrainType(x, y),

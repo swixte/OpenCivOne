@@ -736,6 +736,43 @@ GBitmap other4()
 		Console.WriteLine("transect written");
 	}
 
+	// ISO_WORLD renders a world the game generated (written by the game with ISO_DUMP) as an overview of the whole
+	// map in four bands, west to east, into ISO_WORLD_OUT
+	if (Environment.GetEnvironmentVariable("ISO_WORLD") is string worldIn && Environment.GetEnvironmentVariable("ISO_WORLD_OUT") is string worldOut &&
+		Environment.GetEnvironmentVariable("ISO_THEME") is string worldTheme)
+	{
+		string[] rows = File.ReadAllLines(worldIn);
+		int[,] wt = new int[80, 50], wf = new int[80, 50];
+
+		for (int y = 0; y < 50; y++)
+		{
+			string[] cells = rows[y].Split(' ');
+
+			for (int x = 0; x < 80; x++)
+			{
+				string[] parts = cells[x].Split(':');
+				wt[x, y] = int.Parse(parts[0]);
+				wf[x, y] = int.Parse(parts[1]);
+			}
+		}
+
+		var worldScene = new OpenCivOne.Graphics.IsoView.Scene { Terrain = (x, y) => wt[x, y], Feature = (x, y) => wf[x, y] };
+		Directory.CreateDirectory(worldOut);
+
+		// the world seen from above in four overlapping views along the equator, each about 20 columns of the map
+		for (int i = 0; i < 4; i++)
+		{
+			var view = OpenCivOne.Graphics.IsoView.Load(worldTheme, 2600, 2100)!;
+			view.Render((i * 20) + 10, 25, worldScene);
+			using var img = new SKBitmap(2600, 2100, SKColorType.Bgra8888, SKAlphaType.Premul);
+			Marshal.Copy(Array.ConvertAll(view.Pixels, v => unchecked((int)v)), 0, img.GetPixels(), view.Pixels.Length);
+			using var f = File.Create(Path.Combine(worldOut, $"world{i + 1}.png"));
+			img.Encode(f, SKEncodedImageFormat.Png, 100);
+		}
+
+		Console.WriteLine("world written");
+	}
+
 	// ISO_SHOWCASE renders a developed world into a folder: a large continent with every terrain, rivers from the
 	// mountains to the sea, cities of many sizes joined by roads and a railroad, irrigated fields, mines, a fortress,
 	// pollution, huts, resources and units; an overview and close views of three cities, so the art can be judged as

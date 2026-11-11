@@ -166,7 +166,7 @@ namespace OpenCivOne.Graphics
 
 			// every set at one scale, so a single tree stays smaller than a clump: its widest sprite gets the width given
 			(string Set, float Width)[] scales = {
-				("trees", 160 * S), ("jungle", 160 * S), ("peaks", 240 * S), ("hills", 145 * S), ("dunes", 90 * S), ("reeds", 62 * S),
+				("trees", 160 * S), ("broadleaf", 160 * S), ("jungle", 160 * S), ("peaks", 240 * S), ("hills", 145 * S), ("dunes", 90 * S), ("reeds", 62 * S),
 				("tundra", 42 * S), ("ice", 70 * S), ("tufts", 45 * S), ("hamlet", 102 * S), ("town", TileWidth * 1.25f), ("plots", TileWidth * 1.08f) };
 
 			foreach ((string set, float target) in scales)
@@ -223,7 +223,7 @@ namespace OpenCivOne.Graphics
 
 			// variety: every tree, jungle, peak, hill and dune sprite also mirrored, and hills a size smaller too, so groups
 			// of them do not repeat the same shapes in rows
-			foreach (string set in new[] { "trees", "jungle", "peaks", "hills", "dunes" })
+			foreach (string set in new[] { "trees", "broadleaf", "jungle", "peaks", "hills", "dunes" })
 			{
 				var more = new List<SKBitmap>(view.sets[set]);
 
@@ -318,14 +318,14 @@ namespace OpenCivOne.Graphics
 
 			// resources, huts and mines a little smaller than a unit, so a busy map is not dominated by them
 			foreach (string name in Array.ConvertAll(ResourceNames, n => "res_" + n))
-				view.LoadObject(objectsFolder, name, height: 34, halo: true);
+				view.LoadObject(objectsFolder, name, height: 27, halo: true);
 
 			view.LoadObject(objectsFolder, "res_fish", height: 26);
 
 			if (view.objects.Remove("res_fish", out SKBitmap? small))
 				view.objects["fish"] = small;
 
-			view.LoadObject(objectsFolder, "res_fish", height: 34, halo: true);
+			view.LoadObject(objectsFolder, "res_fish", height: 27, halo: true);
 			view.LoadObject(objectsFolder, "hut", height: 40, halo: true);
 			view.LoadObject(objectsFolder, "mine", height: 32, halo: true);
 			view.LoadObject(objectsFolder, "fortress", height: 46, halo: true);
@@ -544,6 +544,7 @@ namespace OpenCivOne.Graphics
 			// pass 1: the ground of every pixel, the terrain its nearby cells vote for (hard edges, rounded shapes), and how
 			// much it is under mist
 			int[] kind = new int[w * h];
+			int[] cover = new int[w * h]; // the terrain each pixel's ground was voted for
 			float[] fog = new float[w * h];
 			uint[] img = new uint[w * h];
 			Span<float> votes = stackalloc float[13];
@@ -612,6 +613,7 @@ namespace OpenCivOne.Graphics
 					fog[i] = total > 0 ? fogVote / total : 1;
 					int g = GroundOf[best];
 					kind[i] = g;
+					cover[i] = best;
 					// the texture is fixed to the world's isometric positions; 400 divides the world's width, so it wraps cleanly
 					int tx = (int)MathF.Floor((gx0 - gy0) * halfW), ty = (int)MathF.Floor((gx0 + gy0) * halfH);
 					int ti = ((((ty % TextureSize) + TextureSize) % TextureSize) * TextureSize) + (((tx % TextureSize) + TextureSize) % TextureSize);
@@ -626,6 +628,17 @@ namespace OpenCivOne.Graphics
 						cr = (grey + ((cr - grey) * 0.74f) + 10) * 1.04f;
 						cg = (grey + ((cg - grey) * 0.74f) + 1) * 1.04f;
 						cb = (grey + ((cb - grey) * 0.74f) + 6) * 1.04f;
+					}
+
+					// latitude: the land a little greyer and cooler towards the poles, a little yellower towards the equator
+					if (g != Sea)
+					{
+						float lat = MathF.Abs(gy0 - ((MapHeight - 1) / 2f)) / ((MapHeight - 1) / 2f);
+						float cool = Math.Clamp((lat - 0.45f) / 0.45f, 0, 1) * 0.22f, warm = Math.Clamp((0.3f - lat) / 0.3f, 0, 1) * 0.1f;
+						float grey = (cr + cg + cb) / 3;
+						cr += ((grey - cr) * cool) - (cool * 6) + (warm * 14);
+						cg += ((grey - cg) * cool) + (warm * 8);
+						cb += ((grey - cb) * cool) + (cool * 10) - (warm * 10);
 					}
 
 					img[i] = Pack(cr, cg, cb);
@@ -726,6 +739,24 @@ namespace OpenCivOne.Graphics
 						r += (176 - r) * edgeShade * 0.55f;
 						g += (188 - g) * edgeShade * 0.55f;
 						b += (206 - b) * edgeShade * 0.55f;
+					}
+					// the shore by what meets the sea: a wide sandy beach below desert and plains, rocks below hills and
+					// mountains, a narrow pale strand elsewhere
+					else if (cover[i] is Desert or Plains && landDist[i] < 7.5f)
+					{
+						float sand = landDist[i] < 5.5f ? 0.75f : 0.4f * (7.5f - landDist[i]) / 2;
+						r += (222 - r) * sand;
+						g += (204 - g) * sand;
+						b += (150 - b) * sand;
+					}
+					else if (cover[i] is Hills or Mountains && landDist[i] < 6)
+					{
+						float stone = Noise(gx0, gy0, 6, 49);
+						(float sr, float sg, float sb) = stone > 0.62f ? (70f, 66f, 62f) : stone > 0.4f ? (138f, 132f, 120f) : (164f, 158f, 144f);
+						float k = landDist[i] < 4 ? 0.85f : 0.5f;
+						r += (sr - r) * k;
+						g += (sg - g) * k;
+						b += (sb - b) * k;
 					}
 					else if (landDist[i] < 3.5f)
 					{
@@ -1172,8 +1203,22 @@ namespace OpenCivOne.Graphics
 							continue;
 
 						float amp = (Hash(Wrap(x) * 2 + dx, (y * 2) + dy, 35) < 0.5f ? -1 : 1) * 3.2f;
-						courses.Add((Link(a, b, links[(x, y)], links[(x + dx, y + dy)], amp, 16), Width(x, y), Width(x + dx, y + dy)));
+						// a river's source is a spring: the water narrows to a point where its course begins
+						float wa = links[(x, y)].Count == 1 && !toSea.ContainsKey((x, y)) ? 0.8f : Width(x, y);
+						float wb = links[(x + dx, y + dy)].Count == 1 && !toSea.ContainsKey((x + dx, y + dy)) ? 0.8f : Width(x + dx, y + dy);
+						courses.Add((Link(a, b, links[(x, y)], links[(x + dx, y + dy)], amp, 16), wa, wb));
 					}
+				}
+
+				// a river cell on its own: a short stream from a spring across the cell, never a blunt stub
+				foreach (((int x, int y), SKPoint n) in nodes)
+				{
+					if (links[(x, y)].Count != 0)
+						continue;
+
+					float ang = Hash(Wrap(x), y, 36) * 6.2832f;
+					SKPoint a0 = new SKPoint(n.X - (MathF.Cos(ang) * 16), n.Y - (MathF.Sin(ang) * 8)), b0 = new SKPoint(n.X + (MathF.Cos(ang) * 16), n.Y + (MathF.Sin(ang) * 8));
+					courses.Add((Link(a0, b0, new List<SKPoint>(), new List<SKPoint>(), 2.4f, 12), 0.8f, 3.6f));
 				}
 
 				foreach (var m in mouths)
@@ -1187,6 +1232,16 @@ namespace OpenCivOne.Graphics
 				using SKPaint edgeInk = new SKPaint { IsAntialias = true, Color = new SKColor(42, 52, 60) };
 				using SKPaint water = new SKPaint { IsAntialias = true, Color = new SKColor(66, 112, 142) };
 				using SKPaint ripple = Stroke(new SKColor(132, 168, 186), 0.9f);
+
+				// a strip of green along the banks, which shows where the river crosses dry land
+				using (SKPaint verge = new SKPaint { IsAntialias = true, Color = new SKColor(104, 120, 54, 150) })
+				{
+					foreach (var c in courses)
+					{
+						using SKPath p = Ribbon(c.Pts, c.Wa + 11, c.Wb + 11);
+						canvas.DrawPath(p, verge);
+					}
+				}
 
 				foreach (var c in courses)
 				{
@@ -1442,6 +1497,17 @@ namespace OpenCivOne.Graphics
 			// how far a row is from the equator, 0 there and 1 at the poles
 			float Latitude(int y) => MathF.Abs(y - ((MapHeight - 1) / 2f)) / ((MapHeight - 1) / 2f);
 
+			// the trees of a forest by latitude: conifers poleward of about 55% of the way to the pole, broadleaf
+			// equatorward of about 35%, both mixed between, so the change is gradual
+			string WoodSet(int x, int y, int n)
+			{
+				if (this.sets["broadleaf"].Count == 0)
+					return "trees";
+
+				float conifer = Math.Clamp((Latitude(y) - 0.35f) / 0.2f, 0, 1);
+				return Hash(Wrap(x) + (n * 7), y, 95) < conifer ? "trees" : "broadleaf";
+			}
+
 			// mountains for their place: alpine near the poles or beside the cold, arid among desert or near the equator
 			// with desert beside them, temperate grey rock with small snow tips everywhere else
 			string PeakSet(int x, int y)
@@ -1526,9 +1592,10 @@ namespace OpenCivOne.Graphics
 				switch (t)
 				{
 					// woods reach a little past their cell's edges, so their outline does not follow the tiles
+					// conifers in the cold half of the world, broadleaf woods nearer the equator, and a mix between
 					case Forest:
 						for (int n = 0; n < 10; n++)
-							Put("trees", x, y, n, n < 7 ? 0.04f : -0.14f);
+							Put(WoodSet(x, y, n), x, y, n, n < 7 ? 0.04f : -0.14f);
 						break;
 
 					case Jungle:
@@ -1607,7 +1674,7 @@ namespace OpenCivOne.Graphics
 				{
 					count = 1 + (int)(Hash(Wrap(x), y, 8) * 3);
 					for (int n = 0; n < count; n++)
-						Put(Near(x, y, Forest) ? "trees" : "jungle", x, y, 20 + n, 0.05f);
+						Put(Near(x, y, Forest) ? WoodSet(x, y, 20 + n) : "jungle", x, y, 20 + n, 0.05f);
 				}
 
 				// mines and fortresses
