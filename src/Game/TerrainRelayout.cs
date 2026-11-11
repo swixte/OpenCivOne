@@ -192,7 +192,9 @@ namespace OpenCivOne
 			}
 
 			Consolidate(result, cells);
-			JoinLoneTiles(result, cells);
+			JoinLoneTiles(map, result, cells);
+			BreakUpLargeRegions(map, result, cells, seed);
+			JoinLoneTiles(map, result, cells);
 
 			foreach (var c in cells)
 				map[c.X, c.Y] = result[c];
@@ -295,18 +297,264 @@ namespace OpenCivOne
 			}
 		}
 
+		// no region too large to read as more than one colour, and no landmass of one terrain: a region larger than about
+		// 26 tiles or a third of its landmass, and a landmass of more than 8 tiles with one terrain (more than 20 with
+		// fewer than three), give a compact patch of their cells to another terrain, swapping places with an equal patch
+		// of that terrain from a large region elsewhere, so every count stays exact and neither patch is left as specks
+		private static void BreakUpLargeRegions(int[,] map, Dictionary<(int, int), int> result, List<(int X, int Y)> cells, int seed)
+		{
+			// the landmasses: land joined by edges, rivers included as land
+			var landOf = new Dictionary<(int, int), int>();
+			var landSize = new List<int>();
+
+			foreach (var c in cells)
+			{
+				if (landOf.ContainsKey(c))
+					continue;
+
+				int id = landSize.Count, n = 0;
+				var stack = new Stack<(int, int)>();
+				stack.Push(c);
+				landOf[c] = id;
+
+				while (stack.Count > 0)
+				{
+					(int x, int y) = stack.Pop();
+					n++;
+
+					foreach ((int dx, int dy) in Four)
+					{
+						var o = (Wrap(x + dx), y + dy);
+
+						if (o.Item2 >= 1 && o.Item2 < Height - 1 && !landOf.ContainsKey(o) && map[o.Item1, o.Item2] != Water)
+						{
+							landOf[o] = id;
+							stack.Push(o);
+						}
+					}
+				}
+
+				landSize.Add(n);
+			}
+
+			bool Fits(int kind, (int X, int Y) c) => kind switch
+			{
+				Arctic => c.Y < 3 || c.Y > Height - 4,
+				Desert or Jungle => Latitude(c.Y) <= 0.6f,
+				_ => true,
+			};
+
+			List<List<(int X, int Y)>> Regions()
+			{
+				var seen = new HashSet<(int, int)>();
+				var all = new List<List<(int X, int Y)>>();
+
+				foreach (var c in cells)
+				{
+					if (!seen.Add(c))
+						continue;
+
+					var region = new List<(int X, int Y)>();
+					var stack = new Stack<(int X, int Y)>();
+					stack.Push(c);
+
+					while (stack.Count > 0)
+					{
+						var p = stack.Pop();
+						region.Add(p);
+
+						foreach ((int dx, int dy) in Four)
+						{
+							var o = (Wrap(p.X + dx), p.Y + dy);
+
+							if (result.TryGetValue(o, out int k) && k == result[c] && seen.Add(o))
+								stack.Push(o);
+						}
+					}
+
+					all.Add(region);
+				}
+
+				return all;
+			}
+
+			// a patch of n cells of a region, grown from a seed cell: nearest first, by a distance roughened with noise, so
+			// the patch has an irregular, natural outline rather than a diamond's
+			List<(int X, int Y)> Patch(List<(int X, int Y)> region, (int X, int Y) start, int n)
+			{
+				var inRegion = new HashSet<(int, int)>(region.Select(r => (r.X, r.Y)));
+				var patch = new List<(int X, int Y)>();
+				var seen = new HashSet<(int, int)> { start };
+				var queue = new PriorityQueue<(int X, int Y), float>();
+				queue.Enqueue(start, 0);
+
+				while (queue.Count > 0 && patch.Count < n)
+				{
+					var p = queue.Dequeue();
+					patch.Add(p);
+
+					foreach ((int dx, int dy) in Four)
+					{
+						var o = (Wrap(p.X + dx), p.Y + dy);
+
+						if (inRegion.Contains(o) && seen.Add(o))
+						{
+							float d = MathF.Sqrt(Distance(o, start)) + (Hash(o.Item1, o.Item2, seed + 11) * 1.6f);
+							queue.Enqueue(o, d);
+						}
+					}
+				}
+
+				return patch;
+			}
+
+			var tried = new HashSet<(int, int)>();
+
+			for (int round = 0; round < 80; round++)
+			{
+				var regions = Regions();
+				List<(int X, int Y)>? target = null;
+				int patchSize = 0;
+
+				// the worst offender first: the largest region over its limit, else a landmass with too few terrains
+				foreach (var r in regions.OrderByDescending(r => r.Count))
+				{
+					int land = landSize[landOf[r[0]]];
+					int limit = Math.Max(6, Math.Min(26, land / 3));
+
+					if (r.Count > limit && result[r[0]] is not (Arctic or Hills or Mountains) && !tried.Contains(r.Min()))
+					{
+						target = r;
+						patchSize = Math.Clamp(r.Count / 3, 4, 10);
+						break;
+					}
+				}
+
+				if (target == null)
+				{
+					foreach (var group in cells.GroupBy(c => landOf[c]))
+					{
+						int size = landSize[group.Key], kinds = group.Select(c => result[c]).Distinct().Count();
+
+						if ((size > 8 && kinds < 2) || (size > 20 && kinds < 3))
+						{
+							var largest = regions.Where(r => landOf[r[0]] == group.Key && result[r[0]] is not (Arctic or Hills or Mountains)).OrderByDescending(r => r.Count).FirstOrDefault();
+
+							if (largest != null && largest.Count >= 6 && !tried.Contains(largest.Min()))
+							{
+								target = largest;
+								patchSize = Math.Clamp(size / 4, 3, 8);
+								break;
+							}
+						}
+					}
+				}
+
+				if (target == null)
+					break;
+
+				int kindA = result[target[0]];
+
+				// the patch: grown from a cell picked by the noise, away from the region's first cell, so patches differ
+				var startA = target[(int)(Hash(target.Count, round, seed + 9) * target.Count) % target.Count];
+				var patchA = Patch(target, startA, patchSize);
+
+				// the donor: a large enough region of another terrain that may stand where patch A is, nearest first
+				bool swapped = false;
+
+				// (relief keeps its place: hills and mountains are never moved, so ranges, foothills and the high ground
+				// rivers rise in stay as they are; and a donor gives a patch only if three times its size, so what is
+				// left of it does not fall into fragments)
+				foreach (var donor in regions.Where(r => result[r[0]] != kindA && result[r[0]] is not (Arctic or Hills or Mountains) && r.Count >= patchA.Count * 3 && r != target)
+					.OrderBy(r => Distance(r[0], startA)))
+				{
+					int kindB = result[donor[0]];
+
+					if (!patchA.All(c => Fits(kindB, c)))
+						continue;
+
+					var patchB = Patch(donor, donor[(int)(Hash(donor.Count, round, seed + 10) * donor.Count) % donor.Count], patchA.Count);
+
+					if (patchB.Count != patchA.Count || !patchB.All(c => Fits(kindA, c)))
+						continue;
+
+					foreach (var c in patchA)
+						result[c] = kindB;
+
+					foreach (var c in patchB)
+						result[c] = kindA;
+
+					if (patchA.Concat(patchB).Any(c => ConflictAround(result, c)))
+					{
+						foreach (var c in patchA)
+							result[c] = kindA;
+
+						foreach (var c in patchB)
+							result[c] = kindB;
+
+						continue;
+					}
+
+					swapped = true;
+					break;
+				}
+
+				// a region with no partner is left as it is, and the others still get their turn
+				if (!swapped)
+					tried.Add(target.Min());
+			}
+		}
+
 		// a last pass on tiles that share no edge with their own kind: each changes places with a nearby tile whose
 		// kind suits its own spot, wherever that leaves fewer such lone tiles around both of them
-		private static void JoinLoneTiles(Dictionary<(int, int), int> result, List<(int X, int Y)> cells)
+		private static void JoinLoneTiles(int[,] map, Dictionary<(int, int), int> result, List<(int X, int Y)> cells)
 		{
+			bool ByRiver((int X, int Y) c)
+			{
+				foreach ((int dx, int dy) in Eight)
+				{
+					int ny = c.Y + dy;
+
+					if (ny >= 0 && ny < Height && map[Wrap(c.X + dx), ny] == River)
+						return true;
+				}
+
+				return false;
+			}
+
+			// a tile in a piece of one or two tiles of its kind (joined by edges)
 			bool Lone((int X, int Y) c)
 			{
 				if (!result.TryGetValue(c, out int t))
 					return false;
 
+				(int, int)? partner = null;
+
 				foreach ((int dx, int dy) in Four)
-					if (result.TryGetValue((Wrap(c.X + dx), c.Y + dy), out int k) && k == t)
+				{
+					var o = (Wrap(c.X + dx), c.Y + dy);
+
+					if (result.TryGetValue(o, out int k) && k == t)
+					{
+						if (partner != null)
+							return false;
+
+						partner = o;
+					}
+				}
+
+				if (partner == null)
+					return true;
+
+				(int px, int py) = partner.Value;
+
+				foreach ((int dx, int dy) in Four)
+				{
+					var o = (Wrap(px + dx), py + dy);
+
+					if (o != c && result.TryGetValue(o, out int k) && k == t)
 						return false;
+				}
 
 				return true;
 			}
@@ -333,7 +581,8 @@ namespace OpenCivOne
 			{
 				foreach (var a in cells)
 				{
-					if (!Lone(a) || result[a] == Arctic)
+					// (hills and mountains beside a river keep their place: they are the high ground it rises in)
+					if (!Lone(a) || result[a] == Arctic || (result[a] is Hills or Mountains && ByRiver(a)))
 						continue;
 
 					int ta = result[a];
@@ -346,7 +595,7 @@ namespace OpenCivOne
 						{
 							var b = (Wrap(a.X + dx), a.Y + dy);
 
-							if (!result.TryGetValue(b, out int tb) || tb == ta || tb == Arctic || !Fits(ta, b) || !Fits(tb, a))
+							if (!result.TryGetValue(b, out int tb) || tb == ta || tb == Arctic || (tb is Hills or Mountains && ByRiver(b)) || !Fits(ta, b) || !Fits(tb, a))
 								continue;
 
 							int before = LoneAround(a) + LoneAround(b);

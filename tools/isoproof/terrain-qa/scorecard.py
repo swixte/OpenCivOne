@@ -61,10 +61,38 @@ def measure(g):
     # A. coherence
     for t in LAND:
         sizes = by_type[t]
-        if not sizes or t == RIVER:
+        # (Simon, round 3) a terrain with fewer than 12 tiles in a world is too few to judge
+        if not sizes or t == RIVER or sum(sizes) < 12:
             continue
         m[f'A1 median region size: {NAMES[t]}'] = statistics.median(sizes)
         m[f'A2 single-tile regions: {NAMES[t]} (%)'] = 100 * sum(1 for s in sizes if s == 1) / len(sizes)
+    # (Simon, round 3) no region so large it reads as one colour, and no landmass of one terrain
+    lands = regions(g, lambda a, b: (a == WATER) == (b == WATER))
+    land_of = {}
+    for t, c in lands:
+        if t != WATER:
+            for cell in c:
+                land_of[cell] = len(c)
+    big = [(t, c) for t, c in regs if t not in (WATER, RIVER, ARCTIC) and land_of[c[0]] >= 8]
+    over = [1 for t, c in big if (len(c) > 30 and t != MOUNTAINS) or len(c) > 0.4 * land_of[c[0]]]
+    m['A4 regions over 30 tiles or 40% of their landmass (count)'] = len(over)
+    m['A4b largest region (tiles)'] = max((len(c) for t, c in big if t != MOUNTAINS), default=0)
+    land_cells = [c for t, c in lands if t != WATER and 3 <= c[0][1] <= H - 4]
+    kinds = lambda c: [g[y][x] for x, y in c if g[y][x] != RIVER]
+    m['A5 landmasses of 8+ tiles with one terrain, or 20+ with fewer than three (count)'] = sum(
+        1 for c in land_cells if (len(c) >= 8 and len(set(kinds(c))) < 2) or (len(c) >= 20 and len(set(kinds(c))) < 3))
+    m['A6 largest share of one terrain on a 20+ landmass (%)'] = max(
+        (100 * max(kinds(c).count(t) for t in set(kinds(c))) / max(1, len(kinds(c))) for c in land_cells if len(c) >= 20 and kinds(c)), default=0)
+    # cold land: poleward of 55 degrees (latitude > 55/90), the cap rows apart
+    cold = [g[y][x] for y in range(1, H - 1) for x in range(W) if latitude(y) > 55 / 90 and g[y][x] not in (WATER, RIVER, ARCTIC)]
+    n = max(1, len(cold))
+    m['H1 cold land (>55 deg) that is forest, tundra, hills or mountains (%)'] = 100 * sum(1 for t in cold if t in (FOREST, TUNDRA, HILLS, MOUNTAINS)) / n
+    m['H2 cold land (>55 deg) that is plains (%)'] = 100 * cold.count(PLAINS) / n
+    m['H3 single-terrain plains landmasses of 8+ tiles beyond 55 deg (count)'] = sum(
+        1 for c in land_cells if len(c) >= 8 and min(latitude(y) for x, y in c) > 55 / 90 and set(kinds(c)) == {PLAINS})
+    forest = [y for y in range(H) for x in range(W) if g[y][x] == FOREST]
+    for lo, hi in ((0, 25), (25, 55), (55, 90)):
+        m[f'I forest tiles at {lo}-{hi} deg (count, report only)'] = sum(1 for y in forest if lo / 90 <= latitude(y) < hi / 90 or (hi == 90 and latitude(y) >= lo / 90))
     small = sum(len(c) for t, c in regs if t not in (WATER, RIVER) and len(c) <= 2)
     m['A3 land tiles in regions of 1-2 tiles (%)'] = 100 * small / max(1, land_tiles)
 
@@ -216,9 +244,23 @@ def target(name):
         return '<= 3', lambda v: v <= 3
     if name.startswith('E6'):
         return '<= 10', lambda v: v <= 10
+    if name.startswith(('A4 ', 'A5')):
+        return '0', lambda v: v == 0
+    if name.startswith('A4b'):
+        return 'report', lambda v: True
+    if name.startswith('A6'):
+        return '<= 65', lambda v: v <= 65
+    if name.startswith('H1'):
+        return '>= 40 worst, >= 55 median', lambda v: v >= 40
+    if name.startswith('H2'):
+        return '<= 30', lambda v: v <= 30
+    if name.startswith('H3'):
+        return '0', lambda v: v == 0
+    if name.startswith('I '):
+        return 'report', lambda v: True
     if name.startswith('A1'):
         need = 3 if 'Mountains' in name else 2 if 'Swamp' in name else 4
-        return f'>= {need}', lambda v: v >= need
+        return f'>= {need} (Simon round 3: 5-14 median)', lambda v: v >= need
     if name.startswith('A2'):
         return '<= 20', lambda v: v <= 20
     if name.startswith('A3'):
@@ -238,7 +280,7 @@ def target(name):
 
 def worst(name, values):
     """The worst value across worlds: the lowest for checks that want a high value, the highest otherwise."""
-    high_good = name.startswith(('A1', 'C', 'D1', 'D2'))
+    high_good = name.startswith(('A1', 'C', 'D1', 'D2', 'H1'))
     return min(values) if high_good else max(values)
 
 
@@ -292,7 +334,7 @@ def pair_table(lines, title, rows, default, fails, totals, note=''):
 def main(dumps, out, commit='', rerun=''):
     here = os.path.dirname(os.path.abspath(__file__))
     fixtures = json.load(open(os.path.join(here, 'fixtures.json')))['worlds']
-    modes = [m for m in ('classic', 'young', 'smoothed') if os.path.exists(os.path.join(dumps, f"{fixtures[0]['name']}-{m}.txt"))]
+    modes = [m for m in ('classic', 'previous', 'smoothed') if os.path.exists(os.path.join(dumps, f"{fixtures[0]['name']}-{m}.txt"))]
     path = lambda w, mode: os.path.join(dumps, f"{w['name']}-{mode}.txt")
     fails = {mode: 0 for mode in modes}
     totals = {mode: 0 for mode in modes}
