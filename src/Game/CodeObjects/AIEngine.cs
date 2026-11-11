@@ -1424,13 +1424,14 @@ namespace OpenCivOne
 
 						if (this.parent.MapManagement.ValidateMapCoordinates(newX, newY))
 						{
-							newX = (unit.Position.X / 4) + direction.X;
+							// the block of four cells in that direction, wrapped across the world's edge; past the poles there is
+							// none (the original read outside its table there)
+							newX = (((unit.Position.X / 4) + direction.X) % 20 + 20) % 20;
 							newY = (unit.Position.Y / 4) + direction.Y;
 
-							// !!! Illegal memory access this.oCPU.ReadUInt16(this.oCPU.SS.Word, (ushort)(this.oCPU.BP.Word - 0x26)) == -1
-							if ((MapUnitRoles[newX, newY] & 0x3) == 0)
+							if (newY >= 0 && newY < 13 && (MapUnitRoles[newX, newY] & 0x3) == 0)
 							{
-								unit.GoToDestination = new(unit.Position.X + (direction.X * 4), unit.Position.Y + (direction.Y * 4));
+								unit.GoToDestination = new(this.parent.MapManagement.AdjustXPosition(unit.Position.X + (direction.X * 4)), unit.Position.Y + (direction.Y * 4));
 
 								if (this.parent.MapManagement.ValidateMapCoordinates(unit.GoToDestination.X, unit.GoToDestination.Y) &&
 									this.parent.GameData.Terrains[(int)this.parent.MapManagement.GetTerrainType(unit.GoToDestination.X, unit.GoToDestination.Y)].Production != 0 &&
@@ -1765,7 +1766,9 @@ namespace OpenCivOne
 									{
 										direction = this.parent.MoveDirections[i];
 
-										newX = unitX + (direction.X * 4);
+										// (wrapped across the world's edge before it is used: four cells beyond a unit near the edge are
+										// on the other side of the map, not outside it)
+										newX = this.parent.MapManagement.AdjustXPosition(unitX + (direction.X * 4));
 										newY = unitY + (direction.Y * 4);
 
 										if (this.parent.MapManagement.ValidateMapCoordinates(newX, newY) &&

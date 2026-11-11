@@ -725,6 +725,8 @@ namespace OpenCivOne.UI
 
 		private void GameThread()
 		{
+			AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+				Console.WriteLine("GAME EXCEPTION " + (e.ExceptionObject is Exception ex ? ex.Message + "\n" + new System.Diagnostics.StackTrace(ex, true) : e.ExceptionObject));
 			bool savePreferences = true;
 
 			try
