@@ -69,7 +69,9 @@ namespace OpenCivOne
 				#region Stage 1 - Generate continents
 				AdvanceAnimation();
 
-				int totalCellCount = this.parent.Var_7ef6_PlanetLandMass * 320 + 640;
+				// Huge (land mass 3, an addition to the classic Small, Normal and Large) grows land as a land mass of 6 would,
+				// about 45% of the world against Large's 29%
+				int totalCellCount = (this.parent.Var_7ef6_PlanetLandMass >= 3 ? 6 : this.parent.Var_7ef6_PlanetLandMass) * 320 + 640;
 
 				for (int i = 0; i < totalCellCount;)
 				{
@@ -731,19 +733,28 @@ namespace OpenCivOne
 								L0bac:
 									newGroupID++;
 
-									switch (i)
+									// the tables hold 64 continents and 64 oceans: past the last, small pieces share it rather than
+									// reading outside the table (a map with very much land can have more lakes than that)
+									if (newGroupID >= this.parent.GameData.Oceans.Length - 1)
 									{
-										case 0:
-											if (this.parent.GameData.Continents[newGroupID].Size != 0)
-												goto L0bac;
+										newGroupID = this.parent.GameData.Oceans.Length - 1;
+									}
+									else
+									{
+										switch (i)
+										{
+											case 0:
+												if (this.parent.GameData.Continents[newGroupID].Size != 0)
+													goto L0bac;
 
-											break;
+												break;
 
-										case 1:
-											if (this.parent.GameData.Oceans[newGroupID].Size != 0)
-												goto L0bac;
+											case 1:
+												if (this.parent.GameData.Oceans[newGroupID].Size != 0)
+													goto L0bac;
 
-											break;
+												break;
+										}
 									}
 								}
 

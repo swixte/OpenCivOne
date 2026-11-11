@@ -19,6 +19,12 @@ CALM_RIGHT_THIRD = ('The right third of the picture is a plain, softly lit, ligh
                     'without any detail, where dark text is written; the subject stays in the left two thirds.')
 
 BACKDROPS = {
+    # the title screen shows only the middle band (rows 64 to 144 of 200) of this picture, on black
+    'LOGO': ('A title banner reading "OpenCivOne" in large, bold, elegant carved lettering, cream on deep indigo, set on a '
+             'long horizontal woodblock-print cartouche with a fine sumi-ink border and small wave and cloud motifs at its '
+             'two ends. The banner is a wide strip across the middle of the picture, filling its width and about two '
+             'fifths of its height; above and below it the picture is plain, flat black with nothing in it. The '
+             'lettering reads exactly "OpenCivOne", spelled correctly, with no other text.', ''),
     'BIRTH0': ('The young Earth seen from space, a molten world glowing under a dark sky.', CALM_TOP),
     'BIRTH1': ('Volcanoes and rivers of lava under ash clouds, the land forming.', CALM_TOP),
     'BIRTH2': ('Steaming primordial oceans under storm clouds and lightning.', CALM_TOP),

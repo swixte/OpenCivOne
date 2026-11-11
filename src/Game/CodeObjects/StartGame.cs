@@ -182,7 +182,7 @@ namespace OpenCivOne
 						while (this.parent.Var_7ef6_PlanetLandMass == -1)
 						{
 							// Instruction address 0x11a8:0x064f, size: 5
-							this.parent.Var_7ef6_PlanetLandMass = this.parent.MenuBoxDialog.F0_2d05_0031_ShowMenuBox("LAND MASS:\n Small\n Normal\n Large\n", 200, 1, false, true, true);
+							this.parent.Var_7ef6_PlanetLandMass = this.parent.MenuBoxDialog.F0_2d05_0031_ShowMenuBox("LAND MASS:\n Small\n Normal\n Large\n Huge\n", 200, 1, false, true, true);
 
 							if (this.parent.Var_7ef6_PlanetLandMass != -1 && this.parent.Var_2f9c_MenuBoxHelpRequested)
 							{

@@ -1,23 +1,189 @@
 {
   "note": "Terrain QA fixtures. Seeds are added, never replaced. Settings: land mass, temperature, climate, age, each 0 (lowest), 1 (default) or 2 (highest).",
   "worlds": [
-    {"name": "s01", "seed": 1101, "land": 1, "temperature": 1, "climate": 1, "age": 1},
-    {"name": "s02", "seed": 2203, "land": 1, "temperature": 1, "climate": 1, "age": 1},
-    {"name": "s03", "seed": 3307, "land": 1, "temperature": 1, "climate": 1, "age": 1},
-    {"name": "s04", "seed": 4409, "land": 1, "temperature": 1, "climate": 1, "age": 1},
-    {"name": "s05", "seed": 5501, "land": 1, "temperature": 1, "climate": 1, "age": 1},
-    {"name": "s06", "seed": 6607, "land": 1, "temperature": 1, "climate": 1, "age": 1},
-    {"name": "s07", "seed": 7703, "land": 1, "temperature": 1, "climate": 1, "age": 1},
-    {"name": "s08", "seed": 8807, "land": 1, "temperature": 1, "climate": 1, "age": 1},
-    {"name": "s09", "seed": 9901, "land": 1, "temperature": 1, "climate": 1, "age": 1},
-    {"name": "s10", "seed": 12345, "land": 1, "temperature": 1, "climate": 1, "age": 1},
-    {"name": "land-low", "seed": 1101, "land": 0, "temperature": 1, "climate": 1, "age": 1},
-    {"name": "land-high", "seed": 1101, "land": 2, "temperature": 1, "climate": 1, "age": 1},
-    {"name": "temp-low", "seed": 1101, "land": 1, "temperature": 0, "climate": 1, "age": 1},
-    {"name": "temp-high", "seed": 1101, "land": 1, "temperature": 2, "climate": 1, "age": 1},
-    {"name": "climate-low", "seed": 1101, "land": 1, "temperature": 1, "climate": 0, "age": 1},
-    {"name": "climate-high", "seed": 1101, "land": 1, "temperature": 1, "climate": 2, "age": 1},
-    {"name": "age-low", "seed": 1101, "land": 1, "temperature": 1, "climate": 1, "age": 0},
-    {"name": "age-high", "seed": 1101, "land": 1, "temperature": 1, "climate": 1, "age": 2}
+    {
+      "name": "s01",
+      "seed": 1101,
+      "land": 1,
+      "temperature": 1,
+      "climate": 1,
+      "age": 1
+    },
+    {
+      "name": "s02",
+      "seed": 2203,
+      "land": 1,
+      "temperature": 1,
+      "climate": 1,
+      "age": 1
+    },
+    {
+      "name": "s03",
+      "seed": 3307,
+      "land": 1,
+      "temperature": 1,
+      "climate": 1,
+      "age": 1
+    },
+    {
+      "name": "s04",
+      "seed": 4409,
+      "land": 1,
+      "temperature": 1,
+      "climate": 1,
+      "age": 1
+    },
+    {
+      "name": "s05",
+      "seed": 5501,
+      "land": 1,
+      "temperature": 1,
+      "climate": 1,
+      "age": 1
+    },
+    {
+      "name": "s06",
+      "seed": 6607,
+      "land": 1,
+      "temperature": 1,
+      "climate": 1,
+      "age": 1
+    },
+    {
+      "name": "s07",
+      "seed": 7703,
+      "land": 1,
+      "temperature": 1,
+      "climate": 1,
+      "age": 1
+    },
+    {
+      "name": "s08",
+      "seed": 8807,
+      "land": 1,
+      "temperature": 1,
+      "climate": 1,
+      "age": 1
+    },
+    {
+      "name": "s09",
+      "seed": 9901,
+      "land": 1,
+      "temperature": 1,
+      "climate": 1,
+      "age": 1
+    },
+    {
+      "name": "s10",
+      "seed": 12345,
+      "land": 1,
+      "temperature": 1,
+      "climate": 1,
+      "age": 1
+    },
+    {
+      "name": "land-low",
+      "seed": 1101,
+      "land": 0,
+      "temperature": 1,
+      "climate": 1,
+      "age": 1
+    },
+    {
+      "name": "land-high",
+      "seed": 1101,
+      "land": 2,
+      "temperature": 1,
+      "climate": 1,
+      "age": 1
+    },
+    {
+      "name": "temp-low",
+      "seed": 1101,
+      "land": 1,
+      "temperature": 0,
+      "climate": 1,
+      "age": 1
+    },
+    {
+      "name": "temp-high",
+      "seed": 1101,
+      "land": 1,
+      "temperature": 2,
+      "climate": 1,
+      "age": 1
+    },
+    {
+      "name": "climate-low",
+      "seed": 1101,
+      "land": 1,
+      "temperature": 1,
+      "climate": 0,
+      "age": 1
+    },
+    {
+      "name": "climate-high",
+      "seed": 1101,
+      "land": 1,
+      "temperature": 1,
+      "climate": 2,
+      "age": 1
+    },
+    {
+      "name": "age-low",
+      "seed": 1101,
+      "land": 1,
+      "temperature": 1,
+      "climate": 1,
+      "age": 0
+    },
+    {
+      "name": "age-high",
+      "seed": 1101,
+      "land": 1,
+      "temperature": 1,
+      "climate": 1,
+      "age": 2
+    },
+    {
+      "name": "huge-1",
+      "seed": 1101,
+      "land": 3,
+      "temperature": 1,
+      "climate": 1,
+      "age": 1
+    },
+    {
+      "name": "huge-2",
+      "seed": 2203,
+      "land": 3,
+      "temperature": 1,
+      "climate": 1,
+      "age": 1
+    },
+    {
+      "name": "huge-3",
+      "seed": 3307,
+      "land": 3,
+      "temperature": 1,
+      "climate": 1,
+      "age": 1
+    },
+    {
+      "name": "huge-4",
+      "seed": 4409,
+      "land": 3,
+      "temperature": 1,
+      "climate": 1,
+      "age": 1
+    },
+    {
+      "name": "huge-5",
+      "seed": 5501,
+      "land": 3,
+      "temperature": 1,
+      "climate": 1,
+      "age": 1
+    }
   ]
 }
