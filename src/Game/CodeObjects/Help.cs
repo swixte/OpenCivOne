@@ -123,6 +123,9 @@ namespace OpenCivOne
 			}
 		}
 
+		// the text of a note wraps inside its box: the box is 208 pixels wide from x 56, the text starts at x 64
+		private const int NoteTextWidth = 192;
+
 		/// <summary>
 		/// Shows instant advice message
 		/// </summary>
@@ -138,7 +141,7 @@ namespace OpenCivOne
 
 				this.parent.Graphics.F0_VGA_07d8_DrawImage(this.parent.Var_aa_Screen0_Rectangle, 0, 0, 320, 200, this.parent.Var_19d4_Screen1_Rectangle, 0, 0);
 
-				int windowHeight = this.parent.DrawTools.GetTextBlockHeight(content, 25, 256) + 4;
+				int windowHeight = this.parent.DrawTools.GetTextBlockHeight(content, 25, NoteTextWidth) + 4;
 
 				this.parent.DrawTools.FillRectangle(this.parent.Var_aa_Screen0_Rectangle, 56, 16, 208, windowHeight, 2);
 
@@ -148,7 +151,7 @@ namespace OpenCivOne
 
 				this.parent.DrawTools.DrawCenteredStringToScreen0("--- Civilization Note ---", 160, 19, 0);
 
-				this.parent.DrawTools.DrawTextBlock(64, 25, content, 256, 15);
+				this.parent.DrawTools.DrawTextBlock(64, 25, content, NoteTextWidth, 15);
 
 				this.parent.Var_aa_Screen0_Rectangle.FontID = 1;
 
@@ -173,7 +176,7 @@ namespace OpenCivOne
 
 				this.parent.Graphics.F0_VGA_07d8_DrawImage(this.parent.Var_aa_Screen0_Rectangle, 0, 0, 320, 200, this.parent.Var_19d4_Screen1_Rectangle, 0, 0);
 
-				int windowHeight = this.parent.DrawTools.GetTextBlockHeight(content, 25, 256) + 4;
+				int windowHeight = this.parent.DrawTools.GetTextBlockHeight(content, 25, NoteTextWidth) + 4;
 
 				this.parent.DrawTools.FillRectangle(this.parent.Var_aa_Screen0_Rectangle, 56, 16, 208, windowHeight, 4);
 
@@ -183,7 +186,7 @@ namespace OpenCivOne
 
 				this.parent.DrawTools.DrawCenteredStringToScreen0("--- Civilization Note ---", 160, 19, 0);
 
-				this.parent.DrawTools.DrawTextBlock(64, 25, content, 256, 15);
+				this.parent.DrawTools.DrawTextBlock(64, 25, content, NoteTextWidth, 15);
 
 				this.parent.Var_aa_Screen0_Rectangle.FontID = 1;
 
