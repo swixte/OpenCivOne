@@ -138,6 +138,10 @@ namespace OpenCivOne
 			this.parent.Var_1ae0 = 0;
 			this.drawingMap = true;
 
+			// the isometric view on screen stays whole while the classic map is redrawn under it and the new view rendered
+			if (this.parent.IsoView != null && this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID).Over is GBitmap.Overlay current)
+				current.Hold = true;
+
 			this.parent.Menus.F0_1238_0fea_DrawMainMenu();
 			this.parent.GameEngine.F0_1238_107e_ReportHumanTaxAndPopulation();
 
@@ -1596,6 +1600,34 @@ namespace OpenCivOne
 			}
 
 			fresh.Snapshot = snapshot;
+		}
+
+		/// <summary>
+		/// After the game puts map pixels back on the screen itself (a unit's move animation restoring the ground behind
+		/// the unit), those pixels are map content: the isometric view's snapshot takes them, so the overlay stays over
+		/// them instead of a square of the classic map showing through. A rectangle in original screen pixels.
+		/// </summary>
+		public void SyncIsoSnapshot(int x, int y, int width, int height)
+		{
+			if (this.parent.IsoView == null)
+				return;
+
+			GBitmap screen = this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID);
+			GBitmap.Overlay? over = screen.Over;
+
+			if (over == null || over.Snapshot.Length != 240 * 192)
+				return;
+
+			// the map window starts at (80, 8) and is 240 x 192 original pixels
+			int left = Math.Max(x, 80), top = Math.Max(y, 8), right = Math.Min(x + width, 320), bottom = Math.Min(y + height, 200);
+
+			if (right <= left || bottom <= top)
+				return;
+
+			byte[] now = screen.CopyPixels(new GRectangle(left, top, right - left, bottom - top));
+
+			for (int row = 0; row < bottom - top; row++)
+				Array.Copy(now, row * (right - left), over.Snapshot, ((top - 8 + row) * 240) + (left - 80), right - left);
 		}
 
 		/// <summary>

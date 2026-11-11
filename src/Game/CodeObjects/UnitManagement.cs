@@ -1811,6 +1811,9 @@ namespace OpenCivOne
 
 						// Instruction address 0x1866:0x1f4a, size: 5
 						this.parent.Graphics.F0_VGA_07d8_DrawImage(this.parent.Var_19d4_Screen1_Rectangle, newX, newY, 16, 16, this.parent.Var_aa_Screen0_Rectangle, newX, newY);
+
+						// the ground put back behind the unit is map: the isometric view stays over it
+						this.parent.MapManagement.SyncIsoSnapshot(newX, newY, 16, 16);
 					}
 				}
 				else
@@ -1830,6 +1833,9 @@ namespace OpenCivOne
 
 						// Instruction address 0x1866:0x1f4a, size: 5
 						this.parent.Graphics.F0_VGA_07d8_DrawImage(this.parent.Var_19d4_Screen1_Rectangle, newX, newY, 16, 16, this.parent.Var_aa_Screen0_Rectangle, newX, newY);
+
+						// the ground put back behind the unit is map: the isometric view stays over it
+						this.parent.MapManagement.SyncIsoSnapshot(newX, newY, 16, 16);
 					}
 				}
 			}

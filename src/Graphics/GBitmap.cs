@@ -1012,6 +1012,13 @@ namespace OpenCivOne.Graphics
 			public GRectangle Area = new GRectangle(0, 0, 0, 0);
 			public uint[] Pixels = Array.Empty<uint>();
 			public byte[] Snapshot = Array.Empty<byte>();
+
+			/// <summary>
+			/// While the game redraws the whole map window (a new view), the overlay is shown everywhere in its area,
+			/// whatever the pixels under it, until the new view replaces it: so the classic map never shows through
+			/// in between
+			/// </summary>
+			public bool Hold;
 		}
 
 		public Overlay? Over { get; set; }
@@ -1086,7 +1093,7 @@ namespace OpenCivOne.Graphics
 							}
 
 							if (over != null && j >= over.Area.X && j < over.Area.X + over.Area.Width && i >= over.Area.Y && i < over.Area.Y + over.Area.Height &&
-								over.Snapshot[((i - over.Area.Y) * over.Area.Width) + (j - over.Area.X)] == this.aPixels[pixelAddress])
+								(over.Hold || over.Snapshot[((i - over.Area.Y) * over.Area.Width) + (j - over.Area.X)] == this.aPixels[pixelAddress]))
 								pixel = over.Pixels[((((i - over.Area.Y) * HDScale) + k) * over.Area.Width * HDScale) + ((j - over.Area.X) * HDScale) + l];
 
 							rows[(k * hdWidth) + (j * HDScale) + l] = (int)pixel;
