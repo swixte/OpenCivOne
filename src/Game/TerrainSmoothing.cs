@@ -50,8 +50,43 @@ namespace OpenCivOne
 					if (map[x, y] == Tundra && !Around(map, x, y).Contains(Tundra))
 						lone.Add((x, y));
 
+			// each speck turned to ice gives its tile back at the edge of a real tundra region on the polar rows, so the
+			// amount of tundra stays the same
 			foreach ((int x, int y) in lone)
+			{
 				map[x, y] = Arctic;
+				(int X, int Y) best = (-1, -1);
+				int bestScore = 0;
+
+				foreach (int ry in new[] { 0, 1, Height - 2, Height - 1 })
+				{
+					for (int rx = 0; rx < Width; rx++)
+					{
+						if (map[rx, ry] != Arctic || (rx, ry) == (x, y))
+							continue;
+
+						// beside tundra, edge neighbours counting double, so the specks gather into strips
+						int score = 0;
+
+						foreach ((int dx, int dy) in Eight)
+						{
+							int ny = ry + dy;
+
+							if (ny >= 0 && ny < Height && map[Wrap(rx + dx), ny] == Tundra)
+								score += dx == 0 || dy == 0 ? 2 : 1;
+						}
+
+						if (score > bestScore)
+						{
+							bestScore = score;
+							best = (rx, ry);
+						}
+					}
+				}
+
+				if (best.X >= 0)
+					map[best.X, best.Y] = Tundra;
+			}
 		}
 
 		// water and rivers are never changed, nor turned into

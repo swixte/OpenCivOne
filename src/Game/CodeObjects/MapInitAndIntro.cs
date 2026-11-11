@@ -576,7 +576,7 @@ namespace OpenCivOne
 						for (int sy = 0; sy < 50; sy++)
 							terrain[sx, sy] = (int)this.map.GetTerrainType(sx, sy);
 
-					TerrainSmoothing.Apply(terrain);
+					TerrainRelayout.Apply(terrain);
 
 					for (int sx = 0; sx < 80; sx++)
 						for (int sy = 0; sy < 50; sy++)

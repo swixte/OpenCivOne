@@ -129,15 +129,19 @@ def balance(classic, smoothed, cf, sf):
     # (Simon, round 1: balance is measured on non-arctic land, as clearing arctic away from the poles is a chosen
     # change; the arctic difference is reported on its own line)
     m['E0 arctic tiles changed (count, report only)'] = abs(sum(r.count(ARCTIC) for r in classic) - sum(r.count(ARCTIC) for r in smoothed))
-    temperate = [(x, y) for x, y in land(classic) if classic[y][x] != ARCTIC and smoothed[y][x] != ARCTIC]
-    n = max(1, len(temperate))
-    share = max(abs(sum(1 for x, y in temperate if classic[y][x] == t) - sum(1 for x, y in temperate if smoothed[y][x] == t)) * 100 / n
-                for t in LAND if t != ARCTIC)
-    m['E4 largest change in a terrain share (points)'] = share
+    # shares and average yields over each world's own non-arctic land
+    def mix(g):
+        # rivers are left out here: they never change (E3), and their trade would only measure the moved arctic
+        tiles = [g[y][x] for x, y in land(g) if g[y][x] not in (ARCTIC, RIVER)]
+        return tiles, max(1, len(tiles))
+    ct, cn = mix(classic)
+    st, sn = mix(smoothed)
+    m['E4 largest change in a terrain share of non-arctic land (points)'] = max(
+        abs(ct.count(t) * 100 / cn - st.count(t) * 100 / sn) for t in LAND if t != ARCTIC)
     for i, what in enumerate(('food', 'shields', 'trade')):
-        total = lambda g: sum(YIELD[g[y][x]][i] for x, y in temperate)
-        a, b = total(classic), total(smoothed)
-        m[f'E5 total {what} changed (%)'] = abs(a - b) * 100 / max(1, a)
+        a = sum(YIELD[t][i] for t in ct) / cn
+        b = sum(YIELD[t][i] for t in st) / sn
+        m[f'E5 average {what} per non-arctic land tile changed (%)'] = abs(a - b) * 100 / max(1e-9, a)
     for bit, what in ((1, 'special resources'), (2, 'huts')):
         count = lambda f: sum(1 for row in f for v in row if v & bit)
         a, b = count(cf), count(sf)
@@ -308,7 +312,7 @@ def main(dumps, out, commit='', rerun=''):
             bal = [balance(load(path(w, 'classic')), load(path(w, 'smoothed')), load_features(path(w, 'classic')), load_features(path(w, 'smoothed')))
                    for w in group]
             pair_table(lines, f'{"Default" if default else "Extreme-settings"} worlds: E. balance, smoothed against classic', bal, default, f, t,
-                       'Terrain share, food, shields and trade are measured on non-arctic land; the arctic difference is on its own line.')
+                       'Terrain shares and the average food, shields and trade per tile are measured over each world\'s non-arctic land, rivers apart (they never change, E3); the arctic difference is on its own line.')
             play = [playability(load(path(w, 'classic')), load(path(w, 'smoothed'))) for w in group]
             pair_table(lines, f'{"Default" if default else "Extreme-settings"} worlds: F. playability, smoothed against classic', play, default, f, t,
                        'Starts are the 7 best city sites at least 10 cells apart, scored by the food (x3), shields (x2) and trade of '
