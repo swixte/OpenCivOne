@@ -714,8 +714,9 @@ GBitmap other4()
 			// the coast: ragged, a cell in or out by row
 			if (x >= 45 + ((y * 7) % 3 == 0 ? 1 : 0)) return Water;
 			// the river down the middle of every zone, then east to the sea
-			if (y >= 2 && x == 41 && y < 29) return River;
-			if (y == 29 && x >= 41) return x <= 44 ? River : Water;
+			// the river winds down through every zone and runs straight out into the sea at the bottom
+			int riverX = 41 + (int)MathF.Round(MathF.Sin(y * 0.45f) * 1.6f);
+			if (y >= 2 && y <= 29 && x == riverX) return River;
 			if (zone == Arctic) return Arctic;
 			// a mountain group and a hill group in each zone
 			if (y >= mid && y <= mid + 1 && (x == 32 || x == 33) && !(x == 33 && y == mid + 1)) return Mountains;

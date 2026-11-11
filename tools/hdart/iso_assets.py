@@ -16,7 +16,7 @@ from PIL import Image
 from painted_assets import cut_sprites
 import style
 
-SETS = ['trees', 'broadleaf', 'peaks', 'hills2', 'jungle', 'town', 'tufts', 'tundra', 'reeds', 'ice', 'dunes', 'plots', 'hamlet']
+SETS = ['trees', 'broadleaf', 'peaks', 'hills2', 'hills3', 'jungle', 'town', 'tufts', 'tundra', 'reeds', 'ice', 'dunes', 'plots', 'hamlet']
 GROUNDS = {'grass': ('iso_tex_grass', (1.0, 1.0, 1.0)), 'sand': ('iso_tex_sand', (1.0, 0.94, 0.80))}
 TEXTURE = 400
 PLOT = 32  # the painted crop plots (iso_fieldplots, a 4 x 4 grid seen from above), mapped onto each field plot
@@ -38,11 +38,17 @@ def main(theme):
     raw = os.path.join(theme, 'raw-iso')
     out = os.path.join(theme, 'hd', 'iso')
     shutil.rmtree(out, ignore_errors=True)
+    counts = {}
     for name in SETS:
-        folder = os.path.join(out, 'hills' if name == 'hills2' else name)
+        # every hills sheet (hills2: rounded mounds, hills3: ridges, double humps, rocky knolls, terraces) goes into one set
+        target = 'hills' if name.startswith('hills') else name
+        folder = os.path.join(out, target)
         os.makedirs(folder, exist_ok=True)
         sprites = cut_sprites(Image.open(os.path.join(raw, f'iso_{name}.png')))
+        first = counts.get(target, 0)
+        counts[target] = first + len(sprites)
         for i, spr in enumerate(sprites):
+            i += first
             if name == 'plots':
                 spr = lighten(spr)
             if max(spr.size) > 320:

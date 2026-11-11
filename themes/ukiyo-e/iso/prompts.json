@@ -120,5 +120,11 @@
    "../refs/v5-screen.jpg",
    "../refs/crops/forest.jpg"
   ]
+ },
+ "iso_hills3": {
+  "prompt": "A sprite sheet in exactly the drawing style of the first reference image (a woodblock-print strategy map seen from a high three-quarter isometric angle): fine dark key-block outlines, ink hatching on the shaded sides, muted olive-green grass, light from the top left. 12 separate low grassy hills of clearly different shapes, three of each kind: a long low ridge running diagonally; a double-humped hill with a saddle; a rocky knoll with a few grey boulders breaking the grass; a broad flat-topped hill with a terraced, stepped flank. Varied sizes, none taller than it is wide, no trees on them, laid out in a loose grid. Each is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background with clear magenta space between them so each can be cut out; no ground patch under them, no cast shadows, no text, no frame.",
+  "refs": [
+   "../refs/v5-screen.jpg"
+  ]
  }
 }

@@ -132,8 +132,8 @@ namespace OpenCivOne.Graphics
 			IsoView view = new IsoView(width, height,
 				ReadTexture(Path.Combine(iso, "ground", "grass.png"), Array.Empty<float>(), 1),
 				ReadTexture(Path.Combine(iso, "ground", "sand.png"), Array.Empty<float>(), 1),
-				ReadTexture(Path.Combine(painted, "snow.png"), new[] { 236f, 236f, 232f }, 0.28f),
-				ReadTexture(Path.Combine(painted, "ocean.png"), new[] { 54f, 102f, 122f }, 0.04f),
+				ReadTexture(Path.Combine(painted, "snow.png"), new[] { 238f, 238f, 234f }, 0.05f),
+				ReadTexture(Path.Combine(painted, "ocean.png"), new[] { 54f, 102f, 122f }, 0.08f),
 				ReadTexture(Path.Combine(painted, "shallow.png"), new[] { 84f, 142f, 150f }, 0.35f));
 
 			string plotFolder = Path.Combine(iso, "fieldplots");
@@ -244,6 +244,11 @@ namespace OpenCivOne.Graphics
 			{
 				float v = MathF.Max(r, MathF.Max(g, bl)) / 255, sat = v <= 0 ? 0 : 1 - (MathF.Min(r, MathF.Min(g, bl)) / 255 / v);
 				return sat < 0.2f && v > 0.68f ? (204 * v, 168 * v, 124 * v) : ((r * 1.1f) + 8, g * 0.95f, bl * 0.74f);
+			}));
+			view.sets["peaks_bare"] = view.sets["peaks"].ConvertAll(b => Recolour(b, (r, g, bl) =>
+			{
+				float v = MathF.Max(r, MathF.Max(g, bl)) / 255, sat = v <= 0 ? 0 : 1 - (MathF.Min(r, MathF.Min(g, bl)) / 255 / v);
+				return sat < 0.25f && v > 0.66f ? (150 * v, 146 * v, 136 * v) : (r * 0.98f, g * 0.98f, bl * 0.96f);
 			}));
 			view.sets["peaks_alpine"] = view.sets["peaks"].ConvertAll(b => Recolour(b, (r, g, bl) =>
 			{
@@ -783,20 +788,25 @@ namespace OpenCivOne.Graphics
 					}
 					else if (kind[i] == Snow)
 					{
-						// the ice: soft blue-grey drifts, a few pressure ridges, cool shading towards its edge, and near the
-						// edge bare rock showing through in patches
-						float drift = MathF.Sin(((gx0 * 1.3f) - (gy0 * 0.6f) + (Noise(gx0, gy0, 0.8f, 61) * 3.2f)) * 6.2832f * 0.9f);
-						float shade = (Math.Clamp(drift, 0, 1) * 0.16f) + (Math.Clamp(1 - (snowDist[i] / 12), 0, 1) * 0.3f);
-						r += (178 - r) * shade;
-						g += (190 - g) * shade;
-						b += (208 - b) * shade;
+						// the ice: plain off-white with soft blue-grey shading, cooler towards its edge; a few long wind-drift
+						// lines all running the same way; now and then a short pressure ridge
+						float shade = (Noise(gx0, gy0, 0.35f, 61) * 0.16f) + (Math.Clamp(1 - (snowDist[i] / 12), 0, 1) * 0.26f);
+						float along = (gx0 * 0.55f) - (gy0 * 0.85f) + ((Noise(gx0, gy0, 0.3f, 62) - 0.5f) * 0.6f);
+						float frac = along - MathF.Floor(along);
 
-						// pressure ridges: short broken stretches, not long lines
-						if (MathF.Abs(Noise(gx0, gy0, 0.45f, 63) - 0.5f) < 0.006f && Noise(gx0, gy0, 2.2f, 64) > 0.68f)
+						// (a soft band a few pixels wide, fading in and out along its length)
+						float band = Math.Clamp(1 - (MathF.Abs(frac - 0.04f) / 0.04f), 0, 1);
+						shade += band * Math.Clamp((Noise(gx0, gy0, 0.5f, 64) - 0.45f) * 4, 0, 1) * 0.1f;
+
+						r += (176 - r) * shade;
+						g += (188 - g) * shade;
+						b += (206 - b) * shade;
+
+						if (MathF.Abs(Noise(gx0, gy0, 0.45f, 63) - 0.5f) < 0.01f && Noise(gx0, gy0, 1.6f, 68) > 0.88f)
 						{
-							r *= 0.84f;
-							g *= 0.88f;
-							b *= 0.93f;
+							r *= 0.94f;
+							g *= 0.95f;
+							b *= 0.97f;
 						}
 
 						if (snowDist[i] < 12 && Noise(gx0, gy0, 2.8f, 65) > 0.58f + (snowDist[i] / 26))
@@ -1647,6 +1657,15 @@ namespace OpenCivOne.Graphics
 					return regions[found];
 
 				int terrain = TerrainAt(x, y), id = regions.Count;
+
+				// scattered mountains and hills up to two cells apart count as one range; woods join diagonally too
+				int radius = terrain is Mountains or Hills ? 2 : 1;
+				var reach = new List<(int, int)>();
+
+				for (int ry = -radius; ry <= radius; ry++)
+					for (int rx = -radius; rx <= radius; rx++)
+						if ((rx != 0 || ry != 0) && (terrain != Forest || Math.Abs(rx) + Math.Abs(ry) <= 2))
+							reach.Add((rx, ry));
 				var queue = new Queue<(int, int)>();
 				var members = new List<(int, int)>();
 				queue.Enqueue(key);
@@ -1657,7 +1676,7 @@ namespace OpenCivOne.Graphics
 					(int cx0, int cy0) = queue.Dequeue();
 					members.Add((cx0, cy0));
 
-					foreach ((int dx, int dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
+					foreach ((int dx, int dy) in reach)
 					{
 						(int, int) next = (Wrap(cx0 + dx), cy0 + dy);
 
@@ -1707,6 +1726,10 @@ namespace OpenCivOne.Graphics
 
 				if (r.Desert >= 2 || (r.Lat < 0.3f && r.Desert >= 0.8f))
 					return "peaks_arid";
+
+				// in the warm belt, away from desert, bare grey rock without snow
+				if (r.Lat < 0.36f)
+					return "peaks_bare";
 
 				return "peaks";
 			}
@@ -1810,9 +1833,10 @@ namespace OpenCivOne.Graphics
 						break;
 
 					case Hills:
-						count = 1 + (int)(Hash(Wrap(x), y, 9) * 2.6f);
+						// an irregular cluster of two to four hills of mixed shapes and sizes
+						count = 2 + (int)(Hash(Wrap(x), y, 9) * 2.99f);
 						for (int n = 0; n < count; n++)
-							Put(HillSet(x, y), x, y, n, 0.2f, 8 * S);
+							Put(HillSet(x, y), x, y, n, 0.1f, 8 * S);
 						break;
 
 					case Desert:
