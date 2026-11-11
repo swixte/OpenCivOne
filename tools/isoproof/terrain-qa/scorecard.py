@@ -2,7 +2,7 @@
 HD layer tests with ISO_GENWORLDS) and writes one markdown page: every check, per generator mode, worst case and median
 across the worlds, the target and PASS/FAIL.
 
-Usage: python3 scorecard.py DUMPS_DIR OUT.md [COMMIT]
+Usage: python3 scorecard.py DUMPS_DIR OUT.md [COMMIT] [RERUN_DUMPS_DIR]
 """
 
 import json
@@ -126,11 +126,16 @@ def balance(classic, smoothed, cf, sf):
     m['E2 coastline tiles changed (count)'] = abs(coast(classic) - coast(smoothed))
     rivers = lambda g: {(x, y) for y in range(H) for x in range(W) if g[y][x] == RIVER}
     m['E3 river tiles changed (count)'] = len(rivers(classic) ^ rivers(smoothed))
-    n = max(1, len(land(classic)))
-    share = max(abs(sum(row.count(t) for row in classic) - sum(row.count(t) for row in smoothed)) * 100 / n for t in LAND)
+    # (Simon, round 1: balance is measured on non-arctic land, as clearing arctic away from the poles is a chosen
+    # change; the arctic difference is reported on its own line)
+    m['E0 arctic tiles changed (count, report only)'] = abs(sum(r.count(ARCTIC) for r in classic) - sum(r.count(ARCTIC) for r in smoothed))
+    temperate = [(x, y) for x, y in land(classic) if classic[y][x] != ARCTIC and smoothed[y][x] != ARCTIC]
+    n = max(1, len(temperate))
+    share = max(abs(sum(1 for x, y in temperate if classic[y][x] == t) - sum(1 for x, y in temperate if smoothed[y][x] == t)) * 100 / n
+                for t in LAND if t != ARCTIC)
     m['E4 largest change in a terrain share (points)'] = share
     for i, what in enumerate(('food', 'shields', 'trade')):
-        total = lambda g: sum(YIELD[g[y][x]][i] for x, y in land(g))
+        total = lambda g: sum(YIELD[g[y][x]][i] for x, y in temperate)
         a, b = total(classic), total(smoothed)
         m[f'E5 total {what} changed (%)'] = abs(a - b) * 100 / max(1, a)
     for bit, what in ((1, 'special resources'), (2, 'huts')):
@@ -142,8 +147,63 @@ def balance(classic, smoothed, cf, sf):
     return m
 
 
+# a city's working area: the 21 cells of the classic fat cross
+FAT_CROSS = [(dx, dy) for dx in range(-2, 3) for dy in range(-2, 3) if abs(dx) + abs(dy) < 4]
+
+
+def site_score(g, x, y):
+    """A city site's worth: food, shields and trade of its working area (water counts as ocean), food weighted most."""
+    if g[y][x] not in (PLAINS, GRASS, RIVER, HILLS, DESERT):
+        return -1
+    total = 0
+    for dx, dy in FAT_CROSS:
+        ny = y + dy
+        if not 0 <= ny < H:
+            continue
+        t = g[ny][(x + dx) % W]
+        f, s, tr = (1, 0, 2) if t == WATER else YIELD[t]
+        total += (f * 3) + (s * 2) + tr
+    return total
+
+
+def starts(g, count=7, spacing=10):
+    """Starts as the game picks them: the best sites, at least spacing cells apart."""
+    sites = sorted(((site_score(g, x, y), x, y) for y in range(3, H - 3) for x in range(W)), reverse=True)
+    chosen = []
+    for score, x, y in sites:
+        if score < 0:
+            break
+        if all(min(abs(x - cx), W - abs(x - cx)) + abs(y - cy) >= spacing for _, cx, cy in chosen):
+            chosen.append((score, x, y))
+        if len(chosen) == count:
+            break
+    return chosen
+
+
+def playability(classic, smoothed):
+    """Section F: start quality, fairness and viable city sites, smoothed against classic."""
+    m = {}
+    sc, ss = starts(classic), starts(smoothed)
+    med_c = statistics.median(s for s, _, _ in sc)
+    m['F1 starts below the classic median start (count)'] = sum(1 for s, _, _ in ss if s < med_c)
+    spread = lambda st: max(s for s, _, _ in st) - min(s for s, _, _ in st)
+    m['F2 start spread best-worst, smoothed minus classic'] = spread(ss) - spread(sc)
+    good = lambda g: sum(1 for y in range(3, H - 3) for x in range(W) if site_score(g, x, y) >= 60)
+    a, b = good(classic), good(smoothed)
+    m['F3 viable city sites changed (%)'] = abs(a - b) * 100 / max(1, a)
+    return m
+
+
 def target(name):
     """(description, test) for a check."""
+    if name.startswith('F1'):
+        return '<= 3 of 7', lambda v: v <= 3
+    if name.startswith('F2'):
+        return '<= 0', lambda v: v <= 0
+    if name.startswith('F3'):
+        return '<= 10', lambda v: v <= 10
+    if name.startswith('E0'):
+        return 'report only', lambda v: True
     if name.startswith(('E1', 'E2', 'E3', 'E7')):
         return '0', lambda v: v == 0
     if name.startswith('E4'):
@@ -178,17 +238,19 @@ def worst(name, values):
     return min(values) if high_good else max(values)
 
 
-def main(dumps, out, commit=''):
-    fixtures = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures.json')))['worlds']
-    modes = [m for m in ('classic', 'young', 'smoothed') if os.path.exists(os.path.join(dumps, f"{fixtures[0]['name']}-{m}.txt"))]
-    results = {mode: [measure(load(os.path.join(dumps, f"{w['name']}-{mode}.txt"))) for w in fixtures] for mode in modes}
-    checks = list(results[modes[0]][0])
-    lines = [f'# Terrain QA scorecard', '',
-             f'{len(fixtures)} fixture worlds (tools/isoproof/terrain-qa/fixtures.json), modes: {", ".join(modes)}' +
-             (f', commit {commit}' if commit else '') + '.', '',
-             'Each cell: worst case across the worlds / median, then PASS or FAIL on the worst case.', '',
-             '| Check | ' + ' | '.join(modes) + ' | Target |', '|' + '---|' * (len(modes) + 2)]
-    fails = {mode: 0 for mode in modes}
+def is_default(world):
+    return all(world[k] == 1 for k in ('land', 'temperature', 'climate', 'age'))
+
+
+def gated(name, default):
+    """Whether a check is pass/fail for a world: climate (B) always; the rest only on the default worlds (Simon, round 1)."""
+    return name.startswith('B') or default
+
+
+def table(lines, title, fixtures, results, modes, checks, default, fails, totals):
+    lines += ['', f'## {title}', '', 'Each cell: worst case across the worlds / median' +
+              (', then PASS or FAIL on the worst case.' if default else '; climate checks (B) are PASS/FAIL, the rest report only.'), '',
+              '| Check | ' + ' | '.join(modes) + ' | Target |', '|' + '---|' * (len(modes) + 2)]
     for name in checks:
         desc, ok = target(name)
         cells = []
@@ -198,25 +260,74 @@ def main(dumps, out, commit=''):
                 cells.append('-')
                 continue
             wv, med = worst(name, values), statistics.median(values)
-            passed = ok(wv)
-            fails[mode] += 0 if passed else 1
-            cells.append(f'{wv:.0f} / {med:.0f} {"PASS" if passed else "FAIL"}')
+            verdict = ''
+            if gated(name, default):
+                passed = ok(wv)
+                fails[mode] += 0 if passed else 1
+                totals[mode] += 1
+                verdict = ' PASS' if passed else ' FAIL'
+            cells.append(f'{wv:.1f} / {med:.1f}{verdict}' if isinstance(wv, float) and wv != int(wv) else f'{wv:.0f} / {med:.0f}{verdict}')
         lines.append(f'| {name} | ' + ' | '.join(cells) + f' | {desc} |')
-    if 'smoothed' in modes:
-        lines += ['', '## E. Balance: smoothed against classic, same world', '', '| Check | worst / median | Target |', '|---|---|---|']
-        bal = [balance(load(os.path.join(dumps, f"{w['name']}-classic.txt")), load(os.path.join(dumps, f"{w['name']}-smoothed.txt")),
-                       load_features(os.path.join(dumps, f"{w['name']}-classic.txt")), load_features(os.path.join(dumps, f"{w['name']}-smoothed.txt")))
-               for w in fixtures]
-        for name in bal[0]:
-            desc, ok = target(name)
-            values = [b[name] for b in bal]
-            wv = max(values)
+
+
+def pair_table(lines, title, rows, default, fails, totals, note=''):
+    lines += ['', f'## {title}', ''] + ([note, ''] if note else []) + ['| Check | worst / median | Target |', '|---|---|---|']
+    for name in rows[0]:
+        desc, ok = target(name)
+        values = [r[name] for r in rows]
+        wv = max(values)
+        verdict = ''
+        if default and not name.startswith('E0'):
             passed = ok(wv)
             fails['smoothed'] += 0 if passed else 1
-            lines.append(f'| {name} | {wv:.1f} / {statistics.median(values):.1f} {"PASS" if passed else "FAIL"} | {desc} |')
-    lines += ['', 'Failed checks: ' + ', '.join(f'{mode} {n} of {len(checks)}' for mode, n in fails.items()), '']
+            totals['smoothed'] += 1
+            verdict = ' PASS' if passed else ' FAIL'
+        lines.append(f'| {name} | {wv:.1f} / {statistics.median(values):.1f}{verdict} | {desc if not name.startswith("E0") else "report only"} |')
+
+
+def main(dumps, out, commit='', rerun=''):
+    here = os.path.dirname(os.path.abspath(__file__))
+    fixtures = json.load(open(os.path.join(here, 'fixtures.json')))['worlds']
+    modes = [m for m in ('classic', 'young', 'smoothed') if os.path.exists(os.path.join(dumps, f"{fixtures[0]['name']}-{m}.txt"))]
+    path = lambda w, mode: os.path.join(dumps, f"{w['name']}-{mode}.txt")
+    fails = {mode: 0 for mode in modes}
+    totals = {mode: 0 for mode in modes}
+    lines = ['# Terrain QA scorecard', '',
+             f'{len(fixtures)} fixture worlds (tools/isoproof/terrain-qa/fixtures.json), modes: {", ".join(modes)}' +
+             (f', commit {commit}' if commit else '') + '.', '', 'HEADLINE']
+    fails_x = {mode: 0 for mode in modes}
+    totals_x = {mode: 0 for mode in modes}
+    for default in (True, False):
+        f, t = (fails, totals) if default else (fails_x, totals_x)
+        group = [w for w in fixtures if is_default(w) == default]
+        results = {mode: [measure(load(path(w, mode))) for w in group] for mode in modes}
+        checks = list(results[modes[0]][0])
+        title = f'{"Default" if default else "Extreme-settings"} worlds ({len(group)}): data checks'
+        table(lines, title, group, results, modes, checks, default, f, t)
+        if 'smoothed' in modes:
+            bal = [balance(load(path(w, 'classic')), load(path(w, 'smoothed')), load_features(path(w, 'classic')), load_features(path(w, 'smoothed')))
+                   for w in group]
+            pair_table(lines, f'{"Default" if default else "Extreme-settings"} worlds: E. balance, smoothed against classic', bal, default, f, t,
+                       'Terrain share, food, shields and trade are measured on non-arctic land; the arctic difference is on its own line.')
+            play = [playability(load(path(w, 'classic')), load(path(w, 'smoothed'))) for w in group]
+            pair_table(lines, f'{"Default" if default else "Extreme-settings"} worlds: F. playability, smoothed against classic', play, default, f, t,
+                       'Starts are the 7 best city sites at least 10 cells apart, scored by the food (x3), shields (x2) and trade of '
+                       'their 21-cell working area; a viable site scores 60 or more.')
+    # G. regression and determinism, on every world
+    lines += ['', '## G. Regression and determinism (all worlds)', '', '| Check | Result | Target |', '|---|---|---|']
+    base = os.path.join(here, 'baseline')
+    changed = sum(1 for w in fixtures for mode in ('classic', 'young') if os.path.exists(path(w, mode))
+                  and open(path(w, mode)).read() != open(os.path.join(base, f"{w['name']}-{mode}.txt")).read())
+    lines.append(f'| G1 classic and youngest-age worlds differing from the baseline | {changed} {"PASS" if changed == 0 else "FAIL"} | 0 |')
+    if rerun:
+        differ = sum(1 for w in fixtures for mode in modes if open(path(w, mode)).read() != open(os.path.join(rerun, f"{w['name']}-{mode}.txt")).read())
+        lines.append(f'| G2 worlds differing between two runs of the same seeds and settings | {differ} {"PASS" if differ == 0 else "FAIL"} | 0 |')
+    headline = 'Default worlds (pass/fail): ' + ', '.join(f'{mode} {fails[mode]} of {totals[mode]} failed' for mode in modes) + \
+               '. Extreme-settings worlds (climate checks only): ' + ', '.join(f'{mode} {fails_x[mode]} of {totals_x[mode]} failed' for mode in modes) + \
+               '; their other checks are report only.'
+    lines[lines.index('HEADLINE')] = headline
     open(out, 'w').write('\n'.join(lines) + '\n')
-    print('\n'.join(lines[-2:]))
+    print(headline)
 
 
 if __name__ == '__main__':

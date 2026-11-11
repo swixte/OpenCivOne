@@ -1029,6 +1029,23 @@ namespace OpenCivOne
 			}
 			#endregion
 
+			// with terrain smoothing, the lone tundra specks the polar caps leave on the ice become ice too
+			if (!this.parent.Var_d76a_EarthMap && (ForceTerrainSmoothing ?? this.parent.GlobalPreferences.TerrainSmoothing))
+			{
+				int[,] terrain = new int[80, 50];
+
+				for (int sx = 0; sx < 80; sx++)
+					for (int sy = 0; sy < 50; sy++)
+						terrain[sx, sy] = (int)this.map.GetTerrainType(sx, sy);
+
+				TerrainSmoothing.CleanPolarRows(terrain);
+
+				for (int sx = 0; sx < 80; sx++)
+					for (int sy = 0; sy < 50; sy++)
+						if (terrain[sx, sy] != (int)this.map.GetTerrainType(sx, sy))
+							this.map.SetTerrainType(sx, sy, (TerrainTypeEnum)terrain[sx, sy]);
+			}
+
 			while (AdvanceAnimation())
 			{
 				Thread.Sleep(1);

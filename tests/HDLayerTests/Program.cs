@@ -809,6 +809,26 @@ GBitmap other4()
 		var worldScene = new OpenCivOne.Graphics.IsoView.Scene { Terrain = (x, y) => wt[x, y], Feature = (x, y) => wf[x, y] };
 		Directory.CreateDirectory(worldOut);
 
+		// ISO_WORLD_VIEWS: close views at the game's own zoom instead, "x,y;x,y;..." centred on those cells
+		if (Environment.GetEnvironmentVariable("ISO_WORLD_VIEWS") is string centres)
+		{
+			int n = 0;
+
+			foreach (string c in centres.Split(';', StringSplitOptions.RemoveEmptyEntries))
+			{
+				string[] xy = c.Split(',');
+				var view = OpenCivOne.Graphics.IsoView.Load(worldTheme, 960, 768)!;
+				view.Render(float.Parse(xy[0]) + 0.5f, float.Parse(xy[1]) + 0.5f, worldScene);
+				using var img = new SKBitmap(960, 768, SKColorType.Bgra8888, SKAlphaType.Premul);
+				Marshal.Copy(Array.ConvertAll(view.Pixels, v => unchecked((int)v)), 0, img.GetPixels(), view.Pixels.Length);
+				using var f = File.Create(Path.Combine(worldOut, $"view{++n}.png"));
+				img.Encode(f, SKEncodedImageFormat.Png, 100);
+			}
+
+			Console.WriteLine("views written");
+			return 0;
+		}
+
 		// the world seen from above in four overlapping views along the equator, each about 20 columns of the map
 		for (int i = 0; i < 4; i++)
 		{

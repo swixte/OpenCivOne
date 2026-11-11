@@ -37,6 +37,23 @@ namespace OpenCivOne
 			RemoveForbiddenNeighbours(map);
 		}
 
+		/// <summary>
+		/// After the polar caps are drawn: a single tundra tile on the polar rows (no tundra among its eight neighbours)
+		/// becomes ice. Land stays land, so coastlines, continents and rivers are untouched.
+		/// </summary>
+		public static void CleanPolarRows(int[,] map)
+		{
+			var lone = new List<(int X, int Y)>();
+
+			foreach (int y in new[] { 0, 1, Height - 2, Height - 1 })
+				for (int x = 0; x < Width; x++)
+					if (map[x, y] == Tundra && !Around(map, x, y).Contains(Tundra))
+						lone.Add((x, y));
+
+			foreach ((int x, int y) in lone)
+				map[x, y] = Arctic;
+		}
+
 		// water and rivers are never changed, nor turned into
 		private static bool Movable(int t) => t != Water && t != River;
 
