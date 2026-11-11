@@ -567,6 +567,15 @@ namespace OpenCivOne.Graphics
 						{
 							int x = ix + di, y = iy + dj;
 							float dx = gx - (x + 0.5f), dy = gy - (y + 0.5f);
+
+							// a desert's edge wanders across the tiles instead of following them: its cells measure their pull
+							// from a point shifted by up to half a cell
+							if (y >= 0 && y < MapHeight && scene.Terrain(Wrap(x), y) == Desert)
+							{
+								dx += (Noise(gx0, gy0, 1.1f, 47) - 0.5f) * 1.1f;
+								dy += (Noise(gx0, gy0, 1.1f, 48) - 0.5f) * 1.1f;
+							}
+
 							float wgt = 1.2f - (MathF.Sqrt((dx * dx) + (dy * dy)) * 1.15f);
 
 							if (wgt <= 0)
