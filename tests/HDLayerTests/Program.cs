@@ -786,6 +786,95 @@ GBitmap other4()
 		}
 	}
 
+	// ISO_RENDERCHECKS renders each world dump in the folder given, at the game's zoom over the whole map, and reports
+	// the terrain QA render checks per world: neighbouring cells of one mountain range or wood drawn in different art
+	// variants, the share of neighbouring same-terrain cells drawing the identical sprite, and sprites larger than a city
+	if (Environment.GetEnvironmentVariable("ISO_RENDERCHECKS") is string rcDir && Environment.GetEnvironmentVariable("ISO_THEME") is string rcTheme)
+	{
+		var report = new List<string> { "world\tvariant mismatches\tidentical neighbours (%)\tlarger than a city" };
+
+		foreach (string dump in Directory.GetFiles(rcDir, "*.txt").OrderBy(f => f))
+		{
+			string[] rows = File.ReadAllLines(dump);
+			int[,] t = new int[80, 50];
+
+			for (int y = 0; y < 50; y++)
+			{
+				string[] cs = rows[y].Split(' ');
+
+				for (int x = 0; x < 80; x++)
+					t[x, y] = int.Parse(cs[x].Split(':')[0]);
+			}
+
+			var view = OpenCivOne.Graphics.IsoView.Load(rcTheme, 960, 768)!;
+			var rcScene = new OpenCivOne.Graphics.IsoView.Scene { Terrain = (x, y) => t[x, y] };
+			var placed = new List<(int X, int Y, string Set, int Index, int Width, int Height)>();
+
+			// views every 8 cells across and down cover the whole world
+			for (int cy = 4; cy < 50; cy += 8)
+			{
+				for (int cx = 4; cx < 80; cx += 8)
+				{
+					view.Render(cx + 0.5f, cy + 0.5f, rcScene);
+					placed.AddRange(view.Placements);
+				}
+			}
+
+			// the art family of a set: the variants of peaks, hills and woods
+			string Family(string set) => set.StartsWith("peaks") ? "peaks" : set.StartsWith("hills") ? "hills" : set is "trees" or "broadleaf" ? "wood" : set;
+			var setAt = new Dictionary<(int, int, string), string>();
+
+			// the art of a range, a group of hills or a wood: what its own cells draw (not copses or rises on open land)
+			foreach (var p in placed)
+				if ((t[p.X, p.Y] == 5 && Family(p.Set) == "peaks") || (t[p.X, p.Y] == 4 && Family(p.Set) == "hills") || (t[p.X, p.Y] == 3 && Family(p.Set) == "wood"))
+					setAt.TryAdd((p.X, p.Y, Family(p.Set)), p.Set);
+
+			int mismatches = 0;
+
+			foreach (var kv in setAt)
+			{
+				(int x, int y, string fam) = kv.Key;
+				int terrain = t[x, y];
+
+				// only neighbours of the same terrain (one range, one wood) are compared
+				foreach ((int dx, int dy) in new[] { (1, 0), (0, 1) })
+				{
+					int nx = (x + dx) % 80, ny = y + dy;
+
+					if (ny < 50 && t[nx, ny] == terrain && setAt.TryGetValue((nx, ny, fam), out string? otherSet) && otherSet != kv.Value)
+						mismatches++;
+				}
+			}
+
+			// the sprite each cell shows most, and how often a neighbour of the same terrain shows the very same one
+			var main = placed.GroupBy(p => (p.X, p.Y)).ToDictionary(g => g.Key, g => g.GroupBy(p => (p.Set, p.Index)).OrderByDescending(h => h.Count()).First().Key);
+			int pairs = 0, identical = 0;
+
+			foreach (var kv in main)
+			{
+				(int x, int y) = kv.Key;
+
+				foreach ((int dx, int dy) in new[] { (1, 0), (0, 1) })
+				{
+					int nx = (x + dx) % 80, ny = y + dy;
+
+					if (ny < 50 && t[nx, ny] == t[x, y] && main.TryGetValue((nx, ny), out var otherMain))
+					{
+						pairs++;
+						identical += otherMain == kv.Value ? 1 : 0;
+					}
+				}
+			}
+
+			(int cw, int ch) = view.CitySize;
+			int larger = placed.Where(p => !p.Set.StartsWith("peaks") && p.Set != "town" && p.Width > cw && p.Height > ch).Select(p => p.Set).Distinct().Count();
+			report.Add($"{Path.GetFileNameWithoutExtension(dump)}\t{mismatches}\t{(pairs == 0 ? 0 : identical * 100.0 / pairs):F1}\t{larger}");
+		}
+
+		File.WriteAllLines(Path.Combine(rcDir, "render-checks.tsv"), report);
+		Console.WriteLine(string.Join("\n", report));
+	}
+
 	// ISO_WORLD renders a world the game generated (written by the game with ISO_DUMP) as an overview of the whole
 	// map in four bands, west to east, into ISO_WORLD_OUT
 	if (Environment.GetEnvironmentVariable("ISO_WORLD") is string worldIn && Environment.GetEnvironmentVariable("ISO_WORLD_OUT") is string worldOut &&

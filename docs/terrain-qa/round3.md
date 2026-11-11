@@ -49,3 +49,10 @@ E4/E5 (balance) are now measured as **shares of, and average yields per tile on,
 
 ## Pictures
 `pack/`: the `0-s01-*` files come first. Each world has a world view, a flat whole map and four close-ups, classic on the left and re-laid on the right.
+
+## Render checks (section 3)
+Measured on worlds s01, s05 and s09, classic and re-laid, rendered at the game's zoom over the whole map (`ISO_RENDERCHECKS`, results in `render-checks.tsv`):
+- **Neighbouring cells of one range, hill group or wood drawn in different art variants:** 0 in every world. Target 0, pass.
+- **Neighbouring same-terrain cells drawing the identical sprite:** 2.3–4.1%. Target 15% or less, pass.
+- **Sprites larger than a city, mountains apart:** none. Target none, pass.
+- **Overlay visibility on the legend sheet:** not automated yet. The legend is checked by eye.

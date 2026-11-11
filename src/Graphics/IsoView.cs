@@ -432,6 +432,17 @@ namespace OpenCivOne.Graphics
 		/// Paints the view centred on map position (cx, cy) in cells, unless nothing it shows has changed since the
 		/// last time. Returns true if the pixels changed.
 		/// </summary>
+		/// <summary>
+		/// The art pieces the last render placed on the land, for the terrain QA render checks: the cell, the set and the
+		/// index of the sprite in it (a mirrored copy has its own index), and the sprite's size
+		/// </summary>
+		public List<(int X, int Y, string Set, int Index, int Width, int Height)> Placements { get; } = new List<(int, int, string, int, int, int)>();
+
+		/// <summary>
+		/// The size of the largest city sprite, for the render check that nothing but mountains is drawn larger
+		/// </summary>
+		public (int Width, int Height) CitySize => this.sets["town"].Count == 0 ? (0, 0) : (this.sets["town"].Max(b => b.Width), this.sets["town"].Max(b => b.Height));
+
 		public bool Render(float cx, float cy, Scene scene)
 		{
 			int range = (this.width / TileWidth) + (this.height / TileHeight) + 3;
@@ -468,6 +479,7 @@ namespace OpenCivOne.Graphics
 				return false;
 
 			this.signature = sig;
+			this.Placements.Clear();
 			this.Paint(cx, cy, scene, range);
 
 			return true;
@@ -1791,6 +1803,7 @@ namespace OpenCivOne.Graphics
 					return;
 
 				items.Add((p.Y + lift, p.X, b));
+				this.Placements.Add((Wrap(x), y, set, this.sets[set].IndexOf(b), b.Width, b.Height));
 			}
 
 			bool Near(int x, int y, int terrain)
