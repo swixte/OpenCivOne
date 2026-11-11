@@ -645,6 +645,18 @@ namespace OpenCivOne.Graphics
 						cb = grey + ((cb - grey) * 0.4f);
 					}
 
+					// open land is not one flat colour: soft patches of lusher and drier ground, fixed to the world, as
+					// meadows and fallow in the print
+					if (best is Grassland or Plains or River)
+					{
+						float patch = (Noise(gx0, gy0, 0.45f, 81) - 0.5f) * 2;
+						float fine = (Noise(gx0, gy0, 1.6f, 82) - 0.5f) * 2;
+						float lush = Math.Clamp((patch * 0.75f) + (fine * 0.25f), -1, 1);
+						cr *= 1 - (lush * 0.07f);
+						cg *= 1 + (lush * 0.03f);
+						cb *= 1 - (lush * 0.06f);
+					}
+
 					// latitude: the land a little greyer and cooler towards the poles, a little yellower towards the equator
 					if (g != Sea)
 					{
@@ -1871,6 +1883,11 @@ namespace OpenCivOne.Graphics
 						count = 1 + (int)(Hash(Wrap(x), y, 7) * 2.6f);
 						for (int n = 0; n < count; n++)
 							Put(Hash(Wrap(x), y, 400 + n) < 0.4f ? "lone" : "tufts", x, y, n, 0.1f);
+
+						// now and then a small copse, of the trees that grow at this latitude
+						if (Hash(Wrap(x), y, 410) < 0.14f)
+							for (int n = 0; n < 3; n++)
+								Put(WoodSet(x, y, 40 + n), x, y, 40 + n, 0.3f);
 						break;
 
 					case Plains:
@@ -1881,6 +1898,15 @@ namespace OpenCivOne.Graphics
 							float r = Hash(Wrap(x), y, 400 + n);
 							Put(r < 0.1f ? "lone" : r < 0.75f ? "tufts" : "tundra", x, y, n, 0.1f);
 						}
+
+						// now and then a low rise, or a copse
+						float rise = Hash(Wrap(x), y, 411);
+
+						if (rise < 0.08f)
+							Put("hills_dry", x, y, 50, 0.3f, 6 * S);
+						else if (rise < 0.14f)
+							for (int n = 0; n < 2; n++)
+								Put(WoodSet(x, y, 52 + n), x, y, 52 + n, 0.3f);
 						break;
 				}
 
