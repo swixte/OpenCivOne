@@ -32,7 +32,7 @@ namespace OpenCivOne.Graphics
 		// dry gold, hills ochre-olive, tundra cold grey-lilac, swamp dark teal-olive
 		private static readonly float[][] Tint = {
 			new[] { 1f, 1f, 1f }, new[] { 1.38f, 1.20f, 0.92f }, new[] { 0.90f, 1.05f, 0.86f }, new[] { 0.80f, 0.94f, 0.84f },
-			new[] { 1.10f, 0.98f, 0.82f }, new[] { 0.96f, 0.95f, 0.92f }, new[] { 1.10f, 1.06f, 1.95f }, new[] { 1f, 1f, 1f },
+			new[] { 1.10f, 0.98f, 0.82f }, new[] { 0.96f, 0.95f, 0.92f }, new[] { 0.94f, 0.97f, 1.02f }, new[] { 1f, 1f, 1f },
 			new[] { 0.62f, 0.78f, 1.06f }, new[] { 0.82f, 1.02f, 0.84f }, new[] { 1f, 1f, 1f }, new[] { 0.90f, 1.05f, 0.86f } };
 
 		private readonly int width, height;
@@ -132,8 +132,8 @@ namespace OpenCivOne.Graphics
 			IsoView view = new IsoView(width, height,
 				ReadTexture(Path.Combine(iso, "ground", "grass.png"), Array.Empty<float>(), 1),
 				ReadTexture(Path.Combine(iso, "ground", "sand.png"), Array.Empty<float>(), 1),
-				ReadTexture(Path.Combine(painted, "snow.png"), new[] { 236f, 234f, 224f }, 1f),
-				ReadTexture(Path.Combine(painted, "ocean.png"), new[] { 54f, 102f, 122f }, 0.12f),
+				ReadTexture(Path.Combine(painted, "snow.png"), new[] { 236f, 236f, 232f }, 0.28f),
+				ReadTexture(Path.Combine(painted, "ocean.png"), new[] { 54f, 102f, 122f }, 0.04f),
 				ReadTexture(Path.Combine(painted, "shallow.png"), new[] { 84f, 142f, 150f }, 0.35f));
 
 			string plotFolder = Path.Combine(iso, "fieldplots");
@@ -263,6 +263,8 @@ namespace OpenCivOne.Graphics
 				return ((lum * kr) + lift, (lum * kg) + (lift * 0.7f), (lum * kb) + (lift * 0.2f));
 			}
 
+			// hills get the same dark key line as the inked mountains, instead of soft airbrushed edges
+			view.sets["hills"] = view.sets["hills"].ConvertAll(b => Inked(b));
 			view.sets["hills_dry"] = view.sets["hills"].ConvertAll(b => Recolour(b, (r, g, bl) => Grass(r, g, bl, 1.24f, 1.06f, 0.6f, 18)));
 			view.sets["hills_sand"] = view.sets["hills"].ConvertAll(b => Recolour(b, (r, g, bl) => Grass(r, g, bl, 1.34f, 1.14f, 0.82f, 46)));
 			view.sets["hills_cold"] = view.sets["hills"].ConvertAll(b => Recolour(b, (r, g, bl) => Grass(r, g, bl, 1.02f, 1.0f, 0.98f, 18)));
@@ -318,17 +320,17 @@ namespace OpenCivOne.Graphics
 
 			// resources, huts and mines a little smaller than a unit, so a busy map is not dominated by them
 			foreach (string name in Array.ConvertAll(ResourceNames, n => "res_" + n))
-				view.LoadObject(objectsFolder, name, height: 27, halo: true);
+				view.LoadObject(objectsFolder, name, height: 17, halo: true);
 
 			view.LoadObject(objectsFolder, "res_fish", height: 26);
 
 			if (view.objects.Remove("res_fish", out SKBitmap? small))
 				view.objects["fish"] = small;
 
-			view.LoadObject(objectsFolder, "res_fish", height: 27, halo: true);
-			view.LoadObject(objectsFolder, "hut", height: 40, halo: true);
-			view.LoadObject(objectsFolder, "mine", height: 32, halo: true);
-			view.LoadObject(objectsFolder, "fortress", height: 46, halo: true);
+			view.LoadObject(objectsFolder, "res_fish", height: 17, halo: true);
+			view.LoadObject(objectsFolder, "hut", height: 25, halo: true);
+			view.LoadObject(objectsFolder, "mine", height: 20, halo: true);
+			view.LoadObject(objectsFolder, "fortress", height: 30, halo: true);
 
 			// the fortress as painted, an earthwork with a timber stockade, toned a little darker and earthier than the
 			// huts' thatch so the two are not taken for each other
@@ -371,25 +373,18 @@ namespace OpenCivOne.Graphics
 				return;
 			}
 
-			// a dark key line and a cream halo around it, so it reads over any ground and in front of trees
-			SKBitmap ringed = new SKBitmap(sized.Width + 8, sized.Height + 8, SKColorType.Bgra8888, SKAlphaType.Premul);
+			// a thin dark ink outline around it, as the print's key block, so it reads over any ground without a halo
+			SKBitmap ringed = new SKBitmap(sized.Width + 4, sized.Height + 4, SKColorType.Bgra8888, SKAlphaType.Premul);
 
 			using (SKCanvas c = new SKCanvas(ringed))
-			using (SKPaint cream = new SKPaint { ColorFilter = SKColorFilter.CreateBlendMode(new SKColor(226, 214, 184, 200), SKBlendMode.SrcIn) })
-			using (SKPaint key = new SKPaint { ColorFilter = SKColorFilter.CreateBlendMode(new SKColor(40, 34, 28), SKBlendMode.SrcIn) })
+			using (SKPaint key = new SKPaint { ColorFilter = SKColorFilter.CreateBlendMode(new SKColor(40, 34, 28, 230), SKBlendMode.SrcIn) })
 			{
 				c.Clear(SKColors.Transparent);
 
-				for (int dy = -2; dy <= 2; dy++)
-					for (int dx = -2; dx <= 2; dx++)
-						if ((dx * dx) + (dy * dy) <= 5)
-							c.DrawBitmap(sized, 4 + dx, 4 + dy, cream);
+				foreach ((int dx, int dy) in new[] { (-1, 0), (1, 0), (0, -1), (0, 1) })
+					c.DrawBitmap(sized, 2 + dx, 2 + dy, key);
 
-				for (int dy = -1; dy <= 1; dy++)
-					for (int dx = -1; dx <= 1; dx++)
-						c.DrawBitmap(sized, 4 + dx, 4 + dy, key);
-
-				c.DrawBitmap(sized, 4, 4);
+				c.DrawBitmap(sized, 2, 2);
 			}
 
 			sized.Dispose();
@@ -571,6 +566,12 @@ namespace OpenCivOne.Graphics
 
 							// a desert's edge wanders across the tiles instead of following them: its cells measure their pull
 							// from a point shifted by up to half a cell
+							if (y >= 0 && y < MapHeight && scene.Terrain(Wrap(x), y) == Water)
+							{
+								dx += (Noise(gx0, gy0, 0.9f, 57) - 0.5f) * 0.7f;
+								dy += (Noise(gx0, gy0, 0.9f, 58) - 0.5f) * 0.7f;
+							}
+
 							if (y >= 0 && y < MapHeight && scene.Terrain(Wrap(x), y) == Desert)
 							{
 								dx += (Noise(gx0, gy0, 1.1f, 47) - 0.5f) * 1.1f;
@@ -628,6 +629,15 @@ namespace OpenCivOne.Graphics
 						cr = (grey + ((cr - grey) * 0.74f) + 10) * 1.04f;
 						cg = (grey + ((cg - grey) * 0.74f) + 1) * 1.04f;
 						cb = (grey + ((cb - grey) * 0.74f) + 6) * 1.04f;
+					}
+
+					// tundra is grey-brown, cold ground: most of its colour taken away
+					if (best == Tundra)
+					{
+						float grey = (cr + cg + cb) / 3;
+						cr = grey + ((cr - grey) * 0.4f) + 4;
+						cg = grey + ((cg - grey) * 0.4f) + 2;
+						cb = grey + ((cb - grey) * 0.4f);
 					}
 
 					// latitude: the land a little greyer and cooler towards the poles, a little yellower towards the equator
@@ -698,12 +708,51 @@ namespace OpenCivOne.Graphics
 				return outer && Hash((Wrap(fcx) * 3) + pu, (fcy * 3) + pv, 56) < 0.5f;
 			}
 
+			// small lakes (water of fewer than 12 cells) get a lighter shore line, so they do not look cut out
+			var lakeCache = new Dictionary<(int, int), bool>();
+
+			bool LakeAt(int x, int y)
+			{
+				(int, int) key = (Wrap(x), y);
+
+				if (lakeCache.TryGetValue(key, out bool known))
+					return known;
+
+				if (TerrainAt(x, y) != Water)
+					return lakeCache[key] = false;
+
+				var seen = new HashSet<(int, int)> { key };
+				var queue = new Queue<(int, int)>();
+				queue.Enqueue(key);
+
+				while (queue.Count > 0 && seen.Count < 12)
+				{
+					(int qx, int qy) = queue.Dequeue();
+
+					foreach ((int dx, int dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
+					{
+						(int, int) next = (Wrap(qx + dx), qy + dy);
+
+						if (next.Item2 >= 0 && next.Item2 < MapHeight && TerrainAt(next.Item1, next.Item2) == Water && seen.Add(next))
+							queue.Enqueue(next);
+					}
+				}
+
+				bool lake = seen.Count < 12;
+
+				foreach (var c in seen)
+					lakeCache[c] = lake;
+
+				return lake;
+			}
+
 			// pass 2: the shallows, foam, coast line, beach, and an ink line where two kinds of ground meet
 			float[] seaDist = Distance(kind, w, h, k => k != Sea);
 			float[] snowDist = Distance(kind, w, h, k => k != Snow);
 			float[] landDist = Distance(kind, w, h, k => k == Sea);
 			float[] toSand = Distance(kind, w, h, k => k == Sand);
 			float[] toGrass = Distance(kind, w, h, k => k == Grass);
+			float[] toSnow = Distance(kind, w, h, k => k == Snow);
 
 			for (int py = 0; py < h; py++)
 			{
@@ -732,13 +781,31 @@ namespace OpenCivOne.Graphics
 							b = (b * 0.35f) + (214 * 0.65f);
 						}
 					}
-					else if (kind[i] == Snow && snowDist[i] < 9)
+					else if (kind[i] == Snow)
 					{
-						// blue-grey shading inside the edge of the ice, and broken drift lines
-						float edgeShade = 1 - (snowDist[i] / 9);
-						r += (176 - r) * edgeShade * 0.55f;
-						g += (188 - g) * edgeShade * 0.55f;
-						b += (206 - b) * edgeShade * 0.55f;
+						// the ice: soft blue-grey drifts, a few pressure ridges, cool shading towards its edge, and near the
+						// edge bare rock showing through in patches
+						float drift = MathF.Sin(((gx0 * 1.3f) - (gy0 * 0.6f) + (Noise(gx0, gy0, 0.8f, 61) * 3.2f)) * 6.2832f * 0.9f);
+						float shade = (Math.Clamp(drift, 0, 1) * 0.16f) + (Math.Clamp(1 - (snowDist[i] / 12), 0, 1) * 0.3f);
+						r += (178 - r) * shade;
+						g += (190 - g) * shade;
+						b += (208 - b) * shade;
+
+						// pressure ridges: short broken stretches, not long lines
+						if (MathF.Abs(Noise(gx0, gy0, 0.45f, 63) - 0.5f) < 0.006f && Noise(gx0, gy0, 2.2f, 64) > 0.68f)
+						{
+							r *= 0.84f;
+							g *= 0.88f;
+							b *= 0.93f;
+						}
+
+						if (snowDist[i] < 12 && Noise(gx0, gy0, 2.8f, 65) > 0.58f + (snowDist[i] / 26))
+						{
+							float rock = Noise(gx0, gy0, 9, 66) > 0.55f ? 0.9f : 0.75f;
+							r += ((118 * rock) - r) * 0.85f;
+							g += ((116 * rock) - g) * 0.85f;
+							b += ((112 * rock) - b) * 0.85f;
+						}
 					}
 					// the shore by what meets the sea: a wide sandy beach below desert and plains, rocks below hills and
 					// mountains, a narrow pale strand elsewhere
@@ -768,6 +835,14 @@ namespace OpenCivOne.Graphics
 					// desert edges, without an outline: on the green side a belt of dry scrub, patchy, fading out from the
 					// sand; on the sand side flecks of the green ground, so the two meet along a ragged edge that ignores
 					// the tiles; and inside the desert, faint ripples of wind-blown sand
+					if (kind[i] == Grass && toSnow[i] < 15 && Noise(gx0, gy0, 2.4f, 67) > 0.42f + (toSnow[i] / 22))
+					{
+						float white = (1 - (toSnow[i] / 15)) * 0.9f;
+						r += (232 - r) * white;
+						g += (234 - g) * white;
+						b += (234 - b) * white;
+					}
+
 					if (kind[i] == Grass && toSand[i] < 16)
 					{
 						float patch = Noise(gx0, gy0, 2.2f, 41);
@@ -877,14 +952,22 @@ namespace OpenCivOne.Graphics
 					}
 
 					// an ink line where two kinds of ground meet, but not between sand and grass, which blend instead
-					bool Differs(int j) => kind[j] != kind[i] && !((kind[j] == Sand && kind[i] == Grass) || (kind[j] == Grass && kind[i] == Sand));
+					bool Soft(int a, int b) => (a == Grass && (b == Sand || b == Snow)) || (b == Grass && (a == Sand || a == Snow));
+					bool Differs(int j) => kind[j] != kind[i] && !Soft(kind[j], kind[i]);
 					bool edge = (px + 1 < w && Differs(i + 1)) || (py + 1 < h && Differs(i + w));
 
 					if (edge)
 					{
-						r = (r * 0.25f) + (40 * 0.75f);
-						g = (g * 0.25f) + (34 * 0.75f);
-						b = (b * 0.25f) + (28 * 0.75f);
+						float ink = 0.75f;
+
+						// around a small lake the line is lighter
+						if ((kind[i] == Sea || (px + 1 < w && kind[i + 1] == Sea) || (py + 1 < h && kind[i + w] == Sea)) &&
+							(LakeAt((int)MathF.Floor(gx0), (int)MathF.Floor(gy0)) || LakeAt((int)MathF.Round(gx0), (int)MathF.Round(gy0))))
+							ink = 0.4f;
+
+						r = (r * (1 - ink)) + (40 * ink);
+						g = (g * (1 - ink)) + (34 * ink);
+						b = (b * (1 - ink)) + (28 * ink);
 					}
 
 					img[i] = Pack(r, g, b);
@@ -977,6 +1060,55 @@ namespace OpenCivOne.Graphics
 				}
 			}
 
+			// wave marks on open water: a few small strokes of four shapes, placed at random with gaps, away from the coast
+			using (SKPaint wave = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.1f, Color = new SKColor(150, 186, 196, 150), StrokeCap = SKStrokeCap.Round })
+			{
+				foreach ((int x, int y) in cells)
+				{
+					if (TerrainAt(x, y) != Water)
+						continue;
+
+					for (int n = 0; n < 2; n++)
+					{
+						if (Hash(Wrap(x) + (n * 31), y, 71) < 0.45f)
+							continue;
+
+						SKPoint c = Screen(x + 0.15f + (Hash(Wrap(x), y, 72 + n) * 0.7f), y + 0.15f + (Hash(Wrap(x), y, 74 + n) * 0.7f));
+						int ci = ((int)c.Y * w) + (int)c.X;
+
+						if (c.X < 4 || c.Y < 4 || c.X >= w - 4 || c.Y >= h - 4 || kind[ci] != Sea || seaDist[ci] < 10)
+							continue;
+
+						float size = 3 + (Hash(Wrap(x), y, 76 + n) * 3);
+						using SKPath p = new SKPath();
+
+						switch ((int)(Hash(Wrap(x), y, 78 + n) * 4))
+						{
+							case 0: // a single crest
+								p.MoveTo(c.X - size, c.Y);
+								p.QuadTo(c.X, c.Y - (size * 0.7f), c.X + size, c.Y);
+								break;
+							case 1: // two small crests
+								p.MoveTo(c.X - size, c.Y);
+								p.QuadTo(c.X - (size / 2), c.Y - (size * 0.6f), c.X, c.Y);
+								p.QuadTo(c.X + (size / 2), c.Y - (size * 0.6f), c.X + size, c.Y);
+								break;
+							case 2: // a long low swell
+								p.MoveTo(c.X - (size * 1.6f), c.Y);
+								p.CubicTo(c.X - (size * 0.6f), c.Y - (size * 0.4f), c.X + (size * 0.4f), c.Y + (size * 0.3f), c.X + (size * 1.6f), c.Y - (size * 0.1f));
+								break;
+							default: // a curling crest
+								p.MoveTo(c.X - size, c.Y + (size * 0.2f));
+								p.QuadTo(c.X - (size * 0.2f), c.Y - (size * 0.8f), c.X + (size * 0.6f), c.Y - (size * 0.2f));
+								p.QuadTo(c.X + (size * 0.3f), c.Y + (size * 0.1f), c.X + (size * 0.05f), c.Y - (size * 0.25f));
+								break;
+						}
+
+						canvas.DrawPath(p, wave);
+					}
+				}
+			}
+
 			// rivers and roads are routed as smooth splines: each cell of the network gets a node near its centre, nudged a
 			// little so no route runs dead straight, and each link between two nodes is a cubic whose tangent runs on
 			// through the node, so the route bends from one link into the next without a corner
@@ -1016,7 +1148,7 @@ namespace OpenCivOne.Graphics
 			}
 
 			// samples the link from a to b, with a sideways meander of the given amplitude that is still at both ends
-			SKPoint[] Link(SKPoint a, SKPoint b, List<SKPoint> aLinks, List<SKPoint> bLinks, float meander, int samples)
+			SKPoint[] Link(SKPoint a, SKPoint b, List<SKPoint> aLinks, List<SKPoint> bLinks, float meander, int samples, int seed = 0)
 			{
 				float len = MathF.Sqrt(((b.X - a.X) * (b.X - a.X)) + ((b.Y - a.Y) * (b.Y - a.Y)));
 				SKPoint ta = Tangent(a, b, aLinks), tb = Tangent(b, a, bLinks);
@@ -1029,7 +1161,9 @@ namespace OpenCivOne.Graphics
 					float t = i / (float)samples, u = 1 - t;
 					float x = (u * u * u * a.X) + (3 * u * u * t * c1.X) + (3 * u * t * t * c2.X) + (t * t * t * b.X);
 					float y = (u * u * u * a.Y) + (3 * u * u * t * c1.Y) + (3 * u * t * t * c2.Y) + (t * t * t * b.Y);
-					float off = meander * MathF.Sin(t * 6.2832f) * MathF.Sin(t * 3.1416f);
+					// bends of irregular size and spacing: two waves with their own frequency and phase per link
+					float f1 = 0.8f + (Hash(seed, 1, 37) * 1.4f), f2 = 2 + (Hash(seed, 2, 37) * 2), ph = Hash(seed, 3, 37) * 6.2832f;
+					float off = meander * ((MathF.Sin((t * 6.2832f * f1) + ph) * 0.75f) + (MathF.Sin((t * 6.2832f * f2) + (ph * 1.7f)) * 0.25f)) * MathF.Sin(t * 3.1416f);
 					pts[i] = new SKPoint(x + (n.X * off), y + (n.Y * off));
 				}
 
@@ -1037,7 +1171,7 @@ namespace OpenCivOne.Graphics
 			}
 
 			// a ribbon whose width runs from wa to wb along the points, with round ends so links join smoothly
-			SKPath Ribbon(SKPoint[] pts, float wa, float wb)
+			SKPath Ribbon(SKPoint[] pts, float wa, float wb, int seed = 0)
 			{
 				SKPath path = new SKPath();
 				int last = pts.Length - 1;
@@ -1047,7 +1181,9 @@ namespace OpenCivOne.Graphics
 				for (int i = 0; i <= last; i++)
 				{
 					SKPoint d = Unit(pts[Math.Min(last, i + 1)].X - pts[Math.Max(0, i - 1)].X, pts[Math.Min(last, i + 1)].Y - pts[Math.Max(0, i - 1)].Y);
-					float half = (wa + ((wb - wa) * i / last)) / 2;
+					// the width swells and narrows a little along the way
+					float swell = 1 + (MathF.Sin((i * 0.55f) + (Hash(seed, 4, 37) * 6.2832f)) * 0.16f * MathF.Sin(i * 3.1416f / last));
+					float half = (wa + ((wb - wa) * i / last)) / 2 * swell;
 					left[i] = new SKPoint(pts[i].X - (d.Y * half), pts[i].Y + (d.X * half));
 					right[i] = new SKPoint(pts[i].X + (d.Y * half), pts[i].Y - (d.X * half));
 				}
@@ -1202,11 +1338,12 @@ namespace OpenCivOne.Graphics
 						if (dy < 0 || (dy == 0 && dx < 0) || !nodes.TryGetValue((x + dx, y + dy), out SKPoint b) || !links[(x, y)].Contains(b))
 							continue;
 
-						float amp = (Hash(Wrap(x) * 2 + dx, (y * 2) + dy, 35) < 0.5f ? -1 : 1) * 3.2f;
+						int linkSeed = (Wrap(x) * 131) + (y * 17) + (dx * 5) + dy;
+						float amp = (Hash(Wrap(x) * 2 + dx, (y * 2) + dy, 35) < 0.5f ? -1 : 1) * (1.6f + (Hash(linkSeed, 9, 35) * 3.2f));
 						// a river's source is a spring: the water narrows to a point where its course begins
-						float wa = links[(x, y)].Count == 1 && !toSea.ContainsKey((x, y)) ? 0.8f : Width(x, y);
-						float wb = links[(x + dx, y + dy)].Count == 1 && !toSea.ContainsKey((x + dx, y + dy)) ? 0.8f : Width(x + dx, y + dy);
-						courses.Add((Link(a, b, links[(x, y)], links[(x + dx, y + dy)], amp, 16), wa, wb));
+						float wa = links[(x, y)].Count == 1 ? 0.8f : Width(x, y);
+						float wb = links[(x + dx, y + dy)].Count == 1 ? 0.8f : Width(x + dx, y + dy);
+						courses.Add((Link(a, b, links[(x, y)], links[(x + dx, y + dy)], amp, 16, linkSeed), wa, wb));
 					}
 				}
 
@@ -1230,7 +1367,7 @@ namespace OpenCivOne.Graphics
 
 				using SKPaint bank = new SKPaint { IsAntialias = true, Color = new SKColor(212, 202, 162) };
 				using SKPaint edgeInk = new SKPaint { IsAntialias = true, Color = new SKColor(42, 52, 60) };
-				using SKPaint water = new SKPaint { IsAntialias = true, Color = new SKColor(66, 112, 142) };
+				using SKPaint water = new SKPaint { IsAntialias = true, Color = new SKColor(76, 128, 146) };
 				using SKPaint ripple = Stroke(new SKColor(132, 168, 186), 0.9f);
 
 				// a strip of green along the banks, which shows where the river crosses dry land
@@ -1238,26 +1375,26 @@ namespace OpenCivOne.Graphics
 				{
 					foreach (var c in courses)
 					{
-						using SKPath p = Ribbon(c.Pts, c.Wa + 11, c.Wb + 11);
+						using SKPath p = Ribbon(c.Pts, c.Wa + 11, c.Wb + 11, (int)(c.Pts[0].X * 7 + c.Pts[0].Y));
 						canvas.DrawPath(p, verge);
 					}
 				}
 
 				foreach (var c in courses)
 				{
-					using SKPath p = Ribbon(c.Pts, c.Wa + 4.2f, c.Wb + 4.2f);
+					using SKPath p = Ribbon(c.Pts, c.Wa + 4.2f, c.Wb + 4.2f, (int)(c.Pts[0].X * 7 + c.Pts[0].Y));
 					canvas.DrawPath(p, bank);
 				}
 
 				foreach (var c in courses)
 				{
-					using SKPath p = Ribbon(c.Pts, c.Wa + 1.5f, c.Wb + 1.5f);
+					using SKPath p = Ribbon(c.Pts, c.Wa + 1.5f, c.Wb + 1.5f, (int)(c.Pts[0].X * 7 + c.Pts[0].Y));
 					canvas.DrawPath(p, edgeInk);
 				}
 
 				foreach (var c in courses)
 				{
-					using SKPath p = Ribbon(c.Pts, c.Wa, c.Wb);
+					using SKPath p = Ribbon(c.Pts, c.Wa, c.Wb, (int)(c.Pts[0].X * 7 + c.Pts[0].Y));
 					canvas.DrawPath(p, water);
 				}
 
@@ -1303,7 +1440,7 @@ namespace OpenCivOne.Graphics
 
 						fade = MathF.Max(0, fade) * Math.Clamp(1 - (seaDist[i] / 12), 0, 1) * 0.6f;
 						float cr = (c >> 16) & 0xff, cg = (c >> 8) & 0xff, cb = c & 0xff;
-						shore[i] = unchecked((int)Pack(cr + ((66 - cr) * fade), cg + ((112 - cg) * fade), cb + ((142 - cb) * fade)));
+						shore[i] = unchecked((int)Pack(cr + ((76 - cr) * fade), cg + ((128 - cg) * fade), cb + ((146 - cb) * fade)));
 					}
 
 					System.Runtime.InteropServices.Marshal.Copy(shore, 0, bitmap.GetPixels(), shore.Length);
@@ -1497,27 +1634,78 @@ namespace OpenCivOne.Graphics
 			// how far a row is from the equator, 0 there and 1 at the poles
 			float Latitude(int y) => MathF.Abs(y - ((MapHeight - 1) / 2f)) / ((MapHeight - 1) / 2f);
 
-			// the trees of a forest by latitude: conifers poleward of about 55% of the way to the pole, broadleaf
-			// equatorward of about 35%, both mixed between, so the change is gradual
-			string WoodSet(int x, int y, int n)
-			{
-				if (this.sets["broadleaf"].Count == 0)
-					return "trees";
+			// variants are chosen once for a whole connected range, group of hills or wood, so neighbours agree: by the
+			// land around the whole region (counted per cell) and its average latitude
+			var regionOf = new Dictionary<(int, int), int>();
+			var regions = new List<(float Desert, float Plains, float Green, float Cold, float Lat, int Id)>();
 
-				float conifer = Math.Clamp((Latitude(y) - 0.35f) / 0.2f, 0, 1);
-				return Hash(Wrap(x) + (n * 7), y, 95) < conifer ? "trees" : "broadleaf";
+			(float Desert, float Plains, float Green, float Cold, float Lat, int Id) Region(int x, int y)
+			{
+				(int, int) key = (Wrap(x), y);
+
+				if (regionOf.TryGetValue(key, out int found))
+					return regions[found];
+
+				int terrain = TerrainAt(x, y), id = regions.Count;
+				var queue = new Queue<(int, int)>();
+				var members = new List<(int, int)>();
+				queue.Enqueue(key);
+				regionOf[key] = id;
+
+				while (queue.Count > 0 && members.Count < 600)
+				{
+					(int cx0, int cy0) = queue.Dequeue();
+					members.Add((cx0, cy0));
+
+					foreach ((int dx, int dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
+					{
+						(int, int) next = (Wrap(cx0 + dx), cy0 + dy);
+
+						if (next.Item2 >= 0 && next.Item2 < MapHeight && !regionOf.ContainsKey(next) && TerrainAt(next.Item1, next.Item2) == terrain)
+						{
+							regionOf[next] = id;
+							queue.Enqueue(next);
+						}
+					}
+				}
+
+				float d = 0, p = 0, g = 0, c = 0, lat = 0;
+
+				foreach ((int mx, int my) in members)
+				{
+					(int nd, int np, int ng, int nc) = Neighbourhood(mx, my);
+					d += nd;
+					p += np;
+					g += ng;
+					c += nc;
+					lat += Latitude(my);
+				}
+
+				int n = Math.Max(1, members.Count);
+				regions.Add((d / n, p / n, g / n, c / n, lat / n, id));
+				return regions[id];
 			}
 
-			// mountains for their place: alpine near the poles or beside the cold, arid among desert or near the equator
-			// with desert beside them, temperate grey rock with small snow tips everywhere else
+			// the trees of a wood by latitude: conifers poleward of about 45% of the way to the pole, broadleaf nearer the
+			// equator, one kind for the whole wood
+			string WoodSet(int x, int y, int n)
+			{
+				if (this.sets["broadleaf"].Count == 0 || TerrainAt(x, y) != Forest)
+					return Latitude(y) >= 0.45f || this.sets["broadleaf"].Count == 0 ? "trees" : "broadleaf";
+
+				return Region(x, y).Lat >= 0.45f ? "trees" : "broadleaf";
+			}
+
+			// mountains for their place: alpine near the poles or among the cold, arid among desert, temperate grey rock
+			// with small snow tips everywhere else
 			string PeakSet(int x, int y)
 			{
-				(int desert, int _, int _, int cold) = Neighbourhood(x, y);
+				var r = Region(x, y);
 
-				if (Latitude(y) > 0.66f || cold >= 2)
+				if (r.Lat > 0.62f || r.Cold >= 1.2f)
 					return "peaks_alpine";
 
-				if (desert >= 3 || (Latitude(y) < 0.25f && desert >= 1))
+				if (r.Desert >= 2 || (r.Lat < 0.3f && r.Desert >= 0.8f))
 					return "peaks_arid";
 
 				return "peaks";
@@ -1527,15 +1715,15 @@ namespace OpenCivOne.Graphics
 			// green downs on grassland
 			string HillSet(int x, int y)
 			{
-				(int desert, int plains, int green, int cold) = Neighbourhood(x, y);
+				var r = Region(x, y);
 
-				if (desert >= 3)
+				if (r.Desert >= 2.2f)
 					return "hills_sand";
 
-				if (cold >= 3)
+				if (r.Cold >= 2.2f)
 					return "hills_cold";
 
-				if (plains > green)
+				if (r.Plains > r.Green)
 					return "hills_dry";
 
 				return "hills";
@@ -1599,8 +1787,9 @@ namespace OpenCivOne.Graphics
 						break;
 
 					case Jungle:
-						for (int n = 0; n < 8; n++)
-							Put("jungle", x, y, n, n < 6 ? 0.04f : -0.14f);
+						count = 6 + (int)(Hash(Wrap(x), y, 7) * 4);
+						for (int n = 0; n < count; n++)
+							Put("jungle", x, y, n, n < 5 ? 0.04f : -0.16f);
 						break;
 
 					case Mountains:
@@ -1642,12 +1831,14 @@ namespace OpenCivOne.Graphics
 						count = 5 + (int)(Hash(Wrap(x), y, 7) * 3);
 						for (int n = 0; n < count; n++)
 							Put("tundra", x, y, n, 0.12f);
+
+						// low rolling hills now and then
+						if (Hash(Wrap(x), y, 97) < 0.35f)
+							Put("hills_cold", x, y, 30, 0.25f, 8 * S);
 						break;
 
+					// the ice is drawn in the ground; nothing stands on it
 					case Arctic:
-						count = 3 + (int)(Hash(Wrap(x), y, 7) * 2);
-						for (int n = 0; n < count; n++)
-							Put("ice", x, y, n, 0.15f);
 						break;
 
 					case Grassland:
@@ -1975,6 +2166,21 @@ namespace OpenCivOne.Graphics
 					canvas.DrawPath(rail, parapet);
 				}
 			}
+		}
+
+		// a sprite with a thin dark ink line around its edge
+		private static SKBitmap Inked(SKBitmap b)
+		{
+			SKBitmap result = new SKBitmap(b.Width + 2, b.Height + 2, SKColorType.Bgra8888, SKAlphaType.Premul);
+			using SKCanvas c = new SKCanvas(result);
+			using SKPaint key = new SKPaint { ColorFilter = SKColorFilter.CreateBlendMode(new SKColor(46, 40, 30, 200), SKBlendMode.SrcIn) };
+			c.Clear(SKColors.Transparent);
+
+			foreach ((int dx, int dy) in new[] { (-1, 0), (1, 0), (0, -1), (0, 1) })
+				c.DrawBitmap(b, 1 + dx, 1 + dy, key);
+
+			c.DrawBitmap(b, 1, 1);
+			return result;
 		}
 
 		// a sprite mirrored left to right
