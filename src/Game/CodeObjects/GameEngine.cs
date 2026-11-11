@@ -869,7 +869,9 @@ namespace OpenCivOne
 				{
 					int miniPalaceLevel = this.parent.CommonTools.CheckValueRange(palaceBuildCount + 3, 3, 36);
 					int miniPalaceThreshold = miniPalaceLevel / 5;
-					int randomValue = playerID * this.parent.GameData.RandomSeed;
+					// the original works in 16-bit unsigned arithmetic: kept so, the sequence never turns negative (with an
+					// int it overflowed after enough steps and the section index went below zero)
+					int randomValue = (ushort)(playerID * this.parent.GameData.RandomSeed);
 
 					for (int i = 0; i < miniPalaceLevel; i++)
 					{
@@ -880,7 +882,7 @@ namespace OpenCivOne
 						{
 							bool palaceSectionFinished = true;
 
-							randomValue = randomValue * 5 + 1;
+							randomValue = (ushort)((randomValue * 5) + 1);
 							palaceSection = randomValue % 9;
 							palaceLevel = palaceLevels[palaceSection] + 1;
 
