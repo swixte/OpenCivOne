@@ -163,11 +163,13 @@ namespace OpenCivOne
 			Take(Desert, target[Desert], c => temperature[c] - (moisture[c] * 1.4f), Tropic);
 			Take(Jungle, target[Jungle], c => temperature[c] + (moisture[c] * 1.2f) - (NearKind(result, c, Desert) * 0.5f), Tropic);
 			Take(Swamp, target[Swamp], c => moisture[c] - (elevation[c] * 1.2f) + (Latitude(c.Y) < 0.75f ? 0 : -1));
-			Take(Forest, target[Forest], c => moisture[c] + (Fbm(c.X, c.Y, 16, seed + 5) * 0.3f) + (Latitude(c.Y) * 0.5f));
-			Take(Grassland, target[Grassland], c => moisture[c] + (temperature[c] * 0.2f));
+			// cold land looks cold: forest leans further poleward, and plains take the warmer ground, so what is left
+			// over beside the ice is green grassland rather than ochre plains that read as savanna
+			Take(Forest, target[Forest], c => moisture[c] + (Fbm(c.X, c.Y, 16, seed + 5) * 0.3f) + (Latitude(c.Y) * 0.9f));
+			Take(Plains, target[Plains], c => (temperature[c] * 1.2f) - (moisture[c] * 0.5f));
 
 			foreach (var c in free.ToList())
-				result[c] = Plains;
+				result[c] = Grassland;
 
 			// jungle never beside desert or arctic, desert never beside arctic or swamp: swap such a jungle or desert
 			// tile with the nearest plains or grassland tile that is free of the conflict, so the counts stay exact
