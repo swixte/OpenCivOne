@@ -1017,7 +1017,10 @@ namespace OpenCivOne
 				Thread.Sleep(1);
 			}
 
-			this.parent.Graphics.F0_VGA_040a_FillRectangle(2, new GRectangle(0, 0, 320, 200), 0, 0);
+			if (!SkipAnimation)
+			{
+				this.parent.Graphics.F0_VGA_040a_FillRectangle(2, new GRectangle(0, 0, 320, 200), 0, 0);
+			}
 
 			this.parent.Var_aa_Screen0_Rectangle.FontID = 1;
 		}
@@ -1292,8 +1295,18 @@ namespace OpenCivOne
 		/// <summary>
 		/// Advances the story animation
 		/// </summary>
+		/// <summary>
+		/// Set by tools that generate worlds without a screen (the terrain QA fixtures): the story animation is skipped
+		/// </summary>
+		public static bool SkipAnimation = false;
+
 		public bool AdvanceAnimation()
 		{
+			if (SkipAnimation)
+			{
+				return false;
+			}
+
 			//this.oCPU.Log.EnterBlock("F7_0000_17cf()");
 
 			// function body

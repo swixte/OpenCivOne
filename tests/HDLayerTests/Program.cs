@@ -737,6 +737,54 @@ GBitmap other4()
 		Console.WriteLine("transect written");
 	}
 
+	// ISO_GENWORLDS generates the terrain QA fixtures (tools/isoproof/terrain-qa/fixtures.json) with the game's own map
+	// generator, without a screen, and writes each world as a dump (terrain:features per cell) into the folder given:
+	// NAME-classic.txt with its settings, and NAME-young.txt with the youngest age
+	if (Environment.GetEnvironmentVariable("ISO_GENWORLDS") is string genOut)
+	{
+		string fixturesPath = Path.Combine(AppContext.BaseDirectory, "../../../../../tools/isoproof/terrain-qa/fixtures.json");
+		using var fixtures = System.Text.Json.JsonDocument.Parse(File.ReadAllText(fixturesPath));
+		OpenCivOne.MapInitAndIntro.SkipAnimation = true;
+		Directory.CreateDirectory(genOut);
+
+		foreach (var world in fixtures.RootElement.GetProperty("worlds").EnumerateArray())
+		{
+			string name = world.GetProperty("name").GetString()!;
+
+			foreach ((string mode, bool young) in new[] { ("classic", false), ("young", true) })
+			{
+				// a fresh game for every world, as a new game starts with empty tables of continents and oceans
+				var game = new OpenCivOne.OpenCivOneGame(null!);
+				game.GameData.RandomSeed = (ushort)world.GetProperty("seed").GetInt32();
+				game.Var_d76a_EarthMap = false;
+				game.Var_7ef6_PlanetLandMass = world.GetProperty("land").GetInt32();
+				game.Var_7ef8_PlanetTemperature = world.GetProperty("temperature").GetInt32();
+				game.Var_7efa_PlanetClimate = world.GetProperty("climate").GetInt32();
+				game.Var_7efc_PlanetAge = young ? 0 : world.GetProperty("age").GetInt32();
+				game.MapInitAndIntro.GenerateNewMap();
+				var lines = new List<string>();
+
+				for (int y = 0; y < 50; y++)
+				{
+					var row = new List<string>();
+
+					for (int x = 0; x < 80; x++)
+					{
+						var t = game.MapManagement.GetTerrainType(x, y);
+						int f = (game.MapManagement.F0_2aea_1836_CellHasSpecialResource(x, y) ? 1 : 0) | (game.MapManagement.F0_2aea_1894_CellHasMinorTribeHut(x, y, t) ? 2 : 0);
+						row.Add($"{(int)t}:{f}");
+					}
+
+					lines.Add(string.Join(" ", row));
+				}
+
+				File.WriteAllLines(Path.Combine(genOut, $"{name}-{mode}.txt"), lines);
+			}
+
+			Console.WriteLine($"generated {name}");
+		}
+	}
+
 	// ISO_WORLD renders a world the game generated (written by the game with ISO_DUMP) as an overview of the whole
 	// map in four bands, west to east, into ISO_WORLD_OUT
 	if (Environment.GetEnvironmentVariable("ISO_WORLD") is string worldIn && Environment.GetEnvironmentVariable("ISO_WORLD_OUT") is string worldOut &&
