@@ -221,6 +221,52 @@ namespace OpenCivOne.Graphics
 
 			view.sets["lone"] = lone;
 
+			// variety: every tree, jungle, peak, hill and dune sprite also mirrored, and hills a size smaller too, so groups
+			// of them do not repeat the same shapes in rows
+			foreach (string set in new[] { "trees", "jungle", "peaks", "hills", "dunes" })
+			{
+				var more = new List<SKBitmap>(view.sets[set]);
+
+				foreach (SKBitmap b in view.sets[set])
+				{
+					more.Add(Mirror(b));
+
+					if (set == "hills")
+						more.Add(b.Resize(new SKImageInfo(Math.Max(1, (int)(b.Width * 0.8f)), Math.Max(1, (int)(b.Height * 0.8f))), new SKSamplingOptions(SKCubicResampler.Mitchell)));
+				}
+
+				view.sets[set] = more;
+			}
+
+			// mountains and hills for their surroundings, drawn from the same art: arid peaks of bare tan rock with no snow,
+			// alpine peaks under heavy snow, and hills of dry ochre grass, sand and rock, or cold grey-green
+			view.sets["peaks_arid"] = view.sets["peaks"].ConvertAll(b => Recolour(b, (r, g, bl) =>
+			{
+				float v = MathF.Max(r, MathF.Max(g, bl)) / 255, sat = v <= 0 ? 0 : 1 - (MathF.Min(r, MathF.Min(g, bl)) / 255 / v);
+				return sat < 0.2f && v > 0.68f ? (204 * v, 168 * v, 124 * v) : ((r * 1.1f) + 8, g * 0.95f, bl * 0.74f);
+			}));
+			view.sets["peaks_alpine"] = view.sets["peaks"].ConvertAll(b => Recolour(b, (r, g, bl) =>
+			{
+				float v = MathF.Max(r, MathF.Max(g, bl)) / 255, sat = v <= 0 ? 0 : 1 - (MathF.Min(r, MathF.Min(g, bl)) / 255 / v);
+				float snow = sat < 0.3f ? Math.Clamp((v - 0.5f) / 0.2f, 0, 1) : 0;
+				return ((r * 0.9f) + ((242 - (r * 0.9f)) * snow), (g * 0.94f) + ((244 - (g * 0.94f)) * snow), (bl * 1.04f) + ((248 - (bl * 1.04f)) * snow));
+			}));
+
+			(float, float, float) Grass(float r, float g, float bl, float kr, float kg, float kb, float lift)
+			{
+				// only the grass-green pixels take the new colour; ink lines and earth keep theirs
+				// (grass here is olive to green: green at least near red and well above blue, and not dark ink)
+				if (!(g >= r * 0.78f && g > bl * 1.12f && g > 50))
+					return (r, g, bl);
+
+				float lum = (r + g + bl) / 3;
+				return ((lum * kr) + lift, (lum * kg) + (lift * 0.7f), (lum * kb) + (lift * 0.2f));
+			}
+
+			view.sets["hills_dry"] = view.sets["hills"].ConvertAll(b => Recolour(b, (r, g, bl) => Grass(r, g, bl, 1.24f, 1.06f, 0.6f, 18)));
+			view.sets["hills_sand"] = view.sets["hills"].ConvertAll(b => Recolour(b, (r, g, bl) => Grass(r, g, bl, 1.34f, 1.14f, 0.82f, 46)));
+			view.sets["hills_cold"] = view.sets["hills"].ConvertAll(b => Recolour(b, (r, g, bl) => Grass(r, g, bl, 1.02f, 1.0f, 0.98f, 18)));
+
 			// the scattered bushes and lone trees in the ground's olive family, not blue-green, so they do not speckle it
 			foreach (string set in new[] { "tufts", "lone" })
 			{
@@ -443,6 +489,58 @@ namespace OpenCivOne.Graphics
 
 			bool ExploredAt(int x, int y) => y >= 0 && y < MapHeight && scene.Explored(Wrap(x), y);
 
+			// the kinds of land around a cell: desert, plains, grassland (with rivers), and cold land (tundra and arctic)
+			(int Desert, int Plains, int Green, int Cold) Neighbourhood(int x, int y)
+			{
+				int desert = 0, plains = 0, green = 0, cold = 0;
+
+				for (int dy = -1; dy <= 1; dy++)
+				{
+					for (int dx = -1; dx <= 1; dx++)
+					{
+						if (dx == 0 && dy == 0)
+							continue;
+
+						int n = TerrainAt(x + dx, y + dy);
+						desert += n == Desert ? 1 : 0;
+						plains += n == Plains ? 1 : 0;
+						green += n is Grassland or River ? 1 : 0;
+						cold += n is Tundra or Arctic ? 1 : 0;
+					}
+				}
+
+				return (desert, plains, green, cold);
+			}
+
+			// the ground under mountains and hills is the ground around them: sand among desert, tundra in the cold, and
+			// for hills the grass or plains beside them, so a range in the desert does not bring a green patch with it
+			var groundCache = new Dictionary<(int, int), int>();
+
+			int GroundTerrainAt(int x, int y)
+			{
+				if (groundCache.TryGetValue((x, y), out int g))
+					return g;
+
+				g = TerrainAt(x, y);
+
+				if (g == Mountains || g == Hills)
+				{
+					(int desert, int plains, int green, int cold) = Neighbourhood(x, y);
+
+					if (desert >= 3)
+						g = Desert;
+					else if (cold >= 3)
+						g = Tundra;
+					else if (g == Hills && plains > green && plains >= 2)
+						g = Plains;
+					else if (g == Hills && green >= 2)
+						g = Grassland;
+				}
+
+				groundCache[(x, y)] = g;
+				return g;
+			}
+
 			// pass 1: the ground of every pixel, the terrain its nearby cells vote for (hard edges, rounded shapes), and how
 			// much it is under mist
 			int[] kind = new int[w * h];
@@ -478,7 +576,7 @@ namespace OpenCivOne.Graphics
 							// past the poles the ice cap carries on, rather than a dark void at the world's edge
 							// (shown once the pole beside it is explored; until then the mist carries on too)
 							bool offMap = y < 0 || y >= MapHeight;
-							int t = offMap ? Arctic : TerrainAt(x, y);
+							int t = offMap ? Arctic : GroundTerrainAt(x, y);
 							bool known = offMap ? ExploredAt(x, Math.Clamp(y, 0, MapHeight - 1)) : (t >= 0 && ExploredAt(x, y));
 							total += wgt;
 
@@ -582,6 +680,8 @@ namespace OpenCivOne.Graphics
 			float[] seaDist = Distance(kind, w, h, k => k != Sea);
 			float[] snowDist = Distance(kind, w, h, k => k != Snow);
 			float[] landDist = Distance(kind, w, h, k => k == Sea);
+			float[] toSand = Distance(kind, w, h, k => k == Sand);
+			float[] toGrass = Distance(kind, w, h, k => k == Grass);
 
 			for (int py = 0; py < h; py++)
 			{
@@ -623,6 +723,37 @@ namespace OpenCivOne.Graphics
 						r = (r * 0.55f) + (214 * 0.45f);
 						g = (g * 0.55f) + (198 * 0.45f);
 						b = (b * 0.55f) + (150 * 0.45f);
+					}
+
+					// desert edges, without an outline: on the green side a belt of dry scrub, patchy, fading out from the
+					// sand; on the sand side flecks of the green ground, so the two meet along a ragged edge that ignores
+					// the tiles; and inside the desert, faint ripples of wind-blown sand
+					if (kind[i] == Grass && toSand[i] < 16)
+					{
+						float patch = Noise(gx0, gy0, 2.2f, 41);
+						float dry = (1 - (toSand[i] / 16)) * Math.Clamp((patch * 1.3f) - 0.1f, 0, 1) * 0.6f;
+						r += (178 - r) * dry;
+						g += (160 - g) * dry;
+						b += (102 - b) * dry;
+					}
+					else if (kind[i] == Sand)
+					{
+						if (toGrass[i] < 9 && Noise(gx0, gy0, 3.4f, 43) > 0.35f + (toGrass[i] / 18))
+						{
+							float fleck = (1 - (toGrass[i] / 9)) * 0.55f;
+							r += (150 - r) * fleck;
+							g += (142 - g) * fleck;
+							b += (84 - b) * fleck;
+						}
+
+						float ripple = MathF.Sin(((gx0 * 2.1f) + (gy0 * 0.9f) + (Noise(gx0, gy0, 0.9f, 45) * 2.6f)) * 6.2832f * 1.7f);
+
+						if (ripple > 0.9f && toGrass[i] > 6)
+						{
+							r *= 0.9f;
+							g *= 0.88f;
+							b *= 0.84f;
+						}
 					}
 
 					// fields, as in the mockup: each field cell divided into 3 x 3 plots along the cell's axes, yellow-greens from
@@ -705,7 +836,9 @@ namespace OpenCivOne.Graphics
 						}
 					}
 
-					bool edge = (px + 1 < w && kind[i + 1] != kind[i]) || (py + 1 < h && kind[i + w] != kind[i]);
+					// an ink line where two kinds of ground meet, but not between sand and grass, which blend instead
+					bool Differs(int j) => kind[j] != kind[i] && !((kind[j] == Sand && kind[i] == Grass) || (kind[j] == Grass && kind[i] == Sand));
+					bool edge = (px + 1 < w && Differs(i + 1)) || (py + 1 < h && Differs(i + w));
 
 					if (edge)
 					{
@@ -1297,12 +1430,48 @@ namespace OpenCivOne.Graphics
 
 			bool busy = false;
 
+			// how far a row is from the equator, 0 there and 1 at the poles
+			float Latitude(int y) => MathF.Abs(y - ((MapHeight - 1) / 2f)) / ((MapHeight - 1) / 2f);
+
+			// mountains for their place: alpine near the poles or beside the cold, arid among desert or near the equator
+			// with desert beside them, temperate grey rock with small snow tips everywhere else
+			string PeakSet(int x, int y)
+			{
+				(int desert, int _, int _, int cold) = Neighbourhood(x, y);
+
+				if (Latitude(y) > 0.66f || cold >= 2)
+					return "peaks_alpine";
+
+				if (desert >= 3 || (Latitude(y) < 0.25f && desert >= 1))
+					return "peaks_arid";
+
+				return "peaks";
+			}
+
+			// hills for their place: sandy rock among desert, cold grey-green beside tundra, dry ochre among plains,
+			// green downs on grassland
+			string HillSet(int x, int y)
+			{
+				(int desert, int plains, int green, int cold) = Neighbourhood(x, y);
+
+				if (desert >= 3)
+					return "hills_sand";
+
+				if (cold >= 3)
+					return "hills_cold";
+
+				if (plains > green)
+					return "hills_dry";
+
+				return "hills";
+			}
+
 			void Put(string set, int x, int y, int n, float margin, float lift = 0)
 			{
 				SKBitmap? b = Pick(set, x, y, n);
 
 				// fields are open ground, as in the mockup: nothing grows on them but the crops
-				if (b == null || (set != "peaks" && set != "hamlet" && IsFieldCell(x, y)))
+				if (b == null || (!set.StartsWith("peaks") && set != "hamlet" && IsFieldCell(x, y)))
 					return;
 
 				float fx = margin + (Hash(Wrap(x), y, 200 + n) * (1 - (2 * margin))), fy = margin + (Hash(Wrap(x), y, 300 + n) * (1 - (2 * margin)));
@@ -1320,7 +1489,7 @@ namespace OpenCivOne.Graphics
 					return;
 
 				// roads stay in view: a tree, bush or hill whose sprite would cover one is left out
-				if (set != "peaks" && HidesRoute(p.X, p.Y + lift, b))
+				if (!set.StartsWith("peaks") && HidesRoute(p.X, p.Y + lift, b))
 					return;
 
 				items.Add((p.Y + lift, p.X, b));
@@ -1347,20 +1516,21 @@ namespace OpenCivOne.Graphics
 
 				switch (t)
 				{
+					// woods reach a little past their cell's edges, so their outline does not follow the tiles
 					case Forest:
 						for (int n = 0; n < 10; n++)
-							Put("trees", x, y, n, 0.04f);
+							Put("trees", x, y, n, n < 7 ? 0.04f : -0.14f);
 						break;
 
 					case Jungle:
 						for (int n = 0; n < 8; n++)
-							Put("jungle", x, y, n, 0.04f);
+							Put("jungle", x, y, n, n < 6 ? 0.04f : -0.14f);
 						break;
 
 					case Mountains:
 						if (busy)
 						{
-							SKBitmap? peak = Pick("peaks", x, y, 0);
+							SKBitmap? peak = Pick(PeakSet(x, y), x, y, 0);
 
 							if (peak != null)
 							{
@@ -1370,13 +1540,14 @@ namespace OpenCivOne.Graphics
 						}
 						else
 						{
-							Put("peaks", x, y, 0, 0.45f, 10 * S);
+							Put(PeakSet(x, y), x, y, 0, 0.45f, 10 * S);
 						}
 						break;
 
 					case Hills:
-						for (int n = 0; n < 2; n++)
-							Put("hills", x, y, n, 0.25f, 8 * S);
+						count = 1 + (int)(Hash(Wrap(x), y, 9) * 2.6f);
+						for (int n = 0; n < count; n++)
+							Put(HillSet(x, y), x, y, n, 0.2f, 8 * S);
 						break;
 
 					case Desert:
@@ -1728,6 +1899,42 @@ namespace OpenCivOne.Graphics
 					canvas.DrawPath(rail, parapet);
 				}
 			}
+		}
+
+		// a sprite mirrored left to right
+		private static SKBitmap Mirror(SKBitmap b)
+		{
+			SKBitmap m = new SKBitmap(b.Width, b.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
+			using SKCanvas c = new SKCanvas(m);
+			c.Clear(SKColors.Transparent);
+			c.Scale(-1, 1, b.Width / 2f, 0);
+			c.DrawBitmap(b, 0, 0);
+			return m;
+		}
+
+		// a sprite with every pixel's colour changed by the given function (colour without the alpha's premultiplying)
+		private static SKBitmap Recolour(SKBitmap b, Func<float, float, float, (float R, float G, float B)> change)
+		{
+			SKBitmap result = new SKBitmap(b.Width, b.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
+
+			for (int y = 0; y < b.Height; y++)
+			{
+				for (int x = 0; x < b.Width; x++)
+				{
+					SKColor c = b.GetPixel(x, y);
+
+					if (c.Alpha == 0)
+					{
+						result.SetPixel(x, y, SKColors.Transparent);
+						continue;
+					}
+
+					(float r, float g, float bl) = change(c.Red, c.Green, c.Blue);
+					result.SetPixel(x, y, new SKColor((byte)Math.Clamp(r, 0, 255), (byte)Math.Clamp(g, 0, 255), (byte)Math.Clamp(bl, 0, 255), c.Alpha));
+				}
+			}
+
+			return result;
 		}
 
 		private static SKPaint Stroke(SKColor colour, float width)

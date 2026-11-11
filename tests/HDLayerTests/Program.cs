@@ -687,6 +687,55 @@ GBitmap other4()
 		Console.WriteLine("scene written");
 	}
 
+	// ISO_TRANSECT renders a strip of land from the pole to the equator: arctic, tundra, conifer forest, grassland,
+	// plains, desert and jungle in that order, each zone with a mountain group, a hill group, the river that runs
+	// through them all and a stretch of coast, so every terrain variant and every border can be judged in one picture
+	if (Environment.GetEnvironmentVariable("ISO_TRANSECT") is string transectOut && Environment.GetEnvironmentVariable("ISO_THEME") is string transectTheme)
+	{
+		const int Desert = 0, Plains = 1, Grassland = 2, Forest = 3, Hills = 4, Mountains = 5, Tundra = 6, Arctic = 7, Jungle = 9, Water = 10, River = 11;
+		// the zones, by row: (first row, terrain)
+		(int From, int Terrain)[] zones = { (0, Arctic), (2, Tundra), (6, Forest), (11, Grassland), (15, Plains), (19, Desert), (24, Jungle) };
+
+		int Zone(int y)
+		{
+			int t = zones[0].Terrain;
+			foreach (var z in zones) if (y >= z.From) t = z.Terrain;
+			return t;
+		}
+
+		int StripTerrain(int x, int y)
+		{
+			if (y > 29 || x < 30 || x > 46) return Water;
+			int zone = Zone(y);
+			int zoneTop = 0;
+			foreach (var z in zones) if (y >= z.From) zoneTop = z.From;
+			int mid = zoneTop + 1;
+
+			// the coast: ragged, a cell in or out by row
+			if (x >= 45 + ((y * 7) % 3 == 0 ? 1 : 0)) return Water;
+			// the river down the middle of every zone, then east to the sea
+			if (y >= 2 && x == 41 && y < 29) return River;
+			if (y == 29 && x >= 41) return x <= 44 ? River : Water;
+			if (zone == Arctic) return Arctic;
+			// a mountain group and a hill group in each zone
+			if (y >= mid && y <= mid + 1 && (x == 32 || x == 33) && !(x == 33 && y == mid + 1)) return Mountains;
+			if (y >= mid && y <= mid + 1 && (x == 36 || x == 37)) return Hills;
+			// conifer forest with clearings, grassland with a wood, plains with a little grass
+			if (zone == Forest && (x * 5 + y * 3) % 7 == 0) return Grassland;
+			if (zone == Grassland && x == 39 && y == 13) return Forest;
+			return zone;
+		}
+
+		var tView = OpenCivOne.Graphics.IsoView.Load(transectTheme, 2400, 1300)!;
+		var tScene = new OpenCivOne.Graphics.IsoView.Scene { Terrain = StripTerrain };
+		tView.Render(40, 15, tScene);
+		using var tImg = new SKBitmap(2400, 1300, SKColorType.Bgra8888, SKAlphaType.Premul);
+		Marshal.Copy(Array.ConvertAll(tView.Pixels, v => unchecked((int)v)), 0, tImg.GetPixels(), tView.Pixels.Length);
+		using var tFile = File.Create(transectOut);
+		tImg.Encode(tFile, SKEncodedImageFormat.Png, 100);
+		Console.WriteLine("transect written");
+	}
+
 	// ISO_SHOWCASE renders a developed world into a folder: a large continent with every terrain, rivers from the
 	// mountains to the sea, cities of many sizes joined by roads and a railroad, irrigated fields, mines, a fortress,
 	// pollution, huts, resources and units; an overview and close views of three cities, so the art can be judged as
