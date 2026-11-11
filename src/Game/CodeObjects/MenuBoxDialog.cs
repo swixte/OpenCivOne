@@ -214,6 +214,13 @@ namespace OpenCivOne
 
 			textColor = (backgroundColor == 15) ? 3 : 15;
 
+			// a theme that paints the light grey boxes as pale paper and white text as cream would lose the text on
+			// them: there it is written in ink instead
+			if (backgroundColor == 7 && GBitmap.UIColor(15) != null && GBitmap.UIColor(0) != null)
+			{
+				textColor = 0;
+			}
+
 			if (windowFrame)
 			{
 				this.parent.DrawTools.FillRectangleWithDoubleShadow(x, y, windowWidth, windowHeight, 7);
