@@ -73,7 +73,26 @@ namespace OpenCivOne
 		/// <summary>
 		/// Timer function, it should fire approximately every 20 ms
 		/// </summary>
+		private int timerBusy;
+
 		private void MainGameTimer(object? state)
+		{
+			// a tick that finds the last one still waiting for the graphics is skipped, so waiting ticks never pile up on
+			// the thread pool (the window's drawing needs that pool while it holds the graphics)
+			if (Interlocked.Exchange(ref this.timerBusy, 1) != 0)
+				return;
+
+			try
+			{
+				this.MainGameTick();
+			}
+			finally
+			{
+				Volatile.Write(ref this.timerBusy, 0);
+			}
+		}
+
+		private void MainGameTick()
 		{
 			lock (VCPU.GraphicsLock)
 			{
