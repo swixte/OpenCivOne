@@ -384,7 +384,7 @@ namespace OpenCivOne.Graphics
 				view.LoadObject(objectsFolder, name, height: 56);
 
 			// the painted battle effects: painted/battle/smoke, fire and blast
-			foreach (string effect in new[] { "smoke", "fire", "blast" })
+			foreach (string effect in new[] { "smoke", "fire", "blast", "debris", "scorch" })
 			{
 				string folder = Path.Combine(hdFolder, "painted", "battle", effect);
 				var list = new List<SKBitmap>();
@@ -2640,36 +2640,55 @@ namespace OpenCivOne.Graphics
 				canvas.Restore();
 			}
 
-			// the two units, drawn here so the loser can die: as the smoke clears the winner stands unharmed while the
-			// loser greys, sinks and fades away
-			float dying = Math.Clamp((t - 0.66f) / 0.3f, 0, 1);
+			// the two units, drawn here so the loser can die. The fight is decided at 0.58: the loser is struck (flash and
+			// fire), knocked back and over, and is gone in the blast; the winner then raises itself and its banner flies
+			const float Decided = 0.58f;
+			float struck = Math.Clamp((t - Decided) / 0.12f, 0, 1);
+			float cheer = Math.Clamp((t - 0.78f) / 0.22f, 0, 1);
+			SKPoint loserFoot = attackerWins ? d : at;
 
 			void DrawUnit((int X, int Y, int Type, uint Colour) u, string style, SKPoint p, bool loses)
 			{
 				if (!UnitPicture(u.Type, style, out SKBitmap? pic) || pic == null)
 					return;
 
-				float alpha = loses ? 1 - dying : 1;
-
-				if (alpha <= 0.02f)
+				if (loses && struck >= 1)
 					return;
 
-				SKBitmap shown = loses && dying > 0 ? Toned(pic, "sentry", 0.75f, 0.2f) : pic;
-				float sink = loses ? dying * 10 : 0;
-				using SKPaint sprite = new SKPaint { IsAntialias = true, Color = new SKColor(255, 255, 255, (byte)(255 * alpha)) };
+				using SKPaint sprite = new SKPaint { IsAntialias = true };
+				float lift = 0;
 				canvas.Save();
 
-				if (loses && dying > 0)
+				if (loses && struck > 0)
 				{
-					// it keels over as it fades
-					canvas.RotateDegrees(dying * 35 * (p.X >= winner.X ? 1 : -1), p.X, p.Y + 14);
+					// knocked back away from the winner and over, scorched dark
+					float away = (p.X >= winner.X ? 1 : -1);
+					canvas.Translate(away * struck * 12, -MathF.Sin(struck * MathF.PI) * 10);
+					canvas.RotateDegrees(away * struck * 70, p.X, p.Y + 14);
+					pic = Toned(pic, "burnt", 0.45f, 0.3f);
+				}
+				else if (!loses && cheer > 0)
+				{
+					// the winner's little jump of triumph
+					lift = MathF.Sin(cheer * MathF.PI * 2) * 4 * (1 - cheer);
 				}
 
-				canvas.DrawBitmap(shown, p.X - (shown.Width / 2f), p.Y + 14 + sink - shown.Height, sprite);
+				canvas.DrawBitmap(pic, p.X - (pic.Width / 2f), p.Y + 14 - lift - pic.Height, sprite);
 				canvas.Restore();
 
-				if (!loses || dying < 0.3f)
-					Flag(canvas, p.X - 14, p.Y - 26 + sink, 10, u.Colour, 1.9f);
+				if (!loses || struck == 0)
+					Flag(canvas, p.X - 14, p.Y - 26 - lift - (cheer > 0 ? 4 * MathF.Sin(cheer * MathF.PI) : 0), 10, u.Colour, 1.9f + (cheer * 0.6f));
+			}
+
+			// the scorch mark left where the loser stood
+			if (t > Decided && this.battle.TryGetValue("scorch", out var scorch) && scorch.Count > 0)
+			{
+				float sa = Math.Clamp((t - Decided) / 0.1f, 0, 1) * (1 - Math.Clamp((t - 0.9f) / 0.1f, 0, 1) * 0.4f);
+				SKBitmap sb = scorch[seed % scorch.Count];
+				float sw = 64;
+				paint.Color = new SKColor(255, 255, 255, (byte)(255 * sa));
+				using SKImage si = SKImage.FromBitmap(sb);
+				canvas.DrawImage(si, new SKRect(loserFoot.X - (sw / 2), loserFoot.Y + 14 - (sw * sb.Height / sb.Width), loserFoot.X + (sw / 2), loserFoot.Y + 14), new SKSamplingOptions(SKCubicResampler.Mitchell), paint);
 			}
 
 			if (target is (int, int, int, uint) tu)
@@ -2722,9 +2741,60 @@ namespace OpenCivOne.Graphics
 				Draw(blast[seed % blast.Count], new SKPoint(loser.X, loser.Y - (b * 10)), size, alpha);
 			}
 
+			// pieces of the loser flung out in arcs: weapons, shields, splinters, a torn banner
+			if (t > 0.58f && this.battle.TryGetValue("debris", out var debris) && debris.Count > 0)
+			{
+				float e = Math.Clamp((t - 0.58f) / 0.42f, 0, 1);
+				var dr = new Random(seed + 11);
+
+				for (int k = 0; k < 7; k++)
+				{
+					float ang = (float)(-Math.PI * (0.1 + (0.8 * dr.NextDouble())));
+					float speed = 40 + ((float)dr.NextDouble() * 40);
+					var pos = new SKPoint(loser.X + (MathF.Cos(ang) * speed * e), loser.Y + (MathF.Sin(ang) * speed * e) + (90 * e * e));
+					float spin = (float)(dr.NextDouble() * 720 - 360) * e;
+					SKBitmap db = debris[dr.Next(debris.Count)];
+					float dw = 16 + ((float)dr.NextDouble() * 10);
+					paint.Color = new SKColor(255, 255, 255, (byte)(255 * (1 - (e * e))));
+					canvas.Save();
+					canvas.RotateDegrees(spin, pos.X, pos.Y);
+					using SKImage di = SKImage.FromBitmap(db);
+					canvas.DrawImage(di, new SKRect(pos.X - (dw / 2), pos.Y - (dw * db.Height / db.Width / 2), pos.X + (dw / 2), pos.Y + (dw * db.Height / db.Width / 2)), new SKSamplingOptions(SKCubicResampler.Mitchell), paint);
+					canvas.Restore();
+				}
+			}
+
+			// the blow that decides it: a white flash over the whole view, gone in a moment
+			if (t > 0.58f && t < 0.66f)
+			{
+				float fl = 1 - ((t - 0.58f) / 0.08f);
+				using SKPaint flash = new SKPaint { IsAntialias = true };
+				flash.Shader = SKShader.CreateRadialGradient(loser, 160, new[] { new SKColor(255, 248, 220, (byte)(230 * fl)), new SKColor(255, 230, 180, 0) }, null, SKShaderTileMode.Clamp);
+				canvas.DrawRect(0, 0, w, h, flash);
+			}
+
 			canvas.Flush();
 			int[] raw = new int[w * h];
 			System.Runtime.InteropServices.Marshal.Copy(bitmap.GetPixels(), raw, 0, raw.Length);
+
+			// a short shake of the view as the blow lands
+			if (t > 0.58f && t < 0.72f)
+			{
+				float sh = 1 - ((t - 0.58f) / 0.14f);
+				int dx = (int)MathF.Round(MathF.Sin(t * 160) * 5 * sh), dy = (int)MathF.Round(MathF.Cos(t * 130) * 3 * sh);
+				int[] shaken = new int[raw.Length];
+
+				for (int y = 0; y < h; y++)
+				{
+					int sy = Math.Clamp(y - dy, 0, h - 1);
+
+					for (int x = 0; x < w; x++)
+						shaken[(y * w) + x] = raw[(sy * w) + Math.Clamp(x - dx, 0, w - 1)];
+				}
+
+				raw = shaken;
+			}
+
 			return Array.ConvertAll(raw, v => unchecked((uint)v) | 0xff000000);
 		}
 

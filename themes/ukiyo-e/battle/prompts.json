@@ -16,5 +16,17 @@
   "refs": [
    "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_cback.jpg"
   ]
+ },
+ "battle_debris": {
+  "prompt": "In exactly the Japanese woodblock-print (ukiyo-e) style of the reference image, like the stylised curling clouds and waves of Hokusai and Hiroshige: fine dark ink key lines, flat muted colours with soft gradations. A sprite sheet of 12 separate small pieces of battle debris flying through the air, in a loose 4x3 grid: a broken spear shaft, a round shield, a dented helmet, a sword, a splintered plank, a broken wooden wheel, a torn war banner on a snapped pole, an arrow, a broken bow, a chunk of armour, a splintered oar, a smoking ember. Each is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background with clear magenta space between them so each can be cut out. No ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_cback.jpg"
+  ]
+ },
+ "battle_scorch": {
+  "prompt": "In exactly the Japanese woodblock-print (ukiyo-e) style of the reference image, like the stylised curling clouds and waves of Hokusai and Hiroshige: fine dark ink key lines, flat muted colours with soft gradations. A sprite sheet of 4 separate scorch marks on the ground seen from a high three-quarter angle: flattened ovals of blackened, burnt earth with a few glowing embers and wisps of smoke rising, in a 2x2 grid. Each is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background with clear magenta space between them so each can be cut out. No ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_cback.jpg"
+  ]
  }
 }
