@@ -451,6 +451,12 @@ namespace OpenCivOne
 			this.CAPI.exit(0);
 		}
 
+		/// <summary>
+		/// Where the pointer is and which buttons are down right now (the event queue only records button changes), for
+		/// dragging. Set by the window with the keyboard and mouse lock held.
+		/// </summary>
+		public MouseEvent LivePointer { get; set; } = new MouseEvent(new GPoint(160, 100), MouseButtonsEnum.None);
+
 		public MouseEvent PeekMouseEvent()
 		{
 			this.oCPU.DoEvents();

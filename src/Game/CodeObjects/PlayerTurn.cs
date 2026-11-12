@@ -510,6 +510,10 @@ namespace OpenCivOne
 
 					this.parent.CommonTools.SetMousePositionAndIcon(0, 0, (short)this.parent.Array_d4ce[7]);
 				}
+				else if (unitID < 128 && this.DragGoTo(playerID, unitID, mouseEvent.Position))
+				{
+					// the unit was dragged to where it should go, and has that destination now
+				}
 				else
 				{
 					if (this.parent.MapManagement.F0_2aea_1585_GetVisibleTerrainImprovements(mouseX, mouseY).HasFlag(TerrainImprovementFlagsEnum.City) &&
@@ -1714,6 +1718,73 @@ namespace OpenCivOne
 		/// <param name="unit"></param>
 		/// <param name="newMoveDirection"></param>
 		/// <param name="unitMoveCount"></param>
+		/// <summary>
+		/// On the isometric map, pressing on the active unit and dragging shows the way it would go to the cell under the
+		/// pointer; letting go there gives the unit that destination, as the Go To order does. False when the press was
+		/// not on the unit or it was let go on the unit's own cell (an ordinary click).
+		/// </summary>
+		private bool DragGoTo(int playerID, int unitID, GPoint pressedAt)
+		{
+			MapManagement map = this.parent.MapManagement;
+			Unit unit = this.parent.GameData.Players[playerID].Units[unitID];
+			(int X, int Y)? pressedCell = map.IsoCellAt(pressedAt);
+
+			if (this.parent.IsoView == null || pressedCell == null || pressedCell.Value != (unit.Position.X, unit.Position.Y))
+				return false;
+
+			(int X, int Y) from = (unit.Position.X, unit.Position.Y), target = from;
+			List<GPoint>? path = null;
+			unit.PlayerID = (short)playerID;
+
+			while (true)
+			{
+				MouseEvent live;
+
+				lock (OpenCivOneGame.KeyboardAndMouseLock)
+					live = this.parent.LivePointer;
+
+				(int X, int Y)? cell = map.IsoCellAt(live.Position);
+
+				if (cell != null && cell.Value != target)
+				{
+					target = cell.Value;
+
+					if (target == from)
+					{
+						path = null;
+						map.EndIsoRoute();
+					}
+					else
+					{
+						path = this.parent.UnitGoTo.PreviewPath(unit, new GPoint(target.X, target.Y));
+						map.ShowIsoRoute(from, target, path?.Select(p => (p.X, p.Y)).ToList());
+					}
+				}
+
+				if ((live.Buttons & MouseButtonsEnum.Left) == MouseButtonsEnum.None)
+					break;
+
+				this.parent.CommonTools.WaitTimer(1);
+			}
+
+			map.EndIsoRoute();
+
+			if (target == from)
+				return false;
+
+			// the drag's own release is spent
+			this.parent.ClearMouseEventsAndEnsureNoMouseButtonIsPressed();
+
+			// with no way there the unit stays where it is
+			if (path != null)
+			{
+				unit.GoToDestination = new GPoint(target.X, target.Y);
+				unit.GoToNextDirection = -1;
+			}
+
+			return true;
+		}
+
 		/// <summary>
 		/// The map direction (1 north, then clockwise) a movement key gives. On the isometric map north points up and to
 		/// the right, so each key moves the way it points on the screen: up moves north-west, up and right north, and so on.

@@ -503,6 +503,9 @@ namespace OpenCivOne.UI
 				MouseButtonsEnum currentButtons = (pointer.Properties.IsLeftButtonPressed ? MouseButtonsEnum.Left : MouseButtonsEnum.None) |
 					(pointer.Properties.IsRightButtonPressed ? MouseButtonsEnum.Right : MouseButtonsEnum.None);
 
+				lock (OpenCivOneGame.KeyboardAndMouseLock)
+					this.game.LivePointer = new MouseEvent(currentPosition, currentButtons);
+
 				// prevent repetitive events
 				if (this.lastMouseEvent.Position != currentPosition || this.lastMouseEvent.Buttons != currentButtons)
 				{
@@ -563,6 +566,9 @@ namespace OpenCivOne.UI
 				MouseButtonsEnum currentButtons = (pointer.Properties.IsLeftButtonPressed ? MouseButtonsEnum.Left : MouseButtonsEnum.None) |
 					(pointer.Properties.IsRightButtonPressed ? MouseButtonsEnum.Right : MouseButtonsEnum.None);
 
+				lock (OpenCivOneGame.KeyboardAndMouseLock)
+					this.game.LivePointer = new MouseEvent(currentPosition, currentButtons);
+
 				// prevent repetitive events
 				if (this.lastMouseEvent.Position != currentPosition || this.lastMouseEvent.Buttons != currentButtons)
 				{
@@ -618,11 +624,20 @@ namespace OpenCivOne.UI
 			Point point = pointer.Position;
 			GPoint location = new GPoint((int)point.X, (int)point.Y);
 
+			// a button let go anywhere ends a drag, even outside the game's picture
+			lock (OpenCivOneGame.KeyboardAndMouseLock)
+				this.game.LivePointer = new MouseEvent(this.game.LivePointer.Position,
+					(pointer.Properties.IsLeftButtonPressed ? MouseButtonsEnum.Left : MouseButtonsEnum.None) |
+					(pointer.Properties.IsRightButtonPressed ? MouseButtonsEnum.Right : MouseButtonsEnum.None));
+
 			if (this.mouseRect.Contains(location))
 			{
 				GPoint currentPosition = new GPoint(location.X / (this.screenSize.Width / 320), location.Y / (this.screenSize.Height / 200));
 				MouseButtonsEnum currentButtons = (pointer.Properties.IsLeftButtonPressed ? MouseButtonsEnum.Left : MouseButtonsEnum.None) |
 					(pointer.Properties.IsRightButtonPressed ? MouseButtonsEnum.Right : MouseButtonsEnum.None);
+
+				lock (OpenCivOneGame.KeyboardAndMouseLock)
+					this.game.LivePointer = new MouseEvent(currentPosition, currentButtons);
 
 				// prevent repetitive events
 				if (this.lastMouseEvent.Position != currentPosition || this.lastMouseEvent.Buttons != currentButtons)

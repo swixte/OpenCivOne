@@ -1851,6 +1851,56 @@ namespace OpenCivOne
 		}
 
 		/// <summary>
+		/// The map cell under a point of the screen (original pixels) on the isometric map, anywhere in its window, or
+		/// null when there is no isometric map, the point is outside the map window or past the poles
+		/// </summary>
+		public (int X, int Y)? IsoCellAt(GPoint point)
+		{
+			IsoView? iso = this.parent.IsoView;
+
+			if (iso == null || point.X < 80 || point.Y < 8 || point.X >= 320 || point.Y >= 200)
+				return null;
+
+			(int cellX, int cellY) = iso.CellAt((point.X - 80 + 0.5f) * iso.Width / 240f, (point.Y - 8 + 0.5f) * iso.Height / 192f, this.IsoCentre.X, this.IsoCentre.Y);
+
+			if (cellY < 0 || cellY >= 50)
+				return null;
+
+			return (AdjustXPosition(cellX), cellY);
+		}
+
+		private uint[]? routeBase;
+
+		/// <summary>
+		/// Shows a route over the isometric map (see IsoView.RouteFrame), until EndIsoRoute
+		/// </summary>
+		public void ShowIsoRoute((int X, int Y) from, (int X, int Y) target, IReadOnlyList<(int X, int Y)>? path)
+		{
+			IsoView? iso = this.parent.IsoView;
+			GBitmap screen = this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID);
+
+			if (iso == null || screen.Over is not GBitmap.Overlay over)
+				return;
+
+			this.routeBase ??= over.Pixels;
+			over.Pixels = iso.RouteFrame(from, target, path) ?? this.routeBase;
+			screen.Modified = true;
+		}
+
+		public void EndIsoRoute()
+		{
+			GBitmap screen = this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID);
+
+			if (this.routeBase != null && screen.Over is GBitmap.Overlay over)
+			{
+				over.Pixels = this.routeBase;
+				screen.Modified = true;
+			}
+
+			this.routeBase = null;
+		}
+
+		/// <summary>
 		/// The original screen position a point of the map window stands for: with the isometric view, the classic map's
 		/// position of the cell shown under the point; otherwise the point itself
 		/// </summary>

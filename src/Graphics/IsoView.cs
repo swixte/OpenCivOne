@@ -2605,6 +2605,83 @@ namespace OpenCivOne.Graphics
 		private (int X, int Y) moveFrom = (-999, -999);
 
 		/// <summary>
+		/// The last view with a route drawn over it, for dragging a unit to where it should go: a dashed ink line through
+		/// the cells of the path (from the unit to the target), a dot on each step and the target cell outlined; with no
+		/// path, a red line straight to the target, crossed out. Null before the first render.
+		/// </summary>
+		public uint[]? RouteFrame((int X, int Y) from, (int X, int Y) target, IReadOnlyList<(int X, int Y)>? path)
+		{
+			if (this.pixels.Length == 0)
+				return null;
+
+			(float cx, float cy) = this.lastCentre;
+			int w = this.width, h = this.height;
+			float halfW = TileWidth / 2f, halfH = TileHeight / 2f;
+			SKPoint Centre((int X, int Y) c)
+			{
+				(int x, int y) = Nearest(c.X, c.Y, cx);
+				return new SKPoint((w / 2f) + ((x + 0.5f - cx - (y + 0.5f - cy)) * halfW), (h / 2f) + ((x + 0.5f - cx + (y + 0.5f - cy)) * halfH));
+			}
+
+			using SKBitmap bitmap = new SKBitmap(new SKImageInfo(w, h, SKColorType.Bgra8888, SKAlphaType.Premul));
+			System.Runtime.InteropServices.Marshal.Copy(Array.ConvertAll(this.pixels, x => unchecked((int)x)), 0, bitmap.GetPixels(), this.pixels.Length);
+
+			using (SKCanvas canvas = new SKCanvas(bitmap))
+			{
+				bool reachable = path != null && path.Count > 0;
+				SKColor ink = reachable ? new SKColor(40, 34, 28) : new SKColor(170, 40, 30);
+				var points = new List<SKPoint> { Centre(from) };
+
+				if (reachable)
+					points.AddRange(path!.Select(Centre));
+				else
+					points.Add(Centre(target));
+
+				using SKPath line = new SKPath();
+				line.MoveTo(points[0]);
+
+				for (int k = 1; k < points.Count; k++)
+					line.LineTo(points[k]);
+
+				using (SKPaint under = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 7, StrokeCap = SKStrokeCap.Round, StrokeJoin = SKStrokeJoin.Round, Color = new SKColor(240, 230, 204, 170) })
+					canvas.DrawPath(line, under);
+
+				using (SKPaint dash = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 3.2f, StrokeCap = SKStrokeCap.Round, StrokeJoin = SKStrokeJoin.Round, Color = ink, PathEffect = SKPathEffect.CreateDash(new[] { 12f, 8f }, 0) })
+					canvas.DrawPath(line, dash);
+
+				using (SKPaint dot = new SKPaint { IsAntialias = true, Color = ink })
+					for (int k = 1; k < points.Count - 1; k++)
+						canvas.DrawCircle(points[k], 4, dot);
+
+				// the target cell, outlined
+				SKPoint t = Centre(target);
+				using SKPath diamond = new SKPath();
+				diamond.MoveTo(t.X, t.Y - halfH);
+				diamond.LineTo(t.X + halfW, t.Y);
+				diamond.LineTo(t.X, t.Y + halfH);
+				diamond.LineTo(t.X - halfW, t.Y);
+				diamond.Close();
+
+				using (SKPaint fill = new SKPaint { IsAntialias = true, Color = reachable ? new SKColor(240, 230, 204, 70) : new SKColor(170, 40, 30, 50) })
+					canvas.DrawPath(diamond, fill);
+
+				using (SKPaint edge = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 3, Color = ink })
+					canvas.DrawPath(diamond, edge);
+
+				if (!reachable)
+				{
+					using SKPaint cross = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 4, StrokeCap = SKStrokeCap.Round, Color = ink };
+					canvas.DrawLine(t.X - 9, t.Y - 9, t.X + 9, t.Y + 9, cross);
+					canvas.DrawLine(t.X + 9, t.Y - 9, t.X - 9, t.Y + 9, cross);
+				}
+			}
+
+			int[] raw = new int[this.pixels.Length];
+			System.Runtime.InteropServices.Marshal.Copy(bitmap.GetPixels(), raw, 0, raw.Length);
+			return Array.ConvertAll(raw, x => unchecked((uint)x | 0xff000000));
+		}
+
+		/// <summary>
 		/// One frame of a unit moving from one cell to the next over the last rendered view: the view without the unit,
 		/// and the unit drawn part of the way along (t from 0 to 1). Cells in map coordinates near the view's centre.
 		/// Null when the last scene has no unit at the start cell.

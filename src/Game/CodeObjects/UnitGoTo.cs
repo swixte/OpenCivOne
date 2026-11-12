@@ -99,6 +99,39 @@ namespace OpenCivOne
 		}
 
 		/// <summary>
+		/// The path a unit would take to a destination, its cells from the first step to the destination, without changing
+		/// the unit's own orders; null if there is no way there
+		/// </summary>
+		public List<GPoint>? PreviewPath(Unit unit, GPoint destination)
+		{
+			if (!this.parent.MapManagement.ValidateMapCoordinates(destination) || unit.Position == destination)
+				return null;
+
+			GPoint oldDestination = unit.GoToDestination;
+			short oldDirection = unit.GoToNextDirection;
+			GPoint[] oldPath = unit.GoToPath.ToArray();
+
+			try
+			{
+				unit.GoToDestination = destination;
+				unit.GoToPath.Clear();
+				this.FindGoToPath(unit, true);
+
+				return unit.GoToPath.Count == 0 ? null : unit.GoToPath.ToList();
+			}
+			finally
+			{
+				unit.GoToDestination = oldDestination;
+				unit.GoToNextDirection = oldDirection;
+				unit.GoToPath.Clear();
+
+				// a stack enumerates from the top: pushed back bottom first, it is as it was
+				for (int k = oldPath.Length - 1; k >= 0; k--)
+					unit.GoToPath.Push(oldPath[k]);
+			}
+		}
+
+		/// <summary>
 		/// Gets the next position that this unit should move to
 		/// </summary>
 		public int GetNextGoToMove(Unit unit, bool testVisibility)
