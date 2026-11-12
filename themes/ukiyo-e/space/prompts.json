@@ -1,0 +1,71 @@
+{
+ "structure_a": {
+  "prompt": "a square riveted girder lattice frame segment with diagonal cross bracing, a part of a 1920s-imagined retro colony spaceship, drawn as a flat side view from straight on, in exactly the woodblock-print (ukiyo-e) style of the reference images: fine dark ink key lines, muted colours (bronze, brass, slate blue, cream, rust red), light from the top left. Bold simple readable shape that stays clear when shrunk to a tiny 16-pixel square game tile, filling the image. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_cback.jpg",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_ship.png"
+  ]
+ },
+ "structure_b": {
+  "prompt": "a square riveted girder junction block where four lattice beams meet in a cross, a part of a 1920s-imagined retro colony spaceship, drawn as a flat side view from straight on, in exactly the woodblock-print (ukiyo-e) style of the reference images: fine dark ink key lines, muted colours (bronze, brass, slate blue, cream, rust red), light from the top left. Bold simple readable shape that stays clear when shrunk to a tiny 16-pixel square game tile, filling the image. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_cback.jpg",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_ship.png"
+  ]
+ },
+ "propulsion": {
+  "prompt": "a single bell-shaped rocket engine nozzle with cooling rings, pointing down, a part of a 1920s-imagined retro colony spaceship, drawn as a flat side view from straight on, in exactly the woodblock-print (ukiyo-e) style of the reference images: fine dark ink key lines, muted colours (bronze, brass, slate blue, cream, rust red), light from the top left. Bold simple readable shape that stays clear when shrunk to a tiny 16-pixel square game tile, filling the image. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_cback.jpg",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_ship.png"
+  ]
+ },
+ "fuel": {
+  "prompt": "a long horizontal cylindrical fuel tank with banded rivets and a pipe at each end, twice as wide as tall, a part of a 1920s-imagined retro colony spaceship, drawn as a flat side view from straight on, in exactly the woodblock-print (ukiyo-e) style of the reference images: fine dark ink key lines, muted colours (bronze, brass, slate blue, cream, rust red), light from the top left. Bold simple readable shape that stays clear when shrunk to a tiny 32 by 16 pixel game tile, filling the image. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_cback.jpg",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_ship.png"
+  ]
+ },
+ "habitation": {
+  "prompt": "a square habitation module: a riveted cabin with a row of round lit portholes, a part of a 1920s-imagined retro colony spaceship, drawn as a flat side view from straight on, in exactly the woodblock-print (ukiyo-e) style of the reference images: fine dark ink key lines, muted colours (bronze, brass, slate blue, cream, rust red), light from the top left. Bold simple readable shape that stays clear when shrunk to a tiny 32-pixel square game tile, filling the image. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_cback.jpg",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_ship.png"
+  ]
+ },
+ "lifesupport": {
+  "prompt": "a square life support module: a glass greenhouse dome with green plants inside, on a riveted base, a part of a 1920s-imagined retro colony spaceship, drawn as a flat side view from straight on, in exactly the woodblock-print (ukiyo-e) style of the reference images: fine dark ink key lines, muted colours (bronze, brass, slate blue, cream, rust red), light from the top left. Bold simple readable shape that stays clear when shrunk to a tiny 32-pixel square game tile, filling the image. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_cback.jpg",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_ship.png"
+  ]
+ },
+ "solar": {
+  "prompt": "a square solar panel: a grid of dark blue cells in a brass frame, a part of a 1920s-imagined retro colony spaceship, drawn as a flat side view from straight on, in exactly the woodblock-print (ukiyo-e) style of the reference images: fine dark ink key lines, muted colours (bronze, brass, slate blue, cream, rust red), light from the top left. Bold simple readable shape that stays clear when shrunk to a tiny 32-pixel square game tile, filling the image. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_cback.jpg",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_ship.png"
+  ]
+ },
+ "support": {
+  "prompt": "a square empty scaffold frame of riveted bronze girders with a small crane arm on top; the frame is empty, nothing inside it, no vehicle, no ship, a part of a 1920s-imagined retro colony spaceship, drawn as a flat side view from straight on, in exactly the woodblock-print (ukiyo-e) style of the reference images: fine dark ink key lines, muted colours (bronze, brass, slate blue, cream, rust red), light from the top left. Bold simple readable shape that stays clear when shrunk to a tiny 32-pixel square game tile, filling the image. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_cback.jpg"
+  ]
+ },
+ "capsule": {
+  "prompt": "a square command capsule: a rounded nose cone with a large window and an antenna, a part of a 1920s-imagined retro colony spaceship, drawn as a flat side view from straight on, in exactly the woodblock-print (ukiyo-e) style of the reference images: fine dark ink key lines, muted colours (bronze, brass, slate blue, cream, rust red), light from the top left. Bold simple readable shape that stays clear when shrunk to a tiny 32-pixel square game tile, filling the image. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_cback.jpg",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_ship.png"
+  ]
+ },
+ "colonyship": {
+  "prompt": "a whole retro colony spaceship descending to land: a tall bronze rocket with fins, round portholes and a bright flame of retro-thrust below it, seen from the side, a part of a 1920s-imagined retro colony spaceship, drawn as a flat side view from straight on, in exactly the woodblock-print (ukiyo-e) style of the reference images: fine dark ink key lines, muted colours (bronze, brass, slate blue, cream, rust red), light from the top left. Bold simple readable shape that stays clear when shrunk to a tiny 64-pixel game tile, filling the image. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_cback.jpg",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_ship.png"
+  ]
+ }
+}
