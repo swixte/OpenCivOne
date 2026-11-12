@@ -1,0 +1,8 @@
+{
+ "slam1": {
+  "prompt": "In exactly the woodblock-print (ukiyo-e) style and colours of the reference image: the interior of a grand imperial throne hall seen straight on and symmetrical. The upper two thirds is one wide plain wall of dark lacquered wood panels with thin gold trim, completely bare (no pictures, no frames, no windows), the lower third a polished dark floor with a long red carpet running to the viewer between two bronze braziers. Warm lantern light. No people, no text, no border. Wide landscape composition.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_cback.jpg"
+  ]
+ }
+}
