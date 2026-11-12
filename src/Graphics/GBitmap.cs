@@ -1061,6 +1061,51 @@ namespace OpenCivOne.Graphics
 					over = null;
 			}
 
+			// where the map is still showing: a pixel that matches the snapshot with most of the 24 around it (a 5 x 5 block) matching
+			// too, so a lone pixel of a picture drawn over the map that happens to have the map's colour index does not
+			// let a speck of the map through (the window's own edge counts as matching)
+			bool[]? shows = null;
+
+			if (over != null && !over.Hold && over.Snapshot.Length == over.Area.Width * over.Area.Height)
+			{
+				int aw = over.Area.Width, ah = over.Area.Height;
+				bool[] match = new bool[aw * ah];
+
+				for (int y = 0; y < ah; y++)
+				{
+					int row = ((over.Area.Y + y) * this.iWidth) + over.Area.X;
+
+					for (int x = 0; x < aw; x++)
+						match[(y * aw) + x] = over.Snapshot[(y * aw) + x] == this.aPixels[row + x];
+				}
+
+				shows = new bool[aw * ah];
+
+				for (int y = 0; y < ah; y++)
+				{
+					for (int x = 0; x < aw; x++)
+					{
+						int around = 0;
+
+						if (match[(y * aw) + x])
+						{
+							for (int dy = -2; dy <= 2; dy++)
+								for (int dx = -2; dx <= 2; dx++)
+								{
+									int nx = x + dx, ny = y + dy;
+
+									if ((dx != 0 || dy != 0) && (nx < 0 || ny < 0 || nx >= aw || ny >= ah || match[(ny * aw) + nx]))
+										around++;
+								}
+						}
+
+						// beside a straight edge of a picture 14 of the 24 around still match; a stray speck of a few
+						// pixels has far fewer
+						shows[(y * aw) + x] = around >= 14;
+					}
+				}
+			}
+
 			int[] rows = new int[hdWidth * HDScale];
 			int pixelAddress = 0;
 			byte[]? smooth = _smoothUpscale ? this.ScaleIndexes() : null;
@@ -1114,7 +1159,8 @@ namespace OpenCivOne.Graphics
 							}
 
 							if (over != null && j >= over.Area.X && j < over.Area.X + over.Area.Width && i >= over.Area.Y && i < over.Area.Y + over.Area.Height &&
-								(over.Hold || over.Snapshot[((i - over.Area.Y) * over.Area.Width) + (j - over.Area.X)] == this.aPixels[pixelAddress]))
+								(over.Hold || (shows != null ? shows[((i - over.Area.Y) * over.Area.Width) + (j - over.Area.X)] :
+									over.Snapshot[((i - over.Area.Y) * over.Area.Width) + (j - over.Area.X)] == this.aPixels[pixelAddress])))
 								pixel = over.Pixels[((((i - over.Area.Y) * HDScale) + k) * over.Area.Width * HDScale) + ((j - over.Area.X) * HDScale) + l];
 
 							rows[(k * hdWidth) + (j * HDScale) + l] = (int)pixel;
