@@ -213,6 +213,11 @@ namespace OpenCivOne
 						}
 					}
 
+					// with the isometric map, a painted battle in place of the classic lunge and explosion
+					if (this.parent.MapManagement.PlayIsoBattle(this.parent.GameData.Players[playerID1].Units[unitID1].Position,
+						this.parent.GameData.Players[playerID2].Units[unitID2].Position, local_24 != 0))
+						goto BattleShown;
+
 					// Instruction address 0x29f3:0x04bc, size: 5
 					this.parent.MapManagement.F0_2aea_0e29_DrawUnit(playerID2, unitID2);
 
@@ -333,6 +338,7 @@ namespace OpenCivOne
 				}
 			}
 
+		BattleShown:
 			this.parent.GameData.Players[playerID1].Diplomacy[playerID2] |= DiplomacyFlagsEnum.EverFought;
 			this.parent.GameData.Players[playerID2].Diplomacy[playerID1] |= DiplomacyFlagsEnum.EverFought;
 

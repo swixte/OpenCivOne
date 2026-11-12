@@ -1732,6 +1732,44 @@ namespace OpenCivOne
 		public (float X, float Y) IsoCentre { get; private set; }
 
 		/// <summary>
+		/// Plays a battle between the units at two cells on the isometric map, with the theme's painted smoke, flames and
+		/// explosion: the loser (the defender when the attacker wins) goes up in flames. Returns false when the view or
+		/// the theme cannot show it, so the classic animation is played instead.
+		/// </summary>
+		public bool PlayIsoBattle(GPoint attacker, GPoint defender, bool attackerWins)
+		{
+			IsoView? iso = this.parent.IsoView;
+			GBitmap screen = this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID);
+			GBitmap.Overlay? over = screen.Over;
+
+			if (iso == null || over == null || !iso.HasBattleArt)
+				return false;
+
+			// the cells unwrapped near the view's centre
+			int Near(int x) => x + (80 * (int)MathF.Round((this.IsoCentre.X - x) / 80f));
+			(int, int) a = (Near(attacker.X), attacker.Y), d = (Near(defender.X), defender.Y);
+			uint[] view = over.Pixels;
+			int seed = (attacker.X * 31) + (defender.Y * 7) + this.parent.GameData.TurnCount;
+			const int Frames = 26;
+
+			over.Hold = true;
+
+			for (int f = 0; f <= Frames; f++)
+			{
+				over.Pixels = iso.BattleFrame(f / (float)Frames, a, d, attackerWins, seed);
+				screen.Modified = true;
+				this.parent.CommonTools.WaitTimer(3);
+			}
+
+			iso.EndBattle();
+			over.Pixels = view;
+			over.Hold = false;
+			screen.Modified = true;
+
+			return true;
+		}
+
+		/// <summary>
 		/// The original screen position a point of the map window stands for: with the isometric view, the classic map's
 		/// position of the cell shown under the point; otherwise the point itself
 		/// </summary>
