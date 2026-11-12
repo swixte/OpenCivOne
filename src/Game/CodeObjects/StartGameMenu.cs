@@ -41,7 +41,9 @@ namespace OpenCivOne
 				}
 			}
 
-			if (this.parent.GameData.DifficultyLevel < -1)
+			// Escape (-1) leaves the level unchosen: the game would go on with no level and fail on the first save, so it
+			// takes the easiest
+			if (this.parent.GameData.DifficultyLevel < 0)
 			{
 				this.parent.GameData.DifficultyLevel = 0;
 			}
