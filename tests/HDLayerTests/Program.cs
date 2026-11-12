@@ -1291,7 +1291,7 @@ GBitmap other4()
 		if (Environment.GetEnvironmentVariable("ISO_BATTLE") == "1")
 		{
 			var u0 = showScene.Units[0];
-			showScene.Units.Add(((u0.X + 1) % MW, u0.Y + 1, 3, 0xff3e5bd8u));
+			showScene.Units.Add(((u0.X + 1) % MW, u0.Y + 1, int.TryParse(Environment.GetEnvironmentVariable("ISO_BATTLE_DEFENDER"), out int bdt) ? bdt : 3, 0xff3e5bd8u));
 			var bview = OpenCivOne.Graphics.IsoView.Load(showTheme, 960, 768)!;
 			bview.Render(u0.X + 0.5f, u0.Y + 0.5f, showScene);
 

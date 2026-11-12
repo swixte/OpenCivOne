@@ -2652,14 +2652,46 @@ namespace OpenCivOne.Graphics
 				if (!UnitPicture(u.Type, style, out SKBitmap? pic) || pic == null)
 					return;
 
-				if (loses && struck >= 1)
+				if (loses && struck >= 1 && !(u.Type >= 8 && u.Type <= 24 && (u.Type >= 16 || u.Type == 8 || u.Type == 9 || u.Type == 13)))
 					return;
 
 				using SKPaint sprite = new SKPaint { IsAntialias = true };
 				float lift = 0;
 				canvas.Save();
 
-				if (loses && struck > 0)
+				bool ship = u.Type >= 16 && u.Type <= 24, siege = u.Type == 8 || u.Type == 9 || u.Type == 13;
+
+				if (loses && struck > 0 && ship)
+				{
+					// a ship breaks in two: the halves tip apart and sink below the waterline
+					SKBitmap burnt = Toned(pic, "burnt", 0.55f, 0.4f);
+					float baseY = p.Y + 14, left = p.X - (pic.Width / 2f), top = baseY - pic.Height;
+					float sinkBy = struck * pic.Height * 0.7f;
+
+					for (int half = 0; half < 2; half++)
+					{
+						canvas.Save();
+						canvas.ClipRect(new SKRect(left - 40, top - 40, left + pic.Width + 40, baseY + 2));
+						float sign = half == 0 ? -1 : 1;
+						canvas.Translate(sign * struck * 8, sinkBy);
+						canvas.RotateDegrees(sign * struck * -28, p.X, baseY);
+						canvas.ClipRect(half == 0 ? new SKRect(left, top, p.X, baseY) : new SKRect(p.X, top, left + pic.Width, baseY));
+						canvas.DrawBitmap(burnt, left, top, sprite);
+						canvas.Restore();
+					}
+
+					canvas.Restore();
+					return;
+				}
+
+				if (loses && struck > 0 && siege)
+				{
+					// a siege engine collapses: crushed down onto its wheels and burnt
+					canvas.Scale(1 + (struck * 0.15f), 1 - (struck * 0.65f), p.X, p.Y + 14);
+					canvas.RotateDegrees((p.X >= winner.X ? 1 : -1) * struck * 12, p.X, p.Y + 14);
+					pic = Toned(pic, "burnt", 0.4f, 0.25f);
+				}
+				else if (loses && struck > 0)
 				{
 					// knocked back away from the winner and over, scorched dark
 					float away = (p.X >= winner.X ? 1 : -1);
