@@ -1790,6 +1790,10 @@ namespace OpenCivOne
 				// Instruction address 0x1866:0x1e7f, size: 5
 				this.parent.Graphics.F0_VGA_07d8_DrawImage(this.parent.Var_aa_Screen0_Rectangle, 80, 0, 240, 200, this.parent.Var_19d4_Screen1_Rectangle, 80, 0);
 
+				// with the isometric map the painted unit slides there instead, and the classic sprite is not drawn
+				if (this.parent.MapManagement.PlayIsoMove(this.parent.GameData.Players[playerID].Units[unitID].Position, direction))
+					return;
+
 				// Instruction address 0x1866:0x1ea2, size: 5
 				int mapX = this.parent.MapManagement.AdjustXPosition(this.parent.GameData.Players[playerID].Units[unitID].Position.X - this.parent.Var_d4cc_MapViewX) * 16 + 80;
 				int mapY = (this.parent.GameData.Players[playerID].Units[unitID].Position.Y - this.parent.Var_d75e_MapViewY) * 16 + 8;

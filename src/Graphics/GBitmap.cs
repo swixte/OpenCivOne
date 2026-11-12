@@ -656,6 +656,11 @@ namespace OpenCivOne.Graphics
 					this.FillUIMaterial(newRect);
 				}
 
+				if (mode == PixelWriteModeEnum.Normal)
+				{
+					this.SuspendOverlay(newRect);
+				}
+
 				this.bModified = true;
 			}
 		}
@@ -834,6 +839,11 @@ namespace OpenCivOne.Graphics
 
 					iSrcPosition += srcBitmap.iWidth;
 					iDestPosition += this.iWidth;
+				}
+
+				if (!transparent)
+				{
+					this.CheckOverlayCovered(destRect);
 				}
 
 				this.bModified = true;
@@ -1021,7 +1031,73 @@ namespace OpenCivOne.Graphics
 			public bool Hold;
 		}
 
-		public Overlay? Over { get; set; }
+		public Overlay? Over
+		{
+			get => this._over;
+			set
+			{
+				this._over = value;
+				this._suspendedOver = null;
+			}
+		}
+
+		private Overlay? _over;
+
+		/// <summary>
+		/// The overlay while a whole screen (a city, an advisor) covers its area: it comes back when the map pixels it
+		/// was taken over are copied back, and is not shown over the screen meanwhile
+		/// </summary>
+		private Overlay? _suspendedOver;
+
+		private void SuspendOverlay(GRectangle covered)
+		{
+			Overlay? over = this._over;
+
+			if (over != null && !over.Hold && covered.X <= over.Area.X && covered.Y <= over.Area.Y &&
+				covered.X + covered.Width >= over.Area.X + over.Area.Width && covered.Y + covered.Height >= over.Area.Y + over.Area.Height)
+			{
+				this._suspendedOver = over;
+				this._over = null;
+			}
+		}
+
+		/// <summary>
+		/// After a whole picture is copied over the overlay's area: the overlay stays (or comes back) if the picture is
+		/// the map it was taken over, and is suspended if it is another screen
+		/// </summary>
+		private void CheckOverlayCovered(GRectangle copied)
+		{
+			Overlay? over = this._suspendedOver ?? this._over;
+
+			if (over == null || over.Hold || copied.X > over.Area.X || copied.Y > over.Area.Y ||
+				copied.X + copied.Width < over.Area.X + over.Area.Width || copied.Y + copied.Height < over.Area.Y + over.Area.Height)
+				return;
+
+			int same = 0;
+
+			for (int y = 0; y < over.Area.Height; y++)
+			{
+				int row = ((over.Area.Y + y) * this.iWidth) + over.Area.X;
+
+				for (int x = 0; x < over.Area.Width; x++)
+				{
+					if (this.aPixels[row + x] == over.Snapshot[(y * over.Area.Width) + x])
+						same++;
+				}
+			}
+
+			// the map came back (with at most a dialog over part of it)
+			if (same * 10 >= over.Snapshot.Length * 7)
+			{
+				this._over = over;
+				this._suspendedOver = null;
+			}
+			else
+			{
+				this._suspendedOver = over;
+				this._over = null;
+			}
+		}
 
 		/// <summary>
 		/// The original pixels of an area, for an Overlay's Snapshot

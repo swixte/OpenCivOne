@@ -88,7 +88,8 @@ namespace OpenCivOne
 				{
 					int nearestCityID = this.parent.MapManagement.FindNearestCity(this.parent.GameData.Players[playerID].Units[unitID].Position.X, 
 						this.parent.GameData.Players[playerID].Units[unitID].Position.Y);
-					int nearestCityDistance = this.parent.MapManagement.GetDistance(this.parent.GameData.Players[playerID].Units[unitID].Position,
+					// with no city on the map yet there is no nearest city
+					int nearestCityDistance = (nearestCityID == -1) ? -1 : this.parent.MapManagement.GetDistance(this.parent.GameData.Players[playerID].Units[unitID].Position,
 						this.parent.GameData.Cities[nearestCityID].Position);
 
 					if (nearestCityID != -1 && this.parent.GameData.Cities[nearestCityID].PlayerID == playerID && nearestCityDistance == 1)

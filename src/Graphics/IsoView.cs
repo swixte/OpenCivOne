@@ -2538,6 +2538,73 @@ namespace OpenCivOne.Graphics
 		private uint[]? battleBase;
 		private (int X, int Y) battleAttacker;
 
+		private uint[]? moveBase;
+		private (int X, int Y) moveFrom = (-999, -999);
+
+		/// <summary>
+		/// One frame of a unit moving from one cell to the next over the last rendered view: the view without the unit,
+		/// and the unit drawn part of the way along (t from 0 to 1). Cells in map coordinates near the view's centre.
+		/// Null when the last scene has no unit at the start cell.
+		/// </summary>
+		public uint[]? MoveFrame(float t, (int X, int Y) from, (int X, int Y) to)
+		{
+			if (this.lastScene is not Scene last)
+				return null;
+
+			int found = last.Units.FindIndex(u => Wrap(u.X) == Wrap(from.X) && u.Y == from.Y);
+
+			if (found < 0)
+				return null;
+
+			var mover = last.Units[found];
+			string style = last.UnitStyle(Wrap(from.X), from.Y);
+
+			if (!UnitPicture(mover.Type, style, out SKBitmap? pic) || pic == null)
+				return null;
+
+			(float cx, float cy) = this.lastCentre;
+
+			if (this.moveBase == null || this.moveFrom != from)
+			{
+				Scene without = new Scene
+				{
+					Terrain = last.Terrain, Explored = last.Explored, Improvements = last.Improvements, Feature = last.Feature,
+					Walls = last.Walls, CityLook = last.CityLook, UnitMarks = last.UnitMarks, UnitStyle = last.UnitStyle,
+				};
+				without.Cities.AddRange(last.Cities);
+				without.Units.AddRange(last.Units.Where((u, i) => i != found));
+				this.Render(cx, cy, without);
+				this.lastScene = last;
+				this.moveBase = (uint[])this.pixels.Clone();
+				this.moveFrom = from;
+			}
+
+			int w = this.width, h = this.height;
+			float halfW = TileWidth / 2f, halfH = TileHeight / 2f;
+			SKPoint Screen(float x, float y) => new SKPoint((w / 2f) + ((x - cx - (y - cy)) * halfW), (h / 2f) + ((x - cx + (y - cy)) * halfH));
+			SKPoint a = Screen(from.X + 0.5f, from.Y + 0.5f), b = Screen(to.X + 0.5f, to.Y + 0.5f);
+			float e = t * t * (3 - (2 * t));
+			SKPoint p = new SKPoint(a.X + ((b.X - a.X) * e), a.Y + ((b.Y - a.Y) * e) - (MathF.Sin(t * MathF.PI) * 3));
+
+			using SKBitmap bitmap = new SKBitmap(w, h, SKColorType.Bgra8888, SKAlphaType.Premul);
+			System.Runtime.InteropServices.Marshal.Copy(Array.ConvertAll(this.moveBase, v => unchecked((int)v)), 0, bitmap.GetPixels(), this.moveBase.Length);
+			using (SKCanvas canvas = new SKCanvas(bitmap))
+			using (SKPaint sprite = new SKPaint { IsAntialias = true })
+			{
+				canvas.DrawBitmap(pic, p.X - (pic.Width / 2f), p.Y + 14 - pic.Height, sprite);
+				Flag(canvas, p.X - 14, p.Y - 26, 10, mover.Colour, 1.9f);
+			}
+
+			int[] raw = new int[w * h];
+			System.Runtime.InteropServices.Marshal.Copy(bitmap.GetPixels(), raw, 0, raw.Length);
+			return Array.ConvertAll(raw, v => unchecked((uint)v) | 0xff000000);
+		}
+
+		/// <summary>
+		/// Ends a unit's move frames
+		/// </summary>
+		public void EndMove() => this.moveBase = null;
+
 		/// <summary>
 		/// Ends a battle's frames: the next battle renders its own view without its attacker
 		/// </summary>

@@ -139,8 +139,24 @@ namespace OpenCivOne
 			this.drawingMap = true;
 
 			// the isometric view on screen stays whole while the classic map is redrawn under it and the new view rendered
-			if (this.parent.IsoView != null && this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID).Over is GBitmap.Overlay current)
-				current.Hold = true;
+			if (this.parent.IsoView != null)
+			{
+				GBitmap mapScreen = this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID);
+
+				if (mapScreen.Over is GBitmap.Overlay current)
+				{
+					current.Hold = true;
+				}
+				else
+				{
+					// the first time, the window stays dark until the isometric view is ready, instead of showing the
+					// classic map being drawn
+					GRectangle area = new GRectangle(80, 8, 240, 192);
+					uint[] dark = new uint[area.Width * area.Height * GBitmap.HDScale * GBitmap.HDScale];
+					Array.Fill(dark, 0xff000000);
+					mapScreen.Over = new GBitmap.Overlay { Area = area, Pixels = dark, Snapshot = mapScreen.CopyPixels(area), Hold = true };
+				}
+			}
 
 			this.parent.Menus.F0_1238_0fea_DrawMainMenu();
 			this.parent.GameEngine.F0_1238_107e_ReportHumanTaxAndPopulation();
@@ -368,8 +384,27 @@ namespace OpenCivOne
 		{
 			bool drawn = this.DrawCellClassic(x, y);
 			this.RefreshIso(x, y);
+			this.SyncIsoCell(x, y);
 
 			return drawn;
+		}
+
+		/// <summary>
+		/// What the game has just drawn on the classic map at a cell is map, not something drawn over it: the isometric
+		/// view's snapshot takes the cell and the cells around it (sprites and labels reach past their own cell), so
+		/// the classic drawing never shows through the isometric view
+		/// </summary>
+		private void SyncIsoCell(int x, int y)
+		{
+			if (this.parent.IsoView == null || this.drawingMap)
+				return;
+
+			int column = AdjustXPosition(x - this.parent.Var_d4cc_MapViewX), row = y - this.parent.Var_d75e_MapViewY;
+
+			if (column < -1 || column > 15 || row < -1 || row > 12)
+				return;
+
+			this.SyncIsoSnapshot(80 + ((column - 1) * 16), 8 + ((row - 1) * 16), 48, 48);
 		}
 
 		private bool DrawCellClassic(int x, int y)
@@ -842,6 +877,7 @@ namespace OpenCivOne
 			bool drawn = this.DrawUnitClassic(playerID, unitID);
 			Unit drawnUnit = this.parent.GameData.Players[playerID].Units[unitID];
 			this.RefreshIso(drawnUnit.Position.X, drawnUnit.Position.Y);
+			this.SyncIsoCell(drawnUnit.Position.X, drawnUnit.Position.Y);
 
 			return drawn;
 		}
@@ -982,6 +1018,7 @@ namespace OpenCivOne
 				}
 
 				DrawCellUnit(x, y);
+				this.SyncIsoCell(x, y);
 
 				return;
 			}
@@ -990,6 +1027,7 @@ namespace OpenCivOne
 			F0_2aea_03ba_DrawCell(x, y);
 
 			DrawCellUnit(x, y);
+			this.SyncIsoCell(x, y);
 		}
 
 		private bool IsCellVisibleToHuman(int x, int y)
@@ -1673,6 +1711,10 @@ namespace OpenCivOne
 			if (this.drawingMap || this.parent.IsoView == null)
 				return;
 
+			// the classic drawing goes into the snapshot first: repainting the isometric view takes a while, and until
+			// then the classic cell would show through it
+			this.SyncIsoCell(x, y);
+
 			GBitmap screen = this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID);
 			GBitmap.Overlay? old = screen.Over;
 
@@ -1730,6 +1772,45 @@ namespace OpenCivOne
 		/// The centre of the isometric view the map window last showed, in map cells
 		/// </summary>
 		public (float X, float Y) IsoCentre { get; private set; }
+
+		/// <summary>
+		/// Slides the unit at a cell to the next cell on the isometric map, in place of the classic map's sliding sprite
+		/// (which would show the classic unit over the isometric view). False when there is no isometric view or no unit
+		/// shown there, so the classic animation is played.
+		/// </summary>
+		public bool PlayIsoMove(GPoint from, GPoint direction)
+		{
+			IsoView? iso = this.parent.IsoView;
+			GBitmap screen = this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID);
+			GBitmap.Overlay? over = screen.Over;
+
+			if (iso == null || over == null)
+				return false;
+
+			int Near(int x) => x + (80 * (int)MathF.Round((this.IsoCentre.X - x) / 80f));
+			(int, int) a = (Near(from.X), from.Y), b = (Near(from.X) + direction.X, from.Y + direction.Y);
+
+			if (iso.MoveFrame(0, a, b) == null)
+				return false;
+
+			uint[] view = over.Pixels;
+			int frames = this.parent.GlobalPreferences.Debug.FastMode ? 4 : 8;
+			over.Hold = true;
+
+			for (int f = 1; f <= frames; f++)
+			{
+				over.Pixels = iso.MoveFrame(f / (float)frames, a, b) ?? view;
+				screen.Modified = true;
+				this.parent.CommonTools.WaitTimer(1);
+			}
+
+			iso.EndMove();
+			over.Pixels = view;
+			over.Hold = false;
+			screen.Modified = true;
+
+			return true;
+		}
 
 		/// <summary>
 		/// Plays a battle between the units at two cells on the isometric map, with the theme's painted smoke, flames and
