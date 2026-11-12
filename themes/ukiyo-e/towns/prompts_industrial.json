@@ -1,0 +1,170 @@
+{
+ "eu_a2_s0_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: a small industrial village, half as wide as the reference, with five large buildings: red-brick terraced houses with slate roofs, brick factories with tall smoking chimneys, a railway station with an iron-and-glass train shed, and a church spire. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s0_o.png"
+  ]
+ },
+ "eu_a2_s1_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: an industrial town, a little smaller than the reference, with about twelve large buildings: red-brick terraced houses with slate roofs, brick factories with tall smoking chimneys, a railway station with an iron-and-glass train shed, and a church spire. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s2_o.png"
+  ]
+ },
+ "eu_a2_s2_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: an industrial city with about twenty large buildings: red-brick terraced houses with slate roofs, brick factories with tall smoking chimneys, a railway station with an iron-and-glass train shed, and a church spire. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s3_o.png"
+  ]
+ },
+ "eu_a2_s3_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: a great industrial city one and a half times as wide as the reference, with about thirty large buildings: red-brick terraced houses with slate roofs, brick factories with tall smoking chimneys, a railway station with an iron-and-glass train shed, and a church spire. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s4_o.png"
+  ]
+ },
+ "cl_a2_s0_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: a small industrial village, half as wide as the reference, with five large buildings: cream stucco neoclassical townhouses with terracotta roofs and a columned civic building, alongside brick factories with smoking chimneys and a railway station. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/cl_s0_o.png"
+  ]
+ },
+ "cl_a2_s1_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: an industrial town, a little smaller than the reference, with about twelve large buildings: cream stucco neoclassical townhouses with terracotta roofs and a columned civic building, alongside brick factories with smoking chimneys and a railway station. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/cl_s1_o.png"
+  ]
+ },
+ "cl_a2_s2_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: an industrial city with about twenty large buildings: cream stucco neoclassical townhouses with terracotta roofs and a columned civic building, alongside brick factories with smoking chimneys and a railway station. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/cl_s2_o.png"
+  ]
+ },
+ "cl_a2_s3_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: a great industrial city one and a half times as wide as the reference, with about thirty large buildings: cream stucco neoclassical townhouses with terracotta roofs and a columned civic building, alongside brick factories with smoking chimneys and a railway station. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/cl_s3_o.png"
+  ]
+ },
+ "ne_a2_s0_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: a small industrial village, half as wide as the reference, with five large buildings: flat-roofed stone and mud-brick houses with a domed mosque and minaret and an old ziggurat mound, alongside brick factories with smoking chimneys and a railway station. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ne_s0_o.png"
+  ]
+ },
+ "ne_a2_s1_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: an industrial town, a little smaller than the reference, with about twelve large buildings: flat-roofed stone and mud-brick houses with a domed mosque and minaret and an old ziggurat mound, alongside brick factories with smoking chimneys and a railway station. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ne_s1_o.png"
+  ]
+ },
+ "ne_a2_s2_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: an industrial city with about twenty large buildings: flat-roofed stone and mud-brick houses with a domed mosque and minaret and an old ziggurat mound, alongside brick factories with smoking chimneys and a railway station. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ne_s2_o.png"
+  ]
+ },
+ "ne_a2_s3_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: a great industrial city one and a half times as wide as the reference, with about thirty large buildings: flat-roofed stone and mud-brick houses with a domed mosque and minaret and an old ziggurat mound, alongside brick factories with smoking chimneys and a railway station. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ne_s3_o.png"
+  ]
+ },
+ "ea_a2_s0_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: a small industrial village, half as wide as the reference, with five large buildings: houses with dark grey curved tiled roofs and a pagoda, alongside red-brick factories with smoking chimneys, warehouses and a railway station. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ea_s0_o.png"
+  ]
+ },
+ "ea_a2_s1_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: an industrial town, a little smaller than the reference, with about twelve large buildings: houses with dark grey curved tiled roofs and a pagoda, alongside red-brick factories with smoking chimneys, warehouses and a railway station. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ea_s1_o.png"
+  ]
+ },
+ "ea_a2_s2_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: an industrial city with about twenty large buildings: houses with dark grey curved tiled roofs and a pagoda, alongside red-brick factories with smoking chimneys, warehouses and a railway station. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ea_s2_o.png"
+  ]
+ },
+ "ea_a2_s3_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: a great industrial city one and a half times as wide as the reference, with about thirty large buildings: houses with dark grey curved tiled roofs and a pagoda, alongside red-brick factories with smoking chimneys, warehouses and a railway station. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ea_s3_o.png"
+  ]
+ },
+ "sa_a2_s0_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: a small industrial village, half as wide as the reference, with five large buildings: ochre and pink sandstone houses with small domes and a temple tower, alongside textile mills with smoking chimneys and a grand domed railway station. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/sa_s0_o.png"
+  ]
+ },
+ "sa_a2_s1_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: an industrial town, a little smaller than the reference, with about twelve large buildings: ochre and pink sandstone houses with small domes and a temple tower, alongside textile mills with smoking chimneys and a grand domed railway station. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/sa_s1_o.png"
+  ]
+ },
+ "sa_a2_s2_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: an industrial city with about twenty large buildings: ochre and pink sandstone houses with small domes and a temple tower, alongside textile mills with smoking chimneys and a grand domed railway station. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/sa_s2_o.png"
+  ]
+ },
+ "sa_a2_s3_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: a great industrial city one and a half times as wide as the reference, with about thirty large buildings: ochre and pink sandstone houses with small domes and a temple tower, alongside textile mills with smoking chimneys and a grand domed railway station. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/sa_s3_o.png"
+  ]
+ },
+ "ma_a2_s0_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: a small industrial village, half as wide as the reference, with five large buildings: white and pastel colonial baroque houses with flat roofs, a twin-towered cathedral on a plaza built beside an old pyramid, alongside factories with smoking chimneys and a railway station. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ma_s0_o.png"
+  ]
+ },
+ "ma_a2_s1_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: an industrial town, a little smaller than the reference, with about twelve large buildings: white and pastel colonial baroque houses with flat roofs, a twin-towered cathedral on a plaza built beside an old pyramid, alongside factories with smoking chimneys and a railway station. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ma_s1_o.png"
+  ]
+ },
+ "ma_a2_s2_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: an industrial city with about twenty large buildings: white and pastel colonial baroque houses with flat roofs, a twin-towered cathedral on a plaza built beside an old pyramid, alongside factories with smoking chimneys and a railway station. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ma_s2_o.png"
+  ]
+ },
+ "ma_a2_s3_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: a great industrial city one and a half times as wide as the reference, with about thirty large buildings: white and pastel colonial baroque houses with flat roofs, a twin-towered cathedral on a plaza built beside an old pyramid, alongside factories with smoking chimneys and a railway station. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ma_s3_o.png"
+  ]
+ },
+ "af_a2_s0_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: a small industrial village, half as wide as the reference, with five large buildings: round plastered houses with painted geometric patterns and conical roofs and a conical stone tower, alongside brick factories with smoking chimneys, a mine headframe and a railway station. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/af_s0_o.png"
+  ]
+ },
+ "af_a2_s1_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: an industrial town, a little smaller than the reference, with about twelve large buildings: round plastered houses with painted geometric patterns and conical roofs and a conical stone tower, alongside brick factories with smoking chimneys, a mine headframe and a railway station. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/af_s1_o.png"
+  ]
+ },
+ "af_a2_s2_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: an industrial city with about twenty large buildings: round plastered houses with painted geometric patterns and conical roofs and a conical stone tower, alongside brick factories with smoking chimneys, a mine headframe and a railway station. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/af_s2_o.png"
+  ]
+ },
+ "af_a2_s3_o": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A 19th-century industrial-era city in its own national style: a great industrial city one and a half times as wide as the reference, with about thirty large buildings: round plastered houses with painted geometric patterns and conical roofs and a conical stone tower, alongside brick factories with smoking chimneys, a mine headframe and a railway station. No city wall: the edge opens onto roads and rail lines. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/af_s3_o.png"
+  ]
+ }
+}
