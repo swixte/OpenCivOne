@@ -77,6 +77,12 @@ namespace OpenCivOne.Graphics
 			/// (F fortifying, G go to, R road, I irrigation, M mine, F forest, P pollution), 0 for none
 			/// </summary>
 			public Func<int, int, int> UnitMarks = (x, y) => 0;
+
+			/// <summary>
+			/// The architectural style of the nation owning the unit shown on a cell (as CityLook), for early units painted
+			/// per style; an empty style uses the shared picture
+			/// </summary>
+			public Func<int, int, string> UnitStyle = (x, y) => "";
 			public List<(int X, int Y, int Type, uint Colour)> Units = new List<(int, int, int, uint)>();
 		}
 
@@ -377,6 +383,26 @@ namespace OpenCivOne.Graphics
 			foreach (string name in Array.ConvertAll(UnitNames, n => "unit_" + n))
 				view.LoadObject(objectsFolder, name, height: 56);
 
+			// early units in each nation's style: painted/objects/units/STYLE/NAME.png, kept as "unit_NAME@STYLE"
+			string unitStyles = Path.Combine(objectsFolder, "units");
+
+			if (Directory.Exists(unitStyles))
+			{
+				foreach (string styleFolder in Directory.GetDirectories(unitStyles))
+				{
+					string style = Path.GetFileName(styleFolder);
+
+					foreach (string file in Directory.GetFiles(styleFolder, "*.png"))
+					{
+						string unitName = Path.GetFileNameWithoutExtension(file);
+						view.LoadObject(styleFolder, unitName, height: 56);
+
+						if (view.objects.Remove(unitName, out SKBitmap? styled))
+							view.objects[$"unit_{unitName}@{style}"] = styled;
+					}
+				}
+			}
+
 			// resources about half a unit's height, given a little more contrast and a soft shadow at their foot, so
 			// they stand out from any ground; huts, mines, fortresses and pollution at their own sizes
 			foreach (string name in Array.ConvertAll(ResourceNames, n => "res_" + n))
@@ -530,7 +556,7 @@ namespace OpenCivOne.Graphics
 					sig = (sig * 37) + (c.X * 1000) + (c.Y * 10) + c.Size + c.Name.GetHashCode() + c.Colour + (scene.Walls(Wrap(c.X), c.Y) ? 7 : 0) + scene.CityLook(Wrap(c.X), c.Y).GetHashCode();
 
 				foreach (var u in scene.Units)
-					sig = (sig * 41) + (u.X * 1000) + (u.Y * 10) + u.Type + u.Colour + (scene.UnitMarks(Wrap(u.X), u.Y) * 7919);
+					sig = (sig * 41) + (u.X * 1000) + (u.Y * 10) + u.Type + u.Colour + (scene.UnitMarks(Wrap(u.X), u.Y) * 7919) + scene.UnitStyle(Wrap(u.X), u.Y).GetHashCode();
 			}
 
 			if (sig == this.signature)
@@ -1762,7 +1788,7 @@ namespace OpenCivOne.Graphics
 
 			foreach (var u in scene.Units)
 			{
-				if (u.Type < 0 || u.Type >= UnitNames.Length || !this.objects.TryGetValue("unit_" + UnitNames[u.Type], out SKBitmap? ub))
+				if (!UnitPicture(u.Type, scene.UnitStyle(Wrap(u.X), u.Y), out SKBitmap? ub) || ub == null)
 					continue;
 
 				(int ux, int uy) = Nearest(u.X, u.Y, cx);
@@ -2174,7 +2200,7 @@ namespace OpenCivOne.Graphics
 
 			foreach (var u in scene.Units)
 			{
-				if (u.Type < 0 || u.Type >= UnitNames.Length || !this.objects.TryGetValue("unit_" + UnitNames[u.Type], out SKBitmap? unit))
+				if (!UnitPicture(u.Type, scene.UnitStyle(Wrap(u.X), u.Y), out SKBitmap? unit) || unit == null)
 					continue;
 
 				(int x, int y) = Nearest(u.X, u.Y, cx);
@@ -2468,6 +2494,20 @@ namespace OpenCivOne.Graphics
 		}
 
 		// a sprite with every pixel's colour changed by the given function (colour without the alpha's premultiplying)
+		/// <summary>
+		/// A unit's picture: its nation's own for the early units painted per style, else the shared one
+		/// </summary>
+		private bool UnitPicture(int type, string style, out SKBitmap? picture)
+		{
+			picture = null;
+
+			if (type < 0 || type >= UnitNames.Length)
+				return false;
+
+			return (!string.IsNullOrEmpty(style) && this.objects.TryGetValue($"unit_{UnitNames[type]}@{style}", out picture)) ||
+				this.objects.TryGetValue("unit_" + UnitNames[type], out picture);
+		}
+
 		private readonly Dictionary<(SKBitmap, string), SKBitmap> toned = new Dictionary<(SKBitmap, string), SKBitmap>();
 
 		/// <summary>

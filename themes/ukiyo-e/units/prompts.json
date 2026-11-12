@@ -1,0 +1,464 @@
+{
+ "eu_settlers": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a pair of settlers, a man and a woman, carrying tools, bundles and seed for a new home, unmistakably Northern European (Celtic, Germanic, Frankish, Norse) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/settlers.png"
+  ]
+ },
+ "eu_militia": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a militia warrior with a simple spear or club and light clothing, unmistakably Northern European (Celtic, Germanic, Frankish, Norse) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/militia.png"
+  ]
+ },
+ "eu_phalanx": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a heavy spearman with a large shield and a long spear, standing guard, unmistakably Northern European (Celtic, Germanic, Frankish, Norse) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/phalanx.png"
+  ]
+ },
+ "eu_legion": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a disciplined heavy infantry swordsman with a big shield and a short sword, unmistakably Northern European (Celtic, Germanic, Frankish, Norse) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/legion.png"
+  ]
+ },
+ "eu_chariot": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a two-horse war chariot with a driver and a warrior (for Mesoamerican: a litter-borne war leader carried by four bearers, as there were no horses; for southern African: a war leader carried on a shield by runners), unmistakably Northern European (Celtic, Germanic, Frankish, Norse) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/chariot.png"
+  ]
+ },
+ "eu_knights": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: an armoured mounted noble warrior on a barded horse with a lance or sword (for Mesoamerican: an eagle-knight warrior in feathered armour on foot with a macuahuitl; for southern African: a noble warrior chief in leopard skin with shield and spear), unmistakably Northern European (Celtic, Germanic, Frankish, Norse) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/knights.png"
+  ]
+ },
+ "eu_catapult": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a wooden siege engine that throws stones, unmistakably Northern European (Celtic, Germanic, Frankish, Norse) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/catapult.png"
+  ]
+ },
+ "eu_trireme": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: an early oared war galley with a single sail (for Mesoamerican: a large dugout war canoe with paddlers; for southern African: a large dugout river canoe with paddlers), unmistakably Northern European (Celtic, Germanic, Frankish, Norse) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/trireme.png"
+  ]
+ },
+ "eu_sail": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a medieval sailing ship for exploration, unmistakably Northern European (Celtic, Germanic, Frankish, Norse) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/sail.png"
+  ]
+ },
+ "eu_diplomat": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: an envoy in fine court dress carrying a message scroll and a gift, unmistakably Northern European (Celtic, Germanic, Frankish, Norse) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/diplomat.png"
+  ]
+ },
+ "eu_caravan": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a trade caravan: a merchant with pack animals laden with goods (llamas or porters for Mesoamerican), unmistakably Northern European (Celtic, Germanic, Frankish, Norse) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/caravan.png"
+  ]
+ },
+ "cl_settlers": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a pair of settlers, a man and a woman, carrying tools, bundles and seed for a new home, unmistakably Classical Mediterranean (ancient Greek and Roman) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/settlers.png"
+  ]
+ },
+ "cl_militia": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a militia warrior with a simple spear or club and light clothing, unmistakably Classical Mediterranean (ancient Greek and Roman) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/militia.png"
+  ]
+ },
+ "cl_phalanx": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a heavy spearman with a large shield and a long spear, standing guard, unmistakably Classical Mediterranean (ancient Greek and Roman) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/phalanx.png"
+  ]
+ },
+ "cl_legion": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a disciplined heavy infantry swordsman with a big shield and a short sword, unmistakably Classical Mediterranean (ancient Greek and Roman) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/legion.png"
+  ]
+ },
+ "cl_chariot": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a two-horse war chariot with a driver and a warrior (for Mesoamerican: a litter-borne war leader carried by four bearers, as there were no horses; for southern African: a war leader carried on a shield by runners), unmistakably Classical Mediterranean (ancient Greek and Roman) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/chariot.png"
+  ]
+ },
+ "cl_knights": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: an armoured mounted noble warrior on a barded horse with a lance or sword (for Mesoamerican: an eagle-knight warrior in feathered armour on foot with a macuahuitl; for southern African: a noble warrior chief in leopard skin with shield and spear), unmistakably Classical Mediterranean (ancient Greek and Roman) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/knights.png"
+  ]
+ },
+ "cl_catapult": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a wooden siege engine that throws stones, unmistakably Classical Mediterranean (ancient Greek and Roman) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/catapult.png"
+  ]
+ },
+ "cl_trireme": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: an early oared war galley with a single sail (for Mesoamerican: a large dugout war canoe with paddlers; for southern African: a large dugout river canoe with paddlers), unmistakably Classical Mediterranean (ancient Greek and Roman) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/trireme.png"
+  ]
+ },
+ "cl_sail": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a medieval sailing ship for exploration, unmistakably Classical Mediterranean (ancient Greek and Roman) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/sail.png"
+  ]
+ },
+ "cl_diplomat": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: an envoy in fine court dress carrying a message scroll and a gift, unmistakably Classical Mediterranean (ancient Greek and Roman) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/diplomat.png"
+  ]
+ },
+ "cl_caravan": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a trade caravan: a merchant with pack animals laden with goods (llamas or porters for Mesoamerican), unmistakably Classical Mediterranean (ancient Greek and Roman) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/caravan.png"
+  ]
+ },
+ "ne_settlers": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a pair of settlers, a man and a woman, carrying tools, bundles and seed for a new home, unmistakably ancient Near Eastern (Babylonian, Assyrian and Egyptian) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/settlers.png"
+  ]
+ },
+ "ne_militia": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a militia warrior with a simple spear or club and light clothing, unmistakably ancient Near Eastern (Babylonian, Assyrian and Egyptian) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/militia.png"
+  ]
+ },
+ "ne_phalanx": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a heavy spearman with a large shield and a long spear, standing guard, unmistakably ancient Near Eastern (Babylonian, Assyrian and Egyptian) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/phalanx.png"
+  ]
+ },
+ "ne_legion": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a disciplined heavy infantry swordsman with a big shield and a short sword, unmistakably ancient Near Eastern (Babylonian, Assyrian and Egyptian) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/legion.png"
+  ]
+ },
+ "ne_chariot": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a two-horse war chariot with a driver and a warrior (for Mesoamerican: a litter-borne war leader carried by four bearers, as there were no horses; for southern African: a war leader carried on a shield by runners), unmistakably ancient Near Eastern (Babylonian, Assyrian and Egyptian) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/chariot.png"
+  ]
+ },
+ "ne_knights": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: an armoured mounted noble warrior on a barded horse with a lance or sword (for Mesoamerican: an eagle-knight warrior in feathered armour on foot with a macuahuitl; for southern African: a noble warrior chief in leopard skin with shield and spear), unmistakably ancient Near Eastern (Babylonian, Assyrian and Egyptian) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/knights.png"
+  ]
+ },
+ "ne_catapult": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a wooden siege engine that throws stones, unmistakably ancient Near Eastern (Babylonian, Assyrian and Egyptian) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/catapult.png"
+  ]
+ },
+ "ne_trireme": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: an early oared war galley with a single sail (for Mesoamerican: a large dugout war canoe with paddlers; for southern African: a large dugout river canoe with paddlers), unmistakably ancient Near Eastern (Babylonian, Assyrian and Egyptian) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/trireme.png"
+  ]
+ },
+ "ne_sail": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a medieval sailing ship for exploration, unmistakably ancient Near Eastern (Babylonian, Assyrian and Egyptian) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/sail.png"
+  ]
+ },
+ "ne_diplomat": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: an envoy in fine court dress carrying a message scroll and a gift, unmistakably ancient Near Eastern (Babylonian, Assyrian and Egyptian) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/diplomat.png"
+  ]
+ },
+ "ne_caravan": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a trade caravan: a merchant with pack animals laden with goods (llamas or porters for Mesoamerican), unmistakably ancient Near Eastern (Babylonian, Assyrian and Egyptian) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/caravan.png"
+  ]
+ },
+ "ea_settlers": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a pair of settlers, a man and a woman, carrying tools, bundles and seed for a new home, unmistakably East Asian (ancient Chinese and Mongol) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/settlers.png"
+  ]
+ },
+ "ea_militia": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a militia warrior with a simple spear or club and light clothing, unmistakably East Asian (ancient Chinese and Mongol) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/militia.png"
+  ]
+ },
+ "ea_phalanx": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a heavy spearman with a large shield and a long spear, standing guard, unmistakably East Asian (ancient Chinese and Mongol) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/phalanx.png"
+  ]
+ },
+ "ea_legion": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a disciplined heavy infantry swordsman with a big shield and a short sword, unmistakably East Asian (ancient Chinese and Mongol) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/legion.png"
+  ]
+ },
+ "ea_chariot": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a two-horse war chariot with a driver and a warrior (for Mesoamerican: a litter-borne war leader carried by four bearers, as there were no horses; for southern African: a war leader carried on a shield by runners), unmistakably East Asian (ancient Chinese and Mongol) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/chariot.png"
+  ]
+ },
+ "ea_knights": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: an armoured mounted noble warrior on a barded horse with a lance or sword (for Mesoamerican: an eagle-knight warrior in feathered armour on foot with a macuahuitl; for southern African: a noble warrior chief in leopard skin with shield and spear), unmistakably East Asian (ancient Chinese and Mongol) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/knights.png"
+  ]
+ },
+ "ea_catapult": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a wooden siege engine that throws stones, unmistakably East Asian (ancient Chinese and Mongol) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/catapult.png"
+  ]
+ },
+ "ea_trireme": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: an early oared war galley with a single sail (for Mesoamerican: a large dugout war canoe with paddlers; for southern African: a large dugout river canoe with paddlers), unmistakably East Asian (ancient Chinese and Mongol) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/trireme.png"
+  ]
+ },
+ "ea_sail": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a medieval sailing ship for exploration, unmistakably East Asian (ancient Chinese and Mongol) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/sail.png"
+  ]
+ },
+ "ea_diplomat": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: an envoy in fine court dress carrying a message scroll and a gift, unmistakably East Asian (ancient Chinese and Mongol) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/diplomat.png"
+  ]
+ },
+ "ea_caravan": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a trade caravan: a merchant with pack animals laden with goods (llamas or porters for Mesoamerican), unmistakably East Asian (ancient Chinese and Mongol) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/caravan.png"
+  ]
+ },
+ "sa_settlers": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a pair of settlers, a man and a woman, carrying tools, bundles and seed for a new home, unmistakably ancient South Asian (Indian, Maurya and Gupta) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/settlers.png"
+  ]
+ },
+ "sa_militia": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a militia warrior with a simple spear or club and light clothing, unmistakably ancient South Asian (Indian, Maurya and Gupta) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/militia.png"
+  ]
+ },
+ "sa_phalanx": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a heavy spearman with a large shield and a long spear, standing guard, unmistakably ancient South Asian (Indian, Maurya and Gupta) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/phalanx.png"
+  ]
+ },
+ "sa_legion": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a disciplined heavy infantry swordsman with a big shield and a short sword, unmistakably ancient South Asian (Indian, Maurya and Gupta) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/legion.png"
+  ]
+ },
+ "sa_chariot": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a two-horse war chariot with a driver and a warrior (for Mesoamerican: a litter-borne war leader carried by four bearers, as there were no horses; for southern African: a war leader carried on a shield by runners), unmistakably ancient South Asian (Indian, Maurya and Gupta) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/chariot.png"
+  ]
+ },
+ "sa_knights": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: an armoured mounted noble warrior on a barded horse with a lance or sword (for Mesoamerican: an eagle-knight warrior in feathered armour on foot with a macuahuitl; for southern African: a noble warrior chief in leopard skin with shield and spear), unmistakably ancient South Asian (Indian, Maurya and Gupta) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/knights.png"
+  ]
+ },
+ "sa_catapult": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a wooden siege engine that throws stones, unmistakably ancient South Asian (Indian, Maurya and Gupta) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/catapult.png"
+  ]
+ },
+ "sa_trireme": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: an early oared war galley with a single sail (for Mesoamerican: a large dugout war canoe with paddlers; for southern African: a large dugout river canoe with paddlers), unmistakably ancient South Asian (Indian, Maurya and Gupta) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/trireme.png"
+  ]
+ },
+ "sa_sail": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a medieval sailing ship for exploration, unmistakably ancient South Asian (Indian, Maurya and Gupta) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/sail.png"
+  ]
+ },
+ "sa_diplomat": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: an envoy in fine court dress carrying a message scroll and a gift, unmistakably ancient South Asian (Indian, Maurya and Gupta) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/diplomat.png"
+  ]
+ },
+ "sa_caravan": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a trade caravan: a merchant with pack animals laden with goods (llamas or porters for Mesoamerican), unmistakably ancient South Asian (Indian, Maurya and Gupta) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/caravan.png"
+  ]
+ },
+ "ma_settlers": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a pair of settlers, a man and a woman, carrying tools, bundles and seed for a new home, unmistakably Mesoamerican (Aztec and Maya) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/settlers.png"
+  ]
+ },
+ "ma_militia": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a militia warrior with a simple spear or club and light clothing, unmistakably Mesoamerican (Aztec and Maya) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/militia.png"
+  ]
+ },
+ "ma_phalanx": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a heavy spearman with a large shield and a long spear, standing guard, unmistakably Mesoamerican (Aztec and Maya) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/phalanx.png"
+  ]
+ },
+ "ma_legion": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a disciplined heavy infantry swordsman with a big shield and a short sword, unmistakably Mesoamerican (Aztec and Maya) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/legion.png"
+  ]
+ },
+ "ma_chariot": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a two-horse war chariot with a driver and a warrior (for Mesoamerican: a litter-borne war leader carried by four bearers, as there were no horses; for southern African: a war leader carried on a shield by runners), unmistakably Mesoamerican (Aztec and Maya) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/chariot.png"
+  ]
+ },
+ "ma_knights": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: an armoured mounted noble warrior on a barded horse with a lance or sword (for Mesoamerican: an eagle-knight warrior in feathered armour on foot with a macuahuitl; for southern African: a noble warrior chief in leopard skin with shield and spear), unmistakably Mesoamerican (Aztec and Maya) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/knights.png"
+  ]
+ },
+ "ma_catapult": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a wooden siege engine that throws stones, unmistakably Mesoamerican (Aztec and Maya) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/catapult.png"
+  ]
+ },
+ "ma_trireme": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: an early oared war galley with a single sail (for Mesoamerican: a large dugout war canoe with paddlers; for southern African: a large dugout river canoe with paddlers), unmistakably Mesoamerican (Aztec and Maya) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/trireme.png"
+  ]
+ },
+ "ma_sail": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a medieval sailing ship for exploration, unmistakably Mesoamerican (Aztec and Maya) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/sail.png"
+  ]
+ },
+ "ma_diplomat": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: an envoy in fine court dress carrying a message scroll and a gift, unmistakably Mesoamerican (Aztec and Maya) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/diplomat.png"
+  ]
+ },
+ "ma_caravan": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a trade caravan: a merchant with pack animals laden with goods (llamas or porters for Mesoamerican), unmistakably Mesoamerican (Aztec and Maya) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/caravan.png"
+  ]
+ },
+ "af_settlers": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a pair of settlers, a man and a woman, carrying tools, bundles and seed for a new home, unmistakably southern African (Zulu and Great Zimbabwe) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/settlers.png"
+  ]
+ },
+ "af_militia": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a militia warrior with a simple spear or club and light clothing, unmistakably southern African (Zulu and Great Zimbabwe) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/militia.png"
+  ]
+ },
+ "af_phalanx": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a heavy spearman with a large shield and a long spear, standing guard, unmistakably southern African (Zulu and Great Zimbabwe) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/phalanx.png"
+  ]
+ },
+ "af_legion": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a disciplined heavy infantry swordsman with a big shield and a short sword, unmistakably southern African (Zulu and Great Zimbabwe) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/legion.png"
+  ]
+ },
+ "af_chariot": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a two-horse war chariot with a driver and a warrior (for Mesoamerican: a litter-borne war leader carried by four bearers, as there were no horses; for southern African: a war leader carried on a shield by runners), unmistakably southern African (Zulu and Great Zimbabwe) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/chariot.png"
+  ]
+ },
+ "af_knights": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: an armoured mounted noble warrior on a barded horse with a lance or sword (for Mesoamerican: an eagle-knight warrior in feathered armour on foot with a macuahuitl; for southern African: a noble warrior chief in leopard skin with shield and spear), unmistakably southern African (Zulu and Great Zimbabwe) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/knights.png"
+  ]
+ },
+ "af_catapult": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a wooden siege engine that throws stones, unmistakably southern African (Zulu and Great Zimbabwe) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/catapult.png"
+  ]
+ },
+ "af_trireme": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: an early oared war galley with a single sail (for Mesoamerican: a large dugout war canoe with paddlers; for southern African: a large dugout river canoe with paddlers), unmistakably southern African (Zulu and Great Zimbabwe) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/trireme.png"
+  ]
+ },
+ "af_sail": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a medieval sailing ship for exploration, unmistakably southern African (Zulu and Great Zimbabwe) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/sail.png"
+  ]
+ },
+ "af_diplomat": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: an envoy in fine court dress carrying a message scroll and a gift, unmistakably southern African (Zulu and Great Zimbabwe) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/diplomat.png"
+  ]
+ },
+ "af_caravan": {
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a trade caravan: a merchant with pack animals laden with goods (llamas or porters for Mesoamerican), unmistakably southern African (Zulu and Great Zimbabwe) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/caravan.png"
+  ]
+ }
+}

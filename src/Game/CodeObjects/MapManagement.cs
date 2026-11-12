@@ -1529,6 +1529,7 @@ namespace OpenCivOne
 			uint[] colours = { 0xffc43a2c, 0xfff2ece0, 0xff3c9a46, 0xff3e5bd8, 0xffe0b830, 0xff2fb6c8, 0xffc84ab4, 0xff6a6a72 };
 
 			var marks = new Dictionary<(int, int), int>();
+			var unitStyles = new Dictionary<(int, int), string>();
 			var walled = new HashSet<(int, int)>();
 			var looks = new Dictionary<(int, int), (string, int)>();
 
@@ -1566,12 +1567,14 @@ namespace OpenCivOne
 					{
 						scene.Units.Add((x, y, (int)unit.UnitType, colours[owner & 7]));
 						marks[(x, y)] = UnitMarks(owner, unitID);
+						unitStyles[(x, y)] = CityLook(owner).Item1;
 					}
 				}
 			}
 
 			scene.Walls = (x, y) => walled.Contains((x, y));
 			scene.UnitMarks = (x, y) => marks.TryGetValue((x, y), out int m) ? m : 0;
+			scene.UnitStyle = (x, y) => unitStyles.TryGetValue((x, y), out string? st) ? st : "";
 			scene.CityLook = (x, y) => looks.TryGetValue((x, y), out var look) ? look : ("", 0);
 
 			// the view is centred on the middle of the classic map window (15 x 12 cells)
