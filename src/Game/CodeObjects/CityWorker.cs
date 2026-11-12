@@ -1530,12 +1530,15 @@ namespace OpenCivOne
 					this.parent.GameData.Players[this.Var_6548_PlayerID].GovernmentType == GovernmentTypeEnum.Communist)
 				{
 					int attackUnitCount = 0;
-					int activeUnitID = this.parent.MapManagement.F0_2aea_1458_GetCellActiveUnitID(cityX, cityY);
+					// the units in the city are the owner's: a unit of another player recorded on the city's square is not
+					// one of them (its number would point into the wrong player's list)
+					int activeUnitID = this.parent.MapManagement.F0_2aea_14e0_GetCellActiveUnitPlayerID(cityX, cityY) == this.Var_6548_PlayerID ?
+						this.parent.MapManagement.F0_2aea_1458_GetCellActiveUnitID(cityX, cityY) : -1;
 					int nextActiveUnitID = activeUnitID;
 
 					for (int i = 0; i < 32; i++)
 					{
-						if (nextActiveUnitID == -1)
+						if (nextActiveUnitID == -1 || this.parent.GameData.Players[this.Var_6548_PlayerID].Units[nextActiveUnitID].UnitType == UnitTypeEnum.None)
 							break;
 
 						if (this.parent.GameData.Units[(int)this.parent.GameData.Players[this.Var_6548_PlayerID].Units[nextActiveUnitID].UnitType].AttackStrength != 0)
