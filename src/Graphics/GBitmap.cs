@@ -1040,6 +1040,27 @@ namespace OpenCivOne.Graphics
 		{
 			int hdWidth = this.iWidth * HDScale;
 			Overlay? over = this.Over;
+
+			// a full-screen picture drawn over the map window (the palace, a city, an advisor) leaves only scattered
+			// pixels that happen to equal the map's: the overlay is shown only while most of its area still holds the map,
+			// so those few do not show specks of the map through the picture
+			if (over != null && !over.Hold && over.Snapshot.Length == over.Area.Width * over.Area.Height)
+			{
+				int same = 0;
+
+				for (int y = 0; y < over.Area.Height; y++)
+				{
+					int row = ((over.Area.Y + y) * this.iWidth) + over.Area.X, snap = y * over.Area.Width;
+
+					for (int x = 0; x < over.Area.Width; x++)
+						if (over.Snapshot[snap + x] == this.aPixels[row + x])
+							same++;
+				}
+
+				if (same < over.Snapshot.Length / 4)
+					over = null;
+			}
+
 			int[] rows = new int[hdWidth * HDScale];
 			int pixelAddress = 0;
 			byte[]? smooth = _smoothUpscale ? this.ScaleIndexes() : null;
