@@ -1528,6 +1528,7 @@ namespace OpenCivOne
 			};
 			uint[] colours = { 0xffc43a2c, 0xfff2ece0, 0xff3c9a46, 0xff3e5bd8, 0xffe0b830, 0xff2fb6c8, 0xffc84ab4, 0xff6a6a72 };
 
+			var marks = new Dictionary<(int, int), int>();
 			var walled = new HashSet<(int, int)>();
 			var looks = new Dictionary<(int, int), (string, int)>();
 
@@ -1562,11 +1563,15 @@ namespace OpenCivOne
 					Unit unit = this.parent.GameData.Players[owner].Units[unitID];
 
 					if (debug || owner == this.parent.GameData.HumanPlayerID || (unit.VisibleByPlayer & mask) != 0)
+					{
 						scene.Units.Add((x, y, (int)unit.UnitType, colours[owner & 7]));
+						marks[(x, y)] = UnitMarks(owner, unitID);
+					}
 				}
 			}
 
 			scene.Walls = (x, y) => walled.Contains((x, y));
+			scene.UnitMarks = (x, y) => marks.TryGetValue((x, y), out int m) ? m : 0;
 			scene.CityLook = (x, y) => looks.TryGetValue((x, y), out var look) ? look : ("", 0);
 
 			// the view is centred on the middle of the classic map window (15 x 12 cells)
@@ -1575,6 +1580,62 @@ namespace OpenCivOne
 			this.IsoCentre = (cx, cy);
 			GRectangle area = new GRectangle(80, 8, 240, 192);
 			screen.Over = new GBitmap.Overlay { Area = area, Pixels = iso.Pixels, Snapshot = screen.CopyPixels(area) };
+		}
+
+		/// <summary>
+		/// The marks the classic map shows on a unit (see F0_2aea_0fb3_DrawUnitWithStatus), for the isometric view:
+		/// sentry, fortified, more units on its cell, and the letter of an order in progress
+		/// </summary>
+		private int UnitMarks(int playerID, int unitID)
+		{
+			Unit unit = this.parent.GameData.Players[playerID].Units[unitID];
+			int marks = 0;
+			char letter = '\0';
+
+			if ((unit.Status & UnitStatusEnum.Sentry) != UnitStatusEnum.None)
+				marks |= 1;
+
+			if ((unit.Status & UnitStatusEnum.Fortified) != UnitStatusEnum.None)
+				marks |= 2;
+			else if ((unit.Status & UnitStatusEnum.Fortifying) != UnitStatusEnum.None)
+				letter = 'F';
+
+			if (playerID == this.parent.GameData.HumanPlayerID && unit.GoToDestination.X != -1)
+				letter = 'G';
+
+			if ((unit.Status & (UnitStatusEnum.SettlerBuildRoadOrRail | UnitStatusEnum.SettlerBuildIrrigation | UnitStatusEnum.SettlerBuildMineOrForest)) != UnitStatusEnum.None &&
+				this.parent.GameData.Units[(int)unit.UnitType].MovementType != UnitMovementTypeEnum.Air)
+			{
+				letter = 'R';
+
+				if ((unit.Status & UnitStatusEnum.SettlerBuildIrrigation) != UnitStatusEnum.None)
+					letter = unit.UnitType != UnitTypeEnum.Settler ? '?' : 'I';
+
+				if ((unit.Status & UnitStatusEnum.SettlerBuildMineOrForest) != UnitStatusEnum.None)
+				{
+					letter = 'M';
+
+					if ((unit.Status & UnitStatusEnum.SettlerBuildIrrigation) != UnitStatusEnum.None)
+						letter = 'F';
+
+					if ((unit.Status & UnitStatusEnum.SettlerBuildRoadOrRail) != UnitStatusEnum.None)
+						letter = 'P';
+				}
+			}
+
+			// another unit of the same player on the cell
+			for (int i = 0; i < 128; i++)
+			{
+				Unit other = this.parent.GameData.Players[playerID].Units[i];
+
+				if (i != unitID && other.UnitType != UnitTypeEnum.None && other.Position.X == unit.Position.X && other.Position.Y == unit.Position.Y)
+				{
+					marks |= 4;
+					break;
+				}
+			}
+
+			return marks | (letter << 8);
 		}
 
 		// the architectural style of each nation's cities, by NationalityID: classical, Near Eastern, European, East Asian,

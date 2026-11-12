@@ -70,6 +70,13 @@ namespace OpenCivOne.Graphics
 			/// its owner's age (0 ancient, 1 medieval, 2 industrial, 3 modern); an empty style uses the theme's one town set
 			/// </summary>
 			public Func<int, int, (string Style, int Age)> CityLook = (x, y) => ("", 0);
+
+			/// <summary>
+			/// The state of the unit shown on a cell, as the classic map marks it: bit 0 sentry (asleep, drawn grey),
+			/// bit 1 fortified, bit 2 more than one unit on the cell; bits 8-15 a letter for an order in progress
+			/// (F fortifying, G go to, R road, I irrigation, M mine, F forest, P pollution), 0 for none
+			/// </summary>
+			public Func<int, int, int> UnitMarks = (x, y) => 0;
 			public List<(int X, int Y, int Type, uint Colour)> Units = new List<(int, int, int, uint)>();
 		}
 
@@ -523,7 +530,7 @@ namespace OpenCivOne.Graphics
 					sig = (sig * 37) + (c.X * 1000) + (c.Y * 10) + c.Size + c.Name.GetHashCode() + c.Colour + (scene.Walls(Wrap(c.X), c.Y) ? 7 : 0) + scene.CityLook(Wrap(c.X), c.Y).GetHashCode();
 
 				foreach (var u in scene.Units)
-					sig = (sig * 41) + (u.X * 1000) + (u.Y * 10) + u.Type + u.Colour;
+					sig = (sig * 41) + (u.X * 1000) + (u.Y * 10) + u.Type + u.Colour + (scene.UnitMarks(Wrap(u.X), u.Y) * 7919);
 			}
 
 			if (sig == this.signature)
@@ -2172,7 +2179,14 @@ namespace OpenCivOne.Graphics
 
 				(int x, int y) = Nearest(u.X, u.Y, cx);
 				SKPoint p = Screen(x + 0.5f, y + 0.5f);
-				items.Add((p.Y + 14, p.X, unit));
+				int unitMarks = scene.UnitMarks(Wrap(u.X), u.Y);
+
+				// more units on the cell: a second, darker figure just behind
+				if ((unitMarks & 4) != 0)
+					items.Add((p.Y + 13.9f, p.X + 7, Toned(unit, "stack", 0.55f, 0.55f)));
+
+				// asleep (sentry): drawn grey, as the classic map greys it
+				items.Add((p.Y + 14, p.X, (unitMarks & 1) != 0 ? Toned(unit, "sentry", 0.9f, 0) : unit));
 			}
 
 			items.Sort((a, b) => a.Base.CompareTo(b.Base));
@@ -2241,11 +2255,47 @@ namespace OpenCivOne.Graphics
 			System.Runtime.InteropServices.Marshal.Copy(Array.ConvertAll(drawn, x => unchecked((int)x)), 0, bitmap.GetPixels(), drawn.Length);
 
 			// banners on units, flags and plates on cities
-			foreach (var u in scene.Units)
+			using (SKPaint earth = new SKPaint { IsAntialias = true, Color = new SKColor(122, 96, 60) })
+			using (SKPaint stake = Stroke(new SKColor(78, 56, 34), 2.2f))
+			using (SKPaint ink = Stroke(new SKColor(40, 34, 28), 1.2f))
+			using (SKPaint paper = new SKPaint { IsAntialias = true, Color = new SKColor(240, 230, 204) })
+			using (SKFont tagFont = new SKFont(SKTypeface.FromFamilyName("DejaVu Serif", SKFontStyle.Bold) ?? SKTypeface.Default, 12))
+			using (SKPaint tagInk = new SKPaint { IsAntialias = true, Color = new SKColor(40, 34, 28) })
 			{
-				(int x, int y) = Nearest(u.X, u.Y, cx);
-				SKPoint p = Screen(x + 0.5f, y + 0.5f);
-				Flag(canvas, p.X - 14, p.Y - 26, 10, u.Colour, 1.9f);
+				foreach (var u in scene.Units)
+				{
+					(int x, int y) = Nearest(u.X, u.Y, cx);
+					SKPoint p = Screen(x + 0.5f, y + 0.5f);
+					int unitMarks = scene.UnitMarks(Wrap(u.X), u.Y);
+
+					// fortified: a low earthwork with a row of stakes in front of the unit's feet
+					if ((unitMarks & 2) != 0)
+					{
+						SKRect bank = new SKRect(p.X - 22, p.Y + 4, p.X + 22, p.Y + 20);
+						canvas.DrawArc(bank, 10, 160, true, earth);
+						canvas.DrawArc(bank, 10, 160, false, ink);
+
+						for (int k = -3; k <= 3; k++)
+						{
+							float sx = p.X + (k * 6), sy = p.Y + 13 + (MathF.Abs(k) * 0.9f);
+							canvas.DrawLine(sx, sy, sx + (k * 0.4f), sy - 8, stake);
+						}
+					}
+
+					Flag(canvas, p.X - 14, p.Y - 26, 10, u.Colour, 1.9f);
+
+					// an order in progress: its letter on a small paper tag beside the banner
+					char letter = (char)((unitMarks >> 8) & 0xff);
+
+					if (letter != '\0')
+					{
+						SKRect tag = new SKRect(p.X + 6, p.Y - 30, p.X + 20, p.Y - 15);
+						canvas.DrawRect(tag, paper);
+						canvas.DrawRect(tag, ink);
+						string l = letter.ToString();
+						canvas.DrawText(l, tag.MidX - (tagFont.MeasureText(l) / 2), tag.Bottom - 3, tagFont, tagInk);
+					}
+				}
 			}
 
 			using SKFont font = new SKFont(SKTypeface.FromFamilyName("DejaVu Serif", SKFontStyle.Bold) ?? SKTypeface.Default, 13);
@@ -2418,6 +2468,26 @@ namespace OpenCivOne.Graphics
 		}
 
 		// a sprite with every pixel's colour changed by the given function (colour without the alpha's premultiplying)
+		private readonly Dictionary<(SKBitmap, string), SKBitmap> toned = new Dictionary<(SKBitmap, string), SKBitmap>();
+
+		/// <summary>
+		/// A unit sprite toned down (kept once made): grey by the amount given, then darkened
+		/// </summary>
+		private SKBitmap Toned(SKBitmap b, string kind, float brightness, float colour)
+		{
+			if (!this.toned.TryGetValue((b, kind), out SKBitmap? result))
+			{
+				result = Recolour(b, (r, g, bl) =>
+				{
+					float grey = (r + g + bl) / 3;
+					return ((grey + ((r - grey) * colour)) * brightness, (grey + ((g - grey) * colour)) * brightness, (grey + ((bl - grey) * colour)) * brightness);
+				});
+				this.toned[(b, kind)] = result;
+			}
+
+			return result;
+		}
+
 		/// <summary>
 		/// The town picture for a city's style, age, size and walls: its style's own picture for that age, else the shared
 		/// one ("all") for that age, else the nearest earlier age, else a later one; walls apply up to the medieval age only (later towns

@@ -1250,6 +1250,11 @@ GBitmap other4()
 		showScene.Walls = (x, y) => cities.IndexOf((x, y)) is int wi && wi >= 0 && sizes[wi] >= 8;
 		// a mix of the nations' architectural styles
 		string[] showStyles = { "eu", "cl", "ne", "ea", "sa", "ma", "af" };
+		// unit marks to judge: sentry, fortified, a stack, and orders in progress
+		showScene.UnitMarks = (x, y) => showScene.Units.FindIndex(u => u.X == x && u.Y == y) switch
+		{
+			0 => 2, 1 => 1, 2 => 4 | ('G' << 8), 3 => 'R' << 8, 4 => 2 | 4, 5 => 'I' << 8, _ => 0,
+		};
 		showScene.CityLook = (x, y) => (showStyles[Math.Max(0, cities.IndexOf((x, y))) % showStyles.Length], 1);
 
 		for (int i = 0; i < cities.Count; i++)
