@@ -1632,10 +1632,46 @@ namespace OpenCivOne
 
 			// the view is centred on the middle of the classic map window (15 x 12 cells)
 			float cx = this.parent.Var_d4cc_MapViewX + 7.5f, cy = this.parent.Var_d75e_MapViewY + 6f;
-			iso.Render(cx, cy, scene);
+
+			// what is on screen now, if the view stays where it is: when the land changes (cells explored, a road built)
+			// the new picture fades in over it, instead of the change popping in
+			uint[]? before = (screen.Over is GBitmap.Overlay shown && !shown.Hold && shown.Pixels.Length == iso.Pixels.Length &&
+				this.IsoCentre == (cx, cy)) ? shown.Pixels : null;
+			bool repainted = iso.Render(cx, cy, scene);
 			this.IsoCentre = (cx, cy);
 			GRectangle area = new GRectangle(80, 8, 240, 192);
-			screen.Over = new GBitmap.Overlay { Area = area, Pixels = iso.Pixels, Snapshot = screen.CopyPixels(area) };
+			GBitmap.Overlay fresh = new GBitmap.Overlay { Area = area, Pixels = iso.Pixels, Snapshot = screen.CopyPixels(area) };
+			screen.Over = fresh;
+
+			if (repainted && iso.GroundChanged && before != null)
+			{
+				uint[] after = iso.Pixels;
+
+				for (int step = 1; step <= 4; step++)
+				{
+					int mix = step * 256 / 5;
+					uint[] frame = new uint[after.Length];
+
+					System.Threading.Tasks.Parallel.For(0, 16, part =>
+					{
+						for (int i = part * after.Length / 16; i < (part + 1) * after.Length / 16; i++)
+						{
+							uint o = before[i], n = after[i];
+							uint r = ((((o >> 16) & 0xff) * (uint)(256 - mix)) + (((n >> 16) & 0xff) * (uint)mix)) >> 8;
+							uint g = ((((o >> 8) & 0xff) * (uint)(256 - mix)) + (((n >> 8) & 0xff) * (uint)mix)) >> 8;
+							uint b = (((o & 0xff) * (uint)(256 - mix)) + ((n & 0xff) * (uint)mix)) >> 8;
+							frame[i] = 0xff000000 | (r << 16) | (g << 8) | b;
+						}
+					});
+
+					fresh.Pixels = frame;
+					screen.Modified = true;
+					this.parent.CommonTools.WaitTimer(1);
+				}
+
+				fresh.Pixels = after;
+				screen.Modified = true;
+			}
 		}
 
 		/// <summary>
@@ -1812,15 +1848,20 @@ namespace OpenCivOne
 			int frames = this.parent.GlobalPreferences.Debug.FastMode ? 4 : 8;
 			over.Hold = true;
 
+			uint[] last = view;
+
 			for (int f = 1; f <= frames; f++)
 			{
-				over.Pixels = iso.MoveFrame(f / (float)frames, a, b) ?? view;
+				last = iso.MoveFrame(f / (float)frames, a, b) ?? view;
+				over.Pixels = last;
 				screen.Modified = true;
 				this.parent.CommonTools.WaitTimer(1);
 			}
 
+			// the unit stays where it arrived until the map is painted again (putting the view from before the move back
+			// would show it at the cell it left for a moment)
 			iso.EndMove();
-			over.Pixels = view;
+			over.Pixels = last;
 			over.Hold = false;
 			screen.Modified = true;
 

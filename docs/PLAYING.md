@@ -71,11 +71,22 @@ is the isometric woodblock view; cities show their nation's style, grow through 
 they build City Walls, and change from ancient to medieval, industrial and modern as you discover Monarchy or
 Feudalism, Industrialization, and The Corporation or Electricity.
 
+## Controls on the isometric map
+
+- **Moving units**: each key moves the way it points on the screen. The arrows move up, down, left and right
+  across the screen; for the in-between directions use the number pad (7, 9, 1, 3) or press two arrows together
+  (up and right together moves up-right).
+- **Sending a unit somewhere**: press on the active unit and drag. A dashed line shows the way it will go (red
+  and crossed out if it cannot get there, such as land you have not explored yet); let go to send it.
+- **Grid**: Ctrl+G shows or hides an outline around every cell.
+- **City screen**: the city's land is shown as diamonds too; click a diamond to choose where the citizens work.
+
 ## Settings worth knowing
 
 - **Bigger worlds**: the land mass menu at the start of a game has a new **Huge** option.
 - **Smoother terrain** (optional, off by default): add `"TerrainSmoothing": true` to the preferences file for
   continents with broad, natural terrain regions instead of the original scattered tiles.
+- **Grid** (`"MapGrid": true`) starts with the cell outlines on; Ctrl+G changes it during play and it is remembered.
 - **Debug mode** (`"Debug": { "DebugMode": true }`) shows the whole map and every civilization; leave it off for
   a normal game.
 

@@ -54,6 +54,11 @@ namespace OpenCivOne.Graphics
 		public bool ShowGrid { get; set; }
 
 		/// <summary>
+		/// Whether the last render painted the ground again (the land, the fog or a city changed), not only units
+		/// </summary>
+		public bool GroundChanged { get; private set; }
+
+		/// <summary>
 		/// The key of the land, fog and cities the ground passes last painted, and what they made (see Paint)
 		/// </summary>
 		private long groundCacheKey = long.MinValue;
@@ -712,6 +717,7 @@ namespace OpenCivOne.Graphics
 			// the two ground passes depend on the land, the fog and the cities, not the units: while only units change, the
 			// ground of the last render is used again
 			bool reuse = this.groundArrays != null && this.groundCacheKey == groundKey;
+			this.GroundChanged = !reuse;
 			var cached = this.groundArrays ?? default;
 			int[] kind = reuse ? cached.Kind : new int[w * h];
 			int[] cover = reuse ? cached.Cover : new int[w * h]; // the terrain each pixel's ground was voted for
