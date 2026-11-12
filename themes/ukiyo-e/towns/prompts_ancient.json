@@ -1,0 +1,146 @@
+{
+ "cl_a0_s0_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient an early Greek (Bronze Age, Mycenaean) settlement: a small hamlet, half as wide as the reference, of five large plain stone and mud-brick houses with flat or low thatched roofs, with a megaron hall with a porch of wooden columns, enclosed by rough cyclopean stone walls of huge boulders with a lion gate with a gate. Proud and well built. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/cl_s0_w.png"
+  ]
+ },
+ "cl_a0_s1_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient an early Greek (Bronze Age, Mycenaean) settlement: a village, a little smaller than the reference, of about twelve large plain stone and mud-brick houses with flat or low thatched roofs, with a megaron hall with a porch of wooden columns, enclosed by rough cyclopean stone walls of huge boulders with a lion gate with a gate. Proud and well built. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/cl_s1_w.png"
+  ]
+ },
+ "cl_a0_s2_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient an early Greek (Bronze Age, Mycenaean) settlement: a town of about twenty large plain stone and mud-brick houses with flat or low thatched roofs, with a megaron hall with a porch of wooden columns, enclosed by rough cyclopean stone walls of huge boulders with a lion gate with a gate. Proud and well built. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/cl_s2_w.png"
+  ]
+ },
+ "cl_a0_s3_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient an early Greek (Bronze Age, Mycenaean) settlement: a large town one and a half times as wide as the reference, of about thirty large plain stone and mud-brick houses with flat or low thatched roofs, with a megaron hall with a porch of wooden columns, enclosed by rough cyclopean stone walls of huge boulders with a lion gate with a gate. Proud and well built. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/cl_s3_w.png"
+  ]
+ },
+ "ne_a0_s0_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient an early Mesopotamian and Egyptian (Bronze Age) settlement: a small hamlet, half as wide as the reference, of five large simple mud-brick houses with flat roofs and reed shelters, date palms, with a small mud-brick temple on a raised platform, enclosed by plain mud-brick walls with a gate. Proud and well built. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ne_s0_w.png"
+  ]
+ },
+ "ne_a0_s1_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient an early Mesopotamian and Egyptian (Bronze Age) settlement: a village, a little smaller than the reference, of about twelve large simple mud-brick houses with flat roofs and reed shelters, date palms, with a small mud-brick temple on a raised platform, enclosed by plain mud-brick walls with a gate. Proud and well built. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ne_s1_w.png"
+  ]
+ },
+ "ne_a0_s2_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient an early Mesopotamian and Egyptian (Bronze Age) settlement: a town of about twenty large simple mud-brick houses with flat roofs and reed shelters, date palms, with a small mud-brick temple on a raised platform, enclosed by plain mud-brick walls with a gate. Proud and well built. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ne_s2_w.png"
+  ]
+ },
+ "ne_a0_s3_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient an early Mesopotamian and Egyptian (Bronze Age) settlement: a large town one and a half times as wide as the reference, of about thirty large simple mud-brick houses with flat roofs and reed shelters, date palms, with a small mud-brick temple on a raised platform, enclosed by plain mud-brick walls with a gate. Proud and well built. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ne_s3_w.png"
+  ]
+ },
+ "ea_a0_s0_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient an early Chinese (Bronze Age) settlement: a small hamlet, half as wide as the reference, of five large rammed-earth houses with thatched hip roofs on timber posts, with an ancestral hall on a raised earth platform, enclosed by high rammed-earth walls with a gate. Proud and well built. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ea_s0_w.png"
+  ]
+ },
+ "ea_a0_s1_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient an early Chinese (Bronze Age) settlement: a village, a little smaller than the reference, of about twelve large rammed-earth houses with thatched hip roofs on timber posts, with an ancestral hall on a raised earth platform, enclosed by high rammed-earth walls with a gate. Proud and well built. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ea_s1_w.png"
+  ]
+ },
+ "ea_a0_s2_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient an early Chinese (Bronze Age) settlement: a town of about twenty large rammed-earth houses with thatched hip roofs on timber posts, with an ancestral hall on a raised earth platform, enclosed by high rammed-earth walls with a gate. Proud and well built. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ea_s2_w.png"
+  ]
+ },
+ "ea_a0_s3_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient an early Chinese (Bronze Age) settlement: a large town one and a half times as wide as the reference, of about thirty large rammed-earth houses with thatched hip roofs on timber posts, with an ancestral hall on a raised earth platform, enclosed by high rammed-earth walls with a gate. Proud and well built. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ea_s3_w.png"
+  ]
+ },
+ "sa_a0_s0_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient an early Indus Valley (Bronze Age) settlement: a small hamlet, half as wide as the reference, of five large flat-roofed baked-brick houses in a neat street grid, wells, with a great bath and a granary on a brick citadel mound, enclosed by thick baked-brick walls with a gate. Proud and well built. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/sa_s0_w.png"
+  ]
+ },
+ "sa_a0_s1_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient an early Indus Valley (Bronze Age) settlement: a village, a little smaller than the reference, of about twelve large flat-roofed baked-brick houses in a neat street grid, wells, with a great bath and a granary on a brick citadel mound, enclosed by thick baked-brick walls with a gate. Proud and well built. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/sa_s1_w.png"
+  ]
+ },
+ "sa_a0_s2_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient an early Indus Valley (Bronze Age) settlement: a town of about twenty large flat-roofed baked-brick houses in a neat street grid, wells, with a great bath and a granary on a brick citadel mound, enclosed by thick baked-brick walls with a gate. Proud and well built. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/sa_s2_w.png"
+  ]
+ },
+ "sa_a0_s3_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient an early Indus Valley (Bronze Age) settlement: a large town one and a half times as wide as the reference, of about thirty large flat-roofed baked-brick houses in a neat street grid, wells, with a great bath and a granary on a brick citadel mound, enclosed by thick baked-brick walls with a gate. Proud and well built. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/sa_s3_w.png"
+  ]
+ },
+ "ma_a0_s0_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient an early Mesoamerican (Olmec) settlement: a small hamlet, half as wide as the reference, of five large thatched pole-and-plaster houses on earth platforms, with a big earthen pyramid mound and colossal carved stone heads, enclosed by an earth bank and a log palisade with a gate. Proud and well built. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ma_s0_w.png"
+  ]
+ },
+ "ma_a0_s1_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient an early Mesoamerican (Olmec) settlement: a village, a little smaller than the reference, of about twelve large thatched pole-and-plaster houses on earth platforms, with a big earthen pyramid mound and colossal carved stone heads, enclosed by an earth bank and a log palisade with a gate. Proud and well built. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ma_s1_w.png"
+  ]
+ },
+ "ma_a0_s2_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient an early Mesoamerican (Olmec) settlement: a town of about twenty large thatched pole-and-plaster houses on earth platforms, with a big earthen pyramid mound and colossal carved stone heads, enclosed by an earth bank and a log palisade with a gate. Proud and well built. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ma_s2_w.png"
+  ]
+ },
+ "ma_a0_s3_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient an early Mesoamerican (Olmec) settlement: a large town one and a half times as wide as the reference, of about thirty large thatched pole-and-plaster houses on earth platforms, with a big earthen pyramid mound and colossal carved stone heads, enclosed by an earth bank and a log palisade with a gate. Proud and well built. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ma_s3_w.png"
+  ]
+ },
+ "af_a0_s0_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient an early southern African stone-building (Mapungubwe) settlement: a small hamlet, half as wide as the reference, of five large round plastered houses with conical thatched roofs, with a hilltop royal enclosure of low dry-stone walls, enclosed by low dry-stone walls with a gate. Proud and well built. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/af_s0_w.png"
+  ]
+ },
+ "af_a0_s1_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient an early southern African stone-building (Mapungubwe) settlement: a village, a little smaller than the reference, of about twelve large round plastered houses with conical thatched roofs, with a hilltop royal enclosure of low dry-stone walls, enclosed by low dry-stone walls with a gate. Proud and well built. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/af_s1_w.png"
+  ]
+ },
+ "af_a0_s2_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient an early southern African stone-building (Mapungubwe) settlement: a town of about twenty large round plastered houses with conical thatched roofs, with a hilltop royal enclosure of low dry-stone walls, enclosed by low dry-stone walls with a gate. Proud and well built. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/af_s2_w.png"
+  ]
+ },
+ "af_a0_s3_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient an early southern African stone-building (Mapungubwe) settlement: a large town one and a half times as wide as the reference, of about thirty large round plastered houses with conical thatched roofs, with a hilltop royal enclosure of low dry-stone walls, enclosed by low dry-stone walls with a gate. Proud and well built. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/af_s3_w.png"
+  ]
+ }
+}
