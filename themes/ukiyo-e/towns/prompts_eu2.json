@@ -1,0 +1,26 @@
+{
+ "eu_s3_w": {
+  "prompt": "In exactly the style of the reference image: same bold dark ink outlines, same muted colours, same viewing angle, and houses drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when the picture is shrunk to a small map icon; no tiny houses). A European medieval city of about twenty-five large houses with red tile roofs, a big stone church with a tall spire and a town hall with a clock tower, enclosed by pale stone city walls with round towers and a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_town0.png"
+  ]
+ },
+ "eu_s4_w": {
+  "prompt": "In exactly the style of the reference image: same bold dark ink outlines, same muted colours, same viewing angle, and houses drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when the picture is shrunk to a small map icon; no tiny houses). A European capital city, one and a half times as wide as the reference town, of about thirty-five large tall townhouses with red tile roofs, a grand twin-spired cathedral and a palace with a green dome, enclosed by pale stone city walls with round towers and a gate, a few houses outside the wall. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_town0.png"
+  ]
+ },
+ "eu_s0_w": {
+  "prompt": "In exactly the style of the reference image: same bold dark ink outlines, same muted colours, same viewing angle, and houses drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when the picture is shrunk to a small map icon; no tiny houses). A small European hamlet, half as wide as the reference town, of five large cottages with red tile roofs and a small chapel, enclosed by a low pale stone wall with two small towers and a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_town0.png"
+  ]
+ },
+ "eu_s2_w": {
+  "prompt": "In exactly the style of the reference image: same bold dark ink outlines, same muted colours, same viewing angle, and houses drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when the picture is shrunk to a small map icon; no tiny houses). A European market town, a little smaller than the reference town, of about fifteen large houses with red tile roofs and a stone church with a spire, enclosed by pale stone city walls with round towers and a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_town0.png"
+  ]
+ }
+}

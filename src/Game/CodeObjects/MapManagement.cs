@@ -1529,6 +1529,7 @@ namespace OpenCivOne
 			uint[] colours = { 0xffc43a2c, 0xfff2ece0, 0xff3c9a46, 0xff3e5bd8, 0xffe0b830, 0xff2fb6c8, 0xffc84ab4, 0xff6a6a72 };
 
 			var walled = new HashSet<(int, int)>();
+			var looks = new Dictionary<(int, int), (string, int)>();
 
 			for (int i = 0; i < 128; i++)
 			{
@@ -1536,6 +1537,9 @@ namespace OpenCivOne
 
 				if (city.Status != CityStatusEnum.Invalid && city.HasImprovement(ImprovementEnum.CityWalls))
 					walled.Add((city.Position.X, city.Position.Y));
+
+				if (city.Status != CityStatusEnum.Invalid)
+					looks[(city.Position.X, city.Position.Y)] = CityLook(city.PlayerID);
 
 				if (city.Status != CityStatusEnum.Invalid && (debug || city.VisibleSize != 0 || city.PlayerID == this.parent.GameData.HumanPlayerID))
 					scene.Cities.Add((city.Position.X, city.Position.Y, this.parent.Segment_2459.F0_2459_08c6_GetCityName(i),
@@ -1563,6 +1567,7 @@ namespace OpenCivOne
 			}
 
 			scene.Walls = (x, y) => walled.Contains((x, y));
+			scene.CityLook = (x, y) => looks.TryGetValue((x, y), out var look) ? look : ("", 0);
 
 			// the view is centred on the middle of the classic map window (15 x 12 cells)
 			float cx = this.parent.Var_d4cc_MapViewX + 7.5f, cy = this.parent.Var_d75e_MapViewY + 6f;
@@ -1570,6 +1575,26 @@ namespace OpenCivOne
 			this.IsoCentre = (cx, cy);
 			GRectangle area = new GRectangle(80, 8, 240, 192);
 			screen.Over = new GBitmap.Overlay { Area = area, Pixels = iso.Pixels, Snapshot = screen.CopyPixels(area) };
+		}
+
+		// the architectural style of each nation's cities, by NationalityID: classical, Near Eastern, European, East Asian,
+		// South Asian, Mesoamerican, African
+		private static readonly string[] NationStyles = { "eu", "cl", "ne", "eu", "ne", "eu", "cl", "sa", "eu", "eu", "af", "eu", "ma", "ea", "eu", "ea" };
+
+		/// <summary>
+		/// A player's cities' look: their nation's style, and the age the player has reached (medieval with Monarchy or
+		/// Feudalism, industrial with Industrialization, modern with The Corporation or Electricity)
+		/// </summary>
+		private (string, int) CityLook(int playerID)
+		{
+			int nation = this.parent.GameData.Players[playerID].NationalityID;
+			string style = nation >= 0 && nation < NationStyles.Length ? NationStyles[nation] : "eu";
+			bool Has(TechnologyAdvanceEnum a) => this.parent.GameEngine.F0_1ade_22b5_PlayerHasTechnology(playerID, a);
+			int age = (Has(TechnologyAdvanceEnum.TheCorporation) || Has(TechnologyAdvanceEnum.Electricity)) ? 3 :
+				Has(TechnologyAdvanceEnum.Industrialization) ? 2 :
+				(Has(TechnologyAdvanceEnum.Monarchy) || Has(TechnologyAdvanceEnum.Feudalism)) ? 1 : 0;
+
+			return (style, age);
 		}
 
 		// set while the whole map is drawn, so the cells drawn one by one do not each repaint the isometric view

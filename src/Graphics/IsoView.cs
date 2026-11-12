@@ -44,6 +44,7 @@ namespace OpenCivOne.Graphics
 		private readonly List<uint[]> fieldPlots = new List<uint[]>();
 		private readonly Dictionary<string, List<SKBitmap>> sets = new Dictionary<string, List<SKBitmap>>();
 		private readonly Dictionary<string, SKBitmap> objects = new Dictionary<string, SKBitmap>();
+		private readonly Dictionary<string, SKBitmap> townLooks = new Dictionary<string, SKBitmap>();
 		private uint[] pixels;
 		private long signature = long.MinValue;
 
@@ -63,6 +64,12 @@ namespace OpenCivOne.Graphics
 			/// Whether the city at a cell has built City Walls (it is drawn walled only then)
 			/// </summary>
 			public Func<int, int, bool> Walls = (x, y) => true;
+
+			/// <summary>
+			/// The look of the city at a cell: its architectural style (the folder name under iso/towns, such as "eu") and
+			/// its owner's age (0 ancient, 1 medieval, 2 industrial, 3 modern); an empty style uses the theme's one town set
+			/// </summary>
+			public Func<int, int, (string Style, int Age)> CityLook = (x, y) => ("", 0);
 			public List<(int X, int Y, int Type, uint Colour)> Units = new List<(int, int, int, uint)>();
 		}
 
@@ -213,6 +220,25 @@ namespace OpenCivOne.Graphics
 				}
 
 				view.sets[set] = loaded;
+			}
+
+			// town pictures by style, age, size and walls: iso/towns/STYLE/a{age}_s{step}_{w|o}.png, all painted at one scale
+			// (a picture 320 pixels wide covers 1.25 cells), so a hamlet stays smaller than a great city
+			string townsFolder = Path.Combine(iso, "towns");
+
+			if (Directory.Exists(townsFolder))
+			{
+				foreach (string file in Directory.GetFiles(townsFolder, "*.png", SearchOption.AllDirectories))
+				{
+					using SKBitmap? b = SKBitmap.Decode(file);
+
+					if (b == null)
+						continue;
+
+					float k = TileWidth * 1.25f / 320;
+					string key = Path.GetFileName(Path.GetDirectoryName(file)!) + "/" + Path.GetFileNameWithoutExtension(file);
+					view.townLooks[key] = b.Resize(new SKImageInfo(Math.Max(1, (int)(b.Width * k)), Math.Max(1, (int)(b.Height * k))), new SKSamplingOptions(SKCubicResampler.Mitchell));
+				}
 			}
 
 			// the small lone trees of open land: the first few of the tree set, smaller
@@ -494,7 +520,7 @@ namespace OpenCivOne.Graphics
 				}
 
 				foreach (var c in scene.Cities)
-					sig = (sig * 37) + (c.X * 1000) + (c.Y * 10) + c.Size + c.Name.GetHashCode() + c.Colour + (scene.Walls(Wrap(c.X), c.Y) ? 7 : 0);
+					sig = (sig * 37) + (c.X * 1000) + (c.Y * 10) + c.Size + c.Name.GetHashCode() + c.Colour + (scene.Walls(Wrap(c.X), c.Y) ? 7 : 0) + scene.CityLook(Wrap(c.X), c.Y).GetHashCode();
 
 				foreach (var u in scene.Units)
 					sig = (sig * 41) + (u.X * 1000) + (u.Y * 10) + u.Type + u.Colour;
@@ -2122,12 +2148,18 @@ namespace OpenCivOne.Graphics
 			{
 				(int x, int y) = Nearest(c.X, c.Y, cx);
 				// a city without City Walls is drawn open, its outer houses among gardens and lanes
-				List<SKBitmap> towns = !scene.Walls(Wrap(c.X), c.Y) && this.sets.TryGetValue("town_open", out var open) && open.Count == 4 ? open : this.sets["town"];
+				bool walls = scene.Walls(Wrap(c.X), c.Y);
+				SKBitmap? town = TownLook(scene.CityLook(Wrap(c.X), c.Y), c.Size, walls);
 
-				if (towns.Count == 0)
-					continue;
+				if (town == null)
+				{
+					List<SKBitmap> towns = !walls && this.sets.TryGetValue("town_open", out var open) && open.Count == 4 ? open : this.sets["town"];
 
-				SKBitmap town = towns[c.Size >= 8 ? 0 : c.Size >= 4 ? 1 : 2 + ((c.X + c.Y) & 1)];
+					if (towns.Count == 0)
+						continue;
+
+					town = towns[c.Size >= 8 ? 0 : c.Size >= 4 ? 1 : 2 + ((c.X + c.Y) & 1)];
+				}
 				SKPoint p = Screen(x + 0.5f, y + 0.5f);
 				items.Add((p.Y + (30 * S) + 6, p.X, town));
 			}
@@ -2385,6 +2417,39 @@ namespace OpenCivOne.Graphics
 		}
 
 		// a sprite with every pixel's colour changed by the given function (colour without the alpha's premultiplying)
+		/// <summary>
+		/// The town picture for a city's style, age, size and walls: its style's own picture for that age, else the shared
+		/// one ("all") for that age, else the nearest earlier age, else a later one; walls apply up to the medieval age only (later towns
+		/// have outgrown them). Null when the theme has none, so the one town set is used.
+		/// </summary>
+		private SKBitmap? TownLook((string Style, int Age) look, int size, bool walls)
+		{
+			if (string.IsNullOrEmpty(look.Style) || this.townLooks.Count == 0)
+				return null;
+
+			int step = size >= 13 ? 3 : size >= 8 ? 2 : size >= 4 ? 1 : 0;
+
+			// the city's own age first, then earlier ages, then later ones (a theme that has only some ages painted)
+			int own = Math.Clamp(look.Age, 0, 3);
+
+			foreach (int age in new[] { own, own - 1, own - 2, own - 3, own + 1, own + 2, own + 3 })
+			{
+				if (age < 0 || age > 3)
+					continue;
+
+				foreach (string style in new[] { look.Style, "all" })
+				{
+					foreach (string w in age <= 1 ? (walls ? new[] { "w", "o" } : new[] { "o", "w" }) : new[] { "o", "w" })
+					{
+						if (this.townLooks.TryGetValue($"{style}/a{age}_s{step}_{w}", out SKBitmap? b))
+							return b;
+					}
+				}
+			}
+
+			return null;
+		}
+
 		// whether a sprite is mostly green (grassy) rather than brown, by its opaque pixels
 		private static bool IsGreen(SKBitmap b)
 		{

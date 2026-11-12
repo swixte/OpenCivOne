@@ -1248,6 +1248,7 @@ GBitmap other4()
 
 		// in the showcase, only the large cities have built City Walls
 		showScene.Walls = (x, y) => cities.IndexOf((x, y)) is int wi && wi >= 0 && sizes[wi] >= 8;
+		showScene.CityLook = (x, y) => ("eu", 1);
 
 		for (int i = 0; i < cities.Count; i++)
 			showScene.Cities.Add((cities[i].X, cities[i].Y, names[i], sizes[i], colours[i % 3 == 2 ? 1 : 0]));
