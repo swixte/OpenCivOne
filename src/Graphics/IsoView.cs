@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using SkiaSharp;
 
 namespace OpenCivOne.Graphics
@@ -1580,6 +1581,54 @@ namespace OpenCivOne.Graphics
 					links[(x, y)] = list;
 				}
 
+				// a solid block of road cells would join into a grid of little loops: a link is dropped where its two ends
+				// are already joined another way within a few steps, so the block reads as a road with branches off it;
+				// every cell stays joined, and a long ring road (whose way round is long) keeps all its links. Links
+				// across the map's y axis go first, so the roads along x are the ones kept
+				bool Joined((int X, int Y) from, (int X, int Y) to, int limit)
+				{
+					var seen = new HashSet<(int, int)> { from };
+					var frontier = new List<(int, int)> { from };
+
+					for (int step = 0; step < limit && frontier.Count > 0; step++)
+					{
+						var next = new List<(int, int)>();
+
+						foreach (var n in frontier)
+							foreach (var m in links[n])
+							{
+								if (m == to)
+									return true;
+
+								if (seen.Add(m))
+									next.Add(m);
+							}
+
+						frontier = next;
+					}
+
+					return false;
+				}
+
+				var candidates = new List<((int X, int Y) A, (int X, int Y) B)>();
+
+				foreach (var (cell, list) in links)
+					foreach (var other in list)
+						if (cell.CompareTo(other) < 0 && !CityCell(cell.Item1, cell.Item2) && !CityCell(other.Item1, other.Item2))
+							candidates.Add((cell, other));
+
+				foreach (var (la, lb) in candidates.OrderBy(l => l.A.Y == l.B.Y ? 1 : 0).ThenBy(l => Hash(Wrap(l.A.X), l.A.Y, 47)))
+				{
+					links[la].Remove(lb);
+					links[lb].Remove(la);
+
+					if (!Joined(la, lb, 7))
+					{
+						links[la].Add(lb);
+						links[lb].Add(la);
+					}
+				}
+
 				// where a link meets a city it ends at the gate: on the city's edge, on the side the link comes from
 				SKPoint End((int X, int Y) cell, (int X, int Y) other)
 				{
@@ -1692,51 +1741,47 @@ namespace OpenCivOne.Graphics
 				return false;
 			}
 
-			// a spot for a hut, resource or mine on the land part of its cell, not out in the sea of a coastal one
+			// a spot for a hut, resource or mine on the land part of its cell, well clear of the sea and the beach of a
+			// coastal one: the nearest spot to the one asked for that lies far enough from the water, else the furthest
 			SKPoint OnLand(int x, int y, float fx, float fy)
 			{
-				SKPoint best = Screen(x + fx, y + fy);
+				const float Clear = 30;
 
-				bool Land(SKPoint q)
+				float Shore(SKPoint q)
 				{
 					int qx = (int)q.X, qy = (int)q.Y;
-					return qx < 0 || qy < 0 || qx >= w || qy >= h || kind[(qy * w) + qx] != Sea;
+					return qx < 0 || qy < 0 || qx >= w || qy >= h ? Clear : landDist[(qy * w) + qx];
 				}
 
-				// the spot and a ring around it, as wide as the sprite, must be clear of the sea and the beach
-				bool Inland(SKPoint q)
-				{
-					for (int k = 0; k < 8; k++)
+				SKPoint wanted = Screen(x + fx, y + fy);
+
+				if (Shore(wanted) >= Clear)
+					return wanted;
+
+				float bestD = float.MaxValue, bestShore = -1;
+				SKPoint found = wanted, furthest = wanted;
+
+				for (int i = 1; i < 20; i++)
+					for (int j = 1; j < 20; j++)
 					{
-						float a = k * MathF.PI / 4;
+						SKPoint q = Screen(x + (i / 20f), y + (j / 20f));
+						float shore = Shore(q);
+						float d = (((i / 20f) - fx) * ((i / 20f) - fx)) + (((j / 20f) - fy) * ((j / 20f) - fy));
 
-						if (!Land(new SKPoint(q.X + (MathF.Cos(a) * 18), q.Y + (MathF.Sin(a) * 9))))
-							return false;
-					}
-
-					return Land(q);
-				}
-
-				if (Inland(best))
-					return best;
-
-				float bestD = float.MaxValue;
-				SKPoint found = best;
-
-				for (int i = 1; i < 10; i++)
-					for (int j = 1; j < 10; j++)
-					{
-						SKPoint q = Screen(x + (i / 10f), y + (j / 10f));
-						float d = ((i / 10f) - fx) * ((i / 10f) - fx) + (((j / 10f) - fy) * ((j / 10f) - fy));
-
-						if (d < bestD && Inland(q))
+						if (shore >= Clear && d < bestD)
 						{
 							bestD = d;
 							found = q;
 						}
+
+						if (shore > bestShore)
+						{
+							bestShore = shore;
+							furthest = q;
+						}
 					}
 
-				return found;
+				return bestD < float.MaxValue ? found : furthest;
 			}
 
 			foreach (var hamlet in hamletsNearCities)
