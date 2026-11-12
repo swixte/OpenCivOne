@@ -1136,9 +1136,10 @@ namespace OpenCivOne.Graphics
 						match[(y * aw) + x] = over.Snapshot[(y * aw) + x] == this.aPixels[row + x];
 				}
 
-				shows = new bool[aw * ah];
+				bool[] showsNow = new bool[aw * ah];
+				shows = showsNow;
 
-				for (int y = 0; y < ah; y++)
+				System.Threading.Tasks.Parallel.For(0, ah, y =>
 				{
 					for (int x = 0; x < aw; x++)
 					{
@@ -1157,13 +1158,11 @@ namespace OpenCivOne.Graphics
 						}
 
 						// a stray speck in a picture has almost no matching neighbours; anything beside real map has many
-						shows[(y * aw) + x] = around >= 4;
+						showsNow[(y * aw) + x] = around >= 4;
 					}
-				}
+				});
 			}
 
-			int[] rows = new int[hdWidth * HDScale];
-			int pixelAddress = 0;
 			byte[]? smooth = _smoothUpscale ? this.ScaleIndexes() : null;
 			// with the UI material, pixels without HD art (text, the minimap, pictures) get a gentler version of its tone
 			uint[] palette = new uint[256];
@@ -1183,8 +1182,12 @@ namespace OpenCivOne.Graphics
 			WaterFrame? water = (AnimateWater && this._hdPixels != null) ? new WaterFrame(hdWidth, this.iHeight * HDScale) : null;
 			bool showsWater = false;
 
-			for (int i = 0; i < this.iHeight; i++)
+			// the rows are independent: they are worked out on all cores
+			System.Threading.Tasks.Parallel.For(0, this.iHeight, () => new int[hdWidth * HDScale], (i, _, rows) =>
 			{
+				int pixelAddress = i * this.iWidth;
+				IntPtr rowDestination = destination + (i * HDScale * stride);
+
 				for (int j = 0; j < this.iWidth; j++)
 				{
 					uint color = this.oPalette[this.aPixels[pixelAddress]].ToUInt32();
@@ -1228,10 +1231,12 @@ namespace OpenCivOne.Graphics
 
 				for (int k = 0; k < HDScale; k++)
 				{
-					Marshal.Copy(rows, k * hdWidth, destination, hdWidth);
-					destination += stride;
+					Marshal.Copy(rows, k * hdWidth, rowDestination, hdWidth);
+					rowDestination += stride;
 				}
-			}
+
+				return rows;
+			}, _ => { });
 
 			this.ShowsWater = showsWater;
 		}

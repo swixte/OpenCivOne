@@ -49,6 +49,12 @@ namespace OpenCivOne.Graphics
 		private long signature = long.MinValue;
 
 		/// <summary>
+		/// The key of the land, fog and cities the ground passes last painted, and what they made (see Paint)
+		/// </summary>
+		private long groundCacheKey = long.MinValue;
+		private (int[] Kind, int[] Cover, float[] Fog, uint[] Img, float[] seaDist, float[] landDist)? groundArrays;
+
+		/// <summary>
 		/// What the view shows, read from the game: terrain id, whether the human has explored a cell, its visible
 		/// improvements (TerrainImprovementFlagsEnum), whether it has a special resource or a hut; and the visible cities and units
 		/// </summary>
@@ -553,7 +559,7 @@ namespace OpenCivOne.Graphics
 			this.lastScene = scene;
 			int range = (this.width / TileWidth) + (this.height / TileHeight) + 3;
 			int ccx = (int)MathF.Floor(cx), ccy = (int)MathF.Floor(cy);
-			long sig = 17;
+			long sig = 17, groundKey;
 
 			unchecked
 			{
@@ -577,6 +583,8 @@ namespace OpenCivOne.Graphics
 				foreach (var c in scene.Cities)
 					sig = (sig * 37) + (c.X * 1000) + (c.Y * 10) + c.Size + c.Name.GetHashCode() + c.Colour + (scene.Walls(Wrap(c.X), c.Y) ? 7 : 0) + scene.CityLook(Wrap(c.X), c.Y).GetHashCode();
 
+				groundKey = sig;
+
 				foreach (var u in scene.Units)
 					sig = (sig * 41) + (u.X * 1000) + (u.Y * 10) + u.Type + u.Colour + (scene.UnitMarks(Wrap(u.X), u.Y) * 7919) + scene.UnitStyle(Wrap(u.X), u.Y).GetHashCode();
 			}
@@ -586,12 +594,12 @@ namespace OpenCivOne.Graphics
 
 			this.signature = sig;
 			this.Placements.Clear();
-			this.Paint(cx, cy, scene, range);
+			this.Paint(cx, cy, scene, range, groundKey);
 
 			return true;
 		}
 
-		private void Paint(float cx, float cy, Scene scene, int range)
+		private void Paint(float cx, float cy, Scene scene, int range, long groundKey)
 		{
 			int w = this.width, h = this.height;
 			float halfW = TileWidth / 2f, halfH = TileHeight / 2f;
@@ -632,7 +640,7 @@ namespace OpenCivOne.Graphics
 
 			// the ground under mountains and hills is the ground around them: sand among desert, tundra in the cold, and
 			// for hills the grass or plains beside them, so a range in the desert does not bring a green patch with it
-			var groundCache = new Dictionary<(int, int), int>();
+			var groundCache = new System.Collections.Concurrent.ConcurrentDictionary<(int, int), int>();
 
 			int GroundTerrainAt(int x, int y)
 			{
@@ -661,14 +669,20 @@ namespace OpenCivOne.Graphics
 
 			// pass 1: the ground of every pixel, the terrain its nearby cells vote for (hard edges, rounded shapes), and how
 			// much it is under mist
-			int[] kind = new int[w * h];
-			int[] cover = new int[w * h]; // the terrain each pixel's ground was voted for
-			float[] fog = new float[w * h];
-			uint[] img = new uint[w * h];
-			Span<float> votes = stackalloc float[13];
+			// the two ground passes depend on the land, the fog and the cities, not the units: while only units change, the
+			// ground of the last render is used again
+			bool reuse = this.groundArrays != null && this.groundCacheKey == groundKey;
+			var cached = this.groundArrays ?? default;
+			int[] kind = reuse ? cached.Kind : new int[w * h];
+			int[] cover = reuse ? cached.Cover : new int[w * h]; // the terrain each pixel's ground was voted for
+			float[] fog = reuse ? cached.Fog : new float[w * h];
+			uint[] img = reuse ? (uint[])cached.Img.Clone() : new uint[w * h];
 
-			for (int py = 0; py < h; py++)
+			if (!reuse)
+			System.Threading.Tasks.Parallel.For(0, h, py =>
 			{
+				Span<float> votes = stackalloc float[13];
+
 				for (int px = 0; px < w; px++)
 				{
 					float u = (px - (w / 2f)) / halfW, v = (py - (h / 2f)) / halfH;
@@ -791,7 +805,7 @@ namespace OpenCivOne.Graphics
 					if (g == Sea)
 						kind[i] = Sea;
 				}
-			}
+			});
 
 			// fields: irrigated land, and some of the worked land around cities, painted into the ground in pass 2
 			var cityCells = new HashSet<(int, int)>();
@@ -822,7 +836,7 @@ namespace OpenCivOne.Graphics
 				return false;
 			}
 
-			var fieldCache = new Dictionary<(int, int), bool>();
+			var fieldCache = new System.Collections.Concurrent.ConcurrentDictionary<(int, int), bool>();
 
 			bool IsFieldCell(int x, int y)
 			{
@@ -844,7 +858,7 @@ namespace OpenCivOne.Graphics
 			}
 
 			// small lakes (water of fewer than 12 cells) get a lighter shore line, so they do not look cut out
-			var lakeCache = new Dictionary<(int, int), bool>();
+			var lakeCache = new System.Collections.Concurrent.ConcurrentDictionary<(int, int), bool>();
 
 			bool LakeAt(int x, int y)
 			{
@@ -882,14 +896,30 @@ namespace OpenCivOne.Graphics
 			}
 
 			// pass 2: the shallows, foam, coast line, beach, and an ink line where two kinds of ground meet
-			float[] seaDist = Distance(kind, w, h, k => k != Sea);
-			float[] snowDist = Distance(kind, w, h, k => k != Snow);
-			float[] landDist = Distance(kind, w, h, k => k == Sea);
-			float[] toSand = Distance(kind, w, h, k => k == Sand);
-			float[] toGrass = Distance(kind, w, h, k => k == Grass);
-			float[] toSnow = Distance(kind, w, h, k => k == Snow);
+			// six maps of the distance to each kind of ground, worked out side by side
+			float[] seaDist = Array.Empty<float>(), snowDist = Array.Empty<float>(), landDist = Array.Empty<float>();
+			float[] toSand = Array.Empty<float>(), toGrass = Array.Empty<float>(), toSnow = Array.Empty<float>();
 
-			for (int py = 0; py < h; py++)
+			if (reuse)
+			{
+				seaDist = cached.seaDist;
+				landDist = cached.landDist;
+			}
+			else
+			{
+				System.Threading.Tasks.Parallel.Invoke(
+					() => seaDist = Distance(kind, w, h, k => k != Sea),
+					() => snowDist = Distance(kind, w, h, k => k != Snow),
+					() => landDist = Distance(kind, w, h, k => k == Sea),
+					() => toSand = Distance(kind, w, h, k => k == Sand),
+					() => toGrass = Distance(kind, w, h, k => k == Grass),
+					() => toSnow = Distance(kind, w, h, k => k == Snow));
+			}
+
+
+			if (!reuse)
+			{
+			System.Threading.Tasks.Parallel.For(0, h, py =>
 			{
 				for (int px = 0; px < w; px++)
 				{
@@ -1112,6 +1142,10 @@ namespace OpenCivOne.Graphics
 
 					img[i] = Pack(r, g, b);
 				}
+			});
+
+				this.groundCacheKey = groundKey;
+				this.groundArrays = (kind, cover, fog, (uint[])img.Clone(), seaDist, landDist);
 			}
 
 			using SKBitmap bitmap = new SKBitmap(new SKImageInfo(w, h, SKColorType.Bgra8888, SKAlphaType.Premul));

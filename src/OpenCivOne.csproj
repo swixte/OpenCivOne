@@ -7,6 +7,8 @@
     <RollForward>Major</RollForward>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- the map painter is heavy pixel work: compiled with optimisations even in a Debug build, so `dotnet run` is quick -->
+    <Optimize>true</Optimize>
     <ImplicitUsings>enable</ImplicitUsings>
     <Title>OpenCivOne project - Free and Open Source (FOSS) preservation effort and rewrite of the iconic Civilization Game designed by Sid Meier and Bruce Shelley in year 1991</Title>
     <Version>1.475.6.7</Version>
