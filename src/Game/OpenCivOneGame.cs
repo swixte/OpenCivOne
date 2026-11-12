@@ -170,6 +170,9 @@ namespace OpenCivOne
 
 			GBitmap.AnimateWater = this.globalPreferences.AnimateWater;
 
+			// a theme's own sounds, in place of the made ones
+			OpenCivOne.Sound.AudioOut.SoundDirectory = $"{hdPath}{separator}sounds";
+
 			// A painted map (hd/painted) replaces the terrain tiles of map cells with one painting of the whole world
 			this.paintedMap = PaintedMap.Load($"{hdPath}{separator}painted", 16 * GBitmap.HDScale,
 				(x, y) => (int)this.mapManagement!.GetTerrainType(x, y));

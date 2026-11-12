@@ -84,3 +84,11 @@ Feudalism, Industrialization, and The Corporation or Electricity.
 - *The game says files are missing*: the data folder is in the wrong place or step 2 was skipped.
 - *The map looks like the original flat tiles*: the theme is not installed (step 3) or not turned on (step 4).
 - A crash prints `GAME EXCEPTION` with details in the console; please send those lines along.
+
+## Sound
+
+The game plays its music and effects through OpenAL, which comes with it, so nothing extra is needed. Battles,
+city events, audiences, nuclear blasts and the rest have sounds made by the game itself. Sound follows the
+game's own **Sound** option in the game menu. A theme can use its own recordings instead: put 16 bit PCM WAV files named
+`tuneNN.wav` (for example `tune38.wav`, a battle won) in the theme's `sounds` folder; the numbers are listed at
+the top of `src/Sound/Synth.cs`.

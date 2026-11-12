@@ -78,6 +78,12 @@ namespace OpenCivOne
 
 			// function body
 			bufferPosition = 0;
+
+			// tune 1 ends the music playing; the others start a tune or an effect (see Sound.Synth)
+			if (tune == 1)
+				OpenCivOne.Sound.AudioOut.StopMusic();
+			else if (tune >= 0)
+				OpenCivOne.Sound.AudioOut.Play(tune);
 		}
 
 		/// <summary>
@@ -89,6 +95,7 @@ namespace OpenCivOne
 			//this.oCPU.Log.EnterBlock("'F0_0000_006a_CloseSound'(Cdecl, Far) at 0x0000:0x006a");
 
 			// function body
+			OpenCivOne.Sound.AudioOut.Close();
 			this.CPU.AX.UInt16 = 0;
 
 			return this.CPU.AX.UInt16;

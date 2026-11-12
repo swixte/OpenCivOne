@@ -6,6 +6,7 @@
     <!-- also runs where only a newer .NET runtime (9, 10) is installed -->
     <RollForward>Major</RollForward>
     <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Title>OpenCivOne project - Free and Open Source (FOSS) preservation effort and rewrite of the iconic Civilization Game designed by Sid Meier and Bruce Shelley in year 1991</Title>
     <Version>1.475.6.7</Version>
@@ -37,6 +38,8 @@
     <PackageReference Include="Avalonia.Desktop" Version="12.1.4" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4" />
 	<PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.4" />
+	<PackageReference Include="Silk.NET.OpenAL" Version="2.23.0" />
+	<PackageReference Include="Silk.NET.OpenAL.Soft.Native" Version="1.23.1" />
 	<PackageReference Include="SkiaSharp" Version="3.119.4" />
   </ItemGroup>
 
