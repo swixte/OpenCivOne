@@ -2360,6 +2360,31 @@ namespace OpenCivOne
 							buttonSelected = 1;
 						}
 
+						// the city map as diamonds, with the isometric map
+						if (this.parent.IsoView != null && this.Var_6548_PlayerID == this.parent.GameData.HumanPlayerID)
+						{
+							var isoCells = new List<MapManagement.CityCell>();
+
+							for (int i = 0; i < 21; i++)
+							{
+								GPoint offset = this.parent.CityOffsets[i];
+								int cellX = this.parent.MapManagement.AdjustXPosition(city.Position.X + offset.X), cellY = city.Position.Y + offset.Y;
+
+								if (cellY < 0 || cellY >= 50 || ((this.parent.GameData.MapVisibility[cellX, cellY] & (1 << this.Var_6548_PlayerID)) == 0 &&
+									!this.parent.GlobalPreferences.Debug.DebugMode))
+									continue;
+
+								bool worked = i == 20 || (city.WorkerFlags & (1 << i)) != 0;
+								isoCells.Add(new MapManagement.CityCell(offset.X, offset.Y,
+									F0_1d12_6abc_GetCityResourceCount(this.Var_6548_PlayerID, this.Var_653e_CityID, cellX, cellY, CityResourceTypeEnum.Food),
+									F0_1d12_6abc_GetCityResourceCount(this.Var_6548_PlayerID, this.Var_653e_CityID, cellX, cellY, CityResourceTypeEnum.Production),
+									F0_1d12_6abc_GetCityResourceCount(this.Var_6548_PlayerID, this.Var_653e_CityID, cellX, cellY, CityResourceTypeEnum.Trade),
+									worked, i != 20 && cityArea[offset.X + 2, offset.Y + 2]));
+							}
+
+							this.parent.MapManagement.ShowIsoCityPanel(city.Position.X, city.Position.Y, isoCells);
+						}
+
 						MouseEvent mouseEvent;
 
 						while ((mouseEvent = this.parent.GetMouseEvent()).Buttons != MouseButtonsEnum.None) { }
@@ -3063,6 +3088,13 @@ namespace OpenCivOne
 						cityWindowX = (mouseEvent.Position.X / 16) - 10;
 						cityWindowY = ((mouseEvent.Position.Y - 24) / 16) - 2;
 
+						// with the city map drawn as diamonds, the cell is the diamond under the pointer
+						if (this.parent.MapManagement.IsoCityPanelOffset(mouseEvent.Position) is GPoint isoCell)
+						{
+							cityWindowX = isoCell.X;
+							cityWindowY = isoCell.Y;
+						}
+
 					L5aa6:
 						// Instruction address 0x1d12:0x5aae, size: 5
 						outsideUnitIndex = F0_1d12_000a_FindCityOffset(new GPoint(cityWindowX, cityWindowY));
@@ -3127,6 +3159,7 @@ namespace OpenCivOne
 					this.parent.Segment_2459.F0_2459_0918_WaitForKeyPressOrMouseClick();
 
 				L5cc2:
+					this.parent.MapManagement.EndIsoCityPanel();
 					this.parent.Var_d4cc_MapViewX = mapViewX;
 					this.parent.Var_d75e_MapViewY = mapViewY;
 					this.parent.Graphics.SetHDOverflowClip(GDriver.MapViewRectangle);

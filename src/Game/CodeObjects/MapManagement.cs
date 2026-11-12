@@ -1,3 +1,4 @@
+using SkiaSharp;
 using OpenCivOne.Graphics;
 using OpenCivOne.UI;
 
@@ -1521,42 +1522,14 @@ namespace OpenCivOne
 		}
 
 		/// <summary>
-		/// With a theme's isometric art, the map window shows the isometric view of the same part of the world over the
-		/// classic map the game has just drawn; anything the game draws over the map window afterwards (a dialog, a
-		/// moving unit) shows through, as the overlay only covers pixels still as they were
+		/// What the isometric view shows of the world: terrain, what the human player has explored, improvements,
+		/// resources and huts, the cities and the units, as the human player sees them
 		/// </summary>
-		private void ShowIsoMap(int playerID)
+		private IsoView.Scene BuildIsoScene()
 		{
-			IsoView? iso = this.parent.IsoView;
-			GBitmap screen = this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID);
-
-			if (iso == null)
-			{
-				screen.Over = null;
-				return;
-			}
-
 			int mask = 0x1 << this.parent.GameData.HumanPlayerID;
 			bool debug = this.parent.GlobalPreferences.Debug.DebugMode;
 
-			// ISO_DUMP: writes the generated world (terrain ids, then resources and huts) to a file once, so the test
-			// harness can render a real game's map with the theme's art
-			if (Environment.GetEnvironmentVariable("ISO_DUMP") is string dumpPath && !File.Exists(dumpPath))
-			{
-				var lines = new List<string>();
-
-				for (int dy = 0; dy < 50; dy++)
-				{
-					var row = new List<string>();
-
-					for (int dx = 0; dx < 80; dx++)
-						row.Add($"{(int)GetTerrainType(dx, dy)}:{(F0_2aea_1836_CellHasSpecialResource(dx, dy) ? 1 : 0) | (F0_2aea_1894_CellHasMinorTribeHut(dx, dy, GetTerrainType(dx, dy)) ? 2 : 0)}");
-
-					lines.Add(string.Join(" ", row));
-				}
-
-				File.WriteAllLines(dumpPath, lines);
-			}
 			IsoView.Scene scene = new IsoView.Scene
 			{
 				Terrain = (x, y) => (int)GetTerrainType(x, y),
@@ -1614,6 +1587,48 @@ namespace OpenCivOne
 			scene.UnitMarks = (x, y) => marks.TryGetValue((x, y), out int m) ? m : 0;
 			scene.UnitStyle = (x, y) => unitStyles.TryGetValue((x, y), out string? st) ? st : "";
 			scene.CityLook = (x, y) => looks.TryGetValue((x, y), out var look) ? look : ("", 0);
+
+			return scene;
+		}
+
+		/// <summary>
+		/// With a theme's isometric art, the map window shows the isometric view of the same part of the world over the
+		/// classic map the game has just drawn; anything the game draws over the map window afterwards (a dialog, a
+		/// moving unit) shows through, as the overlay only covers pixels still as they were
+		/// </summary>
+		private void ShowIsoMap(int playerID)
+		{
+			IsoView? iso = this.parent.IsoView;
+			GBitmap screen = this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID);
+
+			if (iso == null)
+			{
+				screen.Over = null;
+				return;
+			}
+
+			int mask = 0x1 << this.parent.GameData.HumanPlayerID;
+			bool debug = this.parent.GlobalPreferences.Debug.DebugMode;
+
+			// ISO_DUMP: writes the generated world (terrain ids, then resources and huts) to a file once, so the test
+			// harness can render a real game's map with the theme's art
+			if (Environment.GetEnvironmentVariable("ISO_DUMP") is string dumpPath && !File.Exists(dumpPath))
+			{
+				var lines = new List<string>();
+
+				for (int dy = 0; dy < 50; dy++)
+				{
+					var row = new List<string>();
+
+					for (int dx = 0; dx < 80; dx++)
+						row.Add($"{(int)GetTerrainType(dx, dy)}:{(F0_2aea_1836_CellHasSpecialResource(dx, dy) ? 1 : 0) | (F0_2aea_1894_CellHasMinorTribeHut(dx, dy, GetTerrainType(dx, dy)) ? 2 : 0)}");
+
+					lines.Add(string.Join(" ", row));
+				}
+
+				File.WriteAllLines(dumpPath, lines);
+			}
+			IsoView.Scene scene = this.BuildIsoScene();
 
 			// the view is centred on the middle of the classic map window (15 x 12 cells)
 			float cx = this.parent.Var_d4cc_MapViewX + 7.5f, cy = this.parent.Var_d75e_MapViewY + 6f;
@@ -1867,6 +1882,151 @@ namespace OpenCivOne
 				return null;
 
 			return (AdjustXPosition(cellX), cellY);
+		}
+
+		/// <summary>
+		/// One cell of a city's map for the isometric city map: its offset from the city, the food, shields and trade it
+		/// gives when worked, whether it is worked and whether the city cannot use it (another city or an enemy has it)
+		/// </summary>
+		public record struct CityCell(int DX, int DY, int Food, int Shields, int Trade, bool Worked, bool Blocked);
+
+		private (int X, int Y) cityPanelCentre = (-1, -1);
+
+		/// <summary>
+		/// With the isometric map, the city screen's map (the 21 cells a city can work) is shown as diamonds, the way the
+		/// world map looks: the land around the city painted at the panel's size, the cells out of the city's reach
+		/// dimmed, the ones it cannot use outlined in red, and on each worked cell its food, shields and trade
+		/// </summary>
+		public void ShowIsoCityPanel(int cityX, int cityY, IReadOnlyList<CityCell> cells)
+		{
+			IsoView? iso = this.parent.IsoView;
+			GBitmap screen = this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID);
+
+			if (iso == null)
+				return;
+
+			GRectangle area = new GRectangle(128, 24, 80, 80);
+			int w = area.Width * GBitmap.HDScale, h = area.Height * GBitmap.HDScale;
+			float cx = cityX + 0.5f, cy = cityY + 0.5f;
+			IsoView.Scene scene = this.BuildIsoScene();
+			scene.Plates = false;
+			uint[] picture = iso.RenderPanel(cx, cy, scene, w, h);
+			float halfW = IsoView.CellWidth / 2f, halfH = halfW / 2;
+			var reach = new HashSet<(int, int)>(cells.Select(c => (c.DX, c.DY)));
+
+			// out of the city's reach: dimmed
+			for (int py = 0; py < h; py++)
+			{
+				for (int px = 0; px < w; px++)
+				{
+					(int x, int y) = iso.CellAt(px, py, cx, cy, w, h);
+					int dx = x - cityX, dy = y - cityY;
+
+					if (dx > 40) dx -= 80;
+					if (dx < -40) dx += 80;
+
+					if (!reach.Contains((dx, dy)))
+					{
+						uint c = picture[(py * w) + px];
+						picture[(py * w) + px] = 0xff000000 | ((((c >> 16) & 0xff) * 2 / 5) << 16) | ((((c >> 8) & 0xff) * 2 / 5) << 8) | ((c & 0xff) * 2 / 5);
+					}
+				}
+			}
+
+			using SKBitmap bitmap = new SKBitmap(new SKImageInfo(w, h, SKColorType.Bgra8888, SKAlphaType.Premul));
+			System.Runtime.InteropServices.Marshal.Copy(Array.ConvertAll(picture, v => unchecked((int)v)), 0, bitmap.GetPixels(), picture.Length);
+
+			using (SKCanvas canvas = new SKCanvas(bitmap))
+			{
+				SKPoint Centre(int dx, int dy) => new SKPoint((w / 2f) + ((dx - dy) * halfW), (h / 2f) + ((dx + dy) * halfH));
+				SKBitmap? Icon(int index)
+				{
+					if (!this.parent.Graphics.Bitmaps.ContainsKey(this.parent.Array_d4ce[index]))
+						return null;
+
+					uint[] argb = this.parent.Graphics.Bitmaps.GetValueByKey(this.parent.Array_d4ce[index]).ToArgb(screen, out int iw, out int ih);
+					SKBitmap icon = new SKBitmap(new SKImageInfo(iw, ih, SKColorType.Bgra8888, SKAlphaType.Unpremul));
+					System.Runtime.InteropServices.Marshal.Copy(Array.ConvertAll(argb, v => unchecked((int)v)), 0, icon.GetPixels(), argb.Length);
+					return icon;
+				}
+
+				using SKBitmap? food = Icon(8), shield = Icon(9), trade = Icon(10), none = Icon(13);
+				using SKPaint red = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 3, Color = new SKColor(200, 40, 30) };
+				using SKPaint sprite = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High };
+
+				foreach (CityCell cell in cells)
+				{
+					SKPoint p = Centre(cell.DX, cell.DY);
+
+					if (cell.Blocked)
+					{
+						using SKPath diamond = new SKPath();
+						diamond.MoveTo(p.X, p.Y - halfH + 3);
+						diamond.LineTo(p.X + halfW - 5, p.Y);
+						diamond.LineTo(p.X, p.Y + halfH - 3);
+						diamond.LineTo(p.X - halfW + 5, p.Y);
+						diamond.Close();
+						canvas.DrawPath(diamond, red);
+					}
+
+					if (!cell.Worked)
+						continue;
+
+					var icons = new List<SKBitmap>();
+
+					for (int i = 0; i < cell.Food && food != null; i++) icons.Add(food);
+					for (int i = 0; i < cell.Shields && shield != null; i++) icons.Add(shield);
+					for (int i = 0; i < cell.Trade && trade != null; i++) icons.Add(trade);
+
+					if (icons.Count == 0 && none != null)
+						icons.Add(none);
+
+					// a row across the diamond, closer together the more there are
+					float size = halfH * 1.05f;
+					float step = icons.Count <= 1 ? 0 : Math.Min(size * 0.8f, ((halfW * 1.7f) - size) / (icons.Count - 1));
+					float left = p.X - (((icons.Count - 1) * step) + size) / 2;
+
+					for (int i = 0; i < icons.Count; i++)
+						canvas.DrawBitmap(icons[i], new SKRect(left + (i * step), p.Y - (size / 2), left + (i * step) + size, p.Y + (size / 2)), sprite);
+				}
+			}
+
+			int[] raw = new int[picture.Length];
+			System.Runtime.InteropServices.Marshal.Copy(bitmap.GetPixels(), raw, 0, raw.Length);
+			screen.Panel = new GBitmap.Overlay { Area = area, Pixels = Array.ConvertAll(raw, v => unchecked((uint)v) | 0xff000000), Hold = true };
+			screen.Modified = true;
+			this.cityPanelCentre = (cityX, cityY);
+		}
+
+		public void EndIsoCityPanel()
+		{
+			GBitmap screen = this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID);
+			screen.Panel = null;
+			screen.Modified = true;
+			this.cityPanelCentre = (-1, -1);
+		}
+
+		/// <summary>
+		/// The offset from the city of the cell under a point of the city screen's map, while it is shown as diamonds;
+		/// null otherwise
+		/// </summary>
+		public GPoint? IsoCityPanelOffset(GPoint point)
+		{
+			IsoView? iso = this.parent.IsoView;
+			GBitmap screen = this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID);
+
+			if (iso == null || screen.Panel == null || this.cityPanelCentre.X < 0 || point.X < 128 || point.X >= 208 || point.Y < 24 || point.Y >= 104)
+				return null;
+
+			int w = 80 * GBitmap.HDScale, h = 80 * GBitmap.HDScale;
+			(int x, int y) = iso.CellAt((point.X - 128 + 0.5f) * GBitmap.HDScale, (point.Y - 24 + 0.5f) * GBitmap.HDScale,
+				this.cityPanelCentre.X + 0.5f, this.cityPanelCentre.Y + 0.5f, w, h);
+			int dx = x - this.cityPanelCentre.X;
+
+			if (dx > 40) dx -= 80;
+			if (dx < -40) dx += 80;
+
+			return new GPoint(dx, y - this.cityPanelCentre.Y);
 		}
 
 		private uint[]? routeBase;

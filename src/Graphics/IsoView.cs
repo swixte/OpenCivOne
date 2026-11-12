@@ -36,7 +36,7 @@ namespace OpenCivOne.Graphics
 			new[] { 1.10f, 0.98f, 0.82f }, new[] { 0.96f, 0.95f, 0.92f }, new[] { 0.94f, 0.97f, 1.02f }, new[] { 1f, 1f, 1f },
 			new[] { 0.62f, 0.78f, 1.06f }, new[] { 0.82f, 1.02f, 0.84f }, new[] { 1f, 1f, 1f }, new[] { 0.90f, 1.05f, 0.86f } };
 
-		private readonly int width, height;
+		private int width, height;
 		private readonly uint[] grass, sand, snow, sea, shallow;
 
 		// the painted crop plots (seen from above, FieldPlot pixels square), mapped onto each plot of a field
@@ -95,6 +95,11 @@ namespace OpenCivOne.Graphics
 			/// </summary>
 			public Func<int, int, string> UnitStyle = (x, y) => "";
 			public List<(int X, int Y, int Type, uint Colour)> Units = new List<(int, int, int, uint)>();
+
+			/// <summary>
+			/// Cities carry their name plate and flag (left out on the city screen's map, which has its name above it)
+			/// </summary>
+			public bool Plates = true;
 		}
 
 		private IsoView(int width, int height, uint[] grass, uint[] sand, uint[] snow, uint[] sea, uint[] shallow)
@@ -558,6 +563,34 @@ namespace OpenCivOne.Graphics
 		/// </summary>
 		public (int Width, int Height) CitySize => this.sets["town"].Count == 0 ? (0, 0) : (this.sets["town"].Max(b => b.Width), this.sets["town"].Max(b => b.Height));
 
+		/// <summary>
+		/// Paints the world centred on (cx, cy) in cells into a picture of its own size, for a panel such as the city
+		/// map, leaving the map view (its picture, and what it keeps for its next render) as it was
+		/// </summary>
+		public uint[] RenderPanel(float cx, float cy, Scene scene, int width, int height)
+		{
+			var saved = (this.width, this.height, this.pixels, this.signature, this.groundCacheKey, this.groundArrays, this.lastScene, this.lastCentre);
+			var placements = this.Placements.ToList();
+
+			try
+			{
+				this.width = width;
+				this.height = height;
+				this.groundArrays = null;
+				this.groundCacheKey = long.MinValue;
+				int range = (width / TileWidth) + (height / TileHeight) + 3;
+				this.Paint(cx, cy, scene, range, long.MinValue + 1);
+
+				return this.pixels;
+			}
+			finally
+			{
+				(this.width, this.height, this.pixels, this.signature, this.groundCacheKey, this.groundArrays, this.lastScene, this.lastCentre) = saved;
+				this.Placements.Clear();
+				this.Placements.AddRange(placements);
+			}
+		}
+
 		public bool Render(float cx, float cy, Scene scene)
 		{
 			this.lastCentre = (cx, cy);
@@ -570,6 +603,7 @@ namespace OpenCivOne.Graphics
 			{
 				sig = (sig * 31) + (long)(cx * 16) + ((long)(cy * 16) << 20);
 				sig = (sig * 3) + (this.ShowGrid ? 1 : 0);
+				sig = (sig * 3) + (scene.Plates ? 1 : 0);
 
 				for (int y = ccy - range; y <= ccy + range; y++)
 				{
@@ -2413,7 +2447,7 @@ namespace OpenCivOne.Graphics
 			using SKPaint fill = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill };
 			using SKPaint outline = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f, Color = new SKColor(40, 34, 28) };
 
-			foreach (var c in scene.Cities)
+			foreach (var c in scene.Plates ? scene.Cities : new List<(int X, int Y, string Name, int Size, uint Colour)>())
 			{
 				(int x, int y) = Nearest(c.X, c.Y, cx);
 				SKPoint p = Screen(x + 0.5f, y + 0.5f);
@@ -3231,6 +3265,20 @@ namespace OpenCivOne.Graphics
 		/// <summary>
 		/// The map cell under a point of the view, for a view centred on (cx, cy); y may fall outside the map
 		/// </summary>
+		/// <summary>
+		/// The map cell under a point of a picture of the given size centred on (cx, cy), such as a panel (see RenderPanel)
+		/// </summary>
+		public (int X, int Y) CellAt(float px, float py, float cx, float cy, int width, int height)
+		{
+			float u = (px - (width / 2f)) / (TileWidth / 2f), v = (py - (height / 2f)) / (TileHeight / 2f);
+			return (Wrap((int)MathF.Floor(cx + ((u + v) / 2))), (int)MathF.Floor(cy + ((v - u) / 2)));
+		}
+
+		/// <summary>
+		/// The width of a cell's diamond in the view's pixels (its height is half that)
+		/// </summary>
+		public static int CellWidth => TileWidth;
+
 		public (int X, int Y) CellAt(float px, float py, float cx, float cy)
 		{
 			float u = (px - (this.width / 2f)) / (TileWidth / 2f), v = (py - (this.height / 2f)) / (TileHeight / 2f);

@@ -659,6 +659,7 @@ namespace OpenCivOne.Graphics
 				if (mode == PixelWriteModeEnum.Normal)
 				{
 					this.SuspendOverlay(newRect);
+					this.RemovePanelIfCovered(newRect);
 				}
 
 				this.bModified = true;
@@ -844,6 +845,7 @@ namespace OpenCivOne.Graphics
 				if (!transparent)
 				{
 					this.CheckOverlayCovered(destRect);
+					this.RemovePanelIfCovered(destRect);
 				}
 
 				this.bModified = true;
@@ -1044,6 +1046,64 @@ namespace OpenCivOne.Graphics
 		private Overlay? _over;
 
 		/// <summary>
+		/// A picture shown over a small area whatever is drawn under it, such as the city map drawn as diamonds; an opaque
+		/// drawing that covers the whole area (another screen) takes it away
+		/// </summary>
+		public Overlay? Panel { get; set; }
+
+		private void RemovePanelIfCovered(GRectangle covered)
+		{
+			Overlay? panel = this.Panel;
+
+			if (panel != null && covered.X <= panel.Area.X && covered.Y <= panel.Area.Y &&
+				covered.X + covered.Width >= panel.Area.X + panel.Area.Width && covered.Y + covered.Height >= panel.Area.Y + panel.Area.Height)
+				this.Panel = null;
+		}
+
+		/// <summary>
+		/// This bitmap as ARGB pixels at the HD scale, with its HD art where it has some and its palette colours
+		/// (those of `palette`, the screen it is drawn on) elsewhere; colour index 0 and empty HD pixels are transparent
+		/// </summary>
+		internal uint[] ToArgb(GBitmap palette, out int width, out int height)
+		{
+			width = this.iWidth * HDScale;
+			height = this.iHeight * HDScale;
+			uint[] argb = new uint[width * height];
+
+			for (int y = 0; y < this.iHeight; y++)
+			{
+				for (int x = 0; x < this.iWidth; x++)
+				{
+					byte index = this.aPixels[(y * this.iWidth) + x];
+					uint colour = palette.oPalette[index].ToUInt32() | 0xff000000;
+					bool hd = this._hdMask != null && this._hdMask[(y * this.iWidth) + x];
+
+					for (int k = 0; k < HDScale; k++)
+					{
+						for (int l = 0; l < HDScale; l++)
+						{
+							uint value;
+
+							if (hd)
+							{
+								uint h = this._hdPixels![this.GetHDAddress(x, y) + (k * width) + l];
+								value = ((h >> 24) == 0) ? 0 : (ResolveHDColor(h, colour) | 0xff000000);
+							}
+							else
+							{
+								value = (index == 0) ? 0 : colour;
+							}
+
+							argb[(((y * HDScale) + k) * width) + (x * HDScale) + l] = value;
+						}
+					}
+				}
+			}
+
+			return argb;
+		}
+
+		/// <summary>
 		/// The overlay while a whole screen (a city, an advisor) covers its area: it comes back when the map pixels it
 		/// was taken over are copied back, and is not shown over the screen meanwhile
 		/// </summary>
@@ -1116,6 +1176,7 @@ namespace OpenCivOne.Graphics
 		{
 			int hdWidth = this.iWidth * HDScale;
 			Overlay? over = this.Over;
+			Overlay? panel = this.Panel;
 
 			// where the map is still showing. A pixel that still holds the map shows the painted view (hiding it would show
 			// the classic map instead), except a stray pixel of a picture drawn over the map window (the palace, the
@@ -1221,6 +1282,9 @@ namespace OpenCivOne.Graphics
 								(over.Hold || (shows != null ? shows[((i - over.Area.Y) * over.Area.Width) + (j - over.Area.X)] :
 									over.Snapshot[((i - over.Area.Y) * over.Area.Width) + (j - over.Area.X)] == this.aPixels[pixelAddress])))
 								pixel = over.Pixels[((((i - over.Area.Y) * HDScale) + k) * over.Area.Width * HDScale) + ((j - over.Area.X) * HDScale) + l];
+
+							if (panel != null && j >= panel.Area.X && j < panel.Area.X + panel.Area.Width && i >= panel.Area.Y && i < panel.Area.Y + panel.Area.Height)
+								pixel = panel.Pixels[((((i - panel.Area.Y) * HDScale) + k) * panel.Area.Width * HDScale) + ((j - panel.Area.X) * HDScale) + l];
 
 							rows[(k * hdWidth) + (j * HDScale) + l] = (int)pixel;
 						}
