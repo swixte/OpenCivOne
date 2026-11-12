@@ -179,7 +179,12 @@ namespace OpenCivOne
 
 			// a theme with isometric art (hd/iso) shows the map window as an isometric view, at the HD size of the window
 			if (GBitmap.HDScale > 1)
+			{
 				this.isoView = IsoView.Load(hdPath, 240 * GBitmap.HDScale, 192 * GBitmap.HDScale);
+
+				if (this.isoView != null)
+					this.isoView.ShowGrid = this.globalPreferences.MapGrid;
+			}
 
 			// a print paints resources and huts into the ground, with its trees and peaks
 			if (this.paintedMap != null)

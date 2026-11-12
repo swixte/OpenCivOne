@@ -35,6 +35,11 @@ namespace OpenCivOne
 		/// </summary>
 		public bool TerrainSmoothing { get; set; } = false;
 
+		/// <summary>
+		/// Outlines the cells of the isometric map (Ctrl+G turns it on and off during play)
+		/// </summary>
+		public bool MapGrid { get; set; } = false;
+
 		[XmlIgnore]
 		[JsonIgnore]
 		public bool SaveGameWarning { get => this._saveGameWarning; set => this._saveGameWarning = value; }

@@ -1158,6 +1158,16 @@ namespace OpenCivOne
 
 					break;
 
+				// Ctrl+G: the grid on the isometric map on and off
+				case 0x7e47:
+					if (this.parent.IsoView != null)
+					{
+						this.parent.GlobalPreferences.MapGrid = !this.parent.GlobalPreferences.MapGrid;
+						this.parent.IsoView.ShowGrid = this.parent.GlobalPreferences.MapGrid;
+						this.parent.MapManagement.F0_2aea_0008_DrawVisibleMap(playerID, this.parent.Var_d4cc_MapViewX, this.parent.Var_d75e_MapViewY);
+					}
+					break;
+
 				// Center map on unit
 				case 'c':
 					if (unit == null || unitID >= 128) break;
@@ -1167,50 +1177,74 @@ namespace OpenCivOne
 
 				// Move unit Up
 				case '\x001':
-				case '\x4800':
 					MoveUnit(playerID, unit, 1, ref unitMoveRetryCount);
+					break;
+
+				case '\x4800':
+					MoveUnit(playerID, unit, KeyDirection(1), ref unitMoveRetryCount);
 					break;
 
 				// Move unit PageUp
 				case '\x002':
-				case '\x4900':
 					MoveUnit(playerID, unit, 2, ref unitMoveRetryCount);
+					break;
+
+				case '\x4900':
+					MoveUnit(playerID, unit, KeyDirection(2), ref unitMoveRetryCount);
 					break;
 
 				// Move unit Right
 				case '\x003':
-				case '\x4d00':
 					MoveUnit(playerID, unit, 3, ref unitMoveRetryCount);
+					break;
+
+				case '\x4d00':
+					MoveUnit(playerID, unit, KeyDirection(3), ref unitMoveRetryCount);
 					break;
 
 				// Move unit PageDown
 				case '\x004':
-				case '\x5100':
 					MoveUnit(playerID, unit, 4, ref unitMoveRetryCount);
+					break;
+
+				case '\x5100':
+					MoveUnit(playerID, unit, KeyDirection(4), ref unitMoveRetryCount);
 					break;
 
 				// Move unit Down
 				case '\x005':
-				case '\x5000':
 					MoveUnit(playerID, unit, 5, ref unitMoveRetryCount);
+					break;
+
+				case '\x5000':
+					MoveUnit(playerID, unit, KeyDirection(5), ref unitMoveRetryCount);
 					break;
 
 				// Move unit End
 				case '\x006':
-				case '\x4f00':
 					MoveUnit(playerID, unit, 6, ref unitMoveRetryCount);
+					break;
+
+				case '\x4f00':
+					MoveUnit(playerID, unit, KeyDirection(6), ref unitMoveRetryCount);
 					break;
 
 				// Move unit Left
 				case '\x007':
-				case '\x4b00':
 					MoveUnit(playerID, unit, 7, ref unitMoveRetryCount);
+					break;
+
+				case '\x4b00':
+					MoveUnit(playerID, unit, KeyDirection(7), ref unitMoveRetryCount);
 					break;
 
 				// Move unit Home
 				case '\x008':
-				case '\x4700':
 					MoveUnit(playerID, unit, 8, ref unitMoveRetryCount);
+					break;
+
+				case '\x4700':
+					MoveUnit(playerID, unit, KeyDirection(8), ref unitMoveRetryCount);
 					break;
 
 				// Change tax rate
@@ -1526,7 +1560,7 @@ namespace OpenCivOne
 
 				// Shift + Home - Move Map
 				case 0x4737:
-					direction = this.parent.MoveDirections[8];
+					direction = this.parent.MoveDirections[KeyDirection(8)];
 					this.parent.Var_d4cc_MapViewX += direction.X * 4;
 					this.parent.Var_d75e_MapViewY += direction.Y * 4;
 
@@ -1536,7 +1570,7 @@ namespace OpenCivOne
 
 				// Shift + Up - Move Map
 				case 0x4838:
-					direction = this.parent.MoveDirections[1];
+					direction = this.parent.MoveDirections[KeyDirection(1)];
 					this.parent.Var_d4cc_MapViewX += direction.X * 4;
 					this.parent.Var_d75e_MapViewY += direction.Y * 4;
 
@@ -1546,7 +1580,7 @@ namespace OpenCivOne
 
 				// Shift + PageUp - Move Map
 				case 0x4939:
-					direction = this.parent.MoveDirections[2];
+					direction = this.parent.MoveDirections[KeyDirection(2)];
 					this.parent.Var_d4cc_MapViewX += direction.X * 4;
 					this.parent.Var_d75e_MapViewY += direction.Y * 4;
 
@@ -1556,7 +1590,7 @@ namespace OpenCivOne
 
 				// Shift + Left - Move Map
 				case 0x4b34:
-					direction = this.parent.MoveDirections[7];
+					direction = this.parent.MoveDirections[KeyDirection(7)];
 					this.parent.Var_d4cc_MapViewX += direction.X * 4;
 					this.parent.Var_d75e_MapViewY += direction.Y * 4;
 
@@ -1566,7 +1600,7 @@ namespace OpenCivOne
 
 				// Shift + Right - Move Map
 				case 0x4d36:
-					direction = this.parent.MoveDirections[3];
+					direction = this.parent.MoveDirections[KeyDirection(3)];
 					this.parent.Var_d4cc_MapViewX += direction.X * 4;
 					this.parent.Var_d75e_MapViewY += direction.Y * 4;
 
@@ -1576,7 +1610,7 @@ namespace OpenCivOne
 
 				// Shift + End - Move Map
 				case 0x4f31:
-					direction = this.parent.MoveDirections[6];
+					direction = this.parent.MoveDirections[KeyDirection(6)];
 					this.parent.Var_d4cc_MapViewX += direction.X * 4;
 					this.parent.Var_d75e_MapViewY += direction.Y * 4;
 
@@ -1586,7 +1620,7 @@ namespace OpenCivOne
 
 				// Shift + Down - Move Map
 				case 0x5032:
-					direction = this.parent.MoveDirections[5];
+					direction = this.parent.MoveDirections[KeyDirection(5)];
 					this.parent.Var_d4cc_MapViewX += direction.X * 4;
 					this.parent.Var_d75e_MapViewY += direction.Y * 4;
 
@@ -1596,7 +1630,7 @@ namespace OpenCivOne
 
 				// Shift + PageDown - Move Map
 				case 0x5133:
-					direction = this.parent.MoveDirections[4];
+					direction = this.parent.MoveDirections[KeyDirection(4)];
 					this.parent.Var_d4cc_MapViewX += direction.X * 4;
 					this.parent.Var_d75e_MapViewY += direction.Y * 4;
 
@@ -1680,6 +1714,15 @@ namespace OpenCivOne
 		/// <param name="unit"></param>
 		/// <param name="newMoveDirection"></param>
 		/// <param name="unitMoveCount"></param>
+		/// <summary>
+		/// The map direction (1 north, then clockwise) a movement key gives. On the isometric map north points up and to
+		/// the right, so each key moves the way it points on the screen: up moves north-west, up and right north, and so on.
+		/// </summary>
+		private int KeyDirection(int screenDirection)
+		{
+			return (this.parent.IsoView == null) ? screenDirection : ((screenDirection + 6) % 8) + 1;
+		}
+
 		private void MoveUnit(int playerID, Unit? unit, int newMoveDirection, ref int unitMoveCount)
 		{
 			if (unit != null && unit.UnitType != UnitTypeEnum.None)

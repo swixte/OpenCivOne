@@ -236,22 +236,26 @@ namespace OpenCivOne.UI
 							this.game.Keys.Enqueue(0x4400);
 							break;
 
+						// two arrows pressed together make a diagonal (for keyboards without a number pad)
 						case Key.Down:
+						case Key.Left:
+						case Key.Right:
+						case Key.Up:
+							this.ArrowPressed(e.Key);
+							break;
+
 						case Key.NumPad2:
 							this.game.Keys.Enqueue(0x5000);
 							break;
 
-						case Key.Left:
 						case Key.NumPad4:
 							this.game.Keys.Enqueue(0x4b00);
 							break;
 
-						case Key.Right:
 						case Key.NumPad6:
 							this.game.Keys.Enqueue(0x4d00);
 							break;
 
-						case Key.Up:
 						case Key.NumPad8:
 							this.game.Keys.Enqueue(0x4800);
 							break;
@@ -336,6 +340,11 @@ namespace OpenCivOne.UI
 							break;
 					}
 				}
+				else if (e.KeyModifiers == KeyModifiers.Control && e.Key == Key.G)
+				{
+					// the map grid on and off (see PlayerTurn)
+					this.game.Keys.Enqueue(0x7e47);
+				}
 				else if ((e.KeyModifiers & KeyModifiers.Alt) == KeyModifiers.Alt)
 				{
 					switch (e.Key)
@@ -414,6 +423,72 @@ namespace OpenCivOne.UI
 					}
 				}
 			}
+		}
+
+		private Key? pendingArrow;
+		private DispatcherTimer? arrowTimer;
+
+		/// <summary>
+		/// An arrow waits a moment for a second one: up and right together give the up-right key (the number pad's 9),
+		/// and so on, so every direction can be reached with the arrows alone. Called with the keyboard lock held.
+		/// </summary>
+		private void ArrowPressed(Key key)
+		{
+			static int Code(Key k) => k switch { Key.Up => 0x4800, Key.Down => 0x5000, Key.Left => 0x4b00, _ => 0x4d00 };
+
+			if (this.pendingArrow is Key first && first != key)
+			{
+				bool vertical(Key k) => k == Key.Up || k == Key.Down;
+
+				if (vertical(first) != vertical(key))
+				{
+					Key up = vertical(first) ? first : key, side = vertical(first) ? key : first;
+					int diagonal = (up, side) switch
+					{
+						(Key.Up, Key.Right) => 0x4900,
+						(Key.Up, _) => 0x4700,
+						(Key.Down, Key.Right) => 0x5100,
+						_ => 0x4f00
+					};
+
+					this.arrowTimer?.Stop();
+					this.pendingArrow = null;
+					this.game.Keys.Enqueue(diagonal);
+					return;
+				}
+
+				// the other way along the same line: the first arrow goes now
+				this.arrowTimer?.Stop();
+				this.game.Keys.Enqueue(Code(first));
+			}
+			else if (this.pendingArrow is Key same)
+			{
+				this.arrowTimer?.Stop();
+				this.game.Keys.Enqueue(Code(same));
+			}
+
+			this.pendingArrow = key;
+
+			if (this.arrowTimer == null)
+			{
+				this.arrowTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
+				this.arrowTimer.Tick += (_, _) =>
+				{
+					this.arrowTimer!.Stop();
+
+					lock (OpenCivOneGame.KeyboardAndMouseLock)
+					{
+						if (this.pendingArrow is Key waiting)
+						{
+							this.pendingArrow = null;
+							this.game.Keys.Enqueue(Code(waiting));
+						}
+					}
+				};
+			}
+
+			this.arrowTimer.Stop();
+			this.arrowTimer.Start();
 		}
 
 		private void MainWindow_PointerMoved(object? sender, PointerEventArgs e)

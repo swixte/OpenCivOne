@@ -49,6 +49,11 @@ namespace OpenCivOne.Graphics
 		private long signature = long.MinValue;
 
 		/// <summary>
+		/// Outlines every explored cell, for players who want to see the squares (a preference, toggled with Ctrl+G)
+		/// </summary>
+		public bool ShowGrid { get; set; }
+
+		/// <summary>
 		/// The key of the land, fog and cities the ground passes last painted, and what they made (see Paint)
 		/// </summary>
 		private long groundCacheKey = long.MinValue;
@@ -564,6 +569,7 @@ namespace OpenCivOne.Graphics
 			unchecked
 			{
 				sig = (sig * 31) + (long)(cx * 16) + ((long)(cy * 16) << 20);
+				sig = (sig * 3) + (this.ShowGrid ? 1 : 0);
 
 				for (int y = ccy - range; y <= ccy + range; y++)
 				{
@@ -1823,6 +1829,29 @@ namespace OpenCivOne.Graphics
 				foreach (var r in routes)
 					if (r.Mountain)
 						overMountains.Add((r.Pts, r.Rail));
+			}
+
+			// the grid: the two upper edges of each explored cell, so every edge is drawn once
+			if (this.ShowGrid)
+			{
+				using SKPaint line = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.3f, Color = new SKColor(40, 34, 28, 95) };
+
+				foreach ((int x, int y) in cells)
+				{
+					if (!ExploredAt(x, y))
+						continue;
+
+					SKPoint top = Screen(x, y), right = Screen(x + 1, y), left = Screen(x, y + 1), bottom = Screen(x + 1, y + 1);
+					canvas.DrawLine(left, top, line);
+					canvas.DrawLine(top, right, line);
+
+					// the lower edges where the next cell is not explored, so the grid ends in a whole diamond
+					if (!ExploredAt(x + 1, y))
+						canvas.DrawLine(right, bottom, line);
+
+					if (!ExploredAt(x, y + 1))
+						canvas.DrawLine(left, bottom, line);
+				}
 			}
 
 			// everything that stands on the ground, back to front
