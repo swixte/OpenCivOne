@@ -360,7 +360,7 @@
   ]
  },
  "ma_knights": {
-  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: an armoured mounted noble warrior on a barded horse with a lance or sword (for Mesoamerican: an eagle-knight warrior in feathered armour on foot with a macuahuitl; for southern African: a noble warrior chief in leopard skin with shield and spear), unmistakably Mesoamerican (Aztec and Maya) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: an Aztec eagle-knight warrior ON FOOT (no horse, no animal) in a feathered eagle-head helmet and feathered armour, holding a round shield and a macuahuitl war club, striding forward, unmistakably Mesoamerican (Aztec and Maya) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
   "refs": [
    "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/knights.png"
   ]
@@ -378,7 +378,7 @@
   ]
  },
  "ma_sail": {
-  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a medieval sailing ship for exploration, unmistakably Mesoamerican (Aztec and Maya) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
+  "prompt": "In exactly the art style of the reference image (fine dark ink key lines, muted woodblock colours, light from the top left) and with the same viewing angle, pose, size and framing as the reference unit: a large ocean-going Maya trading canoe carved from one great tree, with a woven palm-mat sail on a short mast, paddlers and bundles of trade goods (NOT a European ship, no galleon, no cannons), unmistakably Mesoamerican (Aztec and Maya) in dress, armour, weapons and design. Bold readable silhouette that stays clear when shrunk to a small map icon. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground, no shadow, no text, no frame.",
   "refs": [
    "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/unitref/sail.png"
   ]

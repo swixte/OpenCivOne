@@ -383,6 +383,26 @@ namespace OpenCivOne.Graphics
 			foreach (string name in Array.ConvertAll(UnitNames, n => "unit_" + n))
 				view.LoadObject(objectsFolder, name, height: 56);
 
+			// the painted battle effects: painted/battle/smoke, fire and blast
+			foreach (string effect in new[] { "smoke", "fire", "blast" })
+			{
+				string folder = Path.Combine(hdFolder, "painted", "battle", effect);
+				var list = new List<SKBitmap>();
+
+				if (Directory.Exists(folder))
+				{
+					foreach (string file in Directory.GetFiles(folder, "*.png").OrderBy(f => f, StringComparer.Ordinal))
+					{
+						SKBitmap? b = SKBitmap.Decode(file);
+
+						if (b != null)
+							list.Add(b);
+					}
+				}
+
+				view.battle[effect] = list;
+			}
+
 			// early units in each nation's style: painted/objects/units/STYLE/NAME.png, kept as "unit_NAME@STYLE"
 			string unitStyles = Path.Combine(objectsFolder, "units");
 
@@ -529,6 +549,7 @@ namespace OpenCivOne.Graphics
 
 		public bool Render(float cx, float cy, Scene scene)
 		{
+			this.lastCentre = (cx, cy);
 			int range = (this.width / TileWidth) + (this.height / TileHeight) + 3;
 			int ccx = (int)MathF.Floor(cx), ccy = (int)MathF.Floor(cy);
 			long sig = 17;
@@ -2509,6 +2530,106 @@ namespace OpenCivOne.Graphics
 		}
 
 		private readonly Dictionary<(SKBitmap, string), SKBitmap> toned = new Dictionary<(SKBitmap, string), SKBitmap>();
+
+		private readonly Dictionary<string, List<SKBitmap>> battle = new Dictionary<string, List<SKBitmap>>();
+		private (float X, float Y) lastCentre;
+
+		/// <summary>
+		/// Whether the theme has painted battle effects
+		/// </summary>
+		public bool HasBattleArt => this.battle.TryGetValue("smoke", out var smoke) && smoke.Count > 0 &&
+			this.battle.TryGetValue("blast", out var blast) && blast.Count > 0;
+
+		/// <summary>
+		/// One frame of a battle drawn over the last rendered view with the theme's painted effects: clouds of smoke
+		/// swell over both units with flames flickering inside, then drift off the winner while the loser goes up in a
+		/// painted explosion that fades away. t runs from 0 to 1; cells in map coordinates near the view's centre.
+		/// </summary>
+		public uint[] BattleFrame(float t, (int X, int Y) attacker, (int X, int Y) defender, bool attackerWins, int seed)
+		{
+			int w = this.width, h = this.height;
+			float halfW = TileWidth / 2f, halfH = TileHeight / 2f;
+			(float cx, float cy) = this.lastCentre;
+			SKPoint Screen(float x, float y) => new SKPoint((w / 2f) + ((x - cx - (y - cy)) * halfW), (h / 2f) + ((x - cx + (y - cy)) * halfH));
+
+			SKPoint a = Screen(attacker.X + 0.5f, attacker.Y + 0.5f), d = Screen(defender.X + 0.5f, defender.Y + 0.5f);
+			SKPoint mid = new SKPoint((a.X + d.X) / 2, ((a.Y + d.Y) / 2) - 14);
+			SKPoint loser = attackerWins ? d : a, winner = attackerWins ? a : d;
+			loser = new SKPoint(loser.X, loser.Y - 12);
+
+			using SKBitmap bitmap = new SKBitmap(w, h, SKColorType.Bgra8888, SKAlphaType.Premul);
+			System.Runtime.InteropServices.Marshal.Copy(Array.ConvertAll(this.pixels, v => unchecked((int)v)), 0, bitmap.GetPixels(), this.pixels.Length);
+			using SKCanvas canvas = new SKCanvas(bitmap);
+			using SKPaint paint = new SKPaint { IsAntialias = true };
+			var sampling = new SKSamplingOptions(SKCubicResampler.Mitchell);
+
+			void Draw(SKBitmap b, SKPoint c, float width, float alpha, bool flip = false)
+			{
+				if (alpha <= 0.01f || width < 2)
+					return;
+
+				float hgt = width * b.Height / b.Width;
+				paint.Color = new SKColor(255, 255, 255, (byte)(255 * Math.Clamp(alpha, 0, 1)));
+				canvas.Save();
+
+				if (flip)
+				{
+					canvas.Translate(c.X, 0);
+					canvas.Scale(-1, 1);
+					canvas.Translate(-c.X, 0);
+				}
+
+				using SKImage image = SKImage.FromBitmap(b);
+				canvas.DrawImage(image, new SKRect(c.X - (width / 2), c.Y - (hgt / 2), c.X + (width / 2), c.Y + (hgt / 2)), sampling, paint);
+				canvas.Restore();
+			}
+
+			List<SKBitmap> smoke = this.battle["smoke"], fire = this.battle.TryGetValue("fire", out var f) ? f : new List<SKBitmap>(), blast = this.battle["blast"];
+			var rnd = new Random(seed);
+			float span = MathF.Sqrt(((a.X - d.X) * (a.X - d.X)) + ((a.Y - d.Y) * (a.Y - d.Y)));
+
+			// the smoke: puffs swelling over both units, behind and in front; after the fight they drift off the winner
+			float grow = Math.Clamp(t / 0.3f, 0, 1), clear = Math.Clamp((t - 0.6f) / 0.4f, 0, 1);
+			grow = 1 - ((1 - grow) * (1 - grow));
+
+			for (int k = 0; k < 7; k++)
+			{
+				float along = (k / 6f) - 0.5f;
+				var c = new SKPoint(mid.X + ((d.X - a.X) * along * 0.9f) + (((float)rnd.NextDouble() - 0.5f) * 24),
+					mid.Y + ((d.Y - a.Y) * along * 0.9f) + (((float)rnd.NextDouble() - 0.5f) * 14));
+				float size = (62 + ((float)rnd.NextDouble() * 34) + (span * 0.15f)) * (0.35f + (0.65f * grow));
+				float drift = clear * (30 + (k * 4));
+				var away = new SKPoint(c.X - winner.X, c.Y - winner.Y);
+				float len = MathF.Max(1, MathF.Sqrt((away.X * away.X) + (away.Y * away.Y)));
+				c = new SKPoint(c.X + (away.X / len * drift), c.Y + (away.Y / len * drift) - (clear * 20) + (MathF.Sin((t * 7) + k) * 2));
+				Draw(smoke[k % smoke.Count], c, size, (1 - clear) * (0.85f + (0.15f * grow)), k % 2 == 1);
+			}
+
+			// flames flickering inside the smoke while they fight
+			if (fire.Count > 0 && t > 0.1f && t < 0.62f)
+			{
+				var fr = new Random(seed + (int)(t * 40));
+
+				for (int k = 0; k < 3; k++)
+				{
+					var c = new SKPoint(mid.X + (((float)fr.NextDouble() - 0.5f) * (40 + (span * 0.5f))), mid.Y + (((float)fr.NextDouble() - 0.5f) * 26));
+					Draw(fire[fr.Next(fire.Count)], c, 34 + ((float)fr.NextDouble() * 24), 0.95f, fr.Next(2) == 0);
+				}
+			}
+
+			// the loser's end: a painted explosion that swells and fades
+			if (t > 0.55f)
+			{
+				float b = Math.Clamp((t - 0.55f) / 0.45f, 0, 1);
+				float size = 50 + (b * 90), alpha = b < 0.6f ? 1 : 1 - ((b - 0.6f) / 0.4f);
+				Draw(blast[seed % blast.Count], new SKPoint(loser.X, loser.Y - (b * 10)), size, alpha);
+			}
+
+			canvas.Flush();
+			int[] raw = new int[w * h];
+			System.Runtime.InteropServices.Marshal.Copy(bitmap.GetPixels(), raw, 0, raw.Length);
+			return Array.ConvertAll(raw, v => unchecked((uint)v) | 0xff000000);
+		}
 
 		/// <summary>
 		/// A unit sprite toned down (kept once made): grey by the amount given, then darkened

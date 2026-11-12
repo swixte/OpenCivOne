@@ -1287,6 +1287,23 @@ GBitmap other4()
 		for (int i = 0; i < Math.Min(3, cities.Count); i++)
 			Shot($"city{i + 1}.png", 960, 768, largest.Count > i ? largest[i].X + 1.5f : cities[i].X, largest.Count > i ? largest[i].Y + 1 : cities[i].Y);
 
+		// ISO_BATTLE: frames of a battle between the first unit and the cell east of it, to judge the animation
+		if (Environment.GetEnvironmentVariable("ISO_BATTLE") == "1")
+		{
+			var u0 = showScene.Units[0];
+			var bview = OpenCivOne.Graphics.IsoView.Load(showTheme, 960, 768)!;
+			bview.Render(u0.X + 0.5f, u0.Y + 0.5f, showScene);
+
+			for (int f = 0; f <= 10; f++)
+			{
+				uint[] bpx = bview.BattleFrame(f / 10f, (u0.X, u0.Y), (u0.X + 1, u0.Y), true, 5);
+				using var img = new SKBitmap(960, 768, SKColorType.Bgra8888, SKAlphaType.Premul);
+				Marshal.Copy(Array.ConvertAll(bpx, v => unchecked((int)v)), 0, img.GetPixels(), bpx.Length);
+				using var bf = File.Create(Path.Combine(showDir, $"battle{f:00}.png"));
+				img.Encode(bf, SKEncodedImageFormat.Png, 100);
+			}
+		}
+
 		var counts = new int[12];
 		foreach (int t in terr) counts[t]++;
 		Console.WriteLine($"showcase written: {cities.Count} cities, {springs.Count} springs, terrain counts {string.Join(",", counts)}");

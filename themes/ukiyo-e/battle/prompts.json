@@ -1,0 +1,20 @@
+{
+ "battle_smoke": {
+  "prompt": "In exactly the Japanese woodblock-print (ukiyo-e) style of the reference image, like the stylised curling clouds and waves of Hokusai and Hiroshige: fine dark ink key lines, flat muted colours with soft gradations. A sprite sheet of 9 separate billowing clouds of battle smoke and dust, each a cluster of round curling cloud lobes with spiral curls, cream, warm grey and pale ochre, varied sizes in a loose 3x3 grid. Each is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background with clear magenta space between them so each can be cut out. No ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_cback.jpg"
+  ]
+ },
+ "battle_fire": {
+  "prompt": "In exactly the Japanese woodblock-print (ukiyo-e) style of the reference image, like the stylised curling clouds and waves of Hokusai and Hiroshige: fine dark ink key lines, flat muted colours with soft gradations. A sprite sheet of 9 separate bursts of fire and muzzle flashes: stylised flames with curling tongues in vermilion, orange and gold with a pale yellow core, some with spark lines, varied sizes in a loose 3x3 grid. Each is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background with clear magenta space between them so each can be cut out. No ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_cback.jpg"
+  ]
+ },
+ "battle_blast": {
+  "prompt": "In exactly the Japanese woodblock-print (ukiyo-e) style of the reference image, like the stylised curling clouds and waves of Hokusai and Hiroshige: fine dark ink key lines, flat muted colours with soft gradations. A sprite sheet of 4 separate large explosions, each a great burst of stylised curling flame in vermilion, orange and gold with black smoke billowing around it and pieces of broken wood, shields and debris flying outwards, in a 2x2 grid. Each is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background with clear magenta space between them so each can be cut out. No ground, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_cback.jpg"
+  ]
+ }
+}
