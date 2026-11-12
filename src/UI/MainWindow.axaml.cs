@@ -69,6 +69,18 @@ namespace OpenCivOne.UI
 			if (GBitmap.UIColor(5) is uint frame)
 				this.mainImageBorder.BorderBrush = new SolidColorBrush(frame);
 
+			// a theme can give the mouse pointer its own picture (ui/cursor.png, the point at its top left corner)
+			if (GBitmap.HDDirectory is string themePath && File.Exists(Path.Combine(themePath, "ui", "cursor.png")))
+			{
+				try
+				{
+					this.Cursor = new Cursor(new Bitmap(Path.Combine(themePath, "ui", "cursor.png")), new PixelPoint(2, 2));
+				}
+				catch (Exception)
+				{
+				}
+			}
+
 			// Open large enough to show 4x HD art at its own size, if the screen has the room
 			if (GBitmap.HDScale > 2)
 			{
