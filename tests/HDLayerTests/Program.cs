@@ -1255,6 +1255,7 @@ GBitmap other4()
 		{
 			0 => 2, 1 => 1, 2 => 4 | ('G' << 8), 3 => 'R' << 8, 4 => 2 | 4, 5 => 'I' << 8, _ => 0,
 		};
+		showScene.UnitStyle = (x, y) => showStyles[Math.Abs((x * 7) + y) % showStyles.Length];
 		showScene.CityLook = (x, y) => (showStyles[Math.Max(0, cities.IndexOf((x, y))) % showStyles.Length], 1);
 
 		for (int i = 0; i < cities.Count; i++)
