@@ -2564,12 +2564,19 @@ namespace OpenCivOne.Graphics
 			SKPoint a = Screen(attacker.X + 0.5f, attacker.Y + 0.5f), d = Screen(defender.X + 0.5f, defender.Y + 0.5f);
 
 			// the view without the attacker, which is drawn moving: rendered once per battle from the last scene
-			(int X, int Y, int Type, uint Colour)? mover = null;
-			string moverStyle = "";
+			(int X, int Y, int Type, uint Colour)? mover = null, target = null;
+			string moverStyle = "", targetStyle = "";
 
 			if (this.lastScene is Scene last)
 			{
 				int found = last.Units.FindIndex(u => Wrap(u.X) == Wrap(attacker.X) && u.Y == attacker.Y);
+				int foundTarget = last.Units.FindIndex(u => Wrap(u.X) == Wrap(defender.X) && u.Y == defender.Y);
+
+				if (foundTarget >= 0)
+				{
+					target = last.Units[foundTarget];
+					targetStyle = last.UnitStyle(Wrap(defender.X), defender.Y);
+				}
 
 				if (found >= 0)
 				{
@@ -2584,7 +2591,7 @@ namespace OpenCivOne.Graphics
 							Walls = last.Walls, CityLook = last.CityLook, UnitMarks = last.UnitMarks, UnitStyle = last.UnitStyle,
 						};
 						without.Cities.AddRange(last.Cities);
-						without.Units.AddRange(last.Units.Where((u, i) => i != found));
+						without.Units.AddRange(last.Units.Where((u, i) => i != found && i != foundTarget));
 						this.Render(cx, cy, without);
 						this.lastScene = last;
 						this.battleBase = (uint[])this.pixels.Clone();
@@ -2633,15 +2640,43 @@ namespace OpenCivOne.Graphics
 				canvas.Restore();
 			}
 
-			// the attacker itself, with its banner, until it is lost in its own explosion
-			bool attackerGone = !attackerWins && t > 0.62f;
+			// the two units, drawn here so the loser can die: as the smoke clears the winner stands unharmed while the
+			// loser greys, sinks and fades away
+			float dying = Math.Clamp((t - 0.66f) / 0.3f, 0, 1);
 
-			if (mover is (int, int, int, uint) m && !attackerGone && UnitPicture(m.Type, moverStyle, out SKBitmap? moverPicture) && moverPicture != null)
+			void DrawUnit((int X, int Y, int Type, uint Colour) u, string style, SKPoint p, bool loses)
 			{
-				using SKPaint sprite = new SKPaint { IsAntialias = true };
-				canvas.DrawBitmap(moverPicture, at.X - (moverPicture.Width / 2f), at.Y + 14 - moverPicture.Height, sprite);
-				Flag(canvas, at.X - 14, at.Y - 26, 10, m.Colour, 1.9f);
+				if (!UnitPicture(u.Type, style, out SKBitmap? pic) || pic == null)
+					return;
+
+				float alpha = loses ? 1 - dying : 1;
+
+				if (alpha <= 0.02f)
+					return;
+
+				SKBitmap shown = loses && dying > 0 ? Toned(pic, "sentry", 0.75f, 0.2f) : pic;
+				float sink = loses ? dying * 10 : 0;
+				using SKPaint sprite = new SKPaint { IsAntialias = true, Color = new SKColor(255, 255, 255, (byte)(255 * alpha)) };
+				canvas.Save();
+
+				if (loses && dying > 0)
+				{
+					// it keels over as it fades
+					canvas.RotateDegrees(dying * 35 * (p.X >= winner.X ? 1 : -1), p.X, p.Y + 14);
+				}
+
+				canvas.DrawBitmap(shown, p.X - (shown.Width / 2f), p.Y + 14 + sink - shown.Height, sprite);
+				canvas.Restore();
+
+				if (!loses || dying < 0.3f)
+					Flag(canvas, p.X - 14, p.Y - 26 + sink, 10, u.Colour, 1.9f);
 			}
+
+			if (target is (int, int, int, uint) tu)
+				DrawUnit(tu, targetStyle, d, attackerWins);
+
+			if (mover is (int, int, int, uint) mu)
+				DrawUnit(mu, moverStyle, at, !attackerWins);
 
 			List<SKBitmap> smoke = this.battle["smoke"], fire = this.battle.TryGetValue("fire", out var f) ? f : new List<SKBitmap>(), blast = this.battle["blast"];
 			var rnd = new Random(seed);
@@ -2651,12 +2686,15 @@ namespace OpenCivOne.Graphics
 			float grow = Math.Clamp((t - 0.16f) / 0.24f, 0, 1), clear = Math.Clamp((t - 0.62f) / 0.38f, 0, 1);
 			grow = 1 - ((1 - grow) * (1 - grow));
 
-			for (int k = 0; k < 6 && grow > 0; k++)
+			// one cloud over both units: puffs strung from the attacker to the defender, a little past each
+			SKPoint from = new SKPoint(at.X, at.Y - 18), to = new SKPoint(d.X, d.Y - 18);
+
+			for (int k = 0; k < 8 && grow > 0; k++)
 			{
-				float along = (k / 6f) - 0.5f;
-				var c = new SKPoint(mid.X + ((d.X - at.X) * along * 0.9f) + (((float)rnd.NextDouble() - 0.5f) * 16),
-					mid.Y + ((d.Y - at.Y) * along * 0.9f) + (((float)rnd.NextDouble() - 0.5f) * 10));
-				float size = (40 + ((float)rnd.NextDouble() * 20) + (span * 0.08f)) * (0.35f + (0.65f * grow));
+				float along = -0.15f + (1.3f * k / 7f);
+				var c = new SKPoint(from.X + ((to.X - from.X) * along) + (((float)rnd.NextDouble() - 0.5f) * 16),
+					from.Y + ((to.Y - from.Y) * along) + (((float)rnd.NextDouble() - 0.5f) * 12));
+				float size = (46 + ((float)rnd.NextDouble() * 18)) * (0.35f + (0.65f * grow));
 				float drift = clear * (30 + (k * 4));
 				var away = new SKPoint(c.X - winner.X, c.Y - winner.Y);
 				float len = MathF.Max(1, MathF.Sqrt((away.X * away.X) + (away.Y * away.Y)));
@@ -2677,10 +2715,10 @@ namespace OpenCivOne.Graphics
 			}
 
 			// the loser's end: a painted explosion that swells and fades
-			if (t > 0.55f)
+			if (t > 0.58f)
 			{
-				float b = Math.Clamp((t - 0.55f) / 0.45f, 0, 1);
-				float size = 32 + (b * 52), alpha = b < 0.6f ? 1 : 1 - ((b - 0.6f) / 0.4f);
+				float b = Math.Clamp((t - 0.58f) / 0.32f, 0, 1);
+				float size = 28 + (b * 44), alpha = b < 0.5f ? 1 : 1 - ((b - 0.5f) / 0.5f);
 				Draw(blast[seed % blast.Count], new SKPoint(loser.X, loser.Y - (b * 10)), size, alpha);
 			}
 
