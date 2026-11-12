@@ -1,0 +1,32 @@
+{
+ "eu_s0_w": {
+  "prompt": "In exactly the style, colours, viewing angle (high three-quarter isometric view from the south) and scale of houses of the reference image: a European hamlet of just four small timber and stone cottages with red tile roofs around a well, with small vegetable gardens, enclosed by a ring of pale stone city walls with round towers and a gated entrance. Seen as a whole from above, centred, on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate beyond its own lanes and gardens, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_town0.png"
+  ]
+ },
+ "eu_s1_w": {
+  "prompt": "In exactly the style, colours, viewing angle (high three-quarter isometric view from the south) and scale of houses of the reference image: a European village of about ten houses with red tile roofs and a small chapel with a short bell tower, along two crooked lanes, enclosed by a ring of pale stone city walls with round towers and a gated entrance. Seen as a whole from above, centred, on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate beyond its own lanes and gardens, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_town0.png"
+  ]
+ },
+ "eu_s2_w": {
+  "prompt": "In exactly the style, colours, viewing angle (high three-quarter isometric view from the south) and scale of houses of the reference image: a European small market town of about twenty houses with red tile roofs, a market square and a stone church with a spire, enclosed by a ring of pale stone city walls with round towers and a gated entrance. Seen as a whole from above, centred, on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate beyond its own lanes and gardens, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_town0.png"
+  ]
+ },
+ "eu_s3_w": {
+  "prompt": "In exactly the style, colours, viewing angle (high three-quarter isometric view from the south) and scale of houses of the reference image: a European city of about forty tightly packed houses with red tile roofs, a large church with a tall spire and a town hall, enclosed by a ring of pale stone city walls with round towers and a gated entrance. Seen as a whole from above, centred, on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate beyond its own lanes and gardens, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_town0.png"
+  ]
+ },
+ "eu_s4_w": {
+  "prompt": "In exactly the style, colours, viewing angle (high three-quarter isometric view from the south) and scale of houses of the reference image: a European great capital city, drawn with houses exactly the same size as the houses in the reference image (do NOT shrink them), but packed denser and taller: three- and four-storey townhouses with red tile roofs, a grand cathedral with two tall spires in the middle, a palace with a dome, and a few houses spilling outside the wall, enclosed by a ring of pale stone city walls with round towers and a gated entrance. Seen as a whole from above, centred, on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate beyond its own lanes and gardens, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_town0.png"
+  ]
+ }
+}
