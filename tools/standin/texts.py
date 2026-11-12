@@ -103,8 +103,7 @@ MESSAGES = {
     '*ESCHISM': 'Civil war among the $US! Rebels have broken away and name themselves the $THEM.',
 
     # ----- the end of the game
-    '*FAME': ('Your reign has come to its end. Will you see your place among the great rulers of '
-              'history?\n_No, finish here\n_Yes, show me'),
+    '*FAME': 'See your place in history?\n_No, finish here\n_Yes, show me',
     '*ARCH': ('Thousands of years later...^Archaeologists dig among the ruins of a forgotten people.^They find '
               'roads, walls and the bones of great cities.^The last of their knowledge was $RPLC1.^Of their rulers, '
               'nothing is remembered.'),
