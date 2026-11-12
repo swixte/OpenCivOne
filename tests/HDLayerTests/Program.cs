@@ -1294,9 +1294,9 @@ GBitmap other4()
 			var bview = OpenCivOne.Graphics.IsoView.Load(showTheme, 960, 768)!;
 			bview.Render(u0.X + 0.5f, u0.Y + 0.5f, showScene);
 
-			for (int f = 0; f <= 10; f++)
+			for (int f = 0; f <= 20; f++)
 			{
-				uint[] bpx = bview.BattleFrame(f / 10f, (u0.X, u0.Y), (u0.X + 1, u0.Y), true, 5);
+				uint[] bpx = bview.BattleFrame(f / 20f, (u0.X, u0.Y), (u0.X + 1, u0.Y + 1), f < 0 ? false : Environment.GetEnvironmentVariable("ISO_BATTLE_LOSE") != "1", 5);
 				using var img = new SKBitmap(960, 768, SKColorType.Bgra8888, SKAlphaType.Premul);
 				Marshal.Copy(Array.ConvertAll(bpx, v => unchecked((int)v)), 0, img.GetPixels(), bpx.Length);
 				using var bf = File.Create(Path.Combine(showDir, $"battle{f:00}.png"));
