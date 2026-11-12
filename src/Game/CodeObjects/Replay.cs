@@ -323,7 +323,9 @@ namespace OpenCivOne
 
 			for (int i = 0; i < 0xd; i++)
 			{
-				this.oCPU.WriteUInt8(this.oCPU.DS.UInt16, (ushort)(usStringOffset + i), (byte)this.oParent.GameData.CityNames[uiCityNameID][i]);
+				// names shorter than the 13 character field end with zeros (the port indexed past the end of the string)
+				string cityName = this.oParent.GameData.CityNames[uiCityNameID];
+				this.oCPU.WriteUInt8(this.oCPU.DS.UInt16, (ushort)(usStringOffset + i), (byte)(i < cityName.Length ? cityName[i] : 0));
 			}
 
 			F9_0000_08a3();
@@ -336,7 +338,9 @@ namespace OpenCivOne
 
 			for (int i = 0; i < 0xd; i++)
 			{
-				this.oCPU.WriteUInt8(this.oCPU.DS.UInt16, (ushort)(usStringOffset + i), (byte)this.oParent.GameData.CityNames[uiCityNameID][i]);
+				// names shorter than the 13 character field end with zeros (the port indexed past the end of the string)
+				string cityName = this.oParent.GameData.CityNames[uiCityNameID];
+				this.oCPU.WriteUInt8(this.oCPU.DS.UInt16, (ushort)(usStringOffset + i), (byte)(i < cityName.Length ? cityName[i] : 0));
 			}
 
 			// Instruction address 0x0000:0x036b, size: 5

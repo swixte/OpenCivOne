@@ -717,8 +717,9 @@ namespace OpenCivOne.Graphics
 				}
 				else
 				{
-					// unknown char, use '?'
-					fontCh = font.Characters.GetValueByKey('?');
+					// a letter the font lacks takes its other case (the headline font has no lowercase z), else '?'
+					char other = char.IsLower(ch) ? char.ToUpperInvariant(ch) : char.ToLowerInvariant(ch);
+					fontCh = font.Characters.ContainsKey(other) ? font.Characters.GetValueByKey(other) : font.Characters.GetValueByKey('?');
 				}
 				iWidth += fontCh.Width;
 				iHeight = Math.Max(iHeight, fontCh.Height + font.LineSpacing);
