@@ -1041,29 +1041,10 @@ namespace OpenCivOne.Graphics
 			int hdWidth = this.iWidth * HDScale;
 			Overlay? over = this.Over;
 
-			// a full-screen picture drawn over the map window (the palace, a city, an advisor) leaves only scattered
-			// pixels that happen to equal the map's: the overlay is shown only while most of its area still holds the map,
-			// so those few do not show specks of the map through the picture
-			if (over != null && !over.Hold && over.Snapshot.Length == over.Area.Width * over.Area.Height)
-			{
-				int same = 0;
-
-				for (int y = 0; y < over.Area.Height; y++)
-				{
-					int row = ((over.Area.Y + y) * this.iWidth) + over.Area.X, snap = y * over.Area.Width;
-
-					for (int x = 0; x < over.Area.Width; x++)
-						if (over.Snapshot[snap + x] == this.aPixels[row + x])
-							same++;
-				}
-
-				if (same < over.Snapshot.Length / 4)
-					over = null;
-			}
-
-			// where the map is still showing: a pixel that matches the snapshot with most of the 24 around it (a 5 x 5 block) matching
-			// too, so a lone pixel of a picture drawn over the map that happens to have the map's colour index does not
-			// let a speck of the map through (the window's own edge counts as matching)
+			// where the map is still showing. A pixel that still holds the map shows the painted view (hiding it would show
+			// the classic map instead), except a stray pixel of a picture drawn over the map window (the palace, the
+			// newspaper) that only happens to share the map's colour index: one whose 5 x 5 block is almost all picture.
+			// So beside a unit, a new city, a dialog or a scrolled strip the painted view always stays.
 			bool[]? shows = null;
 
 			if (over != null && !over.Hold && over.Snapshot.Length == over.Area.Width * over.Area.Height)
@@ -1099,9 +1080,8 @@ namespace OpenCivOne.Graphics
 								}
 						}
 
-						// beside a straight edge of a picture 14 of the 24 around still match; a stray speck of a few
-						// pixels has far fewer
-						shows[(y * aw) + x] = around >= 14;
+						// a stray speck in a picture has almost no matching neighbours; anything beside real map has many
+						shows[(y * aw) + x] = around >= 4;
 					}
 				}
 			}
