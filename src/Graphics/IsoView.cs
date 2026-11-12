@@ -353,7 +353,7 @@ namespace OpenCivOne.Graphics
 			view.LoadObject(objectsFolder, "hut", height: 28, halo: true);
 			view.LoadObject(objectsFolder, "mine", height: 32, halo: true);
 			view.LoadObject(objectsFolder, "fortress", height: 46, halo: true);
-			view.LoadObject(objectsFolder, "pollution", height: 32, halo: true);
+			view.LoadObject(objectsFolder, "pollution", height: 40);
 
 			return view;
 		}
@@ -2141,6 +2141,19 @@ namespace OpenCivOne.Graphics
 
 			using (SKPaint sprite = new SKPaint { IsAntialias = true })
 			{
+				// pollution: the painted patch of poisoned ground and smog, laid on the ground before anything that stands on it
+				if (this.objects.TryGetValue("pollution", out SKBitmap? smog))
+				{
+					foreach ((int x, int y) in cells)
+					{
+						if ((Improvements(x, y) & 0x40) == 0 || !ExploredAt(x, y))
+							continue;
+
+						SKPoint c = Screen(x + 0.5f, y + 0.55f);
+						canvas.DrawBitmap(smog, c.X - (smog.Width / 2f), c.Y - (smog.Height * 0.6f), sprite);
+					}
+				}
+
 				foreach (var item in items)
 					canvas.DrawBitmap(item.Bitmap, item.X - (item.Bitmap.Width / 2f), item.Base - item.Bitmap.Height, sprite);
 
@@ -2152,19 +2165,6 @@ namespace OpenCivOne.Graphics
 					canvas.SaveLayer(ghost);
 					DrawRoutes(canvas, overMountains, new List<SKPoint[]>());
 					canvas.Restore();
-				}
-
-				// pollution: the painted patch of poisoned ground and smog, laid on the ground under the other objects
-				if (this.objects.TryGetValue("pollution", out SKBitmap? smog))
-				{
-					foreach ((int x, int y) in cells)
-					{
-						if ((Improvements(x, y) & 0x40) == 0 || !ExploredAt(x, y))
-							continue;
-
-						SKPoint c = Screen(x + 0.5f, y + 0.55f);
-						canvas.DrawBitmap(smog, c.X - (smog.Width / 2f), c.Y + 8 - smog.Height, sprite);
-					}
 				}
 
 				foreach (var item in topLayer)
