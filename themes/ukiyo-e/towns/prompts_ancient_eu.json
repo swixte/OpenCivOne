@@ -1,0 +1,26 @@
+{
+ "eu_a0_s0_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient Northern European (Iron Age Celtic and Germanic) settlement: a small hamlet, half as wide as the reference, of five large round and long timber houses with wattle-and-daub walls and thick thatched roofs, cattle pens, and a small wooden shrine, enclosed by an earthen rampart topped with a timber palisade and a wooden gatehouse. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s0_w.png"
+  ]
+ },
+ "eu_a0_s1_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient Northern European (Iron Age Celtic and Germanic) settlement: a village, a little smaller than the reference, of about twelve large round and long timber houses with wattle-and-daub walls and thick thatched roofs, cattle pens, and a small wooden shrine, enclosed by an earthen rampart topped with a timber palisade and a wooden gatehouse. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s2_w.png"
+  ]
+ },
+ "eu_a0_s2_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient Northern European (Iron Age Celtic and Germanic) settlement: a town of about twenty large round and long timber houses with wattle-and-daub walls and thick thatched roofs, cattle pens, and a great timber feasting hall and a small wooden shrine, enclosed by an earthen rampart topped with a timber palisade and a wooden gatehouse. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s3_w.png"
+  ]
+ },
+ "eu_a0_s3_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). An ancient Northern European (Iron Age Celtic and Germanic) settlement: a large town one and a half times as wide as the reference, of about thirty large round and long timber houses with wattle-and-daub walls and thick thatched roofs, cattle pens, and a great timber feasting hall and a small wooden shrine, enclosed by an earthen rampart topped with a timber palisade and a wooden gatehouse. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s4_w.png"
+  ]
+ }
+}

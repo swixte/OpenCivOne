@@ -10,6 +10,7 @@ Usage: python3 towns.py THEME_HD_DIR STYLE AGE RAW_DIR NAME_STEP0 NAME_STEP1 NAM
 import os
 import sys
 
+import numpy as np
 from PIL import Image, ImageEnhance
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -27,6 +28,17 @@ def main(hd, style, age, raw, names):
             if not os.path.exists(src):
                 continue
             img = cut_object(Image.open(src), size=2048)
+            # pink fringe left from the magenta background (a slightly off-magenta sheet) is cleared
+            a = np.asarray(img).copy()
+            r, g, b = a[..., 0].astype(int), a[..., 1].astype(int), a[..., 2].astype(int)
+            pink = (r > 140) & (b > 90) & (g < np.minimum(r, b) * 0.72)
+            a[..., 3][pink] = 0
+            # and pinkish ground (magenta bled into the painting) turned back to tan earth, except where pink is
+            # meant (the South Asian sandstone)
+            if style != 'sa':
+                tint = (r > 150) & (r > g + 35) & (b > g - 15)
+                a[..., 2][tint] = (g[tint] * 0.8).astype(np.uint8)
+            img = Image.fromarray(a, 'RGBA')
             width = int(320 * WIDTHS[step])
             img = img.resize((width, int(img.height * width / img.width)), Image.LANCZOS)
             alpha = img.getchannel('A')
