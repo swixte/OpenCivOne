@@ -378,7 +378,7 @@ namespace OpenCivOne
 						this.parent.Var_19d4_Screen1_Rectangle, 320 - i, 176);
 				}
 
-				if ((i % 22) == 0 && contentIndex < content.Length)
+				if ((i % 22) == 0 && contentIndex < content.Length - 1)
 				{
 					contentIndex++;
 				}
