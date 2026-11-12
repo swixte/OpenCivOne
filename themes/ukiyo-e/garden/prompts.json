@@ -1,0 +1,38 @@
+{
+ "garden1": {
+  "prompt": "A formal palace garden planting in exactly the woodblock-print style of the reference image (ukiyo-e: fine dark key-block outlines, flat muted colours, soft gradations, light from the top left), seen from the same low three-quarter angle as the reference: a long low bed of small flowers in muted reds, whites and yellows, edged with a neat clipped grass border, wider than it is tall. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image. No ground under it, no cast shadow, no text, no frame.",
+  "refs": [
+   "ref_cback.jpg"
+  ]
+ },
+ "garden2": {
+  "prompt": "A formal palace garden planting in exactly the woodblock-print style of the reference image (ukiyo-e: fine dark key-block outlines, flat muted colours, soft gradations, light from the top left), seen from the same low three-quarter angle as the reference: a clipped evergreen hedge with two rounded topiary shrubs and a low flower border in front, wider than it is tall. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image. No ground under it, no cast shadow, no text, no frame.",
+  "refs": [
+   "ref_cback.jpg"
+  ]
+ },
+ "garden3": {
+  "prompt": "A formal palace garden planting in exactly the woodblock-print style of the reference image (ukiyo-e: fine dark key-block outlines, flat muted colours, soft gradations, light from the top left), seen from the same low three-quarter angle as the reference: two ornamental cloud-pruned pine trees beside a tall carved stone lantern on a plinth, with clipped shrubs at their feet, roughly as wide as it is tall. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, centred and filling most of the image. No ground under it, no cast shadow, no text, no frame.",
+  "refs": [
+   "ref_cback.jpg"
+  ]
+ },
+ "path1": {
+  "prompt": "A seamless tileable ground texture seen straight from above, filling the entire square image edge to edge with even, flat lighting, in the woodblock-print style of the reference image: neatly raked pale grey-beige gravel with fine parallel rake lines, as in a temple garden. No objects, no border, no text.",
+  "refs": [
+   "ref_cback.jpg"
+  ]
+ },
+ "path2": {
+  "prompt": "A seamless tileable ground texture seen straight from above, filling the entire square image edge to edge with even, flat lighting, in the woodblock-print style of the reference image: a paving of large irregular grey granite flagstones with fine dark joints and a little moss in the cracks. No objects, no border, no text.",
+  "refs": [
+   "ref_cback.jpg"
+  ]
+ },
+ "path3": {
+  "prompt": "A seamless tileable ground texture seen straight from above, filling the entire square image edge to edge with even, flat lighting, in the woodblock-print style of the reference image: polished white and pale grey marble paving in large square slabs with faint grey veins and fine joints. No objects, no border, no text.",
+  "refs": [
+   "ref_cback.jpg"
+  ]
+ }
+}
