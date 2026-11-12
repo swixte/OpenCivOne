@@ -249,8 +249,8 @@ namespace OpenCivOne
 				}
 			}
 
-			// Draw city names
-			for (int i = 0; i < this.VisibleCities.Count; i++)
+			// Draw city names (the isometric map has its own name plates)
+			for (int i = 0; this.parent.IsoView == null && i < this.VisibleCities.Count; i++)
 			{
 				CityInfo cityInfo = this.VisibleCities[i];
 
@@ -408,6 +408,12 @@ namespace OpenCivOne
 			this.SyncIsoSnapshot(80 + ((column - 1) * 16), 8 + ((row - 1) * 16), 48, 48);
 		}
 
+		/// <summary>
+		/// The colour index of the classic map window's backdrop under the isometric map: one the interface does not
+		/// use, so anything drawn over the map (a dialog, a menu) differs from it and shows
+		/// </summary>
+		public const byte IsoBackdrop = 255;
+
 		private bool DrawCellClassic(int x, int y)
 		{
 			//this.oCPU.Log.EnterBlock($"F0_2aea_03ba({x}, {y})");
@@ -422,6 +428,12 @@ namespace OpenCivOne
 				// if cells screen coordinates are outside of actual screen
 
 				return false;
+			}
+			else if (this.parent.IsoView != null)
+			{
+				// with the isometric map the classic map is not drawn: its window holds a plain backdrop that the
+				// isometric view covers, so there is no classic terrain to show through it
+				this.parent.DrawTools.FillRectangle(this.parent.Var_aa_Screen0_Rectangle, scrX, scrY, 16, 16, IsoBackdrop);
 			}
 			else
 			{
@@ -898,6 +910,10 @@ namespace OpenCivOne
 				if ((unit.Status & UnitStatusEnum.Sentry) == UnitStatusEnum.None || GetTerrainType(unit.Position.X, unit.Position.Y) != TerrainTypeEnum.Water ||
 					this.parent.GameData.Units[(int)unit.UnitType].MovementType == UnitMovementTypeEnum.Water)
 				{
+					// the isometric map draws its own units
+					if (this.parent.IsoView != null)
+						return true;
+
 					if (unit.NextUnitID != -1)
 					{
 						// There are multiple units stacked
