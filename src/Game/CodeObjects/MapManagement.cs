@@ -1528,9 +1528,14 @@ namespace OpenCivOne
 			};
 			uint[] colours = { 0xffc43a2c, 0xfff2ece0, 0xff3c9a46, 0xff3e5bd8, 0xffe0b830, 0xff2fb6c8, 0xffc84ab4, 0xff6a6a72 };
 
+			var walled = new HashSet<(int, int)>();
+
 			for (int i = 0; i < 128; i++)
 			{
 				City city = this.parent.GameData.Cities[i];
+
+				if (city.Status != CityStatusEnum.Invalid && city.HasImprovement(ImprovementEnum.CityWalls))
+					walled.Add((city.Position.X, city.Position.Y));
 
 				if (city.Status != CityStatusEnum.Invalid && (debug || city.VisibleSize != 0 || city.PlayerID == this.parent.GameData.HumanPlayerID))
 					scene.Cities.Add((city.Position.X, city.Position.Y, this.parent.Segment_2459.F0_2459_08c6_GetCityName(i),
@@ -1556,6 +1561,8 @@ namespace OpenCivOne
 						scene.Units.Add((x, y, (int)unit.UnitType, colours[owner & 7]));
 				}
 			}
+
+			scene.Walls = (x, y) => walled.Contains((x, y));
 
 			// the view is centred on the middle of the classic map window (15 x 12 cells)
 			float cx = this.parent.Var_d4cc_MapViewX + 7.5f, cy = this.parent.Var_d75e_MapViewY + 6f;

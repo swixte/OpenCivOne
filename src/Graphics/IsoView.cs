@@ -58,6 +58,11 @@ namespace OpenCivOne.Graphics
 			public Func<int, int, int> Improvements = (x, y) => 0;
 			public Func<int, int, int> Feature = (x, y) => 0;
 			public List<(int X, int Y, string Name, int Size, uint Colour)> Cities = new List<(int, int, string, int, uint)>();
+
+			/// <summary>
+			/// Whether the city at a cell has built City Walls (it is drawn walled only then)
+			/// </summary>
+			public Func<int, int, bool> Walls = (x, y) => true;
 			public List<(int X, int Y, int Type, uint Colour)> Units = new List<(int, int, int, uint)>();
 		}
 
@@ -168,7 +173,7 @@ namespace OpenCivOne.Graphics
 			// every set at one scale, so a single tree stays smaller than a clump: its widest sprite gets the width given
 			(string Set, float Width)[] scales = {
 				("trees", 160 * S), ("broadleaf", 160 * S), ("jungle", 160 * S), ("peaks", 240 * S), ("hills", 145 * S), ("dunes", 90 * S), ("reeds", 62 * S),
-				("tundra", 42 * S), ("ice", 70 * S), ("tufts", 45 * S), ("hamlet", 102 * S), ("town", TileWidth * 1.25f), ("plots", TileWidth * 1.08f) };
+				("tundra", 42 * S), ("ice", 70 * S), ("tufts", 45 * S), ("hamlet", 102 * S), ("town", TileWidth * 1.25f), ("town_open", TileWidth * 1.25f), ("plots", TileWidth * 1.08f) };
 
 			foreach ((string set, float target) in scales)
 			{
@@ -489,7 +494,7 @@ namespace OpenCivOne.Graphics
 				}
 
 				foreach (var c in scene.Cities)
-					sig = (sig * 37) + (c.X * 1000) + (c.Y * 10) + c.Size + c.Name.GetHashCode() + c.Colour;
+					sig = (sig * 37) + (c.X * 1000) + (c.Y * 10) + c.Size + c.Name.GetHashCode() + c.Colour + (scene.Walls(Wrap(c.X), c.Y) ? 7 : 0);
 
 				foreach (var u in scene.Units)
 					sig = (sig * 41) + (u.X * 1000) + (u.Y * 10) + u.Type + u.Colour;
@@ -2116,7 +2121,8 @@ namespace OpenCivOne.Graphics
 			foreach (var c in scene.Cities)
 			{
 				(int x, int y) = Nearest(c.X, c.Y, cx);
-				List<SKBitmap> towns = this.sets["town"];
+				// a city without City Walls is drawn open, its outer houses among gardens and lanes
+				List<SKBitmap> towns = !scene.Walls(Wrap(c.X), c.Y) && this.sets.TryGetValue("town_open", out var open) && open.Count == 4 ? open : this.sets["town"];
 
 				if (towns.Count == 0)
 					continue;

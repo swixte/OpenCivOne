@@ -1,0 +1,26 @@
+{
+ "open0": {
+  "prompt": "Repaint the reference image exactly, the same town seen from the same angle in the same woodblock style and colours, with the same houses, roofs, church and streets in the same places, but WITHOUT any city wall, towers or gate around it: the outer houses stand open on the ground with small gardens, fences and lanes leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_town0.png"
+  ]
+ },
+ "open1": {
+  "prompt": "Repaint the reference image exactly, the same town seen from the same angle in the same woodblock style and colours, with the same houses, roofs, church and streets in the same places, but WITHOUT any city wall, towers or gate around it: the outer houses stand open on the ground with small gardens, fences and lanes leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_town1.png"
+  ]
+ },
+ "open2": {
+  "prompt": "Repaint the reference image exactly, the same town seen from the same angle in the same woodblock style and colours, with the same houses, roofs, church and streets in the same places, but WITHOUT any city wall, towers or gate around it: the outer houses stand open on the ground with small gardens, fences and lanes leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_town2.png"
+  ]
+ },
+ "open3": {
+  "prompt": "Repaint the reference image exactly, the same town seen from the same angle in the same woodblock style and colours, with the same houses, roofs, church and streets in the same places, but WITHOUT any city wall, towers or gate around it: the outer houses stand open on the ground with small gardens, fences and lanes leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/ref_town3.png"
+  ]
+ }
+}
