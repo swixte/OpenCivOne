@@ -1280,6 +1280,100 @@ GBitmap other4()
 		Console.WriteLine($"showcase written: {cities.Count} cities, {springs.Count} springs, terrain counts {string.Join(",", counts)}");
 	}
 
+	// ISO_SAMPLER renders one small patch for each terrain improvement (irrigation, mines, roads, railroads, a
+	// fortress, pollution, huts, a city with its worked land) into a folder, one picture a panel, for a labelled sheet
+	if (Environment.GetEnvironmentVariable("ISO_SAMPLER") is string samDir && Environment.GetEnvironmentVariable("ISO_THEME") is string samTheme)
+	{
+		const int SW = 80, SH = 50;
+		var sTerr = new int[SW, SH];
+		var sImp = new int[SW, SH];
+		var sFeat = new int[SW, SH];
+
+		for (int y = 0; y < SH; y++)
+			for (int x = 0; x < SW; x++)
+				sTerr[x, y] = (y < 3 || y > 46) ? 10 : 2;
+
+		// name, terrain, improvement bits on the middle, line (roads/rails run across), feature
+		var panels = new (string Name, int Terrain, int Imp, bool Line, int Feat)[]
+		{
+			("irrigation_grassland", 2, 0x2, false, 0), ("irrigation_plains", 1, 0x2, false, 0), ("irrigation_desert", 0, 0x2, false, 0),
+			("mine_hills", 4, 0x4, false, 0), ("mine_mountains", 5, 0x4, false, 0), ("mine_desert", 0, 0x4, false, 0),
+			("road_grassland", 2, 0x8, true, 0), ("road_forest", 3, 0x8, true, 0), ("railroad", 1, 0x18, true, 0),
+			("road_irrigation", 2, 0xa, false, 0), ("fortress", 4, 0x20, false, 0), ("pollution", 2, 0x40, false, 0),
+			("hut", 2, 0, false, 2), ("resources", 2, 0, false, 1), ("rail_mine_hills", 4, 0x1c, false, 0), ("city", 2, 0, false, 0),
+		};
+
+		var centres = new List<(int X, int Y)>();
+		var sCities = new List<(int, int, string, int, uint)>();
+
+		for (int i = 0; i < panels.Length; i++)
+		{
+			int cx = 6 + ((i % 4) * 18), cy = 8 + ((i / 4) * 10);
+			centres.Add((cx, cy));
+			var pn = panels[i];
+
+			for (int dy = -2; dy <= 2; dy++)
+				for (int dx = -3; dx <= 3; dx++)
+				{
+					int x = cx + dx, y = cy + dy;
+					bool core = Math.Abs(dx) <= 2 && Math.Abs(dy) <= 1;
+					sTerr[x, y] = pn.Terrain;
+
+					if (pn.Line ? dy == 0 : core)
+						sImp[x, y] = pn.Imp;
+
+					if (pn.Feat != 0 && core && ((dx + dy) & 1) == 0)
+						sFeat[x, y] = pn.Feat;
+				}
+
+			if (pn.Name == "city")
+			{
+				for (int dy = -2; dy <= 2; dy++)
+					for (int dx = -3; dx <= 3; dx++)
+						sImp[cx + dx, cy + dy] = Math.Abs(dx) <= 2 ? 0x2 : 0;
+
+				for (int dx = -3; dx <= 3; dx++)
+					sImp[cx + dx, cy] = 0x8;
+
+				sImp[cx - 3, cy - 2] = 0x4;
+				sTerr[cx - 3, cy - 2] = 4;
+				sCities.Add((cx, cy, "Kyoto", 8, 0xffc43a2cu));
+			}
+
+			if (pn.Name == "resources")
+			{
+				// one of each terrain the resources sit on
+				int[] ts = { 2, 1, 3, 4, 5, 0, 9, 8, 6 };
+				int k = 0;
+
+				for (int dy = -1; dy <= 1; dy++)
+					for (int dx = -1; dx <= 1; dx++)
+						sTerr[cx + dx, cy + dy] = ts[k++];
+			}
+		}
+
+		var samScene = new OpenCivOne.Graphics.IsoView.Scene
+		{
+			Terrain = (x, y) => sTerr[x, y],
+			Improvements = (x, y) => sImp[x, y],
+			Feature = (x, y) => sFeat[x, y],
+		};
+		samScene.Cities.AddRange(sCities);
+		Directory.CreateDirectory(samDir);
+
+		for (int i = 0; i < panels.Length; i++)
+		{
+			var view = OpenCivOne.Graphics.IsoView.Load(samTheme, 520, 330)!;
+			view.Render(centres[i].X + 0.5f, centres[i].Y + 0.5f, samScene);
+			using var img = new SKBitmap(520, 330, SKColorType.Bgra8888, SKAlphaType.Premul);
+			Marshal.Copy(Array.ConvertAll(view.Pixels, v => unchecked((int)v)), 0, img.GetPixels(), view.Pixels.Length);
+			using var f = File.Create(Path.Combine(samDir, $"{i:00}_{panels[i].Name}.png"));
+			img.Encode(f, SKEncodedImageFormat.Png, 100);
+		}
+
+		Console.WriteLine("sampler written");
+	}
+
 	// ISO_PREVIEW renders the isometric view of the test map with a theme's hd folder (ISO_THEME)
 	if (Environment.GetEnvironmentVariable("ISO_PREVIEW") is string isoOut && Environment.GetEnvironmentVariable("ISO_THEME") is string isoTheme)
 	{

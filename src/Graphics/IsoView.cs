@@ -221,9 +221,24 @@ namespace OpenCivOne.Graphics
 
 			view.sets["lone"] = lone;
 
+			// the hills come in two families that must not be mixed in one range: green grassy downs, and brown ridges,
+			// rocky knolls and stepped mesas for dry country; told apart by colour. Their bases are feathered into the
+			// ground, so a hill rises out of the land instead of sitting on it with an inked rim
+			var greenHills = new List<SKBitmap>();
+			var aridHills = new List<SKBitmap>();
+
+			foreach (SKBitmap b in view.sets["hills"])
+			{
+				SKBitmap f = FeatherBase(b, 0.22f);
+				(IsGreen(b) ? greenHills : aridHills).Add(f);
+			}
+
+			view.sets["hills"] = greenHills.Count > 0 ? greenHills : aridHills;
+			view.sets["hills_arid"] = aridHills.Count > 0 ? aridHills : greenHills;
+
 			// variety: every tree, jungle, peak, hill and dune sprite also mirrored, and hills a size smaller too, so groups
 			// of them do not repeat the same shapes in rows
-			foreach (string set in new[] { "trees", "broadleaf", "jungle", "peaks", "hills", "dunes" })
+			foreach (string set in new[] { "trees", "broadleaf", "jungle", "peaks", "hills", "hills_arid", "dunes" })
 			{
 				var more = new List<SKBitmap>(view.sets[set]);
 
@@ -231,7 +246,7 @@ namespace OpenCivOne.Graphics
 				{
 					more.Add(Mirror(b));
 
-					if (set == "hills")
+					if (set.StartsWith("hills"))
 						more.Add(b.Resize(new SKImageInfo(Math.Max(1, (int)(b.Width * 0.8f)), Math.Max(1, (int)(b.Height * 0.8f))), new SKSamplingOptions(SKCubicResampler.Mitchell)));
 				}
 
@@ -270,8 +285,8 @@ namespace OpenCivOne.Graphics
 
 			// hills get the same dark key line as the inked mountains, instead of soft airbrushed edges
 			view.sets["hills"] = view.sets["hills"].ConvertAll(b => Inked(b));
-			view.sets["hills_dry"] = view.sets["hills"].ConvertAll(b => Recolour(b, (r, g, bl) => Grass(r, g, bl, 1.24f, 1.06f, 0.6f, 18)));
-			view.sets["hills_sand"] = view.sets["hills"].ConvertAll(b => Recolour(b, (r, g, bl) => Grass(r, g, bl, 1.34f, 1.14f, 0.82f, 46)));
+			view.sets["hills_dry"] = view.sets["hills_arid"].ConvertAll(b => Recolour(b, (r, g, bl) => ((r * 1.02f) + 4, (g * 1.04f) + 4, bl * 0.92f)));
+			view.sets["hills_sand"] = view.sets["hills_arid"].ConvertAll(b => Recolour(b, (r, g, bl) => ((r * 1.12f) + 24, (g * 1.1f) + 20, (bl * 1.0f) + 10)));
 			view.sets["hills_cold"] = view.sets["hills"].ConvertAll(b => Recolour(b, (r, g, bl) => Grass(r, g, bl, 1.02f, 1.0f, 0.98f, 18)));
 
 			// the scattered bushes and lone trees in the ground's olive family, not blue-green, so they do not speckle it
@@ -323,41 +338,26 @@ namespace OpenCivOne.Graphics
 			foreach (string name in Array.ConvertAll(UnitNames, n => "unit_" + n))
 				view.LoadObject(objectsFolder, name, height: 56);
 
-			// resources, huts and mines a little smaller than a unit, so a busy map is not dominated by them
+			// resources about half a unit's height, given a little more contrast and a soft shadow at their foot, so
+			// they stand out from any ground; huts, mines, fortresses and pollution at their own sizes
 			foreach (string name in Array.ConvertAll(ResourceNames, n => "res_" + n))
-				view.LoadObject(objectsFolder, name, height: 17, halo: true);
+				view.LoadObject(objectsFolder, name, height: 28, halo: true, pop: true);
 
 			view.LoadObject(objectsFolder, "res_fish", height: 26);
 
 			if (view.objects.Remove("res_fish", out SKBitmap? small))
 				view.objects["fish"] = small;
 
-			view.LoadObject(objectsFolder, "res_fish", height: 17, halo: true);
-			view.LoadObject(objectsFolder, "hut", height: 25, halo: true);
-			view.LoadObject(objectsFolder, "mine", height: 20, halo: true);
-			view.LoadObject(objectsFolder, "fortress", height: 30, halo: true);
-
-			// the fortress as painted, an earthwork with a timber stockade, toned a little darker and earthier than the
-			// huts' thatch so the two are not taken for each other
-			if (view.objects.TryGetValue("fortress", out SKBitmap? fortress))
-			{
-				SKBitmap earth = new SKBitmap(fortress.Width, fortress.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
-				using SKCanvas c = new SKCanvas(earth);
-				c.Clear(SKColors.Transparent);
-				using SKPaint tone = new SKPaint { ColorFilter = SKColorFilter.CreateColorMatrix(new float[] {
-					0.80f, 0.04f, 0, 0, 0,
-					0.02f, 0.80f, 0, 0, 0,
-					0, 0.04f, 0.70f, 0, 0,
-					0, 0, 0, 1, 0 }) };
-				c.DrawBitmap(fortress, 0, 0, tone);
-				fortress.Dispose();
-				view.objects["fortress"] = earth;
-			}
+			view.LoadObject(objectsFolder, "res_fish", height: 26, halo: true, pop: true);
+			view.LoadObject(objectsFolder, "hut", height: 28, halo: true);
+			view.LoadObject(objectsFolder, "mine", height: 32, halo: true);
+			view.LoadObject(objectsFolder, "fortress", height: 46, halo: true);
+			view.LoadObject(objectsFolder, "pollution", height: 32, halo: true);
 
 			return view;
 		}
 
-		private void LoadObject(string folder, string name, int height, bool halo = false)
+		private void LoadObject(string folder, string name, int height, bool halo = false, bool pop = false)
 		{
 			string path = Path.Combine(folder, name + ".png");
 
@@ -372,6 +372,19 @@ namespace OpenCivOne.Graphics
 			float k = (float)height / b.Height;
 			SKBitmap sized = b.Resize(new SKImageInfo(Math.Max(1, (int)(b.Width * k)), height), new SKSamplingOptions(SKCubicResampler.Mitchell));
 
+			// pop: colours a little stronger and darks a little deeper, to lift the sprite off the ground's texture
+			if (pop)
+			{
+				SKBitmap popped = Recolour(sized, (r, g, bl) =>
+				{
+					float grey = (r + g + bl) / 3;
+					float sr = grey + ((r - grey) * 1.25f), sg = grey + ((g - grey) * 1.25f), sb = grey + ((bl - grey) * 1.25f);
+					return (((sr - 128) * 1.15f) + 132, ((sg - 128) * 1.15f) + 132, ((sb - 128) * 1.15f) + 132);
+				});
+				sized.Dispose();
+				sized = popped;
+			}
+
 			if (!halo)
 			{
 				this.objects[name] = sized;
@@ -385,6 +398,12 @@ namespace OpenCivOne.Graphics
 			using (SKPaint key = new SKPaint { ColorFilter = SKColorFilter.CreateBlendMode(new SKColor(40, 34, 28, 230), SKBlendMode.SrcIn) })
 			{
 				c.Clear(SKColors.Transparent);
+
+				if (pop)
+				{
+					using SKPaint shade = new SKPaint { IsAntialias = true, Color = new SKColor(24, 20, 14, 110), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 2.2f) };
+					c.DrawOval(new SKRect(2 + (sized.Width * 0.1f), sized.Height - 2.5f, 2 + (sized.Width * 0.9f), sized.Height + 3.5f), shade);
+				}
 
 				foreach ((int dx, int dy) in new[] { (-1, 0), (1, 0), (0, -1), (0, 1) })
 					c.DrawBitmap(sized, 2 + dx, 2 + dy, key);
@@ -1631,7 +1650,7 @@ namespace OpenCivOne.Graphics
 
 				DrawRoutes(canvas, routes.ConvertAll(r => (r.Pts, r.Rail)), bridges);
 
-				// through mountains the road is drawn again over the peaks, as a pass cut through them
+				// through mountains the road is traced again, faintly, over the peaks that hide it
 				foreach (var r in routes)
 					if (r.Mountain)
 						overMountains.Add((r.Pts, r.Rail));
@@ -1650,6 +1669,75 @@ namespace OpenCivOne.Graphics
 			}
 
 			var items = new List<(float Base, float X, SKBitmap Bitmap)>();
+
+			// the ground each unit stands on: no tree, bush or hill in front of it may cover it
+			var unitBoxes = new List<SKRect>();
+
+			foreach (var u in scene.Units)
+			{
+				if (u.Type < 0 || u.Type >= UnitNames.Length || !this.objects.TryGetValue("unit_" + UnitNames[u.Type], out SKBitmap? ub))
+					continue;
+
+				(int ux, int uy) = Nearest(u.X, u.Y, cx);
+				SKPoint up = Screen(ux + 0.5f, uy + 0.5f);
+				unitBoxes.Add(new SKRect(up.X - (ub.Width * 0.5f), up.Y + 14 - ub.Height, up.X + (ub.Width * 0.5f), up.Y + 14));
+			}
+
+			bool HidesUnit(float x, float baseY, SKBitmap b)
+			{
+				foreach (SKRect r in unitBoxes)
+					if (baseY > r.Bottom - 2 && x + (b.Width * 0.42f) > r.Left && x - (b.Width * 0.42f) < r.Right && baseY - (b.Height * 0.9f) < r.Bottom)
+						return true;
+
+				return false;
+			}
+
+			// a spot for a hut, resource or mine on the land part of its cell, not out in the sea of a coastal one
+			SKPoint OnLand(int x, int y, float fx, float fy)
+			{
+				SKPoint best = Screen(x + fx, y + fy);
+
+				bool Land(SKPoint q)
+				{
+					int qx = (int)q.X, qy = (int)q.Y;
+					return qx < 0 || qy < 0 || qx >= w || qy >= h || kind[(qy * w) + qx] != Sea;
+				}
+
+				// the spot and a ring around it, as wide as the sprite, must be clear of the sea and the beach
+				bool Inland(SKPoint q)
+				{
+					for (int k = 0; k < 8; k++)
+					{
+						float a = k * MathF.PI / 4;
+
+						if (!Land(new SKPoint(q.X + (MathF.Cos(a) * 18), q.Y + (MathF.Sin(a) * 9))))
+							return false;
+					}
+
+					return Land(q);
+				}
+
+				if (Inland(best))
+					return best;
+
+				float bestD = float.MaxValue;
+				SKPoint found = best;
+
+				for (int i = 1; i < 10; i++)
+					for (int j = 1; j < 10; j++)
+					{
+						SKPoint q = Screen(x + (i / 10f), y + (j / 10f));
+						float d = ((i / 10f) - fx) * ((i / 10f) - fx) + (((j / 10f) - fy) * ((j / 10f) - fy));
+
+						if (d < bestD && Inland(q))
+						{
+							bestD = d;
+							found = q;
+						}
+					}
+
+				return found;
+			}
 
 			foreach (var hamlet in hamletsNearCities)
 				if (!HidesRoute(hamlet.X, hamlet.Base, hamlet.Bitmap))
@@ -1800,6 +1888,10 @@ namespace OpenCivOne.Graphics
 
 				// roads stay in view: a tree, bush or hill whose sprite would cover one is left out
 				if (!set.StartsWith("peaks") && HidesRoute(p.X, p.Y + lift, b))
+					return;
+
+				// and units are never hidden behind the trees in front of them
+				if (HidesUnit(p.X, p.Y + lift, b))
 					return;
 
 				items.Add((p.Y + lift, p.X, b));
@@ -1964,13 +2056,13 @@ namespace OpenCivOne.Graphics
 				}
 				else if ((feature & 1) != 0 && t != Water && t < ResourceNames.Length && this.objects.TryGetValue("res_" + ResourceNames[t], out SKBitmap? res))
 				{
-					SKPoint p = Screen(x + 0.6f, y + 0.6f);
+					SKPoint p = OnLand(x, y, 0.6f, 0.6f);
 					topLayer.Add((p.Y + 4, p.X, res));
 				}
 
 				if ((feature & 2) != 0 && this.objects.TryGetValue("hut", out SKBitmap? hut))
 				{
-					SKPoint p = Screen(x + 0.4f, y + 0.45f);
+					SKPoint p = OnLand(x, y, 0.4f, 0.45f);
 					topLayer.Add((p.Y + 4, p.X, hut));
 				}
 			}
@@ -2007,42 +2099,26 @@ namespace OpenCivOne.Graphics
 				foreach (var item in items)
 					canvas.DrawBitmap(item.Bitmap, item.X - (item.Bitmap.Width / 2f), item.Base - item.Bitmap.Height, sprite);
 
-				DrawRoutes(canvas, overMountains, new List<SKPoint[]>());
+				// routes through mountains run on the ground behind the peaks; where a peak hides one, a faint trace of
+				// it shows through, so the line can be followed without the track being drawn over the rock
+				if (overMountains.Count > 0)
+				{
+					using SKPaint ghost = new SKPaint { Color = new SKColor(255, 255, 255, 100) };
+					canvas.SaveLayer(ghost);
+					DrawRoutes(canvas, overMountains, new List<SKPoint[]>());
+					canvas.Restore();
+				}
 
-				// pollution, drawn as the print would: a sooty stain spread over the ground, and two thin wisps of smoke
-				// curling up from it, pale grey with a dark key line
-				using (SKPaint soot = new SKPaint { IsAntialias = true, Color = new SKColor(52, 44, 36, 90) })
-				using (SKPaint smokeFill = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 3.2f, Color = new SKColor(196, 190, 176, 230), StrokeCap = SKStrokeCap.Round })
-				using (SKPaint smokeInk = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 4.6f, Color = new SKColor(52, 46, 40, 220), StrokeCap = SKStrokeCap.Round })
+				// pollution: the painted patch of poisoned ground and smog, laid on the ground under the other objects
+				if (this.objects.TryGetValue("pollution", out SKBitmap? smog))
 				{
 					foreach ((int x, int y) in cells)
 					{
 						if ((Improvements(x, y) & 0x40) == 0 || !ExploredAt(x, y))
 							continue;
 
-						SKPoint c = Screen(x + 0.5f, y + 0.5f);
-
-						// the stain: a few overlapping blots, so its edge is irregular
-						for (int k = 0; k < 4; k++)
-						{
-							float ox = (Hash(Wrap(x), y, 81 + k) - 0.5f) * 22, oy = (Hash(Wrap(x), y, 85 + k) - 0.5f) * 9;
-							float rx = 8 + (Hash(Wrap(x), y, 89 + k) * 7);
-							canvas.DrawOval(new SKRect(c.X + ox - rx, c.Y + oy - (rx * 0.5f), c.X + ox + rx, c.Y + oy + (rx * 0.5f)), soot);
-						}
-
-						// the smoke: two wisps curling up and drifting to one side
-						float drift = Hash(Wrap(x), y, 93) < 0.5f ? 1 : -1;
-
-						foreach ((float sx, float tall) in new[] { (-5f, 22f), (6f, 16f) })
-						{
-							using SKPath wisp = new SKPath();
-							float bx = c.X + sx, by = c.Y;
-							wisp.MoveTo(bx, by);
-							wisp.CubicTo(bx - (4 * drift), by - (tall * 0.35f), bx + (6 * drift), by - (tall * 0.6f), bx + (3 * drift), by - (tall * 0.85f));
-							wisp.QuadTo(bx, by - tall, bx + (5 * drift), by - (tall * 1.08f));
-							canvas.DrawPath(wisp, smokeInk);
-							canvas.DrawPath(wisp, smokeFill);
-						}
+						SKPoint c = Screen(x + 0.5f, y + 0.55f);
+						canvas.DrawBitmap(smog, c.X - (smog.Width / 2f), c.Y + 8 - smog.Height, sprite);
 					}
 				}
 
@@ -2258,6 +2334,63 @@ namespace OpenCivOne.Graphics
 		}
 
 		// a sprite with every pixel's colour changed by the given function (colour without the alpha's premultiplying)
+		// whether a sprite is mostly green (grassy) rather than brown, by its opaque pixels
+		private static bool IsGreen(SKBitmap b)
+		{
+			double sum = 0;
+			int n = 0;
+
+			for (int y = 0; y < b.Height; y += 2)
+				for (int x = 0; x < b.Width; x += 2)
+				{
+					SKColor c = b.GetPixel(x, y);
+
+					if (c.Alpha > 128)
+					{
+						sum += c.Green - c.Red;
+						n++;
+					}
+				}
+
+			return n > 0 && sum / n > 0;
+		}
+
+		// fades the lowest part of each column of a sprite into transparency, so its foot melts into the ground
+		private static SKBitmap FeatherBase(SKBitmap b, float band)
+		{
+			SKBitmap result = new SKBitmap(b.Width, b.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
+			int top = b.Height, bottom = 0;
+
+			for (int y = 0; y < b.Height; y++)
+				for (int x = 0; x < b.Width; x++)
+					if (b.GetPixel(x, y).Alpha > 20)
+					{
+						top = Math.Min(top, y);
+						bottom = Math.Max(bottom, y);
+					}
+
+			float depth = Math.Max(2, (bottom - top) * band);
+
+			for (int x = 0; x < b.Width; x++)
+			{
+				int foot = -1;
+
+				for (int y = b.Height - 1; y >= 0 && foot < 0; y--)
+					if (b.GetPixel(x, y).Alpha > 20)
+						foot = y;
+
+				for (int y = 0; y < b.Height; y++)
+				{
+					SKColor c = b.GetPixel(x, y);
+					float k = foot < 0 ? 1 : Math.Clamp((foot - y) / depth, 0, 1);
+					k = k * k * (3 - (2 * k));
+					result.SetPixel(x, y, c.WithAlpha((byte)(c.Alpha * (0.15f + (0.85f * k)))));
+				}
+			}
+
+			return result;
+		}
+
 		private static SKBitmap Recolour(SKBitmap b, Func<float, float, float, (float R, float G, float B)> change)
 		{
 			SKBitmap result = new SKBitmap(b.Width, b.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
