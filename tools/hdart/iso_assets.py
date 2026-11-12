@@ -16,7 +16,7 @@ from PIL import Image
 from painted_assets import cut_sprites
 import style
 
-SETS = ['trees', 'broadleaf', 'peaks', 'hills2', 'hills3', 'jungle', 'town', 'tufts', 'tundra', 'reeds', 'ice', 'dunes', 'plots', 'hamlet']
+SETS = ['trees', 'broadleaf', 'peaks', 'hills4', 'jungle', 'town', 'tufts', 'tundra', 'reeds', 'ice', 'dunes', 'plots', 'hamlet']
 GROUNDS = {'grass': ('iso_tex_grass', (1.0, 1.0, 1.0)), 'sand': ('iso_tex_sand', (1.0, 0.94, 0.80))}
 TEXTURE = 400
 PLOT = 32  # the painted crop plots (iso_fieldplots, a 4 x 4 grid seen from above), mapped onto each field plot
@@ -40,7 +40,7 @@ def main(theme):
     shutil.rmtree(out, ignore_errors=True)
     counts = {}
     for name in SETS:
-        # every hills sheet (hills2: rounded mounds, hills3: ridges, double humps, rocky knolls, terraces) goes into one set
+        # the hills sheet (hills4: low ranges of overlapping downs) is the hills set
         target = 'hills' if name.startswith('hills') else name
         folder = os.path.join(out, target)
         os.makedirs(folder, exist_ok=True)
@@ -51,9 +51,21 @@ def main(theme):
             i += first
             if name == 'plots':
                 spr = lighten(spr)
+            if name == 'hills4':
+                # the low ranges of downs, given height; each kept as painted (brown, for dry country) and greened
+                # (the downs of grassland), so the renderer has both families
+                spr = spr.resize((spr.width, int(spr.height * 2.3)), Image.LANCZOS)
             if max(spr.size) > 320:
                 k = 320 / max(spr.size)
                 spr = spr.resize((max(1, round(spr.width * k)), max(1, round(spr.height * k))), Image.LANCZOS)
+            if name == 'hills4':
+                spr.save(os.path.join(folder, f'{2 * i}.png'))
+                a = np.asarray(spr).astype(np.float64)
+                a[..., 0] *= 0.93
+                a[..., 1] *= 1.04
+                a[..., 2] *= 0.88
+                Image.fromarray(np.clip(a, 0, 255).astype(np.uint8), 'RGBA').save(os.path.join(folder, f'{2 * i + 1}.png'))
+                continue
             spr.save(os.path.join(folder, f'{i}.png'))
         print(name, len(sprites))
     os.makedirs(os.path.join(out, 'ground'), exist_ok=True)

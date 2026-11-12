@@ -126,5 +126,12 @@
   "refs": [
    "../refs/v5-screen.jpg"
   ]
+ },
+ "iso_hills4": {
+  "prompt": "A sprite sheet in exactly the drawing style of the first reference image (a woodblock-print strategy map seen from a high three-quarter isometric angle): fine dark key-block outlines, muted earthy colours, light from the top left, dense hand-drawn detail. 8 separate LOW, WIDE grassy hill ranges seen from the same isometric angle, each three or four times as wide as it is tall: a chain of two to four soft rounded olive-green downs that overlap one another and run diagonally, their lower slopes spreading out flat and fading into the plain, the same olive-green as the surrounding grassland (#8A8A4A lit to #5E6436 shaded), fine curved hatching on the shaded sides, a few tufts; no dark outline along the bottom edge, never bare earth, sand or rock. Each is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background with clear magenta space between them so each can be cut out; no ground patch under them, no cast shadows, no text, no frame.",
+  "refs": [
+   "../refs/v5-screen.jpg",
+   "../refs/crops-v5/hills.jpg"
+  ]
  }
 }

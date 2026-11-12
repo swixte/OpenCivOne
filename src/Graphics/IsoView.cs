@@ -179,7 +179,7 @@ namespace OpenCivOne.Graphics
 
 			// every set at one scale, so a single tree stays smaller than a clump: its widest sprite gets the width given
 			(string Set, float Width)[] scales = {
-				("trees", 160 * S), ("broadleaf", 160 * S), ("jungle", 160 * S), ("peaks", 240 * S), ("hills", 145 * S), ("dunes", 90 * S), ("reeds", 62 * S),
+				("trees", 160 * S), ("broadleaf", 160 * S), ("jungle", 160 * S), ("peaks", 240 * S), ("hills", TileWidth * 1.3f), ("dunes", 90 * S), ("reeds", 62 * S),
 				("tundra", 42 * S), ("ice", 70 * S), ("tufts", 45 * S), ("hamlet", 102 * S), ("town", TileWidth * 1.25f), ("town_open", TileWidth * 1.25f), ("plots", TileWidth * 1.08f) };
 
 			foreach ((string set, float target) in scales)
@@ -253,8 +253,8 @@ namespace OpenCivOne.Graphics
 
 			view.sets["lone"] = lone;
 
-			// the hills come in two families that must not be mixed in one range: green grassy downs, and brown ridges,
-			// rocky knolls and stepped mesas for dry country; told apart by colour. Their bases are feathered into the
+			// the hills come in two families that must not be mixed in one range: green downs, and the same ranges brown
+			// for dry country; told apart by colour. Their bases are feathered into the
 			// ground, so a hill rises out of the land instead of sitting on it with an inked rim
 			var greenHills = new List<SKBitmap>();
 			var aridHills = new List<SKBitmap>();
@@ -2026,10 +2026,11 @@ namespace OpenCivOne.Graphics
 						break;
 
 					case Hills:
-						// an irregular cluster of two to four hills of mixed shapes and sizes
-						count = 2 + (int)(Hash(Wrap(x), y, 9) * 2.99f);
+						// one or two low ranges of soft downs, a square wide, overlapping their neighbours so hill country
+						// rolls on from square to square
+						count = 1 + (int)(Hash(Wrap(x), y, 9) * 1.99f);
 						for (int n = 0; n < count; n++)
-							Put(HillSet(x, y), x, y, n, 0.1f, 8 * S);
+							Put(HillSet(x, y), x, y, n, 0.2f, 4 * S);
 						break;
 
 					case Desert:
