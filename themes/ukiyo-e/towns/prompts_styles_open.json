@@ -1,0 +1,146 @@
+{
+ "cl_s0_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any wall, palisade, towers or gate around it: the outer buildings stand open on the ground with small gardens, fences and paths leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/cl_s0_w.png"
+  ]
+ },
+ "cl_s1_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any wall, palisade, towers or gate around it: the outer buildings stand open on the ground with small gardens, fences and paths leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/cl_s1_w.png"
+  ]
+ },
+ "cl_s2_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any wall, palisade, towers or gate around it: the outer buildings stand open on the ground with small gardens, fences and paths leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/cl_s2_w.png"
+  ]
+ },
+ "cl_s3_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any wall, palisade, towers or gate around it: the outer buildings stand open on the ground with small gardens, fences and paths leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/cl_s3_w.png"
+  ]
+ },
+ "ne_s0_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any wall, palisade, towers or gate around it: the outer buildings stand open on the ground with small gardens, fences and paths leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ne_s0_w.png"
+  ]
+ },
+ "ne_s1_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any wall, palisade, towers or gate around it: the outer buildings stand open on the ground with small gardens, fences and paths leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ne_s1_w.png"
+  ]
+ },
+ "ne_s2_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any wall, palisade, towers or gate around it: the outer buildings stand open on the ground with small gardens, fences and paths leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ne_s2_w.png"
+  ]
+ },
+ "ne_s3_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any wall, palisade, towers or gate around it: the outer buildings stand open on the ground with small gardens, fences and paths leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ne_s3_w.png"
+  ]
+ },
+ "ea_s0_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any wall, palisade, towers or gate around it: the outer buildings stand open on the ground with small gardens, fences and paths leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ea_s0_w.png"
+  ]
+ },
+ "ea_s1_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any wall, palisade, towers or gate around it: the outer buildings stand open on the ground with small gardens, fences and paths leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ea_s1_w.png"
+  ]
+ },
+ "ea_s2_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any wall, palisade, towers or gate around it: the outer buildings stand open on the ground with small gardens, fences and paths leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ea_s2_w.png"
+  ]
+ },
+ "ea_s3_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any wall, palisade, towers or gate around it: the outer buildings stand open on the ground with small gardens, fences and paths leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ea_s3_w.png"
+  ]
+ },
+ "sa_s0_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any wall, palisade, towers or gate around it: the outer buildings stand open on the ground with small gardens, fences and paths leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/sa_s0_w.png"
+  ]
+ },
+ "sa_s1_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any wall, palisade, towers or gate around it: the outer buildings stand open on the ground with small gardens, fences and paths leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/sa_s1_w.png"
+  ]
+ },
+ "sa_s2_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any wall, palisade, towers or gate around it: the outer buildings stand open on the ground with small gardens, fences and paths leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/sa_s2_w.png"
+  ]
+ },
+ "sa_s3_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any wall, palisade, towers or gate around it: the outer buildings stand open on the ground with small gardens, fences and paths leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/sa_s3_w.png"
+  ]
+ },
+ "ma_s0_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any wall, palisade, towers or gate around it: the outer buildings stand open on the ground with small gardens, fences and paths leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ma_s0_w.png"
+  ]
+ },
+ "ma_s1_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any wall, palisade, towers or gate around it: the outer buildings stand open on the ground with small gardens, fences and paths leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ma_s1_w.png"
+  ]
+ },
+ "ma_s2_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any wall, palisade, towers or gate around it: the outer buildings stand open on the ground with small gardens, fences and paths leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ma_s2_w.png"
+  ]
+ },
+ "ma_s3_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any wall, palisade, towers or gate around it: the outer buildings stand open on the ground with small gardens, fences and paths leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ma_s3_w.png"
+  ]
+ },
+ "af_s0_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any wall, palisade, towers or gate around it: the outer buildings stand open on the ground with small gardens, fences and paths leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/af_s0_w.png"
+  ]
+ },
+ "af_s1_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any wall, palisade, towers or gate around it: the outer buildings stand open on the ground with small gardens, fences and paths leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/af_s1_w.png"
+  ]
+ },
+ "af_s2_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any wall, palisade, towers or gate around it: the outer buildings stand open on the ground with small gardens, fences and paths leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/af_s2_w.png"
+  ]
+ },
+ "af_s3_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any wall, palisade, towers or gate around it: the outer buildings stand open on the ground with small gardens, fences and paths leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/af_s3_w.png"
+  ]
+ }
+}

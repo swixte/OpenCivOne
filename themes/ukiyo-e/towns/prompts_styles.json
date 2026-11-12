@@ -1,0 +1,164 @@
+{
+ "cl_s0_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A Classical Mediterranean (Greek and Roman) a small hamlet, half as wide as the reference, of five large white and cream stone houses with low terracotta tile roofs and courtyards, cypress trees, with a columned marble temple on a podium, enclosed by pale limestone walls with square towers with a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/cl_s2_w.png",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s0_w.png"
+  ]
+ },
+ "cl_s1_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A Classical Mediterranean (Greek and Roman) a town, a little smaller than the reference, of about fifteen large white and cream stone houses with low terracotta tile roofs and courtyards, cypress trees, with a columned marble temple on a podium, enclosed by pale limestone walls with square towers with a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/cl_s2_w.png",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s2_w.png"
+  ]
+ },
+ "cl_s2_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A Classical Mediterranean (Greek and Roman) a city of about twenty-five large white and cream stone houses with low terracotta tile roofs and courtyards, cypress trees, with a columned marble temple on a podium, enclosed by pale limestone walls with square towers with a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s3_w.png"
+  ]
+ },
+ "cl_s3_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A Classical Mediterranean (Greek and Roman) a capital city one and a half times as wide as the reference, of about thirty-five large white and cream stone houses with low terracotta tile roofs and courtyards, cypress trees, with grand a columned marble temple on a podium, enclosed by pale limestone walls with square towers with a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/cl_s2_w.png",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s4_w.png"
+  ]
+ },
+ "ne_s0_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A Near Eastern (Babylonian and Egyptian) a small hamlet, half as wide as the reference, of five large sun-baked mud-brick houses with flat roofs and roof terraces, date palms, with a stepped ziggurat temple and an obelisk, enclosed by thick mud-brick walls with square crenellated towers with a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ne_s2_w.png",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s0_w.png"
+  ]
+ },
+ "ne_s1_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A Near Eastern (Babylonian and Egyptian) a town, a little smaller than the reference, of about fifteen large sun-baked mud-brick houses with flat roofs and roof terraces, date palms, with a stepped ziggurat temple and an obelisk, enclosed by thick mud-brick walls with square crenellated towers with a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ne_s2_w.png",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s2_w.png"
+  ]
+ },
+ "ne_s2_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A Near Eastern (Babylonian and Egyptian) a city of about twenty-five large sun-baked mud-brick houses with flat roofs and roof terraces, date palms, with a stepped ziggurat temple and an obelisk, enclosed by thick mud-brick walls with square crenellated towers with a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s3_w.png"
+  ]
+ },
+ "ne_s3_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A Near Eastern (Babylonian and Egyptian) a capital city one and a half times as wide as the reference, of about thirty-five large sun-baked mud-brick houses with flat roofs and roof terraces, date palms, with grand a stepped ziggurat temple and an obelisk, enclosed by thick mud-brick walls with square crenellated towers with a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ne_s2_w.png",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s4_w.png"
+  ]
+ },
+ "ea_s0_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A East Asian (Chinese) a small hamlet, half as wide as the reference, of five large wooden houses with dark grey curved tiled roofs and upturned eaves, with a tall multi-storey red pagoda, enclosed by grey brick walls with gate towers that have curved tiled roofs with a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ea_s2_w.png",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s0_w.png"
+  ]
+ },
+ "ea_s1_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A East Asian (Chinese) a town, a little smaller than the reference, of about fifteen large wooden houses with dark grey curved tiled roofs and upturned eaves, with a tall multi-storey red pagoda, enclosed by grey brick walls with gate towers that have curved tiled roofs with a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ea_s2_w.png",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s2_w.png"
+  ]
+ },
+ "ea_s2_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A East Asian (Chinese) a city of about twenty-five large wooden houses with dark grey curved tiled roofs and upturned eaves, with a tall multi-storey red pagoda, enclosed by grey brick walls with gate towers that have curved tiled roofs with a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s3_w.png"
+  ]
+ },
+ "ea_s3_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A East Asian (Chinese) a capital city one and a half times as wide as the reference, of about thirty-five large wooden houses with dark grey curved tiled roofs and upturned eaves, with grand a tall multi-storey red pagoda, enclosed by grey brick walls with gate towers that have curved tiled roofs with a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ea_s2_w.png",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s4_w.png"
+  ]
+ },
+ "sa_s0_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A South Asian (Indian) a small hamlet, half as wide as the reference, of five large ochre and pink sandstone houses with flat roofs, small domes and carved balconies, with a big temple with a tall carved tower, enclosed by red sandstone walls with round bastions with a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/sa_s2_w.png",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s0_w.png"
+  ]
+ },
+ "sa_s1_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A South Asian (Indian) a town, a little smaller than the reference, of about fifteen large ochre and pink sandstone houses with flat roofs, small domes and carved balconies, with a big temple with a tall carved tower, enclosed by red sandstone walls with round bastions with a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/sa_s2_w.png",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s2_w.png"
+  ]
+ },
+ "sa_s2_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A South Asian (Indian) a city of about twenty-five large ochre and pink sandstone houses with flat roofs, small domes and carved balconies, with a big temple with a tall carved tower, enclosed by red sandstone walls with round bastions with a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s3_w.png"
+  ]
+ },
+ "sa_s3_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A South Asian (Indian) a capital city one and a half times as wide as the reference, of about thirty-five large ochre and pink sandstone houses with flat roofs, small domes and carved balconies, with grand a big temple with a tall carved tower, enclosed by red sandstone walls with round bastions with a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/sa_s2_w.png",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s4_w.png"
+  ]
+ },
+ "ma_s0_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A Mesoamerican (Aztec) a small hamlet, half as wide as the reference, of five large white plastered flat-roofed stone houses around courtyards, with gardens, with a great stepped pyramid with twin temples on top, enclosed by white stone walls with a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ma_s2_w.png",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s0_w.png"
+  ]
+ },
+ "ma_s1_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A Mesoamerican (Aztec) a town, a little smaller than the reference, of about fifteen large white plastered flat-roofed stone houses around courtyards, with gardens, with a great stepped pyramid with twin temples on top, enclosed by white stone walls with a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ma_s2_w.png",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s2_w.png"
+  ]
+ },
+ "ma_s2_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A Mesoamerican (Aztec) a city of about twenty-five large white plastered flat-roofed stone houses around courtyards, with gardens, with a great stepped pyramid with twin temples on top, enclosed by white stone walls with a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s3_w.png"
+  ]
+ },
+ "ma_s3_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A Mesoamerican (Aztec) a capital city one and a half times as wide as the reference, of about thirty-five large white plastered flat-roofed stone houses around courtyards, with gardens, with grand a great stepped pyramid with twin temples on top, enclosed by white stone walls with a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/ma_s2_w.png",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s4_w.png"
+  ]
+ },
+ "af_s0_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A southern African (Zulu) a small hamlet, half as wide as the reference, of five large round beehive-shaped thatched huts arranged in rings, granaries on stilts, with a big central circular cattle enclosure and a great chief's hut, enclosed by a tall ring of sharpened wooden palisade stakes with a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/af_s2_w.png",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s0_w.png"
+  ]
+ },
+ "af_s1_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A southern African (Zulu) a town, a little smaller than the reference, of about fifteen large round beehive-shaped thatched huts arranged in rings, granaries on stilts, with a big central circular cattle enclosure and a great chief's hut, enclosed by a tall ring of sharpened wooden palisade stakes with a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/af_s2_w.png",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s2_w.png"
+  ]
+ },
+ "af_s2_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A southern African (Zulu) a city of about twenty-five large round beehive-shaped thatched huts arranged in rings, granaries on stilts, with a big central circular cattle enclosure and a great chief's hut, enclosed by a tall ring of sharpened wooden palisade stakes with a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s3_w.png"
+  ]
+ },
+ "af_s3_w": {
+  "prompt": "In exactly the woodblock-print style of the reference images: same bold dark ink outlines, same muted colours, same viewing angle, and buildings drawn at the SAME LARGE SIZE as in the reference (big, simple, readable shapes that stay clear when shrunk to a small map icon; no tiny buildings). A southern African (Zulu) a capital city one and a half times as wide as the reference, of about thirty-five large round beehive-shaped thatched huts arranged in rings, granaries on stilts, with grand a big central circular cattle enclosure and a great chief's hut, enclosed by a tall ring of sharpened wooden palisade stakes with a gate. Centred on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text, no frame.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_all/af_s2_w.png",
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s4_w.png"
+  ]
+ }
+}
