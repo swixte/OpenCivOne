@@ -1,0 +1,6 @@
+A sheet of SIXTEEN separate small groups of town life in ancient Babylon for a strategy game's town screen, each in a FRONTAL view from a low viewpoint at about eye level, at the same small scale as people beside a two-storey house (a person is about one fifth of a house's height). Four rows of four, wide magenta gaps between them:
+row 1: a group of three townspeople talking; a man leading a laden donkey; a woman carrying a water jar on her head with a child; a priest and two attendants walking;
+row 2: a market stall with a striped awning and baskets of dates; a potter's stall with jars; an ox cart with sacks; a group of four people with bundles walking;
+row 3: two reed boats with boatmen on a strip of water; a small fishing boat with a sail on a strip of water; a camel with a rider; a well with women drawing water;
+row 4: a small date-palm garden plot with a low wall; a stack of bricks with two brick-makers; a flock of sheep with a shepherd; a crowd of six people at a public gathering.
+Isolated on a perfectly flat, uniform magenta (#FF00FF) background; no shadows on the magenta, no ground beyond each group's own small strip of ochre ground (the boats on their own strip of blue water).

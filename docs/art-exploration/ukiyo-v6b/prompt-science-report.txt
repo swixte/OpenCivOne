@@ -1,0 +1,6 @@
+One full game screen for a Civilization-like strategy game, landscape, filling the image edge to edge, in the style of the reference images: the SCIENCE REPORT.
+The civilization is the Greeks, classical era. Greek subjects: chitons, columns, scrolls, an owl.
+The whole screen is cream paper with a thin madder rule inset from the edge and small cloud motifs in the corners.
+Top band: the title "SCIENCE REPORT" in large serif letters with "Empire of the Greeks" below it on the left; on the right, the head and shoulders of the Greek science advisor, an old philosopher holding a scroll, in a small framed portrait.
+Below the title, across almost the full width: a progress bar in a thin frame made of 16 small stamped oil lamps, 9 lit and 7 unlit, and centred under it the line "Researching Astronomy (72/128)".
+Below a thin rule with the small heading "Advances already known", the known advances are laid out in four tidy columns of three, each name beside a small round woodblock emblem: Alphabet, Bronze Working, Ceremonial Burial, Code of Laws, Currency, Horseback Riding, Masonry, Pottery, Writing, Mysticism, Literacy, Mathematics. Generous empty paper is left below them for later advances.
