@@ -1,0 +1,4 @@
+A sprite sheet of SIX separate city buildings for a strategy game, arranged in two rows of three, each centred in its own third of the row:
+row 1: a PALACE (a large square mud-brick complex with an inner courtyard, blue-glazed gateway with lion reliefs, crenellated parapets); a TEMPLE as a three-stepped ziggurat with a central stairway and a small blue shrine on top; a GRANARY (a long low storehouse with a row of round domed grain bins);
+row 2: BARRACKS (a walled square drill yard with rooms along two sides and a few tiny spearmen in the yard); a LIBRARY (a columned hall with a flat roof and clay-tablet shelves visible through the door); a MARKETPLACE under construction (timber scaffolding over half-built stalls, piles of bricks, two tiny workers).
+All six drawn at the same scale: the palace and barracks the largest, about twice the footprint of the granary and library.
