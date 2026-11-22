@@ -1431,6 +1431,15 @@ GBitmap other4()
 	if (output != null)
 	{
 		painted = featured;
+		// PAINTED_CITIES ("x,y[,step];..." in preview cells) marks cities, whose cells the painting clears for them
+		string? cities = Environment.GetEnvironmentVariable("PAINTED_CITIES");
+		if (cities != null)
+		{
+			var cityCells = cities.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(c => c.Split(','))
+				.ToDictionary(c => (int.Parse(c[0]) + 4, int.Parse(c[1]) + 2), c => PaintedMap.City | ((c.Length > 2 ? int.Parse(c[2]) : 5) << PaintedMap.CityStepShift));
+			var features = featured.FeatureAt;
+			featured.FeatureAt = (x, y) => (features?.Invoke(x, y) ?? 0) | cityCells.GetValueOrDefault((x, y));
+		}
 		var clock = System.Diagnostics.Stopwatch.StartNew();
 		using var image = new SKBitmap(22 * 64, 12 * 64, SKColorType.Bgra8888, SKAlphaType.Premul);
 		for (int cy = 0; cy < 12; cy++)

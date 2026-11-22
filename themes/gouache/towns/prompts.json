@@ -1,0 +1,26 @@
+{
+ "town_s0_o": {
+  "prompt": "{STYLE} One settlement for a turn-based civilization strategy map, painted in exactly the gouache style and colours of the reference map. Seen from HIGH above at only a slight angle: mostly rooftops, with just a thin sliver of the south-facing house walls visible, leaning the same way as the units in the reference but much less. Its footprint is SQUARE. It must read clearly when shrunk to a 64-pixel map tile, so the buildings are FEW, LARGE and BOLD: big simple roof shapes with strong dark outlines, bright terracotta and orange-red roofs with clear light and shade, bright cream walls; no tiny buildings, no fussy detail. It is a hamlet of just 3 houses around a well. Between the houses a little light trodden earth and a few small green gardens; a thin band of garden and path around the outside fades softly to nothing. NO city walls, palisade or towers: the houses stand open on the land. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background beyond the faded edge. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../concept.png"
+  ]
+ },
+ "town_s1_o": {
+  "prompt": "{STYLE} One settlement for a turn-based civilization strategy map, painted in exactly the gouache style and colours of the reference map. Seen from HIGH above at only a slight angle: mostly rooftops, with just a thin sliver of the south-facing house walls visible, leaning the same way as the units in the reference but much less. Its footprint is SQUARE. It must read clearly when shrunk to a 64-pixel map tile, so every building is LARGE and BOLD even when there are many: big simple roof shapes with strong near-black outlines and deep shade between buildings, very high contrast, bright terracotta and orange-red roofs with clear light and shade, bright cream walls; no tiny buildings, no fussy detail. It is a village of about 9 houses set close together, roofs nearly touching, around a lane crossing and a small shrine. Between the houses a little light trodden earth and a few small green gardens; a thin band of garden and path around the outside fades softly to nothing. NO city walls, palisade or towers: the houses stand open on the land. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background beyond the faded edge. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../concept.png"
+  ]
+ },
+ "town_s2_o": {
+  "prompt": "{STYLE} One settlement for a turn-based civilization strategy map, painted in exactly the gouache style and colours of the reference map. Seen from HIGH above at only a slight angle: mostly rooftops, with just a thin sliver of the south-facing house walls visible, leaning the same way as the units in the reference but much less. Its footprint is SQUARE. It must read clearly when shrunk to a 64-pixel map tile, so every building is LARGE and BOLD even when there are many: big simple roof shapes with strong near-black outlines and deep shade between buildings, very high contrast, bright terracotta and orange-red roofs with clear light and shade, bright cream walls; no tiny buildings, no fussy detail. It is a busy town of about 18 houses packed shoulder to shoulder in tight blocks along narrow lanes, with a columned temple and a little market square; almost no open ground inside. Between the houses a little light trodden earth and a few small green gardens; a thin band of garden and path around the outside fades softly to nothing. NO city walls, palisade or towers: the houses stand open on the land. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background beyond the faded edge. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../concept.png"
+  ]
+ },
+ "town_s3_o": {
+  "prompt": "{STYLE} One settlement for a turn-based civilization strategy map, painted in exactly the gouache style and colours of the reference map. Seen from HIGH above at only a slight angle: mostly rooftops, with just a thin sliver of the south-facing house walls visible, leaning the same way as the units in the reference but much less. Its footprint is SQUARE. It must read clearly when shrunk to a 64-pixel map tile, so every building is LARGE and BOLD even when there are many: big simple roof shapes with strong near-black outlines and deep shade between buildings, very high contrast, bright terracotta and orange-red roofs with clear light and shade, bright cream walls; no tiny buildings, no fussy detail. It is a dense city of about 30 houses packed wall to wall in tight blocks that fill the whole square, cut by narrow lanes, around a large palace with a courtyard and a plaza; almost no open ground inside. Between the houses a little light trodden earth and a few small green gardens; a thin band of garden and path around the outside fades softly to nothing. NO city walls, palisade or towers: the houses stand open on the land. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background beyond the faded edge. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../concept.png"
+  ]
+ }
+}

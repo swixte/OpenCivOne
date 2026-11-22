@@ -1,0 +1,44 @@
+{
+ "big_a_landmarks": {
+  "prompt": "{STYLE} One large city for a turn-based civilization strategy map, painted in exactly the gouache style, colours and roof style of the reference town. Seen from HIGH above at only a slight angle: mostly rooftops, with a thin sliver of south-facing walls visible, leaning the same way as the units in the reference map but much less. It must read clearly when shrunk to a 64-pixel map tile: bold shapes, strong near-black outlines, very high contrast, no fussy detail. Its footprint is a SQUARE filling the picture edge to edge; nothing sticks out beyond the square. A dense grid of terracotta-roofed houses, and rising clearly above them three tall landmarks: a big palace with a golden dome in the middle, a tall columned temple, and a slender watchtower. The landmarks are much larger and brighter than the houses so the city reads as important. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../../concept.png",
+   "../../raw-towns/town_s3_o.png"
+  ]
+ },
+ "big_b_skyline": {
+  "prompt": "{STYLE} One large city for a turn-based civilization strategy map, painted in exactly the gouache style, colours and roof style of the reference town. Seen from HIGH above at only a slight angle: mostly rooftops, with a thin sliver of south-facing walls visible, leaning the same way as the units in the reference map but much less. It must read clearly when shrunk to a 64-pixel map tile: bold shapes, strong near-black outlines, very high contrast, no fussy detail. Its ground footprint is a square, but tall buildings rise ABOVE it: the picture is taller than wide, with the square city in the lower part and a palace dome, temple roof and two towers rising into the upper part like a skyline. A dense grid of terracotta-roofed houses on the square. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../../concept.png",
+   "../../raw-towns/town_s3_o.png"
+  ]
+ },
+ "big_c_marble": {
+  "prompt": "{STYLE} One large city for a turn-based civilization strategy map, painted in exactly the gouache style, colours and roof style of the reference town. Seen from HIGH above at only a slight angle: mostly rooftops, with a thin sliver of south-facing walls visible, leaning the same way as the units in the reference map but much less. It must read clearly when shrunk to a 64-pixel map tile: bold shapes, strong near-black outlines, very high contrast, no fussy detail. Its footprint is a SQUARE filling the picture edge to edge; nothing sticks out beyond the square. A grand classical capital in gleaming white marble and cream stone with a few gold and terracotta roofs: a straight main avenue lined with columns crossing a large paved plaza, a big temple and a palace with a courtyard, ordered blocks of houses. Bright and rich, the brightest thing on a map. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../../concept.png",
+   "../../raw-towns/town_s3_o.png"
+  ]
+ },
+ "big_d_ziggurat": {
+  "prompt": "{STYLE} One large city for a turn-based civilization strategy map, painted in exactly the gouache style, colours and roof style of the reference town. Seen from HIGH above at only a slight angle: mostly rooftops, with a thin sliver of south-facing walls visible, leaning the same way as the units in the reference map but much less. It must read clearly when shrunk to a 64-pixel map tile: bold shapes, strong near-black outlines, very high contrast, no fussy detail. Its footprint is a SQUARE filling the picture edge to edge; nothing sticks out beyond the square. An ancient Mesopotamian city of sandy mud-brick and terracotta: a huge stepped ziggurat dominates the centre, rising above dense flat-roofed houses packed in blocks, a palm-lined canal, and thick city walls with gate towers round the square. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../../concept.png",
+   "../../raw-towns/town_s3_o.png"
+  ]
+ },
+ "big_e_player": {
+  "prompt": "{STYLE} One large city for a turn-based civilization strategy map, painted in exactly the gouache style, colours and roof style of the reference town. Seen from HIGH above at only a slight angle: mostly rooftops, with a thin sliver of south-facing walls visible, leaning the same way as the units in the reference map but much less. It must read clearly when shrunk to a 64-pixel map tile: bold shapes, strong near-black outlines, very high contrast, no fussy detail. Its footprint is a SQUARE filling the picture edge to edge; nothing sticks out beyond the square. A dense grid of white stone houses whose roofs are all a strong royal BLUE, a palace with a blue dome and gold trim in the middle, blue banners on the corner towers of a light stone city wall. The blue is the owning player's colour and must be bold and clear. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../../concept.png",
+   "../../raw-towns/town_s3_o.png"
+  ]
+ },
+ "big_f_grand": {
+  "prompt": "{STYLE} One large city for a turn-based civilization strategy map, painted in exactly the gouache style, colours and roof style of the reference town. Seen from HIGH above at only a slight angle: mostly rooftops, with a thin sliver of south-facing walls visible, leaning the same way as the units in the reference map but much less. It must read clearly when shrunk to a 64-pixel map tile: bold shapes, strong near-black outlines, very high contrast, no fussy detail. Its footprint is a SQUARE filling the picture edge to edge; nothing sticks out beyond the square. A grand walled capital: thick light stone walls with round towers and a big gatehouse, inside a palace with a courtyard, an oval colosseum, a columned temple, an aqueduct with arches crossing the city, and packed terracotta-roofed houses between them. Every great building clearly distinct. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../../concept.png",
+   "../../raw-towns/town_s3_o.png"
+  ]
+ }
+}

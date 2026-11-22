@@ -1,0 +1,16 @@
+{
+ "town_t0_hut": {
+  "prompt": "{STYLE} One settlement for a turn-based civilization strategy map, painted in exactly the gouache style and colours of the reference map. Seen from HIGH above at only a slight angle: mostly rooftops, with just a thin sliver of the south-facing house walls visible, leaning the same way as the units in the reference but much less. Its footprint is SQUARE. It must read clearly when shrunk to a 64-pixel map tile, so the buildings are FEW, LARGE and BOLD: big simple roof shapes with strong dark outlines, bright terracotta and orange-red roofs with clear light and shade, bright cream walls; no tiny buildings, no fussy detail. It is the tiniest new settlement: just 2 small thatched huts and a little animal pen on a bare yard of trodden dirt, a cooking fire between them. Between the houses a little light trodden earth and a few small green gardens; a thin band of garden and path around the outside fades softly to nothing. NO city walls, palisade or towers: the houses stand open on the land. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background beyond the faded edge. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../../concept.png",
+   "../../raw-towns/town_s0_o.png"
+  ]
+ },
+ "town_t5_marble": {
+  "prompt": "{STYLE} One large city for a turn-based civilization strategy map, painted in exactly the gouache style, colours and roof style of the reference town. Seen from HIGH above at only a slight angle: mostly rooftops, with a thin sliver of south-facing walls visible, leaning the same way as the units in the reference map but much less. It must read clearly when shrunk to a 64-pixel map tile: bold shapes, strong near-black outlines, very high contrast, no fussy detail. Its footprint is a SQUARE filling the picture edge to edge; nothing sticks out beyond the square. A grand classical capital in gleaming white marble and cream stone with a few terracotta roofs: a straight main avenue lined with columns crossing a large paved plaza, a big temple, and in the middle a palace whose large dome is gleaming GOLD, with bold royal BLUE banners and awnings on the palace and the corner towers (the owning player colour), ordered blocks of houses. Bright and rich, the brightest thing on a map. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../../concept.png",
+   "../../raw-big/big_c_marble.png"
+  ]
+ }
+}

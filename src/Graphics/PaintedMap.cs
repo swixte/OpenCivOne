@@ -67,6 +67,15 @@ namespace OpenCivOne.Graphics
 		private readonly float[] terrainPattern = new float[Ground.Length];
 		private bool printedCoast = false, print = false;
 
+		// for the blended (not print) map: scenery laid out as on a print (layout), a sandy beach instead of a rocky rim
+		// (beach), rivers in the sea's colours with soft banks (softrivers), and trees and jungle drawn at these scales
+		// (trees, jungle; jungle follows trees unless given)
+		private bool layout = false, beach = false, softRivers = false;
+		private float treeScale = 1, jungleScale = -1;
+
+		// how far coasts and terrain borders wander from the grid (coastwarp, 1 as before; more makes rounder, craggier coasts)
+		private float coastWarp = 1;
+
 		private readonly Func<int, int, int> terrainAt;
 		private readonly int cell;
 		private readonly int worldWidth;
@@ -81,7 +90,11 @@ namespace OpenCivOne.Graphics
 		// the resource of each terrain, by terrain id, as the objects are named
 		private static readonly string[] ResourceNames = { "oasis", "horses", "wheat", "pheasant", "coal", "gold", "caribou", "seal", "peat", "gems", "fish" };
 
-		public const int SpecialResource = 1, MinorTribeHut = 2;
+		public const int SpecialResource = 1, MinorTribeHut = 2, City = 4;
+
+		// a city's size step (0 for a hamlet up to 5 for a great capital) in the feature bits above City: its clearing
+		// grows with it
+		public const int CityStepShift = 4, CityStepMask = 7 << CityStepShift;
 		private readonly Dictionary<(int X, int Y), Chunk> chunks = new Dictionary<(int X, int Y), Chunk>();
 
 		// The world is also painted on a background thread, nearest chunks first, so the map rarely waits for painting.
@@ -281,6 +294,12 @@ namespace OpenCivOne.Graphics
 						case "shallows": map.shallows = Math.Max(0.1f, value); break;
 						case "coastline": map.printedCoast = value != 0; break;
 						case "print": map.print = value != 0; break;
+						case "layout": map.layout = value != 0; break;
+						case "beach": map.beach = value != 0; break;
+						case "softrivers": map.softRivers = value != 0; break;
+						case "trees": map.treeScale = Math.Clamp(value, 0.15f, 2); break;
+						case "jungle": map.jungleScale = Math.Clamp(value, 0.15f, 2); break;
+						case "coastwarp": map.coastWarp = Math.Clamp(value, 0.5f, 2); break;
 						case "pattern": map.pattern = Math.Clamp(value, 0.25f, 8); break;
 						case "seapattern": map.seaPattern = Math.Clamp(value, 0.25f, 8); break;
 						case "paper": map.paper = Math.Clamp(value, 0, 1); break;
@@ -310,6 +329,8 @@ namespace OpenCivOne.Graphics
 
 			map.TextureOr("ocean");
 			map.TextureOr("shallow");
+			map.TextureOr("desert");
+			map.TextureOr("plains");
 
 			return map;
 		}
@@ -694,6 +715,36 @@ namespace OpenCivOne.Graphics
 		}
 
 		/// <summary>
+		/// How far a point (in pixels) is inside a city's clearing, 0 to 1: a rounded square round the city's cell, a little
+		/// wider than it, its edge broken by noise
+		/// </summary>
+		private float CityClearing(float x, float y, float k)
+		{
+			int ui = (int)MathF.Floor(x / this.cell), uj = (int)MathF.Floor(y / this.cell);
+			float clear = 0;
+
+			for (int dj = -1; dj <= 1; dj++)
+			{
+				for (int di = -1; di <= 1; di++)
+				{
+					int feature = this.Feature(ui + di, uj + dj);
+
+					if ((feature & City) == 0)
+						continue;
+
+					// a hamlet's clearing is a little yard; a capital's spills just past its cell
+					float half = this.cell / 2f * (0.55f + (0.09f * Math.Min((feature & CityStepMask) >> CityStepShift, 5)));
+					float ex = MathF.Abs(x - ((ui + di + 0.5f) * this.cell)) / half;
+					float ey = MathF.Abs(y - ((uj + dj + 0.5f) * this.cell)) / half;
+					float reach = MathF.Pow(MathF.Pow(ex, 3) + MathF.Pow(ey, 3), 1 / 3f) + (0.3f * (this.Noise(x, y, 14 * k, 13) - 0.5f)) + (0.12f * (this.Noise(x, y, 4 * k, 14) - 0.5f));
+					clear = Math.Max(clear, Smooth(1.16f, 0.98f, reach));
+				}
+			}
+
+			return clear;
+		}
+
+		/// <summary>
 		/// Smooth value noise in [0, 1] with features about `size` pixels across, repeating around the world horizontally
 		/// </summary>
 		private float Noise(float x, float y, float size, int seed)
@@ -761,10 +812,12 @@ namespace OpenCivOne.Graphics
 			// which pixels are open water (1) or river (2): they move when the screen is shown (see GBitmap.SeaAlpha)
 			byte[] water = new byte[size * size];
 
-			float warpAmount = 14 * k, groundRadius = 13 * k, coastRadius = 5 * k, surfRadius = 24 * k, depthRadius = 70 * k * this.shallows;
+			float warpAmount = 14 * k * this.coastWarp, groundRadius = 13 * k, coastRadius = 5 * k * this.coastWarp, surfRadius = 24 * k, depthRadius = 70 * k * this.shallows;
+			// a wandering coast also gets a fine, craggy edge
+			float crag = this.coastWarp > 1 ? 0.3f * warpAmount : 0;
 			float riverWidth = 3.6f * k, bankWidth = 6.5f * k;
 
-			Texture ocean = this.TextureOr("ocean"), shallow = this.TextureOr("shallow");
+			Texture ocean = this.TextureOr("ocean"), shallow = this.TextureOr("shallow"), sand = this.TextureOr("desert"), fields = this.TextureOr("plains");
 			(Texture Texture, float Weight)[][] ground = Array.ConvertAll(this.groundParts, parts => Array.ConvertAll(parts, part => (this.TextureOr(part.Name), part.Weight)));
 			TerrainGrid grid = new TerrainGrid(this, cx, cy);
 
@@ -781,6 +834,18 @@ namespace OpenCivOne.Graphics
 					// warped position: straight cell borders become organic
 					float ox = (this.Noise(wx, wy, 24 * k, 1) - 0.5f) * 2 * warpAmount + (this.Noise(wx, wy, 8 * k, 2) - 0.5f) * 0.6f * warpAmount;
 					float oy = (this.Noise(wx, wy, 24 * k, 3) - 0.5f) * 2 * warpAmount + (this.Noise(wx, wy, 8 * k, 4) - 0.5f) * 0.6f * warpAmount;
+
+					// the craggy edge is for coasts and borders only: rivers keep their smooth course
+					float cragX = 0, cragY = 0;
+
+					if (crag > 0)
+					{
+						cragX = (this.Noise(wx, wy, 3 * k, 11) - 0.5f) * crag;
+						cragY = (this.Noise(wx, wy, 3 * k, 12) - 0.5f) * crag;
+						ox += cragX;
+						oy += cragY;
+					}
+
 					float qx = wx + ox, qy = wy + oy;
 					int ci = (int)MathF.Floor(qx / this.cell), cj = (int)MathF.Floor(qy / this.cell);
 
@@ -832,6 +897,15 @@ namespace OpenCivOne.Graphics
 							g[i] = (g[i] * (1 - key)) + (26 * key);
 							b[i] = (b[i] * (1 - key)) + (22 * key);
 						}
+						else if (this.beach)
+						{
+							// a beach: pale dry sand fading into the land, a little darker where the sand is wet
+							int bi = this.TextureIndex(sand, wx, wy);
+							float sandy = Smooth(0.97f, 0.62f, land), wet = 1 - (0.2f * Smooth(0.62f, 0.5f, land));
+							r[i] = ((gr * (1 - sandy)) + (((sand.R[bi] * 0.7f) + 68) * sandy)) * wet;
+							g[i] = ((gg * (1 - sandy)) + (((sand.G[bi] * 0.7f) + 68) * sandy)) * wet;
+							b[i] = ((gb * (1 - sandy)) + (((sand.B[bi] * 0.7f) + 68) * sandy)) * wet;
+						}
 						else
 						{
 							// dark, rocky rim along the shore
@@ -878,35 +952,88 @@ namespace OpenCivOne.Graphics
 						water[i] = 1;
 					}
 
+					// a city stands in a clearing of trodden earth with a ragged edge, a little wider than its cell, darkened
+					// where the trees or rocks around it begin
+					if (land >= 0.5f && this.layout)
+					{
+						float clear = this.CityClearing(wx + cragX, wy + cragY, k);
+
+						if (clear > 0)
+						{
+							// the trees or rocks to the top left cast their shadow into it
+							float reach = 10 * k, sx = wx + cragX - reach, sy = wy + cragY - reach;
+							int beyond = grid.At((int)MathF.Floor(sx / this.cell), (int)MathF.Floor(sy / this.cell));
+							float tall = (beyond == Forest || beyond == Jungle) ? 0.6f : (beyond == Hills || beyond == Mountains) ? 0.4f : 0.15f;
+							float shadow = 1 - (tall * clear * (1 - this.CityClearing(sx, sy, k)));
+
+							// fields round the edge, trodden earth towards the middle
+							int fi = this.TextureIndex(fields, wx, wy);
+							float worn = 0.45f * Smooth(0.6f, 1, clear);
+							float fr = (fields.R[fi] * (1 - worn)) + (((fields.R[fi] * 0.6f) + 38) * worn);
+							float fg = (fields.G[fi] * (1 - worn)) + (((fields.G[fi] * 0.5f) + 28) * worn);
+							float fb = (fields.B[fi] * (1 - worn)) + (((fields.B[fi] * 0.4f) + 16) * worn);
+							float edge = (1 - (0.18f * Smooth(0.2f, 0.5f, clear) * Smooth(0.9f, 0.6f, clear))) * shadow;
+							r[i] = ((r[i] * (1 - clear)) + (fr * clear)) * edge;
+							g[i] = ((g[i] * (1 - clear)) + (fg * clear)) * edge;
+							b[i] = ((b[i] * (1 - clear)) + (fb * clear)) * edge;
+						}
+					}
+
 					// rivers wind through river cells and on into the sea
 					if (land >= 0.5f)
 					{
-						float d = this.RiverDistance(grid, qx, qy, ci, cj);
+						float rqx = qx - cragX, rqy = qy - cragY, wobble = 1;
+
+						if (this.softRivers)
+						{
+							// a soft river meanders on a slow curve and swells and narrows a little
+							rqx += (this.Noise(wx, wy, 48 * k, 8) - 0.5f) * 24 * k;
+							rqy += (this.Noise(wx, wy, 48 * k, 9) - 0.5f) * 24 * k;
+							wobble = 1.1f + (0.45f * this.Noise(wx, wy, 30 * k, 10));
+						}
+
+						float d = this.RiverDistance(grid, rqx, rqy, ci, cj) / wobble;
 
 						if (d < bankWidth)
 						{
 							if (d < riverWidth)
 							{
 								int si = this.TextureIndex(shallow, wx, wy);
-								bool lit = this.RiverDistance(grid, qx - (2 * k), qy, ci, cj) >= riverWidth;
+								bool lit = this.RiverDistance(grid, rqx - (2 * k), rqy, ci, cj) / wobble >= riverWidth;
 								float light = lit ? 1.35f : 1f;
-								r[i] = ((shallow.R[si] * 0.7f) + 18) * light;
-								g[i] = ((shallow.G[si] * 0.7f) + 21) * light;
-								b[i] = ((shallow.B[si] * 0.7f) + 21) * light;
+
+								if (this.softRivers)
+								{
+									// half way between the sea and the shallows, lit a little on the near bank
+									int oi = this.TextureIndex(ocean, wx, wy);
+									light = lit ? 1.15f : 1f;
+									r[i] = (ocean.R[oi] + shallow.R[si]) / 2 * light;
+									g[i] = (ocean.G[oi] + shallow.G[si]) / 2 * light;
+									b[i] = (ocean.B[oi] + shallow.B[si]) / 2 * light;
+								}
+								else
+								{
+									r[i] = ((shallow.R[si] * 0.7f) + 18) * light;
+									g[i] = ((shallow.G[si] * 0.7f) + 21) * light;
+									b[i] = ((shallow.B[si] * 0.7f) + 21) * light;
+								}
+
 								water[i] = 2;
 							}
 							else
 							{
-								r[i] *= 0.5f;
-								g[i] *= 0.5f;
-								b[i] *= 0.5f;
+								// a dark bank, or with soft rivers a faint damp edge that fades out
+								float bank = this.softRivers ? 0.75f + (0.25f * Smooth(riverWidth, bankWidth, d)) : 0.5f;
+								r[i] *= bank;
+								g[i] *= bank;
+								b[i] *= bank;
 							}
 						}
 					}
 				}
 			});
 
-			this.PaintScenery(cx, cy, r, g, b, water, size);
+			this.PaintScenery(cx, cy, r, g, b, water, size, this.layout ? grid : null);
 
 			// light: drifting cloud shadows and a slight warm grade on the highlights
 			uint[] pixels = new uint[size * size];
@@ -1803,8 +1930,8 @@ namespace OpenCivOne.Graphics
 
 			int x0 = cx * size, y0 = cy * size;
 
-			// a print has no cast shadows
-			if (!this.print)
+			// a print, and scenery laid out like one, has no cast shadows
+			if (!this.print && !this.layout)
 			{
 				foreach (Placement p in placements)
 					DrawShadow(p, r, g, b, size, x0, y0);
@@ -1813,7 +1940,7 @@ namespace OpenCivOne.Graphics
 			placements.Sort((a, c) => a.Base.CompareTo(c.Base));
 
 			foreach (Placement p in placements)
-				DrawSprite(p, r, g, b, water, size, x0, y0, grid == null ? null : (x, y) => this.PrintTerrain(grid, x, y) == Water);
+				DrawSprite(p, r, g, b, water, size, x0, y0, (grid == null || !this.print) ? null : (x, y) => this.PrintTerrain(grid, x, y) == Water);
 		}
 
 		/// <summary>
@@ -1824,12 +1951,20 @@ namespace OpenCivOne.Graphics
 		private void PlacePrintCell(List<Placement> placements, TerrainGrid grid, RiverCourses? rivers, Random random, int i, int j, int terrain, float left, float top)
 		{
 			float k = this.cell / 64f;
+
+			// a city's cell is cleared of trees, hills and peaks, so the town stands on its own ground
+			if ((this.Feature(i, j) & City) != 0)
+				return;
+
 			int feature = this.PaintsFeatures ? this.Feature(i, j) : 0;
 			float fx = left + (32 * k), fy = top + (50 * k), clear = (feature != 0) ? 22 * k : 0;
 			// hills and peaks beside and in front of a resource or hut stay low enough not to hide it
 			bool besideFeature = this.PaintsFeatures && (this.Feature(i - 1, j) != 0 || this.Feature(i + 1, j) != 0 ||
 				this.Feature(i - 1, j - 1) != 0 || this.Feature(i, j - 1) != 0 || this.Feature(i + 1, j - 1) != 0);
-			float lower = besideFeature ? 0.55f : 1;
+			// nor do peaks below or beside a city rise over it
+			bool besideCity = ((this.Feature(i - 1, j) | this.Feature(i + 1, j) | this.Feature(i, j - 1) |
+				this.Feature(i - 1, j - 1) | this.Feature(i + 1, j - 1)) & City) != 0;
+			float lower = (besideFeature || besideCity) ? 0.55f : 1;
 
 			// hills and peaks by the water step back from it and stand a little lower, so they rise from a rocky shore
 			// rather than hang over the water
@@ -2112,6 +2247,12 @@ namespace OpenCivOne.Graphics
 				return;
 
 			Sprite sprite = list[choice];
+
+			if (set == "trees")
+				height *= this.treeScale;
+			else if (set == "jungle")
+				height *= this.jungleScale < 0 ? this.treeScale : this.jungleScale;
+
 			float width = height * sprite.Width / sprite.Height;
 			placements.Add(new Placement { Sprite = sprite, X = x - (width / 2), Base = baseY, Width = width, Height = height, Flip = flip, FadeFoot = fadeFoot });
 		}
