@@ -68,11 +68,11 @@ UNITS = [(7, 6, 'settlers', 'blue', True), (3, 5, 'phalanx', 'blue', False), (9,
 BASE_SQUASH = 0.62
 
 
-def unit_base(col, c, active, ss=4, r=0.4):
+def unit_base(col, c, active, ss=4, r=0.4, squash=BASE_SQUASH):
     """A unit's round base seen from the same steep angle as the figure (about 65 degrees), like a miniature's on a table:
     a slightly squashed disc in the player's colour with a thin darker side below it, a soft shadow and a highlight on its
     far half. Drawn large and scaled down, so its edges are smooth. Centred on the middle of its top."""
-    rx, ry, side = c * r * ss, c * r * BASE_SQUASH * ss, c * 0.02 * ss
+    rx, ry, side = c * r * ss, c * r * squash * ss, c * 0.02 * ss
     w, h = round(2 * rx + 12 * ss), round(2 * ry + 2 * side + 12 * ss)
     cx, cy = w / 2, h / 2
     dark = tuple(int(v * 0.55) for v in col)
@@ -86,36 +86,75 @@ def unit_base(col, c, active, ss=4, r=0.4):
     d.ellipse([cx - rx, cy - ry + side, cx + rx, cy + ry + side], fill=dark)
     d.rectangle([cx - rx, cy, cx + rx, cy + side], fill=dark)
     d.ellipse([cx - rx, cy - ry, cx + rx, cy + ry], fill=col)
+    # a thin pale rim round the top, so a blue base still shows on blue sea and a red one on red earth
+    d.ellipse([cx - rx, cy - ry, cx + rx, cy + ry], outline=(250, 244, 226), width=round(0.9 * ss))
     hl = Image.new('RGBA', (w, h), (0, 0, 0, 0))
     ImageDraw.Draw(hl).ellipse([cx - rx * 0.8, cy - ry * 0.85, cx + rx * 0.5, cy - ry * 0.1], fill=light + (120,))
     im.alpha_composite(hl.filter(ImageFilter.GaussianBlur(ry * 0.25)))
     return im.resize((round(w / ss), round(h / ss)), Image.LANCZOS)
 
 
-def body(path, c, unit):
+def team_colour(u, player):
+    """The unit with its player colour: the units are painted with blue shields, cloaks, banners and sails (and nothing
+    else blue), and for the red player those blues are turned red, keeping their light and shade."""
+    if player == 'blue':
+        return u
+    h, s, v = [np.asarray(ch, np.float32) for ch in u.convert('RGB').convert('HSV').split()]
+    blue = np.clip((s - 50) / 40, 0, 1) * np.clip(1 - (np.abs(h - 148) - 16) / 10, 0, 1)
+    h = np.where(blue > 0, 2, h)
+    s = s + (np.minimum(s * 1.05, 255) - s) * blue
+    red = Image.merge('HSV', [Image.fromarray(np.uint8(ch)) for ch in (h, s, v)]).convert('RGB')
+    out = Image.composite(red, u.convert('RGB'), Image.fromarray(np.uint8(blue * 255)))
+    out.putalpha(u.getchannel('A'))
+    return out
+
+
+def body(path, c, unit, player='blue'):
     """A unit at the one scale all the units were painted at together (units/prompts_sheet.json), so a man on foot is
-    smaller than a knight, a chariot or a ship, and foot soldiers a little smaller again. Returns it with the point that
-    goes on the middle of the base: the middle of its body across and its feet (the bottom of its body, a little up)
-    down for those that stand on the ground, and the middle of the body for ships, which sit in the base like in water."""
-    u = Image.open(path).convert('RGBA')
+    smaller than a knight, a chariot or a ship. Returns it with where its base goes: the point on the middle of the
+    base and the base's half-width, both in pixels. A unit on land stands on its base where it touches the ground: the
+    base is under the lowest part of its solid body (thin spears and poles left out), a man's feet or a cart's wheels,
+    centred under and as wide as the whole body. A ship sits in its base as in water, by its middle."""
+    u = team_colour(Image.open(path).convert('RGBA'), player)
     solid = np.asarray(u.getchannel('A').filter(ImageFilter.MinFilter(11)), np.float32) > 128
     ys, xs = np.nonzero(solid)
-    w, h = np.percentile(xs, 97) - np.percentile(xs, 3), np.percentile(ys, 97) - np.percentile(ys, 3)
-    f = min(c * UNIT_SCALE * UNIT_SIZE.get(unit, 1), c * 0.95 / max(u.size))
-    u = u.resize((round(u.width * f), round(u.height * f)), Image.LANCZOS)
     if unit in SHIPS:
-        return u, (xs.mean() * f, ys.mean() * f)
-    return u, ((np.percentile(xs, 3) + w / 2) * f, (np.percentile(ys, 97) - 0.15 * h) * f)
+        # a ship sits in the water by its hull, the bottom band of its solid body, not by its middle, which the sails
+        # lift: the base is centred on that band and as long as it
+        top, bottom = np.percentile(ys, 2), np.percentile(ys, 99)
+        hull = ys > bottom - 0.35 * (bottom - top)
+        hl, hr = np.percentile(xs[hull], 2), np.percentile(xs[hull], 98)
+        ax, ay, half = (hl + hr) / 2, np.median(ys[hull]), (hr - hl) / 2
+    else:
+        top, bottom = np.percentile(ys, 3), np.percentile(ys, 98)
+        # across, the whole body, so a settler and his cart, or a driver and his horses, stand on one base together;
+        # a man on foot is centred on his feet alone, the bottom of him, and the base a little further up under him
+        fl, fr = np.percentile(xs, 2), np.percentile(xs, 98)
+        # the settler walks behind his cart, so his base comes further up to take him in too
+        lift = 0.22 if unit == 'settlers' else 0.1
+        if unit in FOOT:
+            feet = ys > bottom - 0.3 * (bottom - top)
+            fl, fr, lift = np.percentile(xs[feet], 2), np.percentile(xs[feet], 98), 0.06
+        ax, ay, half = (fl + fr) / 2, bottom - lift * (bottom - top), (fr - fl) / 2
+    f = min(c * UNIT_SCALE * UNIT_SIZE.get(unit, 1), c * 0.95 / max(u.size))
+    # nothing reaches more than a little way out of the cell sideways from the middle of the base: a long pike makes
+    # its man smaller rather than pushing him off his base
+    f = min(f, c * 0.56 / max(ax, u.width - ax))
+    u = u.resize((round(u.width * f), round(u.height * f)), Image.LANCZOS)
+    return u, (ax * f, ay * f), half * f
 
 
+FOOT = {'phalanx', 'legion', 'militia', 'musketeers', 'riflemen', 'mech_infantry'}
 SHIPS = {'trireme', 'sail', 'frigate', 'ironclad', 'cruiser', 'battleship', 'submarine', 'carrier', 'transport'}
 # the sheet's pixels per cell: its largest unit, a ship, is about 300 pixels long and a cell across
 UNIT_SCALE = 0.92 / 306
 # men on foot drawn a little smaller still than the sheet has them, so the size of a unit says what it is
 # and their bases as on a tabletop: a small round one for a man on foot, larger for horses and carts, largest for ships
-BASE_R = {'phalanx': 0.24, 'legion': 0.24, 'militia': 0.24, 'settlers': 0.32, 'knights': 0.32, 'chariot': 0.36, 'catapult': 0.36,
+BASE_R = {'phalanx': 0.2, 'legion': 0.2, 'militia': 0.2, 'settlers': 0.38, 'knights': 0.3, 'chariot': 0.32, 'catapult': 0.32,
           'trireme': 0.44, 'sail': 0.42}
-UNIT_SIZE = {'phalanx': 0.85, 'legion': 0.85, 'militia': 0.85}
+UNIT_SIZE = {'phalanx': 0.95, 'legion': 0.95, 'militia': 0.95}
+# the ships are painted from lower down, nearer side-on, so their bases are flatter ovals to match
+UNIT_SQUASH = {'trireme': 0.4, 'sail': 0.48}
 
 def scene(scale):
     base = Image.open(ENGINE).convert('RGBA')
@@ -145,13 +184,14 @@ def draw_units(im, scale):
     """Each unit on its base, on the image im drawn at scale."""
     c = CELL * scale
     for x, y, unit, player, active in UNITS:
-        # a round base seen from the same steep angle as the figure, like a miniature's: a slightly squashed disc with
-        # a thin darker side below it, in the player's colour; the figure, seen mostly from above, sits over its middle
-        cx, cy = x * c + c / 2, y * c + c * 0.6
-        b = unit_base(BLUE if player == 'blue' else RED, c, active, r=BASE_R.get(unit, 0.34))
+        # a round base seen from the same angle as the figure, like a miniature's: a squashed disc with a thin darker
+        # side below it, in the player's colour, under the figure's feet (or a ship's hull), at least its type's size
+        u, (ax, ay), half = body(OBJ + f'unit_{unit}.png', c, unit, player)
+        r = min(max(BASE_R.get(unit, 0.3), half / c + 0.05), 0.47)
+        cx, cy = x * c + c / 2, y * c + c * (0.6 if unit in SHIPS else 0.7)
+        b = unit_base(BLUE if player == 'blue' else RED, c, active, r=r, squash=UNIT_SQUASH.get(unit, BASE_SQUASH))
         im.alpha_composite(b, (round(cx - b.width / 2), round(cy - b.height / 2)))
-        u, (bx, by) = body(OBJ + f'unit_{unit}.png', c, unit)
-        im.alpha_composite(u, (round(cx - bx), round(cy - by)))
+        im.alpha_composite(u, (round(cx - ax), round(cy - ay)))
     return im
 
 

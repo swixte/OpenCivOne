@@ -764,8 +764,9 @@ namespace OpenCivOne
 								}
 								else if (paintedMap != null)
 								{
-									// on the painted map the size stands in the top left corner, so the town shows
-									this.parent.DrawTools.DrawStringToScreen0($"{citySize}", ((citySize < 10) ? 5 : 3) + scrX, scrY + 2, 0);
+									// on the painted map the size stands in the top left corner, so the town shows, in white on the
+									// badge the town's art puts there in its player's colour
+									this.parent.DrawTools.DrawStringToScreen0($"{citySize}", ((citySize < 10) ? 5 : 3) + scrX, scrY + 2, 15);
 								}
 								else
 								{
