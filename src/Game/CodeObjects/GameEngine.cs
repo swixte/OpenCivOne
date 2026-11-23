@@ -1593,8 +1593,8 @@ namespace OpenCivOne
 							if (F0_1ade_22b5_PlayerHasTechnology(playerID, this.parent.GameData.Units[i].RequiredTechnology) &&
 								!F0_1ade_22b5_PlayerHasTechnology(playerID, this.parent.GameData.Units[i].CancelTechnology))
 							{
-								if (this.parent.GameData.Units[i].MovementType == UnitMovementTypeEnum.Water && 
-									(this.parent.GameData.Cities[cityID].Status & CityStatusEnum.WaterAccess) != CityStatusEnum.None)
+								if ((this.parent.GameData.Cities[cityID].Status & CityStatusEnum.WaterAccess) != CityStatusEnum.None ||
+									this.parent.GameData.Units[i].MovementType != UnitMovementTypeEnum.Water)
 								{
 									// Instruction address 0x1ade:0x04f8, size: 5
 									messageText.Append($"{this.parent.GameData.Units[i].Name} " +
@@ -2291,7 +2291,7 @@ namespace OpenCivOne
 						}
 
 						// Instruction address 0x1ade:0x1460, size: 5
-						local_134 = buildIDList[this.parent.MenuBoxDialog.F0_2d05_0031_ShowMenuBox(messageText.ToString(), 80, 8, true, true, true) - 1];
+						local_134 = buildIDList[this.parent.MenuBoxDialog.F0_2d05_0031_ShowMenuBox(messageText.ToString(), 80, 8, true, true, true) + 1];
 
 						if (local_134 != 99)
 						{

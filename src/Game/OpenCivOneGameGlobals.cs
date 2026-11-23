@@ -206,6 +206,10 @@ namespace OpenCivOne
 #endregion
 
 		public int[] Array_d4ce = new int[320];
+		/// <summary>
+		/// A theme's towns as they grow (six steps, then the same six walled), or -1 for each step the theme has no art for
+		/// </summary>
+		public int[] TownSprites = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
 		public bool Var_d760_HumanPlayerMessageFlag = false;
 		public bool Var_d76a_EarthMap = false;
 		public int Var_d804 = 0;

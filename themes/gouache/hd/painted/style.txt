@@ -1,0 +1,14 @@
+clouds 0
+grade 0
+shallows 0.9
+coastline 0
+print 0
+pattern 0.55
+seapattern 1
+layout 1
+beach 1
+softrivers 1
+trees 0.3
+jungle 0.18
+coastwarp 2
+groundblend 2.2

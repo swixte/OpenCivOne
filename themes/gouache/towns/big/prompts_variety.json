@@ -1,0 +1,30 @@
+{
+ "var_t3_organic": {
+  "prompt": "{STYLE} One settlement for a turn-based civilization strategy map, painted in exactly the gouache style and colours of the reference map. Seen from HIGH above at only a slight angle: mostly rooftops, with a thin sliver of south-facing walls visible, leaning the same way as the units in the reference but much less. Its footprint is roughly SQUARE and fills the picture. It must read when shrunk to a 64-pixel map tile: bold shapes, strong near-black outlines, very high contrast. It is a busy town of about 20 buildings with a columned temple. The buildings are VARIED and no two are alike: a few big ones (large courtyard houses with inner gardens, long halls, a granary, a warehouse), many medium houses of different lengths and widths, and small sheds and huts filling the gaps. Mixed roofs: hipped and gabled terracotta in several shades from orange to deep red-brown, some flat ochre roof terraces, a few grey slate roofs. A few trees and small green gardens scattered between. The streets are ORGANIC: winding lanes and a crooked main street that grew over time, irregular blocks, a small open market square. NO city walls. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../../concept.png",
+   "../../raw-towns/town_s0_o.png"
+  ]
+ },
+ "var_t3_planned": {
+  "prompt": "{STYLE} One settlement for a turn-based civilization strategy map, painted in exactly the gouache style and colours of the reference map. Seen from HIGH above at only a slight angle: mostly rooftops, with a thin sliver of south-facing walls visible, leaning the same way as the units in the reference but much less. Its footprint is roughly SQUARE and fills the picture. It must read when shrunk to a 64-pixel map tile: bold shapes, strong near-black outlines, very high contrast. It is a busy town of about 20 buildings with a columned temple. The buildings are VARIED and no two are alike: a few big ones (large courtyard houses with inner gardens, long halls, a granary, a warehouse), many medium houses of different lengths and widths, and small sheds and huts filling the gaps. Mixed roofs: hipped and gabled terracotta in several shades from orange to deep red-brown, some flat ochre roof terraces, a few grey slate roofs. A few trees and small green gardens scattered between. The streets are PLANNED: a straight main street and cross street, blocks of different sizes, each block holding a mix of big courtyard houses and small houses. NO city walls. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../../concept.png",
+   "../../raw-towns/town_s0_o.png"
+  ]
+ },
+ "var_t4_organic": {
+  "prompt": "{STYLE} One settlement for a turn-based civilization strategy map, painted in exactly the gouache style and colours of the reference map. Seen from HIGH above at only a slight angle: mostly rooftops, with a thin sliver of south-facing walls visible, leaning the same way as the units in the reference but much less. Its footprint is roughly SQUARE and fills the picture. It must read when shrunk to a 64-pixel map tile: bold shapes, strong near-black outlines, very high contrast. It is a large city of about 35 buildings; rising clearly above them in the middle, a big palace with a gleaming GOLD dome, plus a tall columned temple and a slender watchtower. The buildings are VARIED and no two are alike: a few big ones (large courtyard houses with inner gardens, long halls, a granary, a warehouse), many medium houses of different lengths and widths, and small sheds and huts filling the gaps. Mixed roofs: hipped and gabled terracotta in several shades from orange to deep red-brown, some flat ochre roof terraces, a few grey slate roofs. A few trees and small green gardens scattered between. The streets are ORGANIC: winding lanes and a crooked main street that grew over time, irregular blocks, a small open market square. NO city walls. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../../concept.png",
+   "../../raw-towns/town_s0_o.png"
+  ]
+ },
+ "var_t4_planned": {
+  "prompt": "{STYLE} One settlement for a turn-based civilization strategy map, painted in exactly the gouache style and colours of the reference map. Seen from HIGH above at only a slight angle: mostly rooftops, with a thin sliver of south-facing walls visible, leaning the same way as the units in the reference but much less. Its footprint is roughly SQUARE and fills the picture. It must read when shrunk to a 64-pixel map tile: bold shapes, strong near-black outlines, very high contrast. It is a large city of about 35 buildings; rising clearly above them in the middle, a big palace with a gleaming GOLD dome, plus a tall columned temple and a slender watchtower. The buildings are VARIED and no two are alike: a few big ones (large courtyard houses with inner gardens, long halls, a granary, a warehouse), many medium houses of different lengths and widths, and small sheds and huts filling the gaps. Mixed roofs: hipped and gabled terracotta in several shades from orange to deep red-brown, some flat ochre roof terraces, a few grey slate roofs. A few trees and small green gardens scattered between. The streets are PLANNED: a straight main street and cross street, blocks of different sizes, each block holding a mix of big courtyard houses and small houses. NO city walls. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../../concept.png",
+   "../../raw-towns/town_s0_o.png"
+  ]
+ }
+}

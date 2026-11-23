@@ -1,0 +1,38 @@
+{
+ "mix_t1w": {
+  "prompt": "{STYLE} Repaint the reference image exactly: the same settlement from the same angle, in the same gouache style and colours, with the same buildings, roofs and lanes in the same places, but now ENCLOSED by a ring of light cream stone city walls with square corner towers and a gate, following the edge of the buildings in a roughly square shape. Keep the same overall size. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../../raw-big/mix_t1.png"
+  ]
+ },
+ "mix_t2w": {
+  "prompt": "{STYLE} Repaint the reference image exactly: the same settlement from the same angle, in the same gouache style and colours, with the same buildings, roofs and lanes in the same places, but now ENCLOSED by a ring of light cream stone city walls with square corner towers and a gate, following the edge of the buildings in a roughly square shape. Keep the same overall size. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../../raw-big/mix_t2.png"
+  ]
+ },
+ "mix_t3w": {
+  "prompt": "{STYLE} Repaint the reference image exactly: the same settlement from the same angle, in the same gouache style and colours, with the same buildings, roofs and lanes in the same places, but now ENCLOSED by a ring of light cream stone city walls with square corner towers and a gate, following the edge of the buildings in a roughly square shape. Keep the same overall size. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../../raw-big/mix_t3.png"
+  ]
+ },
+ "mix_t4w": {
+  "prompt": "{STYLE} Repaint the reference image exactly: the same settlement from the same angle, in the same gouache style and colours, with the same buildings, roofs and lanes in the same places, but now ENCLOSED by a ring of light cream stone city walls with square corner towers and a gate, following the edge of the buildings in a roughly square shape. Keep the same overall size. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../../raw-big/mix_t4.png"
+  ]
+ },
+ "mix_t5w": {
+  "prompt": "{STYLE} Repaint the reference image exactly: the same settlement from the same angle, in the same gouache style and colours, with the same buildings, roofs and lanes in the same places, but now ENCLOSED by a ring of light cream stone city walls with square corner towers and a gate, following the edge of the buildings in a roughly square shape. Keep the same overall size. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../../raw-big/mix_t5.png"
+  ]
+ },
+ "mix_t5_bigw": {
+  "prompt": "{STYLE} Repaint the reference image exactly: the same settlement from the same angle, in the same gouache style and colours, with the same buildings, roofs and lanes in the same places, but now ENCLOSED by a ring of light cream stone city walls with square corner towers and a gate, following the edge of the buildings in a roughly square shape. Keep the same overall size. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../../raw-big/mix_t5_big.png"
+  ]
+ }
+}

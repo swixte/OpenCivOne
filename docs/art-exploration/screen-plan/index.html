@@ -1,0 +1,408 @@
+<title>OpenCivOne Screen Redesign</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;800&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400&display=swap">
+<style>
+/* Layout: one reading column on washi paper; wide tables scroll in their own frame. Colours are the ukiyo-e theme's own (themes/ukiyo-e/hd/ui/colors.txt). */
+:root {
+  --paper: #F4ECD8;      /* cream: index 15 */
+  --paper-2: #EADFC4;
+  --ink: #1E1A16;        /* sumi: index 0 */
+  --ink-soft: #5A5048;
+  --indigo: #1B2740;     /* deep indigo: index 1 */
+  --indigo-pale: #4E688C;/* pale indigo: index 9 */
+  --madder: #8E3324;     /* madder: index 4 */
+  --rule: #CDBF9F;
+  --chip-a: #DCE3EC; --chip-a-fg: #1B2740;
+  --chip-b: #F1DDD3; --chip-b-fg: #7A2B1E;
+  --chip-c: #1B2740; --chip-c-fg: #F4ECD8;
+  --ok: #3F6B4A;
+  --display: "Shippori Mincho B1", "Iowan Old Style", Georgia, serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #121826; --paper-2: #1A2234; --ink: #EDE4CF; --ink-soft: #A99F8C;
+  --indigo: #B9C7DD; --indigo-pale: #8FA5C6; --madder: #E5856C; --rule: #2C3650;
+  --chip-a: #24314A; --chip-a-fg: #C9D6EA; --chip-b: #3A2420; --chip-b-fg: #F0B3A0;
+  --chip-c: #D9CBA8; --chip-c-fg: #121826; --ok: #8CC29A; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --paper: #121826; --paper-2: #1A2234; --ink: #EDE4CF; --ink-soft: #A99F8C;
+  --indigo: #B9C7DD; --indigo-pale: #8FA5C6; --madder: #E5856C; --rule: #2C3650;
+  --chip-a: #24314A; --chip-a-fg: #C9D6EA; --chip-b: #3A2420; --chip-b-fg: #F0B3A0;
+  --chip-c: #D9CBA8; --chip-c-fg: #121826; --ok: #8CC29A; color-scheme: dark }
+
+body { background: var(--paper); color: var(--ink); font: 16px/1.6 var(--body); }
+.wrap { max-width: 980px; margin: 0 auto; padding-block: 48px 80px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 56px; }
+section { display: grid; gap: 18px; min-width: 0; }
+h1, h2, h3 { font-family: var(--display); color: var(--indigo); text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; }
+h2 { font-size: 1.6rem; font-weight: 800; }
+h3 { font-size: 1.15rem; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+.eyebrow { font: 600 .78rem/1 var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--madder); }
+.lede { font-size: 1.15rem; color: var(--ink-soft); }
+code, .path { font-family: var(--mono); font-size: .86em; }
+.seal { display: inline-grid; place-items: center; width: 2.4em; height: 2.4em; border: 2px solid var(--madder); color: var(--madder);
+  font: 800 .95rem/1 var(--display); border-radius: 3px; flex: none; }
+header { display: grid; gap: 14px; border-bottom: 3px double var(--rule); padding-bottom: 28px; }
+.meta { font-size: .9rem; color: var(--ink-soft); }
+
+.status { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.status div { border-top: 3px solid var(--indigo-pale); padding-top: 10px; display: grid; gap: 4px; }
+.status b { font: 800 1.7rem/1.1 var(--display); color: var(--indigo); font-variant-numeric: tabular-nums; }
+.status span { font-size: .93rem; color: var(--ink-soft); }
+
+figure { margin: 0; display: grid; gap: 8px; min-width: 0; }
+figure img { width: 100%; border: 1px solid var(--rule); display: block; }
+figcaption { font-size: .88rem; color: var(--ink-soft); }
+.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+
+.layers { display: grid; gap: 0; }
+.layer { display: grid; grid-template-columns: auto 1fr; gap: 18px; padding: 20px 0; border-top: 1px solid var(--rule); }
+.layer:last-child { border-bottom: 1px solid var(--rule); }
+.layer > div { display: grid; gap: 8px; min-width: 0; }
+.layer ul { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+
+.chip { display: inline-block; font: 600 .74rem/1 var(--body); letter-spacing: .04em; padding: 4px 7px; border-radius: 3px; white-space: nowrap; }
+.chip.a { background: var(--chip-a); color: var(--chip-a-fg); }
+.chip.b { background: var(--chip-b); color: var(--chip-b-fg); }
+.chip.c { background: var(--chip-c); color: var(--chip-c-fg); }
+.done { color: var(--ok); font-weight: 600; }
+.todo { color: var(--madder); font-weight: 600; }
+
+.table-frame { overflow-x: auto; border-top: 2px solid var(--indigo); }
+table { border-collapse: collapse; width: 100%; min-width: 760px; font-size: .92rem; }
+th, td { text-align: left; vertical-align: top; padding: 9px 10px; border-bottom: 1px solid var(--rule); }
+thead th { font: 600 .74rem/1.2 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+tbody th[colspan] { font: 600 1rem/1.2 var(--display); color: var(--madder); padding-top: 18px; background: none; }
+td .path { color: var(--ink-soft); }
+.anchor-row td:first-child { font-weight: 600; }
+
+.sheets { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.sheet { background: var(--paper-2); padding: 18px; display: grid; gap: 8px; align-content: start; border-radius: 2px; }
+.sheet p, .sheet li { font-size: .93rem; }
+.sheet ul { margin: 0; padding-left: 1.1em; display: grid; gap: 3px; }
+
+ol.steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 0; counter-reset: s; }
+ol.steps li { counter-increment: s; display: grid; grid-template-columns: 2.4em 1fr; gap: 14px; padding: 16px 0; border-top: 1px solid var(--rule); }
+ol.steps li::before { content: counter(s); font: 800 1.4rem/1 var(--display); color: var(--madder); }
+ol.steps li > div { display: grid; gap: 4px; min-width: 0; }
+.donewhen { font-size: .9rem; color: var(--ink-soft); }
+.decisions { margin: 0; padding-left: 1.2em; display: grid; gap: 10px; }
+.decisions li { max-width: 72ch; }
+.round { display: grid; gap: 14px; padding-top: 22px; border-top: 1px solid var(--rule); min-width: 0; }
+.round-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 14px; }
+.pick { font: 600 .74rem/1 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--madder); }
+.alts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.notes { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; max-width: 72ch; }
+.notes .fix { color: var(--madder); }
+</style>
+
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">OpenCivOne · ukiyo-e theme</span>
+  <h1>Redesigning the screens beyond the map</h1>
+  <p class="lede">The pictures are nearly all painted. What still looks like 1991 is the chrome around them: the pixel font, the flat boxes and the 320×200 layouts. This plan inventories every non-map screen, sets out a three-layer approach, and lists the concept sheets to generate first.</p>
+  <p class="meta">Read from <span class="path">swixte/OpenCivOne</span>, branch <span class="path">hd-fallback-layer</span> (last commit 12 Nov 2026), <span class="path">docs/art-inventory.md</span>, <span class="path">docs/hd-art.md</span> and <span class="path">docs/art-exploration/ukiyo-v4, v5</span>.</p>
+</header>
+
+<section>
+  <span class="eyebrow">Where things stand</span>
+  <h2>The art is done; the screens are not</h2>
+  <div class="status">
+    <div><b>102 / 106</b><span>pictures have ukiyo-e files in <span class="path">themes/ukiyo-e/hd</span>. Only MAP, TORCH, SPRITES and TER257 are missing, and the painted map replaces TER257.</span></div>
+    <div><b>8 colours</b><span>of interface are already re-mapped in <span class="path">hd/ui/colors.txt</span>: sumi ink, indigo, madder, vermilion and cream, plus paper grain from <span class="path">material.png</span>.</span></div>
+    <div><b>0 screens</b><span>have a new layout or typeface. Every menu, report and dialog is still drawn in the original pixel font, at the original positions.</span></div>
+  </div>
+  <div class="pair">
+    <figure><img src="img/now-city.jpg" alt="Current city screen: indigo slate panels with pixel-font labels and a cream help box"><figcaption>City screen today: recoloured to indigo, but the layout, boxes and pixel font are unchanged.</figcaption></figure>
+    <figure><img src="img/now-reports.jpg" alt="Four advisor reports on flat coloured backgrounds with pixel text"><figcaption>Reports today: each advisor still has its own flat EGA background colour.</figcaption></figure>
+  </div>
+  <p>The engine makes this tractable. All text goes through one call, <span class="path">GBitmap.DrawString(text, font, rect, …)</span>, and boxes go through the fill and frame routines that <span class="path">material.png</span> already hooks. Each screen is a single function that draws and reads input, for example <span class="path">CityWorker.F0_1d12_0045_ProcessCityState</span>. That gives three clean places to intervene.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Concept approach</span>
+  <h2>Three layers, from cheapest to deepest</h2>
+  <p>Layers A and B change every screen at once without moving anything. Layer C is a real redesign, so it is kept to the few screens players spend the most time in. Each layer works without the next one, and each falls back to the original when a theme does not supply it, as the HD layer does today.</p>
+  <div class="layers">
+    <div class="layer"><span class="seal">A</span><div>
+      <h3>HD type</h3>
+      <p>Draw each of the game's bitmap fonts with an HD typeface at 4× instead of the upscaled pixel glyphs. This is the biggest single change to how the game reads, and <span class="path">hd-art.md</span> lists it as a known limit today.</p>
+      <ul>
+        <li>One hook in <span class="path">GBitmap.DrawString</span>, plus a theme file mapping each font ID to a face and size (<span class="path">hd/ui/fonts.json</span>).</li>
+        <li>Glyphs are set inside the original advance widths, so no layout can overflow. That favours a slightly condensed serif. Titles get a woodblock display face, and body text gets a plain readable serif.</li>
+        <li>Text colours keep their palette index, so <span class="path">colors.txt</span> and menu highlights keep working.</li>
+      </ul>
+    </div></div>
+    <div class="layer"><span class="seal">B</span><div>
+      <h3>Chrome kit</h3>
+      <p>A small set of 9-slice frames and components in the print language. They are drawn wherever the code draws a box, so every dialog, report and menu gets them at its current size.</p>
+      <ul>
+        <li>Paper panel, indigo panel, hanging-scroll dialog with rollers and cord, unrolled menu scroll, vermilion seal button, title cartouche, wave-band divider, stamped progress bar.</li>
+        <li>Frame geometry such as key lines and corners is drawn in code. Textures, ornaments and seals are generated art, which keeps the kit crisp at every size.</li>
+        <li>Reports drop their per-advisor EGA background colours and share one ledger look on paper, each with its advisor's portrait from GOVT*.</li>
+      </ul>
+    </div></div>
+    <div class="layer"><span class="seal">C</span><div>
+      <h3>Rebuilt anchor screens</h3>
+      <p>New layouts drawn natively at 1280×800 from game state, with the same commands, keys and clicks. A theme opts in with something like <span class="path">"screens": { "city": "ukiyo" }</span>, and without it the original function runs.</p>
+      <ul>
+        <li><b>City screen.</b> It is where players spend most of their time, and its 320×200 layout is the most cramped.</li>
+        <li><b>Science.</b> Choosing research, the science report and the discovery announcement, as one family.</li>
+        <li><b>Front end.</b> The title and main menu, then the new-game sequence: difficulty, competitors, tribe, leader name and world customisation.</li>
+      </ul>
+    </div></div>
+  </div>
+  <div class="pair">
+    <figure><img src="img/concept-city.jpg" alt="Ukiyo-e concept of the city screen with citizens, resources, city map, buildings, production and granary panels"><figcaption>The v4 city-screen concept is the starting point for layer C. It leaves out the units panel, specialists, pollution and the BUY / CHANGE / INFO / MAP / HAPPY / VIEW / EXIT buttons, which the next round must add. Its Roman figures also need the culture-neutral subjects rule from v5.</figcaption></figure>
+    <figure><img src="img/concept-ui.jpg" alt="Ukiyo-e concept of main screen, a scroll menu and a hanging-scroll dialog"><figcaption>The v4 interface concept already defines most of the layer-B kit: the scroll menu, the hanging-scroll dialog and the seal OK button.</figcaption></figure>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Inventory</span>
+  <h2>Every screen outside the map</h2>
+  <p>Grouped as the player meets them. <span class="done">Painted</span> means the theme has files for the screen's pictures, which I checked by presence, not by quality. The last column is the layer that changes the screen. Every screen gets A and B, and the anchor screens also get C.</p>
+  <div class="table-frame">
+  <table>
+    <thead><tr><th>Screen</th><th>Code</th><th>Pictures</th><th>Chrome today</th><th>Layer</th></tr></thead>
+    <tbody>
+      <tr><th colspan="5">Front end</th></tr>
+      <tr><td>Intro and story</td><td class="path">MainIntro.cs</td><td><span class="done">Painted</span> BIRTH0–8, LOGO</td><td>Story text in pixel font</td><td><span class="chip a">A</span></td></tr>
+      <tr class="anchor-row"><td>Title and main menu</td><td class="path">MainIntro.cs, StartGame.cs</td><td><span class="done">Painted</span> LOGO</td><td>Grey menu box with a cyan highlight</td><td><span class="chip c">C</span></td></tr>
+      <tr class="anchor-row"><td>New game: difficulty, competitors, tribe, leader name, customise world</td><td class="path">StartGame.cs, StartGameMenu.cs, UI/EditBox</td><td><span class="done">Painted</span> DIFFS (five crowns), CUSTOM</td><td>Text lists written onto backdrops</td><td><span class="chip c">C</span></td></tr>
+      <tr><td>Load and save</td><td class="path">LoadAndSave.cs, UI/LoadGameDialog.axaml</td><td>None</td><td>Native Avalonia window, outside the game renderer</td><td><span class="chip b">B</span> via an Avalonia style</td></tr>
+      <tr><th colspan="5">City</th></tr>
+      <tr class="anchor-row"><td>City screen</td><td class="path">CityWorker.cs (ProcessCityState, DrawResources, DrawCityWorldMap)</td><td><span class="done">Painted</span> resource icons, citizens, SP299 pattern</td><td>Indigo slate boxes, pixel labels, fixed 320×200 grid</td><td><span class="chip c">C</span></td></tr>
+      <tr><td>Change production, buy, rename</td><td class="path">CityWorker.cs, MenuBoxDialog.cs</td><td>None</td><td>Menu boxes</td><td><span class="chip c">C</span> with the city screen</td></tr>
+      <tr><td>City view</td><td class="path">CityView.cs</td><td><span class="done">Painted</span> CITYPIX1–3, WONDERS, HILL, POP</td><td>Captions in pixel font</td><td><span class="chip a">A</span></td></tr>
+      <tr><td>Celebration, disorder, attack</td><td class="path">CityView.cs</td><td><span class="done">Painted</span> LOVE, RIOT, INVADERS</td><td>Caption box</td><td><span class="chip a">A</span> <span class="chip b">B</span></td></tr>
+      <tr><td>Founding a city</td><td class="path">Animations.cs</td><td><span class="done">Painted</span> SETTLERS, HILL</td><td>Name entry box</td><td><span class="chip a">A</span> <span class="chip b">B</span></td></tr>
+      <tr><th colspan="5">Knowledge</th></tr>
+      <tr class="anchor-row"><td>Choose research</td><td class="path">GameEngine.cs ("Science Advisor:")</td><td>Advisor heads, GOVT*</td><td>Menu box with an advisor head</td><td><span class="chip c">C</span></td></tr>
+      <tr class="anchor-row"><td>Science report</td><td class="path">Overlay_14.cs (ScienceReport)</td><td>None</td><td>Pixel list on a flat colour</td><td><span class="chip c">C</span></td></tr>
+      <tr class="anchor-row"><td>Advance discovered</td><td class="path">GameEngine.cs</td><td><span class="done">Painted</span> DISCOVR1–2, ICONPG1–8</td><td>Pixel caption</td><td><span class="chip c">C</span></td></tr>
+      <tr><td>Civilopedia</td><td class="path">Encyclopedia.cs</td><td><span class="done">Painted</span> 67 advances, 28 units, 12 terrains, buildings</td><td>Three-column pixel list on grain</td><td><span class="chip a">A</span> <span class="chip b">B</span>, then C</td></tr>
+      <tr><th colspan="5">Rulers, advisors, diplomacy</th></tr>
+      <tr><td>Throne room and audience with a leader</td><td class="path">MeetWithKing.cs</td><td><span class="done">Painted</span> KING00–13, BACK*</td><td>Speech in pixel font</td><td><span class="chip a">A</span> <span class="chip b">B</span></td></tr>
+      <tr><td>Advisor council, government change</td><td class="path">MeetWithKing.cs, StartGameMenu.cs</td><td><span class="done">Painted</span> GOVT0A–3A, GOVT0M–2M</td><td>Speech boxes</td><td><span class="chip a">A</span> <span class="chip b">B</span></td></tr>
+      <tr><td>Diplomacy and diplomat actions</td><td class="path">Diplomacy.cs, DiplomatActions.cs</td><td>Leader busts</td><td>Text dialogs</td><td><span class="chip a">A</span> <span class="chip b">B</span></td></tr>
+      <tr><td>Palace builder</td><td class="path">Palace.cs</td><td><span class="done">Painted</span> CASTLE0–4, CBACK, CBRUSH</td><td>Choice prompts</td><td><span class="chip a">A</span></td></tr>
+      <tr><th colspan="5">Reports</th></tr>
+      <tr><td>City status, military, intelligence, attitude, trade</td><td class="path">Overlay_14.cs</td><td>Unit sprites</td><td>Each on its own flat EGA colour</td><td><span class="chip a">A</span> <span class="chip b">B</span> as one shared ledger</td></tr>
+      <tr><td>World map, continents, power graph, wonders, top five, demographics</td><td class="path">Reports.cs</td><td>None</td><td>Pixel tables and lines</td><td><span class="chip a">A</span> <span class="chip b">B</span></td></tr>
+      <tr><td>Civilization score</td><td class="path">Overlay_20.cs</td><td>Citizens</td><td>Pixel text on teal</td><td><span class="chip a">A</span> <span class="chip b">B</span></td></tr>
+      <tr><td>News headlines</td><td class="path">News.cs</td><td><span class="done">Painted</span> audience strip</td><td>Banner box</td><td><span class="chip b">B</span> as a kawaraban broadsheet</td></tr>
+      <tr><th colspan="5">Main-screen chrome</th></tr>
+      <tr><td>Menu bar and drop-downs</td><td class="path">Menus.cs</td><td>None</td><td>Pixel words, cream drop-down</td><td><span class="chip a">A</span> <span class="chip b">B</span> as a menu scroll</td></tr>
+      <tr><td>Sidebar: minimap, year, treasury, active unit</td><td class="path">GameEngine.cs, PlayerTurn.cs</td><td><span class="done">Painted</span> stone pattern, mini palace</td><td>Pixel text, flat bars</td><td><span class="chip a">A</span> <span class="chip b">B</span></td></tr>
+      <tr><td>Pop-up messages, help, advice</td><td class="path">TextBoxDialogues.cs, MenuBoxDialog.cs, Help.cs</td><td>Report portraits from SP299</td><td>Cream box, pixel text</td><td><span class="chip b">B</span> as a hanging scroll</td></tr>
+      <tr><th colspan="5">End game</th></tr>
+      <tr><td>Spaceship and arrival</td><td class="path">Overlay_18.cs, MainIntro.cs</td><td><span class="done">Painted</span> SPACEST, DOCKER, PLANET1–2</td><td>Data dialogs</td><td><span class="chip a">A</span> <span class="chip b">B</span></td></tr>
+      <tr><td>Victory, defeat, replay</td><td class="path">MainIntro.cs, Replay.cs</td><td><span class="done">Painted</span> ARCH, SLAM1–2</td><td>Pixel captions</td><td><span class="chip a">A</span></td></tr>
+      <tr><td>Hall of fame</td><td class="path">HallOfFame.cs</td><td>None</td><td>Text only</td><td><span class="chip a">A</span> <span class="chip b">B</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">What to generate first</span>
+  <h2>Four concept sheets, then the production art</h2>
+  <p>The v4 sheets were made with <span class="path">docs/art-exploration/scripts/concept_v4.py</span>, which uses the OpenAI Images API with earlier screens as references. Round v6 uses the same script and the v5 references (<span class="path">refs/v5-screen.jpg</span>, <span class="path">refs/v5-palette.jpg</span>), plus the v4 UI sheet so the kit stays consistent. Each prompt lists the screen's real content from the code, so the sheet can be built as drawn. I would make three takes of each sheet and pick one.</p>
+  <div class="sheets">
+    <div class="sheet"><h3>1 · City screen v6</h3><ul>
+      <li>All panels the code draws: citizens with specialists, food, shield and trade rows, the 21-square city map, buildings with sell, units present and supported, food box, production box, pollution, plus the seven buttons</li>
+      <li>One layout at 1280×800, and one crowded case with a size-16 city and 12 units</li>
+      <li>Culture-neutral subjects in the print technique</li></ul></div>
+    <div class="sheet"><h3>2 · Science</h3><ul>
+      <li>Choose research as an unrolled scroll with the science advisor and 3 to 4 options</li>
+      <li>Science report as a lineage of advances already known, with the current research and its progress</li>
+      <li>Discovery as an ICONPG picture in a print frame with a seal</li></ul></div>
+    <div class="sheet"><h3>3 · Front end</h3><ul>
+      <li>Title with LOGO and a menu on the paper, not in a grey box</li>
+      <li>Difficulty with the five crowns, tribe choice with banners, world options with the four CUSTOM choices</li>
+      <li>Leader name entry</li></ul></div>
+    <div class="sheet"><h3>4 · Kit sheet</h3><ul>
+      <li>Every layer-B component at 1×, plus one dialog, one report and one menu built from them</li>
+      <li>Type specimen of the 2 to 3 candidate faces at game sizes, set in the original advance widths</li>
+      <li>Greyscale copy for contrast, as v5 did</li></ul></div>
+  </div>
+  <p>After a direction is picked, the production art follows the existing pipeline. A new <span class="path">ui</span> kind in <span class="path">tools/hdart/theme.py</span> gets its own <span class="path">rules</span> and <span class="path">references</span> in <span class="path">theme.json</span>. Ornaments, seals and textures are generated on magenta and cut out, as objects are today. Frames are assembled in code from those pieces. Fonts come from open-licensed families, not generation.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Round v9 · chosen direction · 13 Nov 2026</span>
+  <h2>The byōbu city screen</h2>
+  <p>One screen that keeps the Civ1 city screen's arrangement and makes the city itself the centrepiece, after the Heroes 3 town screen. Citizens run along the top, resources and the city map sit on the left, buildings on the right, and units, food and production along the bottom. The VIEW picture, which Civ1 hid behind a tab, now fills the centre and is always shown. Gold clouds frame the city and hide its unbuilt edges, so a small town and a size-20 city both fill the same frame.</p>
+
+  <div class="round">
+    <div class="round-head"><h3>Wireframe</h3><span class="pick">1280 × 800, 16 px grid</span></div>
+    <figure><img src="v9/wireframe.jpg" alt="Blueprint wireframe of the city screen: title bar, citizens strip, city resources and city map on the left, city view in the centre, improvements on the right, units, food storage, production, rename and exit along the bottom, each labelled with size, behaviour and the Civ1 element it replaces"><figcaption>Each rectangle gives its size at the game's 1280×800, what it shows, what clicking it does, and (in orange) the Civ1 element it replaces. The INFO / HAPPY / MAP / VIEW tabs go away, because each now has a permanent place on the screen.</figcaption></figure>
+  </div>
+
+  <div class="round">
+    <div class="round-head"><h3>Painted screen</h3><span class="pick">Suggested: take 2</span></div>
+    <figure><img src="v9/city-byobu-2.jpg" alt="Byobu city screen take 2: black lacquer frame, gold leaf panels, citizens strip, resources, city map, isometric Babylon in gold clouds with the Granary outlined, improvements list with Granary also outlined, units, food basket, production with CHANGE BUY AUTO, RENAME and EXIT"><figcaption>Take 2 outlines the Granary both in the city and in the improvements list, which ties the list to the painting. The production panel has room for the turns count.</figcaption></figure>
+    <div class="alts">
+      <figure><img src="v9/city-byobu-1.jpg" alt="Byobu city screen take 1"><figcaption>Take 1 is closer to the wireframe, with RENAME and EXIT in their own corner, but leaves that corner as an empty gold panel.</figcaption></figure>
+    </div>
+    <ul class="notes">
+      <li>All panels share one lacquer frame, one icon size and one lettering style, which makes this the first screen that reads as one design.</li>
+      <li class="fix">The production shield bar is too small to count at a glance. In the build, draw it in code rather than paint it.</li>
+      <li class="fix">The Supported row needs slots, and some units in it should be shown greyed out. The wireframe already has both.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Round v8 · style board · 13 Nov 2026</span>
+  <h2>Four ukiyo-e directions for the city view</h2>
+  <p>The v6 sheets read as AI-made: even hatching on every surface, no empty paper, too many colours. This board keeps one subject, Babylon at size 8, and one layout, a 2:1 isometric plan drawn as a sketch and given as the only reference. Each image changes only the print tradition. All four hold true parallel projection, so the buildings can be cut into the game's fixed plots. Pick a direction before any more screens are made.</p>
+
+  <div class="round">
+    <div class="round-head"><h3>Byōbu: gold-cloud folding screen</h3></div>
+    <figure><img src="v8/byobu.jpg" alt="Babylon in isometric view on a gold-leaf folding screen, gold clouds framing the city, malachite and azurite pigments"><figcaption>The Momoyama tradition of painting whole cities in parallel projection. The gold clouds frame the view, and could hide the edges of a growing city. The richest of the four, and the most ceremonial.</figcaption></figure>
+  </div>
+  <div class="round">
+    <div class="round-head"><h3>Hiroshige landscape print</h3></div>
+    <figure><img src="v8/hiroshige.jpg" alt="Babylon as a Hiroshige-style print: few inks, blue gradients, large bare paper areas"><figcaption>Few inks, blue gradients in the sky and sea, large areas of bare paper. The calmest of the four, and the one that leaves the most room for panels around it.</figcaption></figure>
+  </div>
+  <div class="round">
+    <div class="round-head"><h3>Aizuri-e: blue print</h3></div>
+    <figure><img src="v8/aizuri.jpg" alt="Babylon printed almost entirely in Prussian blue with a vermilion accent on the palace, Hokusai waves at the sea"><figcaption>Almost all Prussian blue, with vermilion only on the palace and gate. The most graphic, and it makes highlighted buildings very easy to show. It may feel cold over a long game.</figcaption></figure>
+  </div>
+  <div class="round">
+    <div class="round-head"><h3>Shin-hanga: painterly print</h3></div>
+    <figure><img src="v8/shinhanga.jpg" alt="Babylon in warm late-afternoon light, layered transparent colour in the manner of Yoshida Hiroshi"><figcaption>Layered see-through colour and warm afternoon light, in the manner of Yoshida Hiroshi. The most painterly and the most beautiful as a picture. Its baked-in light and shadow make separate building tiles harder to match.</figcaption></figure>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Round v6 · generated 12 Nov 2026</span>
+  <h2>The first concept sheets</h2>
+  <p>Four sheets, three takes each, made with <span class="path">docs/art-exploration/ukiyo-v6/run.sh</span>. Every take has all the elements its prompt lists from the code. The picks below are my suggestions, and the notes say what the next round should fix. The busy-city stress test has not been run yet, because it uses the chosen city take as its reference.</p>
+
+  <div class="round">
+    <div class="round-head"><h3>City screen</h3><span class="pick">Suggested: take 2</span></div>
+    <figure><img src="v6/city-2.jpg" alt="City screen take 2: Babylon with labelled citizen groups, resources, city map, improvements, info tabs, food storage basket and production box"><figcaption>Take 2 labels the citizen groups, shows the year, titles the production box with “14 / 20 Shields”, and gets the 12-icon food row right.</figcaption></figure>
+    <div class="alts">
+      <figure><img src="v6/city-1.jpg" alt="City screen take 1"><figcaption>Take 1: the clearest map diamond, but 11 food icons, not 12.</figcaption></figure>
+      <figure><img src="v6/city-3.jpg" alt="City screen take 3"><figcaption>Take 3: a tighter resource panel, and an empty strip along the bottom.</figcaption></figure>
+    </div>
+    <ul class="notes">
+      <li>The layout works: every panel from <span class="path">CityWorker.cs</span> fits on one 3:2 screen with room left over.</li>
+      <li class="fix">Linework has drifted toward a soft storybook illustration. The next round needs stronger key lines and flatter colour to match the map.</li>
+      <li class="fix">The Ishtar-gate band in take 2 is Babylonian. Panel ornaments either change with each civilization or stay neutral, and that needs deciding.</li>
+    </ul>
+  </div>
+
+  <div class="round">
+    <div class="round-head"><h3>Science</h3><span class="pick">Suggested: take 1</span></div>
+    <figure><img src="v6/science-1.jpg" alt="Science sheet take 1: choose-research scroll, science report with oil-lamp progress bar and known advances, Astronomy discovery print"><figcaption>Take 1 has the flattest, most print-like treatment, and the dialog scroll hangs from a cord like the kit's.</figcaption></figure>
+    <div class="alts">
+      <figure><img src="v6/science-2.jpg" alt="Science sheet take 2"><figcaption>Take 2: framed lamp bar and painted advance medallions.</figcaption></figure>
+      <figure><img src="v6/science-3.jpg" alt="Science sheet take 3"><figcaption>Take 3: the best discovery scene, with the Milky Way and three figures.</figcaption></figure>
+    </div>
+    <ul class="notes">
+      <li>All three keep the game's real wording and a possible research state.</li>
+      <li class="fix">The panels came out portrait because three share one sheet. The game screen is 16:10 landscape, so each screen needs its own landscape sheet before it is built.</li>
+    </ul>
+  </div>
+
+  <div class="round">
+    <div class="round-head"><h3>Front end</h3><span class="pick">Suggested: take 2</span></div>
+    <figure><img src="v6/frontend-2.jpg" alt="Front end take 2: title with menu card, difficulty with crowns, tribe banners with leader name field, customize world"><figcaption>Take 2 has the cleanest title band, with the menu card below it and no overlap.</figcaption></figure>
+    <div class="alts">
+      <figure><img src="v6/frontend-1.jpg" alt="Front end take 1"><figcaption>Take 1: big framing waves, but the menu covers the title band.</figcaption></figure>
+      <figure><img src="v6/frontend-3.jpg" alt="Front end take 3"><figcaption>Take 3: the curved world in customize is a nice touch.</figcaption></figure>
+    </div>
+    <ul class="notes">
+      <li class="fix">The Americans banner is a real national flag, and the Romans banner reads SPQR. The theme already rules out real flags (see <span class="path">BACK1M</span> in <span class="path">theme.json</span>), so the prompt needs invented emblems.</li>
+      <li class="fix">The highlight seal uses made-up kanji. Use a plain geometric seal mark instead.</li>
+    </ul>
+  </div>
+
+  <div class="round">
+    <div class="round-head"><h3>Interface kit</h3><span class="pick">Suggested: take 1</span></div>
+    <figure><img src="v6/kit-1.jpg" alt="Interface kit take 1: frames, hanging scroll and choice dialogs, menu bar with drop-down, buttons in three states, tabs, badges, progress bars, icons, ledger table"><figcaption>Take 1 has a hanging-scroll dialog with a small print scene, clear three-state buttons, and a city badge drawn as a town.</figcaption></figure>
+    <div class="alts">
+      <figure><img src="v6/kit-2.jpg" alt="Interface kit take 2"><figcaption>Take 2: the button states are muddled, with six CHANGE buttons.</figcaption></figure>
+      <figure><img src="v6/kit-3.jpg" alt="Interface kit take 3"><figcaption>Take 3: the menu bar is squeezed until WORLD and CIVILOPEDIA collide.</figcaption></figure>
+    </div>
+    <ul class="notes">
+      <li>This kit carries straight into layer B: frames, scrolls, seal buttons, tabs and the ledger all match the city and science sheets.</li>
+      <li class="fix">The happy, content and unhappy faces are flat emoji in every take. They need print-style faces, or the small citizen figures from the city screen.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Round v6b · generated 12 Nov 2026</span>
+  <h2>Fixes, the busy city, and science in landscape</h2>
+  <p>Seven sheets with two takes each, built on the v6 picks. The front-end banners and the kit's faces are fixed, and the science screens are now full landscape screens. The busy city shows the layout holds at size 16. The linework barely moved, though, because the v6 reference outweighs the style text. Details are in <span class="path">docs/art-exploration/ukiyo-v6b/README.md</span>.</p>
+
+  <div class="round">
+    <div class="round-head"><h3>Busy city: London, size 16, civil disorder</h3><span class="pick">Suggested: take 1</span></div>
+    <figure><img src="v6b/city-busy-1.jpg" alt="Busy city screen: London size 16 in civil disorder, 16 citizens, crossed-out waste and corruption, pollution squares, HAPPY tab with four rows by cause, ten buildings with a SELL seal, Cathedral in production"><figcaption>All 16 citizens with labelled specialists, waste and corruption crossed out, pollution squares, the HAPPY rows by cause, and 10 buildings with SELL. The screen still reads at a glance.</figcaption></figure>
+    <div class="alts">
+      <figure><img src="v6b/city-busy-2.jpg" alt="Busy city take 2"><figcaption>Take 2: a denser map, but specialists are lumped together and luxuries drawn as wool and mail.</figcaption></figure>
+      <figure><img src="v6b/city-2.jpg" alt="City screen v6b take 2"><figcaption>Babylon redrawn (take 2): the brick band is gone, but the linework is close to v6.</figcaption></figure>
+    </div>
+    <ul class="notes">
+      <li class="fix">The St George's cross shields are a real emblem, and London's Temple is still a ziggurat. The emblem rule has to cover scenes, and building icons have to follow the city's civilization.</li>
+    </ul>
+  </div>
+
+  <div class="round">
+    <div class="round-head"><h3>Science, as three screens</h3><span class="pick">Suggested: choose 1 · report 1 · discover 2</span></div>
+    <figure><img src="v6b/science-choose-1.jpg" alt="Choose research: hanging scroll dialog with Greek advisor and four choices over the main game screen"><figcaption>Choose research sits over a real-looking main screen, matching the v4 sidebar. The highlight seal is a square spiral.</figcaption></figure>
+    <div class="alts">
+      <figure><img src="v6b/science-report-1.jpg" alt="Science report: title, advisor portrait, oil-lamp progress bar, twelve known advances in four columns"><figcaption>Science report: 9 of 16 lamps lit, 12 advances in four columns, with room for more.</figcaption></figure>
+      <figure><img src="v6b/science-discover-2.jpg" alt="Advance discovered: Greek astronomers print on the left, ASTRONOMY and what it allows on the right"><figcaption>Advance discovered: picture and text split about 3:2, with a geometric seal.</figcaption></figure>
+    </div>
+  </div>
+
+  <div class="round">
+    <div class="round-head"><h3>Front end and kit</h3><span class="pick">Suggested: front end 1 · kit 2</span></div>
+    <figure><img src="v6b/frontend-1.jpg" alt="Front end: title, difficulty, tribe banners with invented emblems, customize world"><figcaption>Every banner now has an invented emblem: laurel, winged bull, oak leaf, scarab, star over a rising sun, owl, elephant.</figcaption></figure>
+    <div class="alts">
+      <figure><img src="v6b/kit-2.jpg" alt="Interface kit v6b take 2 with woodblock citizen heads"><figcaption>Kit take 2: woodblock citizen heads replace the emoji.</figcaption></figure>
+      <figure><img src="v6b/kit-1.jpg" alt="Interface kit v6b take 1"><figcaption>Kit take 1: the EXIT and OK seals lost their labels.</figcaption></figure>
+    </div>
+    <ul class="notes">
+      <li class="fix">The "no writing on seals" rule also blanked the OK button. Button labels need an exception.</li>
+      <li class="fix">The three heads differ only slightly in mood. They need to read at icon size, so the expressions must be stronger.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Sequence</span>
+  <h2>Order of work</h2>
+  <ol class="steps">
+    <li><div><h3>Concept round v6</h3><p>The four sheets above, three takes each, reviewed against the inventory so nothing the code draws is missing.</p><p class="donewhen">Done when a direction for each sheet is chosen and written into <span class="path">docs/art-exploration/ukiyo-v6/README.md</span>.</p></div></li>
+    <li><div><h3>Layer A: HD type</h3><p>Font hook in <span class="path">GBitmap.DrawString</span>, <span class="path">fonts.json</span> in the theme, and a pass over every screen in the table using the stand-in data set.</p><p class="donewhen">Done when no screen shows the pixel font and no text overflows its original box.</p></div></li>
+    <li><div><h3>Layer B: chrome kit</h3><p>9-slice frames on the box routines, one ledger look for the reports, and an Avalonia style for the load and message windows.</p><p class="donewhen">Done when every row marked B renders with the kit, and turning the theme off restores the original exactly.</p></div></li>
+    <li><div><h3>Layer C: city screen</h3><p>Native layout behind the theme flag, driven by the same state and commands as <span class="path">ProcessCityState</span>.</p><p class="donewhen">Done when every action on the original city screen works from the new one with the same keys.</p></div></li>
+    <li><div><h3>Layer C: science, then front end</h3><p>Same pattern, reusing the kit and the screen framework from step 4.</p></div></li>
+  </ol>
+</section>
+
+<section>
+  <span class="eyebrow">Open decisions</span>
+  <h2>Needs a call before step 2</h2>
+  <ul class="decisions">
+    <li><b>How far layouts may move.</b> The README accepts deliberate departures from the original. Layer C is the first that changes what is on a screen, not only how it looks. Does it stay a theme-only option, or become the default?</li>
+    <li><b>Upstream or fork only.</b> Layer C adds sizeable new screen code beside a careful port. If the goal is to send work upstream to Codeberg, layers A and B are much easier to land.</li>
+    <li><b>Typefaces.</b> They must be open-licensed and fit the pixel font's widths. Candidates go on kit sheet 4, and the choice affects every screen.</li>
+    <li><b>Generation budget.</b> The pipeline calls the OpenAI Images API with your key. Round v6 is about 12 images. The kit and screen art afterwards is a few dozen more.</li>
+  </ul>
+</section>
+
+</div>

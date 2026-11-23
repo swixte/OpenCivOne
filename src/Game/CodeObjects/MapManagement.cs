@@ -744,10 +744,11 @@ namespace OpenCivOne
 								this.parent.Graphics.DrawPaintedCell(this.parent.Var_aa_Screen0_Rectangle, scrX, scrY, paintedMap, this.AdjustXPosition(x), y);
 							}
 
-							// Draw city 'streets'
+							// Draw city 'streets', or a theme's town for the city's size
 
 							// Instruction address 0x2aea:0x0cba, size: 5
-							this.parent.Graphics.F0_VGA_0c3e_DrawBitmapToScreen(this.parent.Var_aa_Screen0_Rectangle, scrX + 1, scrY + 1, this.parent.Array_d4ce[28]);
+							int townSprite = TownSprite(city, out bool townIsWalled);
+							this.parent.Graphics.F0_VGA_0c3e_DrawBitmapToScreen(this.parent.Var_aa_Screen0_Rectangle, scrX + 1, scrY + 1, townSprite);
 
 							// Color city 'streets' according to player nation
 
@@ -755,6 +756,7 @@ namespace OpenCivOne
 							this.parent.Graphics.F0_VGA_009a_ReplaceColor(this.parent.Var_aa_Screen0_Rectangle, scrX + 2, scrY + 2, 12, 12, 5,
 								this.parent.Array_1956[city.PlayerID]);
 
+							bool sizeOnPlaque = false;
 							int citySize = (city.PlayerID == this.parent.GameData.HumanPlayerID || this.parent.GlobalPreferences.Debug.DebugMode) ?
 									city.ActualSize : city.VisibleSize;
 
@@ -777,8 +779,28 @@ namespace OpenCivOne
 								}
 								else if (paintedMap != null)
 								{
-									// on the painted map the size stands in the top left corner, so the town shows
-									this.parent.DrawTools.DrawStringToScreen0($"{citySize}", ((citySize < 10) ? 5 : 3) + scrX, scrY + 2, 0);
+									// on the painted map the size stands on a small plaque in the top left corner, so the town shows:
+									// the player's deep colour, white on it, or black where that colour is light; drawn at HD
+									// resolution when there is one, else in the small font of the city screen's numbers
+									string sizeText = $"{citySize}";
+									byte plaqueColor = this.parent.Array_1956[city.PlayerID];
+									byte plaqueInk = (byte)(plaqueColor == 7 || plaqueColor == 10 || plaqueColor == 11 || plaqueColor == 14 || plaqueColor == 15 ? 0 : 15);
+
+									// a defended city's plaque gets a gold rim, in place of the black square round the cell
+									bool defended = F0_2aea_1458_GetCellActiveUnitID(x, y) != -1 || city.FirstFortifiedCityUnits[0] != -1;
+									sizeOnPlaque = this.parent.Graphics.DrawHDPlaque(this.parent.Var_aa_Screen0_Rectangle, scrX + 1, scrY + 1, sizeText, plaqueColor, plaqueInk, defended);
+
+									if (!sizeOnPlaque)
+									{
+										int mapFontID = this.parent.Var_aa_Screen0_Rectangle.FontID;
+										this.parent.Var_aa_Screen0_Rectangle.FontID = 2;
+										GSize sizeTextSize = this.parent.Graphics.GetDrawStringSize(2, sizeText);
+										this.parent.DrawTools.FillRectangle(this.parent.Var_aa_Screen0_Rectangle, scrX + 1, scrY + 1, sizeTextSize.Width + 1,
+											sizeTextSize.Height, plaqueColor);
+										this.parent.DrawTools.DrawRectangle(scrX, scrY, sizeTextSize.Width + 2, sizeTextSize.Height + 1, 0);
+										this.parent.DrawTools.DrawStringToScreen0(sizeText, scrX + 1, scrY + 1, plaqueInk);
+										this.parent.Var_aa_Screen0_Rectangle.FontID = mapFontID;
+									}
 								}
 								else
 								{
@@ -787,7 +809,7 @@ namespace OpenCivOne
 							}
 
 							// Instruction address 0x2aea:0x0d9c, size: 3
-							if (F0_2aea_1458_GetCellActiveUnitID(x, y) != -1 || city.FirstFortifiedCityUnits[0] != -1)
+							if (!sizeOnPlaque && (F0_2aea_1458_GetCellActiveUnitID(x, y) != -1 || city.FirstFortifiedCityUnits[0] != -1))
 							{
 								// Draw city defenders
 
@@ -795,7 +817,7 @@ namespace OpenCivOne
 								this.parent.DrawTools.DrawRectangle(scrX, scrY, 15, 15, 0);
 							}
 
-							if (city.HasImprovement(ImprovementEnum.CityWalls))
+							if (city.HasImprovement(ImprovementEnum.CityWalls) && !townIsWalled)
 							{
 								// Draw city walls
 
@@ -873,10 +895,42 @@ namespace OpenCivOne
 
 					if (city.PlayerID == this.parent.GameData.HumanPlayerID || city.VisibleSize > 0 || this.parent.GlobalPreferences.Debug.DebugMode)
 					{
-						this.parent.Graphics.DrawBitmapHDOverflow(this.parent.Var_aa_Screen0_Rectangle, scrX + 1, scrY + 1, this.parent.Array_d4ce[28]);
+						this.parent.Graphics.DrawBitmapHDOverflow(this.parent.Var_aa_Screen0_Rectangle, scrX + 1, scrY + 1, TownSprite(city, out _));
 					}
 				}
 			}
+		}
+
+		/// <summary>
+		/// The step of a theme's town ladder for a city of a size: a hamlet, three steps of towns, a city, and the capital
+		/// for a large city with the palace
+		/// </summary>
+		public static int TownStep(int size, bool palace)
+		{
+			if (size >= 8 && palace)
+				return 5;
+
+			return size >= 12 ? 4 : size >= 8 ? 3 : size >= 5 ? 2 : size >= 3 ? 1 : 0;
+		}
+
+		/// <summary>
+		/// The sprite a city is drawn with: a theme's town for the size the player sees (a hamlet, three steps of towns, a
+		/// city, and a capital for a large city with the palace), walled when the city has walls, or else the original city.
+		/// </summary>
+		/// <param name="walled">True when the town's art already shows its walls</param>
+		private int TownSprite(City city, out bool walled)
+		{
+			int size = (city.PlayerID == this.parent.GameData.HumanPlayerID || this.parent.GlobalPreferences.Debug.DebugMode) ?
+				city.ActualSize : city.VisibleSize;
+			int step = TownStep(size, city.HasImprovement(ImprovementEnum.Palace));
+			bool hasWalls = city.HasImprovement(ImprovementEnum.CityWalls);
+			int sprite = this.parent.TownSprites[hasWalls ? 6 + step : step];
+			walled = hasWalls && sprite != -1;
+
+			if (sprite == -1)
+				sprite = this.parent.TownSprites[step];
+
+			return sprite != -1 ? sprite : this.parent.Array_d4ce[28];
 		}
 
 		/// <summary>

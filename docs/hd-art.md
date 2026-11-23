@@ -79,6 +79,11 @@ An optional `style.txt` in the painted art folder (lines of `name value`) change
 - `paper`: how much colours lean towards cream paper.
 - `clouds`, `grade`: the strength of the cloud shadows and the warm colour grade (1 each); `shallows`: the width of the
   shallow water; `coastline 1`: the printed coast in the painterly mode too.
+- `coastwarp`: how far coasts and terrain borders wander from the grid (1 as before, up to 2); `groundblend`: how wide
+  land terrains blend into each other (1 as before, up to 2.2), so the cell corners of a border don't show.
+- `layout 1` without `print`: the scenery is laid out like a print's, but painted. Open grassland then gets now and
+  then a copse, a tight clump of small trees, rather than lone ones, and mountains a main peak off the middle of its
+  own height, often with a lower one beside it, so a range has a ragged skyline.
 
 A terrain can also have a ground texture of its own: `forest`, `hills`, `mountains` and `jungle` in `ground/` replace
 the mix those terrains use otherwise. `themes/ukiyo-e/hd/painted` uses all of this.
@@ -207,7 +212,7 @@ a renamed topic up by its original name.
 Every PIC file the game loads can have HD versions in the `hd` folder:
 
 - `hd/NAME.png`: the whole image at twice the size (a 320x200 PIC needs a 640x400 PNG).
-- `hd/NAME/X_Y.png`: one region, with its top left corner at X, Y in the original image and twice the region's size. Regions are applied over the whole image, and anything not covered keeps the original art. A region also rewrites the original pixels under it to match the HD art (transparent, the key color index, or the closest palette color), so transparency and color swaps follow the new art.
+- `hd/NAME/X_Y.png`: one region, with its top left corner at X, Y in the original image and twice the region's size. Regions are applied over the whole image, and anything not covered keeps the original art. A region also rewrites the original pixels under it to match the HD art (transparent, the key color index wherever the block holds a key pixel, or the closest palette color), so transparency and color swaps follow the new art.
 
 Sprites cut from a sheet carry their part of the HD image with them, so when the game draws a terrain tile or a unit from that sheet, the HD pixels are drawn. Anything drawn without HD art, such as text, menus, boxes and lines, falls back to the original pixels, upscaled with nearest-neighbour.
 
@@ -258,6 +263,7 @@ Coordinates are in the original 320x200 sheets.
 | SP257 | x = 80 + 16 * i, y = 128 | Fog borders toward unexplored N, E, S, W. |
 | SP257 | x = 16 * i + 1, y = 97, 15x15 | Explosion frames. |
 | SP257 | x = 16 * (j % 20) + 1, y = 161 + 16 * (j / 20), 15x15 | Units in UnitTypeEnum order. |
+| SP257 | x = 16 * (8 + i) + 1, y = 177, 15x15 | Optional: a theme's towns as they grow, in the 12 unused slots after the units: steps 0-5 (hamlet, three towns, city, capital), then the same walled. The game picks one by the city's size (MapManagement.TownStep) when the slot has HD art, and otherwise draws the city sprite. On the painted map the size then stands on a small plaque drawn at HD resolution. |
 
 ## Starting point for artists
 
