@@ -1431,6 +1431,23 @@ GBitmap other4()
 	if (output != null)
 	{
 		painted = featured;
+		// PAINTED_SCENE (a file of rows of terrain letters, as the scene above) paints that map instead, at its own size
+		int sceneW = 22, sceneH = 12;
+		if (Environment.GetEnvironmentVariable("PAINTED_SCENE") is string sceneFile)
+		{
+			string[] rows = File.ReadAllLines(sceneFile).Where(r => r.Length > 0).ToArray();
+			(sceneW, sceneH) = (rows.Max(r => r.Length), rows.Length);
+			for (int y = 0; y < 50; y++)
+				for (int x = 0; x < 80; x++)
+					map[x, y] = 10;
+			for (int y = 0; y < sceneH; y++)
+				for (int x = 0; x < rows[y].Length; x++)
+					map[x + 4, y + 2] = codes.IndexOf(rows[y][x]);
+			var features = featured.FeatureAt;
+			featured = PaintedMap.Load(art, 64, (x, y) => map[x, y])!;
+			featured.FeatureAt = features;
+			painted = featured;
+		}
 		// PAINTED_CITIES ("x,y[,step];..." in preview cells) marks cities, whose cells the painting clears for them
 		string? cities = Environment.GetEnvironmentVariable("PAINTED_CITIES");
 		if (cities != null)
@@ -1441,9 +1458,9 @@ GBitmap other4()
 			featured.FeatureAt = (x, y) => (features?.Invoke(x, y) ?? 0) | cityCells.GetValueOrDefault((x, y));
 		}
 		var clock = System.Diagnostics.Stopwatch.StartNew();
-		using var image = new SKBitmap(22 * 64, 12 * 64, SKColorType.Bgra8888, SKAlphaType.Premul);
-		for (int cy = 0; cy < 12; cy++)
-			for (int cx = 0; cx < 22; cx++)
+		using var image = new SKBitmap(sceneW * 64, sceneH * 64, SKColorType.Bgra8888, SKAlphaType.Premul);
+		for (int cy = 0; cy < sceneH; cy++)
+			for (int cx = 0; cx < sceneW; cx++)
 			{
 				uint[] c = Cell(painted, cx + 4, cy + 2);
 				for (int y = 0; y < 64; y++)
