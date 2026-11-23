@@ -1567,10 +1567,10 @@ if (Environment.GetEnvironmentVariable("GAME_SPRITES") is string gameSprites)
 	screen1.DrawBitmap(0, 0, sheet, false);
 	var screen0 = new GBitmap();
 	sheet.CopyPalette(screen0);
-	screen0.FillRectangle(new GRectangle(0, 0, 320, 200), 2, PixelWriteModeEnum.Normal);
+	screen0.FillRectangle(new GRectangle(0, 0, 320, 200), 6, PixelWriteModeEnum.Normal);
 	GBitmap Cut(GBitmap from, int x, int y) { var b = new GBitmap(15, 15); from.CopyPalette(b); b.DrawBitmap(0, 0, from, new GRectangle(x, y, 15, 15), false); return b; }
 	byte[] colours = { 12, 15, 10, 9, 14, 11, 13, 7 }, darks = { 4, 7, 2, 1, 10, 3, 4, 8 };
-	int[] players = { 3, 0, 1 };
+	int[] players = { 2, 0, 1 };
 	// cities as MapManagement draws them on the painted map: the town for the size (TownStep), walled from the walled
 	// half of the ladder, the player's dark colour for index 5, then the size on its HD plaque
 	(int Size, bool Palace, bool Walls)[] cities = { (1, false, false), (3, false, false), (6, false, false), (9, false, false),

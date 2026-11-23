@@ -1,8 +1,8 @@
 """Exports the painted units and towns as the game's sprites. Units: hd/SP257/X_161_t3.png, the 4x regions of the unit row of SP257
 (x = 16 * type + 1, 15x15, so 60x60 at 4x), each 3 original rows taller so tall units reach into the cell above. Each
 unit stands on its base exactly as compose.py places it, and the base and the blue player colour on the unit are
-written as the primary key colour (magenta shades, 128 = the player's colour), so the game shows them in each player's
-colour. Units without painted art keep the 4x set's sprites (assets/hd4).
+written as key colours (128 = the player's colour): the base as the secondary key, the player's deep colour, and the
+gear as the primary key, its main colour. Units without painted art yet stand on the same bases, lifted from the 4x set (assets/hd4).
 The town: hd/SP257/193_113_t4_k0-5.png, the city sprite (drawn at the cell's 1, 1, over the painted ground), a town of the
 middle of the ladder, for a game without the ladder (the game writes the size on a badge of its own); and the
 ladder itself, all six steps open and walled, at X_177 after the units, which the game picks from by the city's size.
@@ -53,21 +53,13 @@ def old_unit(name):
 
 
 def settle_keys(img, top):
-    """Keeps key colours only where the game can colour them. The game gives each original pixel (a 4x4 block) one
-    palette index: the key's when key pixels are at least as many as the other visible ones, otherwise the closest
-    colour, and a key pixel then shows that wrong colour (pink specks). Art above the sprite has no original pixel at
-    all. So key pixels in the art above the sprite and in blocks they don't carry become a neutral grey of their shade."""
+    """Keeps key colours only where the game can colour them: art above the sprite has no original pixel of its own,
+    so a key pixel there would show whatever is already on the map. Those become a neutral grey of their shade."""
     a = np.asarray(img).copy()
     r, g, b, al = (a[..., i].astype(int) for i in range(4))
     key = (al == 255) & (((g == 0) & (r == b) & (r > 0)) | ((r == 0) & (g == b) & (g > 0)))
-    visible = ~key & (al >= 128)
-    keep = np.zeros_like(key)
-    for y in range(top, a.shape[0] - SCALE + 1, SCALE):
-        for x in range(0, a.shape[1] - SCALE + 1, SCALE):
-            k, v = key[y:y + SCALE, x:x + SCALE], visible[y:y + SCALE, x:x + SCALE]
-            if k.sum() and k.sum() >= v.sum():
-                keep[y:y + SCALE, x:x + SCALE] = k
-    lost = key & ~keep
+    lost = key.copy()
+    lost[top:] = False
     shade = np.maximum(r, g)[lost]
     for i, f in enumerate((0.78, 0.76, 0.72)):
         a[..., i][lost] = np.clip(shade * f, 0, 255)
@@ -103,8 +95,10 @@ def region(unit):
     gear = (blue > 0.5) & (fa[..., 0] > 0.9)
     ref = np.median(v[gear]) if gear.any() else 1
     key = np.where(grey, shade, np.clip(v / ref * 128, 24, 255))
-    mask = grey | gear
-    out[mask, 0], out[mask, 1], out[mask, 2], out[mask, 3] = key[mask], 0, key[mask], 255
+    # the base in the player's deep colour (the secondary key, index 2), the gear in the main one (the primary key,
+    # index 10), so a light player's gear stands out from its base
+    out[grey, 0], out[grey, 1], out[grey, 2], out[grey, 3] = 0, key[grey], key[grey], 255
+    out[gear, 0], out[gear, 1], out[gear, 2], out[gear, 3] = key[gear], 0, key[gear], 255
     # elsewhere pixels are either solid or see-through, never a key mixed with something else
     img = Image.fromarray(out.clip(0, 255).astype(np.uint8), 'RGBA')
     return settle_keys(img.crop((SCALE, SCALE, SCALE + 60, SCALE + 60 + top)), top)

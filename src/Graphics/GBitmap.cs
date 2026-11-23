@@ -1843,10 +1843,13 @@ namespace OpenCivOne.Graphics
 							}
 
 							// the original pixel under the region follows the majority of its HD pixels:
-							// a key color index, the closest palette color, or transparent
+							// a key color index, the closest palette color, or transparent. Any key pixel makes it the key's
+							// index: the block's other pixels show their own HD color whatever the index, but a key pixel shows
+							// the index's color, so a key losing a vote to them would show a wrong color (patches of rim or
+							// figure color on a player-colored base)
 							int index = 0;
 
-							if (primaryCount + secondaryCount > 0 && primaryCount + secondaryCount >= visibleCount)
+							if (primaryCount + secondaryCount > 0)
 							{
 								index = (secondaryCount > primaryCount) ? secondaryIndex : primaryIndex;
 							}

@@ -212,7 +212,7 @@ a renamed topic up by its original name.
 Every PIC file the game loads can have HD versions in the `hd` folder:
 
 - `hd/NAME.png`: the whole image at twice the size (a 320x200 PIC needs a 640x400 PNG).
-- `hd/NAME/X_Y.png`: one region, with its top left corner at X, Y in the original image and twice the region's size. Regions are applied over the whole image, and anything not covered keeps the original art. A region also rewrites the original pixels under it to match the HD art (transparent, the key color index, or the closest palette color), so transparency and color swaps follow the new art.
+- `hd/NAME/X_Y.png`: one region, with its top left corner at X, Y in the original image and twice the region's size. Regions are applied over the whole image, and anything not covered keeps the original art. A region also rewrites the original pixels under it to match the HD art (transparent, the key color index wherever the block holds a key pixel, or the closest palette color), so transparency and color swaps follow the new art.
 
 Sprites cut from a sheet carry their part of the HD image with them, so when the game draws a terrain tile or a unit from that sheet, the HD pixels are drawn. Anything drawn without HD art, such as text, menus, boxes and lines, falls back to the original pixels, upscaled with nearest-neighbour.
 
