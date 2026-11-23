@@ -1827,7 +1827,7 @@ namespace OpenCivOne.Graphics
 					if (grid.At(i, j) != River)
 						continue;
 
-					float ax = (i * this.cell) + half, ay = (j * this.cell) + half;
+					(float ax, float ay) = this.RiverCentre(grid, i, j);
 					bool joined = false;
 
 					foreach ((int nx, int ny) in new[] { (0, -1), (1, 0), (0, 1), (-1, 0) })
@@ -1836,7 +1836,9 @@ namespace OpenCivOne.Graphics
 
 						if (terrain == River || terrain == Water)
 						{
-							best = Math.Min(best, SegmentDistance(x, y, ax, ay, ax + (nx * this.cell), ay + (ny * this.cell)));
+							(float bx, float by) = terrain == River ? this.RiverCentre(grid, i + nx, j + ny) :
+								(((i + nx) * this.cell) + half, ((j + ny) * this.cell) + half);
+							best = Math.Min(best, SegmentDistance(x, y, ax, ay, bx, by));
 							joined = true;
 						}
 					}
@@ -1849,10 +1851,37 @@ namespace OpenCivOne.Graphics
 			return best;
 		}
 
+		/// <summary>
+		/// Where a river cell's course runs through: its middle, or, where two river cells lie side by side running the
+		/// same way (a river two cells wide), the line between them, so they paint as one river rather than two parallel
+		/// channels joined by rungs. The way a cell runs is the longer of its runs of river across and down.
+		/// </summary>
+		private (float X, float Y) RiverCentre(TerrainGrid grid, int i, int j)
+		{
+			float half = this.cell / 2f, x = (i * this.cell) + half, y = (j * this.cell) + half;
+			int R(int di, int dj) => grid.At(i + di, j + dj) == River ? 1 : 0;
+			int down = R(0, -1) + R(0, 1) + R(0, -2) + R(0, 2), across = R(-1, 0) + R(1, 0) + R(-2, 0) + R(2, 0);
+
+			if (down > across)
+			{
+				// running down: a neighbour to the side that also runs down is the other half of the same river
+				int right = R(1, 0) * Math.Max(R(1, -1), R(1, 1)), left = R(-1, 0) * Math.Max(R(-1, -1), R(-1, 1));
+				x += (right - left) * half;
+			}
+			else if (across > down)
+			{
+				int below = R(0, 1) * Math.Max(R(-1, 1), R(1, 1)), above = R(0, -1) * Math.Max(R(-1, -1), R(1, -1));
+				y += (below - above) * half;
+			}
+
+			return (x, y);
+		}
+
 		private static float SegmentDistance(float x, float y, float ax, float ay, float bx, float by)
 		{
-			float dx = bx - ax, dy = by - ay;
-			float t = Math.Clamp((((x - ax) * dx) + ((y - ay) * dy)) / ((dx * dx) + (dy * dy)), 0, 1);
+			float dx = bx - ax, dy = by - ay, length = (dx * dx) + (dy * dy);
+			// two halves of a wide river share their point: no segment, and no division by zero
+			float t = length > 0 ? Math.Clamp((((x - ax) * dx) + ((y - ay) * dy)) / length, 0, 1) : 0;
 			float ex = x - (ax + (t * dx)), ey = y - (ay + (t * dy));
 
 			return MathF.Sqrt((ex * ex) + (ey * ey));
