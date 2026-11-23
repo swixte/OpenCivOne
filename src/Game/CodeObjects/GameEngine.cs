@@ -1593,7 +1593,8 @@ namespace OpenCivOne
 							if (F0_1ade_22b5_PlayerHasTechnology(playerID, this.parent.GameData.Units[i].RequiredTechnology) &&
 								!F0_1ade_22b5_PlayerHasTechnology(playerID, this.parent.GameData.Units[i].CancelTechnology))
 							{
-								if (this.parent.GameData.Units[i].MovementType == UnitMovementTypeEnum.Water && 
+								// a ship only in a city by the sea; any other unit anywhere
+								if (this.parent.GameData.Units[i].MovementType != UnitMovementTypeEnum.Water ||
 									(this.parent.GameData.Cities[cityID].Status & CityStatusEnum.WaterAccess) != CityStatusEnum.None)
 								{
 									// Instruction address 0x1ade:0x04f8, size: 5
@@ -2291,7 +2292,17 @@ namespace OpenCivOne
 						}
 
 						// Instruction address 0x1ade:0x1460, size: 5
-						local_134 = buildIDList[this.parent.MenuBoxDialog.F0_2d05_0031_ShowMenuBox(messageText.ToString(), 80, 8, true, true, true) - 1];
+						int choice = this.parent.MenuBoxDialog.F0_2d05_0031_ShowMenuBox(messageText.ToString(), 80, 8, true, true, true) - 1;
+
+						// the list closed with Escape: the city goes on building what it was (buildIDList[0])
+						if (choice < 0)
+						{
+							this.parent.Var_aa_Screen0_Rectangle.FontID = 1;
+
+							return buildIDList[0];
+						}
+
+						local_134 = buildIDList[choice];
 
 						if (local_134 != 99)
 						{
