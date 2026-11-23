@@ -53,6 +53,18 @@ On the painted map the city size is written in the top left corner of the city, 
 
 `tools/hdart/painted_set.py` builds the set from the painted objects in `assets/painted/objects`.
 
+### Painted towns and units
+
+A theme whose painted art also has painted units (`painted/objects/unit_NAME.png`, named as in UnitTypeEnum, for example `unit_settlers.png`) and a ladder of painted towns (`painted/towns/ladder/t0_o.png` to `t5_o.png`, with `_w` versions walled) shows them top-down over the painted map instead of as 16x16 sprites, as the theme's map renders show them (`themes/gouache/preview/compose.py`):
+
+- each town from the ladder by its size (a hamlet at size 1, from 2, 4, 6, 8, and the capital from 12), standing in a clearing the painted ground opens round it, with a small size badge in its player's colour on its top-left corner and its name in a serif face under it;
+- each unit at the one scale all the painted units share, standing on a round base in its player's colour (the blue parts of the painting take the player's colour); the active unit's base is ringed while it blinks, a sentried unit is grey, a fortified one has an earthwork ring, and a stack shows a second base behind;
+- huts, special resources and the grassland shield as paintings.
+
+Units, huts and resources the theme has not painted are taken from `hd/painted/objects` (the default painted set, `assets/painted/objects`), toned brighter and bolder and sized to the theme's own unit of their kind. The view is drawn over the classic map, so the painted ground and moving water show between the objects; the city screen's small map keeps the classic sprites. The theme needs no `iso` folder; a theme with one gets the isometric view instead.
+
+`HDLayerTests` draws the view over the engine picture `compose.py` starts from, to set beside its renders: `TOPVIEW_PREVIEW=out.png TOPVIEW_THEME=themes/gouache/hd TOPVIEW_FALLBACK=assets TOPVIEW_ENGINE=themes/gouache/preview/engine-v8.png dotnet run --project tests/HDLayerTests -c Release`.
+
 ### Print style
 
 An optional `style.txt` in the painted art folder (lines of `name value`) changes how the art is painted:
@@ -235,7 +247,7 @@ The game gives units and cities their player colors by swapping palette colors. 
 - primary key: magenta shades, red = blue and no green, for example `#800080`;
 - secondary key: cyan shades, green = blue and no red, for example `#008080`.
 
-A key pixel shows the color of the original pixel under it. A channel value of 128 means exactly that color; lower is darker and higher is lighter, so shading survives. In region files the primary key stands for color index 10 and the secondary key for index 2, which are the indexes the game swaps to the player's colors on the unit row. A file name ending in `_kP-S` sets other indexes; the city uses `_k0-5`.
+A key pixel shows the color of the original pixel under it, and any key pixel in a 4x4 block makes the original pixel under the block the key's index, so a key area as small as a unit's base takes the player's color whole. A channel value of 128 means exactly that color; lower is darker and higher is lighter, so shading survives. In region files the primary key stands for color index 10 and the secondary key for index 2, which are the indexes the game swaps to the player's colors on the unit row. A file name ending in `_kP-S` sets other indexes; the city uses `_k0-5`.
 
 Sentried units draw their HD art in grey, as the game greys out their original pixels.
 
