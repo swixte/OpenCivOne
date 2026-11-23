@@ -112,7 +112,8 @@ namespace OpenCivOne.Graphics
 
 		public bool DrawsFeatures => this.hut != null && this.resources.All(r => r != null) && this.shield != null;
 
-		public bool HasBattleArt => false;
+		// battles are painted with drawn dust and smoke, so any theme with this view shows them
+		public bool HasBattleArt => true;
 
 		/// <summary>
 		/// The view for a theme whose painted map has painted units (painted/objects/unit_NAME.png) and a ladder of painted
@@ -291,9 +292,18 @@ namespace OpenCivOne.Graphics
 				return false;
 
 			this.signature = sig;
-			this.pixels = this.Paint(cx, cy, scene, null);
+			this.pixels = this.Paint(cx, cy, scene, null, null);
 
 			return true;
+		}
+
+		/// <summary>
+		/// The towns, units and features of a small map, such as the city screen's 5 x 5 cells, centred on (cx, cy) in map
+		/// cells and the given number of cells across and down; without town names
+		/// </summary>
+		public uint[] RenderSmall(float cx, float cy, int columns, int rows, IsoView.Scene scene)
+		{
+			return this.Paint(cx, cy, scene, null, null, columns * this.cell, rows * this.cell, false);
 		}
 
 		/// <summary>
@@ -310,7 +320,8 @@ namespace OpenCivOne.Graphics
 			if (!found)
 				return null;
 
-			return this.Paint(this.lastCentre.X, this.lastCentre.Y, this.lastScene, (from, to, t));
+			return this.Paint(this.lastCentre.X, this.lastCentre.Y, this.lastScene,
+				(x, y) => (x, y) == from ? ((to.X - from.X) * t, (to.Y - from.Y) * t, 1, false) : null, null);
 		}
 
 		public void EndMove()
@@ -319,10 +330,98 @@ namespace OpenCivOne.Graphics
 			this.signature = long.MinValue;
 		}
 
-		public uint[] BattleFrame(float t, (int X, int Y) attacker, (int X, int Y) defender, bool attackerWins, int seed) => this.pixels;
+		/// <summary>
+		/// One frame of a battle (t from 0 to 1), painted like the rest of the view: the attacker lunges at the defender
+		/// and falls back, a burst of dust and sparks where they meet, then the loser greys, sinks and fades under rising
+		/// smoke while the winner stands
+		/// </summary>
+		public uint[] BattleFrame(float t, (int X, int Y) attacker, (int X, int Y) defender, bool attackerWins, int seed)
+		{
+			if (this.lastScene == null)
+				return this.pixels;
+
+			float dx = defender.X - attacker.X, dy = defender.Y - attacker.Y;
+			// the lunge: out over the first 30%, back by 55%
+			float lunge = t < 0.3f ? Ease(t / 0.3f) : t < 0.55f ? 1 - Ease((t - 0.3f) / 0.25f) : 0;
+			// the loser: still until the clash is over, then gone by the end
+			float fall = Math.Clamp((t - 0.5f) / 0.45f, 0, 1);
+			(int X, int Y) loser = attackerWins ? defender : attacker;
+
+			(float, float, float, bool)? Pose(int x, int y)
+			{
+				if ((x, y) == attacker && (x, y) != loser)
+					return (dx * 0.36f * lunge, dy * 0.36f * lunge, 1, false);
+
+				if ((x, y) == attacker)
+					return (dx * 0.36f * lunge, (dy * 0.36f * lunge) + (0.1f * fall), 1 - fall, fall > 0);
+
+				if ((x, y) == loser)
+					return (0, 0.1f * fall, 1 - fall, fall > 0);
+
+				// the defender rocks back when struck
+				float hit = t > 0.22f && t < 0.42f ? MathF.Sin((t - 0.22f) / 0.2f * MathF.PI) : 0;
+				return (dx * 0.06f * hit, dy * 0.06f * hit, 1, false);
+			}
+
+			void Effects(SKCanvas canvas, float left, float top)
+			{
+				int c = this.cell;
+				Random rng = new Random(seed);
+				// where they meet: a little short of the defender, at the height of the figures
+				float mx = ((attacker.X + (dx * 0.68f) - left) + 0.5f) * c, my = ((attacker.Y + (dy * 0.68f) - top) + 0.5f) * c;
+
+				if (t > 0.2f && t < 0.62f)
+				{
+					float k = (t - 0.2f) / 0.42f, r = c * (0.12f + (0.38f * k));
+					byte a = (byte)(240 * MathF.Min(1, 2.5f * (1 - k)));
+					using SKPaint glow = new SKPaint { IsAntialias = true, Color = new SKColor(255, 240, 200, a), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, r * 0.3f) };
+					canvas.DrawCircle(mx, my, r * 0.7f, glow);
+					using SKPaint dust = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = c * 0.06f * (1 - k), Color = new SKColor(196, 168, 120, a), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, c * 0.03f) };
+					canvas.DrawOval(new SKRect(mx - r, my - (r * 0.6f), mx + r, my + (r * 0.6f)), dust);
+
+					// sparks flying out from the clash
+					using SKPaint spark = new SKPaint { IsAntialias = true, StrokeWidth = c * 0.026f, StrokeCap = SKStrokeCap.Round, Color = new SKColor(255, 214, 120, a) };
+
+					for (int i = 0; i < 9; i++)
+					{
+						double angle = rng.NextDouble() * Math.PI * 2;
+						float len = c * (0.15f + (0.25f * (float)rng.NextDouble())), from = len * k, to = from + (c * 0.06f);
+						float ax = (float)Math.Cos(angle), ay = (float)Math.Sin(angle) * 0.7f;
+						canvas.DrawLine(mx + (ax * from), my + (ay * from), mx + (ax * to), my + (ay * to), spark);
+					}
+				}
+
+				// smoke from the loser, rising and spreading as it fades
+				if (t > 0.45f)
+				{
+					float k = (t - 0.45f) / 0.55f;
+					float lx = ((loser.X - left) + 0.5f) * c, ly = ((loser.Y - top) + 0.6f) * c;
+
+					for (int i = 0; i < 6; i++)
+					{
+						float delay = i * 0.07f, kk = Math.Clamp((k - delay) / (1 - delay), 0, 1);
+
+						if (kk <= 0)
+							continue;
+
+						float ox = ((float)rng.NextDouble() - 0.5f) * c * 0.5f, rise = c * (0.15f + (0.55f * kk)) * (0.7f + (0.6f * (float)rng.NextDouble()));
+						float r = c * (0.1f + (0.18f * kk));
+						byte shade = (byte)(70 + rng.Next(50));
+						byte a = (byte)(170 * MathF.Sin(kk * MathF.PI));
+						using SKPaint puff = new SKPaint { IsAntialias = true, Color = new SKColor(shade, (byte)(shade - 6), (byte)(shade - 14), a), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, r * 0.45f) };
+						canvas.DrawCircle(lx + ox + (ox * kk), ly - rise, r, puff);
+					}
+				}
+			}
+
+			return this.Paint(this.lastCentre.X, this.lastCentre.Y, this.lastScene, (x, y) => Pose(x, y), Effects);
+		}
+
+		private static float Ease(float x) => x * x * (3 - (2 * x));
 
 		public void EndBattle()
 		{
+			this.signature = long.MinValue;
 		}
 
 		public (int X, int Y) CellAt(float px, float py, float cx, float cy)
@@ -335,17 +434,29 @@ namespace OpenCivOne.Graphics
 		// a cell's x unwrapped to lie nearest the view's centre
 		private static int Near(int x, float cx) => x + (MapWidth * (int)MathF.Round((cx - x) / MapWidth));
 
-		private uint[] Paint(float cx, float cy, IsoView.Scene scene, ((int X, int Y) From, (int X, int Y) To, float T)? move)
+		/// <summary>
+		/// The scene: pose, if given, moves a cell's unit (in cells), fades it (alpha) and greys it; effects are drawn last,
+		/// given the view's top-left corner in map cells
+		/// </summary>
+		private uint[] Paint(float cx, float cy, IsoView.Scene scene, Func<int, int, (float Dx, float Dy, float Alpha, bool Grey)?>? pose,
+			Action<SKCanvas, float, float>? effects) => this.Paint(cx, cy, scene, pose, effects, this.width, this.height, true);
+
+		/// <summary>
+		/// The scene in a view of w x h HD pixels; names, if shown, under the towns
+		/// </summary>
+		private uint[] Paint(float cx, float cy, IsoView.Scene scene, Func<int, int, (float Dx, float Dy, float Alpha, bool Grey)?>? pose,
+			Action<SKCanvas, float, float>? effects, int w, int h, bool names)
 		{
+			float cols = w / (float)this.cell, rows = h / (float)this.cell;
 			int c = this.cell;
-			float left = cx - (this.columns / 2), top = cy - (this.rows / 2);
-			using SKBitmap target = new SKBitmap(new SKImageInfo(this.width, this.height, SKColorType.Bgra8888, SKAlphaType.Premul));
+			float left = cx - (cols / 2), top = cy - (rows / 2);
+			using SKBitmap target = new SKBitmap(new SKImageInfo(w, h, SKColorType.Bgra8888, SKAlphaType.Premul));
 			using SKCanvas canvas = new SKCanvas(target);
 			canvas.Clear(SKColors.Transparent);
 
 			// a cell's top-left corner in the view
 			(float X, float Y) Corner(int x, int y) => ((Near(x, cx) - left) * c, (y - top) * c);
-			bool InView(float px, float py) => px > -2 * c && px < this.width + c && py > -c && py < this.height + c;
+			bool InView(float px, float py) => px > -2 * c && px < w + c && py > -c && py < h + c;
 
 			using SKFont badgeFont = new SKFont(this.face, 10 * c / 64f);
 			using SKFont nameFont = new SKFont(this.face, 12 * c / 64f);
@@ -358,9 +469,9 @@ namespace OpenCivOne.Graphics
 			{
 				using SKPaint shade = new SKPaint { IsAntialias = true, Color = new SKColor(20, 16, 10, 90), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 2.2f * c / 64f) };
 
-				for (int y = (int)MathF.Floor(top) - 1; y <= top + this.rows; y++)
+				for (int y = (int)MathF.Floor(top) - 1; y <= top + rows; y++)
 				{
-					for (int x = (int)MathF.Floor(left) - 1; x <= left + this.columns; x++)
+					for (int x = (int)MathF.Floor(left) - 1; x <= left + cols; x++)
 					{
 						int wx = Wrap(x);
 
@@ -429,6 +540,9 @@ namespace OpenCivOne.Graphics
 				fill.Color = Lightness(town.Colour) > 0.72f ? Ink : SKColors.White;
 				DrawCentred(canvas, size, bx + ((s + u) / 2), by + ((s + u) / 2), badgeFont, fill, true);
 
+				if (!names)
+					continue;
+
 				float ny = MathF.Min(y0 + c, ty + th + (2 * u));
 				float nx = x0 + (c / 2f);
 				fill.Color = Ink;
@@ -453,20 +567,22 @@ namespace OpenCivOne.Graphics
 			if (active.HasValue && !scene.Units.Any(u => u.X == active.Value.X && u.Y == active.Value.Y))
 				shown.Add((Near(active.Value.X, cx), active.Value.Y, active.Value.Type, active.Value.Colour, 0, true));
 
-			if (move.HasValue)
-			{
-				(int X, int Y) from = move.Value.From, to = move.Value.To;
-				float t = move.Value.T;
+			var alphas = new float[shown.Count];
 
-				for (int i = 0; i < shown.Count; i++)
+			for (int i = 0; i < shown.Count; i++)
+			{
+				alphas[i] = 1;
+
+				if (pose?.Invoke((int)shown[i].X, (int)shown[i].Y) is (float pdx, float pdy, float alpha, bool grey))
 				{
-					if ((int)shown[i].X == from.X && (int)shown[i].Y == from.Y && this.DrawsUnit(shown[i].Type))
-						shown[i] = (from.X + ((to.X - from.X) * t), from.Y + ((to.Y - from.Y) * t), shown[i].Type, shown[i].Colour, shown[i].Marks, false);
+					shown[i] = (shown[i].X + pdx, shown[i].Y + pdy, shown[i].Type, shown[i].Colour, shown[i].Marks | (grey ? 1 : 0), false);
+					alphas[i] = alpha;
 				}
 			}
 
-			foreach (var unit in shown.OrderBy(u => u.Y).ThenBy(u => u.X))
+			foreach (int index in Enumerable.Range(0, shown.Count).OrderBy(i => shown[i].Y).ThenBy(i => shown[i].X))
 			{
+				var unit = shown[index];
 				UnitArt? art = unit.Type >= 0 && unit.Type < this.units.Length ? this.units[unit.Type] : null;
 
 				if (art == null)
@@ -478,11 +594,25 @@ namespace OpenCivOne.Graphics
 					continue;
 
 				bool ring = unit.Active && scene.ActiveShown;
+
+				if (alphas[index] <= 0.01f)
+					continue;
+
+				if (alphas[index] < 1)
+				{
+					using SKPaint layer = new SKPaint { Color = SKColors.White.WithAlpha((byte)(255 * alphas[index])) };
+					canvas.SaveLayer(layer);
+				}
+
 				this.DrawUnit(canvas, art, x0, y0, unit.Colour, unit.Marks, ring, fill, stroke, image, badgeFont);
+
+				if (alphas[index] < 1)
+					canvas.Restore();
 			}
 
+			effects?.Invoke(canvas, left, top);
 			canvas.Flush();
-			uint[] result = new uint[this.width * this.height];
+			uint[] result = new uint[w * h];
 			System.Runtime.InteropServices.MemoryMarshal.Cast<byte, uint>(target.GetPixelSpan()).CopyTo(result);
 
 			return result;

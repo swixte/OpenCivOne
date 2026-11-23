@@ -263,6 +263,9 @@ namespace OpenCivOne
 							}
 						}
 					}
+
+					// a painted map view shows the town, foreign units and features over the small map, as on the map
+					this.parent.MapManagement.ShowCityInset(cityID);
 				}
 
 				if (flag == 0)
@@ -3130,6 +3133,7 @@ namespace OpenCivOne
 					this.parent.Var_d4cc_MapViewX = mapViewX;
 					this.parent.Var_d75e_MapViewY = mapViewY;
 					this.parent.Graphics.SetHDOverflowClip(GDriver.MapViewRectangle);
+					this.parent.MapManagement.ClearCityInset();
 				}
 
 				if (flag == 0)

@@ -1119,35 +1119,14 @@ namespace OpenCivOne.Graphics
 		}
 
 		/// <summary>
-		/// A premultiplied colour drawn over an opaque one, keeping the opaque one's alpha byte
+		/// Where an overlay shows, for each original pixel of its area: where the map it was taken over is still showing.
+		/// A pixel that still holds the map shows the painted view (hiding it would show the classic map instead), except a
+		/// stray pixel of a picture drawn over the map (the palace, the newspaper) that only happens to share the map's
+		/// colour index: one whose 5 x 5 block is almost all picture. So beside a unit, a new city, a dialog or a scrolled
+		/// strip the painted view always stays. Null for no overlay or a held one.
 		/// </summary>
-		private static uint BlendPremultiplied(uint top, uint under)
+		private bool[]? OverlayShows(Overlay? over)
 		{
-			uint a = top >> 24;
-
-			if (a == 0)
-				return under;
-
-			if (a == 255)
-				return (top & 0xffffff) | (under & 0xff000000);
-
-			uint keep = 255 - a;
-			uint r = ((top >> 16) & 0xff) + ((((under >> 16) & 0xff) * keep) + 127) / 255;
-			uint g = ((top >> 8) & 0xff) + ((((under >> 8) & 0xff) * keep) + 127) / 255;
-			uint b = (top & 0xff) + (((under & 0xff) * keep) + 127) / 255;
-
-			return (under & 0xff000000) | (Math.Min(r, 255u) << 16) | (Math.Min(g, 255u) << 8) | Math.Min(b, 255u);
-		}
-
-		public void WriteScaledPixels(IntPtr destination, int stride)
-		{
-			int hdWidth = this.iWidth * HDScale;
-			Overlay? over = this.Over;
-
-			// where the map is still showing. A pixel that still holds the map shows the painted view (hiding it would show
-			// the classic map instead), except a stray pixel of a picture drawn over the map window (the palace, the
-			// newspaper) that only happens to share the map's colour index: one whose 5 x 5 block is almost all picture.
-			// So beside a unit, a new city, a dialog or a scrolled strip the painted view always stays.
 			bool[]? shows = null;
 
 			if (over != null && !over.Hold && over.Snapshot.Length == over.Area.Width * over.Area.Height)
@@ -1189,6 +1168,44 @@ namespace OpenCivOne.Graphics
 					}
 				});
 			}
+
+			return shows;
+		}
+
+		/// <summary>
+		/// A second, smaller overlay: the painted towns and units of the city screen's map (see Over)
+		/// </summary>
+		public Overlay? Inset { get; set; }
+
+		/// <summary>
+		/// A premultiplied colour drawn over an opaque one, keeping the opaque one's alpha byte
+		/// </summary>
+		private static uint BlendPremultiplied(uint top, uint under)
+		{
+			uint a = top >> 24;
+
+			if (a == 0)
+				return under;
+
+			if (a == 255)
+				return (top & 0xffffff) | (under & 0xff000000);
+
+			uint keep = 255 - a;
+			uint r = ((top >> 16) & 0xff) + ((((under >> 16) & 0xff) * keep) + 127) / 255;
+			uint g = ((top >> 8) & 0xff) + ((((under >> 8) & 0xff) * keep) + 127) / 255;
+			uint b = (top & 0xff) + (((under & 0xff) * keep) + 127) / 255;
+
+			return (under & 0xff000000) | (Math.Min(r, 255u) << 16) | (Math.Min(g, 255u) << 8) | Math.Min(b, 255u);
+		}
+
+		public void WriteScaledPixels(IntPtr destination, int stride)
+		{
+			int hdWidth = this.iWidth * HDScale;
+			Overlay? over = this.Over;
+
+			bool[]? shows = this.OverlayShows(over);
+			Overlay? inset = this.Inset;
+			bool[]? insetShows = this.OverlayShows(inset);
 
 			byte[]? smooth = _smoothUpscale ? this.ScaleIndexes() : null;
 			// with the UI material, pixels without HD art (text, the minimap, pictures) get a gentler version of its tone
@@ -1250,6 +1267,14 @@ namespace OpenCivOne.Graphics
 							{
 								uint top = over.Pixels[((((i - over.Area.Y) * HDScale) + k) * over.Area.Width * HDScale) + ((j - over.Area.X) * HDScale) + l];
 								pixel = over.Blend ? BlendPremultiplied(top, pixel) : top;
+							}
+
+							if (inset != null && j >= inset.Area.X && j < inset.Area.X + inset.Area.Width && i >= inset.Area.Y && i < inset.Area.Y + inset.Area.Height &&
+								(inset.Hold || (insetShows != null ? insetShows[((i - inset.Area.Y) * inset.Area.Width) + (j - inset.Area.X)] :
+									inset.Snapshot[((i - inset.Area.Y) * inset.Area.Width) + (j - inset.Area.X)] == this.aPixels[pixelAddress])))
+							{
+								uint top = inset.Pixels[((((i - inset.Area.Y) * HDScale) + k) * inset.Area.Width * HDScale) + ((j - inset.Area.X) * HDScale) + l];
+								pixel = inset.Blend ? BlendPremultiplied(top, pixel) : top;
 							}
 
 							rows[(k * hdWidth) + (j * HDScale) + l] = (int)pixel;

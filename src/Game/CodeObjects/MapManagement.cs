@@ -138,6 +138,9 @@ namespace OpenCivOne
 			this.parent.Var_1ae0 = 0;
 			this.drawingMap = true;
 
+			// the whole map is drawn again: no city screen is open
+			this.ClearCityInset();
+
 			// the isometric view on screen stays whole while the classic map is redrawn under it and the new view rendered
 			if (this.parent.MapView != null)
 			{
@@ -390,6 +393,7 @@ namespace OpenCivOne
 			bool drawn = this.DrawCellClassic(x, y);
 			this.RefreshIso(x, y);
 			this.SyncIsoCell(x, y);
+			this.SyncInsetCell(x, y);
 
 			return drawn;
 		}
@@ -1579,6 +1583,21 @@ namespace OpenCivOne
 
 				File.WriteAllLines(dumpPath, lines);
 			}
+			IsoView.Scene scene = this.BuildScene(debug, mask);
+
+			// the view is centred on the middle of the classic map window (15 x 12 cells)
+			float cx = this.parent.Var_d4cc_MapViewX + 7.5f, cy = this.parent.Var_d75e_MapViewY + 6f;
+			iso.Render(cx, cy, scene);
+			this.IsoCentre = (cx, cy);
+			GRectangle area = new GRectangle(80, 8, 240, 192);
+			screen.Over = new GBitmap.Overlay { Area = area, Pixels = iso.Pixels, Snapshot = screen.CopyPixels(area), Blend = iso.Blends };
+		}
+
+		/// <summary>
+		/// What a painted view shows of the world, as the human player knows it
+		/// </summary>
+		private IsoView.Scene BuildScene(bool debug, int mask)
+		{
 			IsoView.Scene scene = new IsoView.Scene
 			{
 				Terrain = (x, y) => (int)GetTerrainType(x, y),
@@ -1650,12 +1669,7 @@ namespace OpenCivOne
 				}
 			}
 
-			// the view is centred on the middle of the classic map window (15 x 12 cells)
-			float cx = this.parent.Var_d4cc_MapViewX + 7.5f, cy = this.parent.Var_d75e_MapViewY + 6f;
-			iso.Render(cx, cy, scene);
-			this.IsoCentre = (cx, cy);
-			GRectangle area = new GRectangle(80, 8, 240, 192);
-			screen.Over = new GBitmap.Overlay { Area = area, Pixels = iso.Pixels, Snapshot = screen.CopyPixels(area), Blend = iso.Blends };
+			return scene;
 		}
 
 		/// <summary>
@@ -1812,7 +1826,88 @@ namespace OpenCivOne
 		/// The painted view that draws over the cells being drawn now: none for the city screen's small map, which keeps
 		/// the classic city square, units and features
 		/// </summary>
-		private IMapView? PaintedView => this.parent.Graphics.DrawsMapWindow ? this.parent.MapView : null;
+		private IMapView? PaintedView => this.parent.Graphics.DrawsMapWindow ? this.parent.MapView :
+			(this.parent.Graphics.DrawsCityMap && this.parent.MapView is TopView) ? this.parent.MapView : null;
+
+		/// <summary>
+		/// The city screen's small map (the 5 x 5 cells round a city at 128, 24) with the painted view's town, foreign units,
+		/// huts and resources over it, as on the map; call once its cells are drawn, before the worked-cell marks
+		/// </summary>
+		public void ShowCityInset(int cityID)
+		{
+			GBitmap screen = this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID);
+
+			if (this.parent.MapView is not TopView top)
+			{
+				screen.Inset = null;
+				return;
+			}
+
+			City city = this.parent.GameData.Cities[cityID];
+			int mask = 0x1 << this.parent.GameData.HumanPlayerID;
+			bool debug = this.parent.GlobalPreferences.Debug.DebugMode;
+			IsoView.Scene all = this.BuildScene(debug, mask);
+			uint ownColour = all.Cities.FirstOrDefault(c => c.X == city.Position.X && c.Y == city.Position.Y).Colour;
+
+			// the cells the city screen shows: its 21 cells, as far as its owner can see them
+			bool Shown(int x, int y)
+			{
+				int dx = ((x - city.Position.X + 120) % 80) - 40, dy = y - city.Position.Y;
+
+				return Math.Abs(dx) <= 2 && Math.Abs(dy) <= 2 && (Math.Abs(dx) != 2 || Math.Abs(dy) != 2) && y >= 0 && y < 50 &&
+					(city.PlayerID != this.parent.GameData.HumanPlayerID || (this.parent.GameData.MapVisibility[x, y] & (1 << city.PlayerID)) != 0);
+			}
+
+			IsoView.Scene scene = new IsoView.Scene
+			{
+				Terrain = all.Terrain,
+				Explored = (x, y) => Shown(x, y),
+				Improvements = all.Improvements,
+				Feature = all.Feature,
+				ShieldBonus = all.ShieldBonus,
+				Walls = all.Walls,
+				UnitMarks = all.UnitMarks,
+				UnitStyle = all.UnitStyle,
+				CityLook = all.CityLook,
+			};
+			scene.Cities.AddRange(all.Cities.Where(c => Shown(c.X, c.Y)));
+			// only other players' units stand on the city screen's map; the city's own are listed beside it
+			scene.Units.AddRange(all.Units.Where(u => Shown(u.X, u.Y) && u.Colour != ownColour));
+
+			GRectangle area = new GRectangle(128, 24, 80, 80);
+			uint[] pixels = top.RenderSmall(city.Position.X + 0.5f, city.Position.Y + 0.5f, 5, 5, scene);
+			screen.Inset = new GBitmap.Overlay { Area = area, Pixels = pixels, Snapshot = screen.CopyPixels(area), Blend = true };
+		}
+
+		/// <summary>
+		/// The city screen is closed: its small map's painted view goes
+		/// </summary>
+		public void ClearCityInset()
+		{
+			this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID).Inset = null;
+		}
+
+		/// <summary>
+		/// After a cell of the city screen's map is drawn again, its pixels are map: the small map's painted view takes them
+		/// </summary>
+		private void SyncInsetCell(int x, int y)
+		{
+			GBitmap screen = this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID);
+			GBitmap.Overlay? inset = screen.Inset;
+
+			if (inset == null || !this.parent.Graphics.DrawsCityMap)
+				return;
+
+			int scrX = (AdjustXPosition(x - this.parent.Var_d4cc_MapViewX) * 16) + 80, scrY = ((y - this.parent.Var_d75e_MapViewY) * 16) + 8;
+
+			if (scrX < inset.Area.X || scrY < inset.Area.Y || scrX + 16 > inset.Area.X + inset.Area.Width || scrY + 16 > inset.Area.Y + inset.Area.Height)
+				return;
+
+			byte[] cell = screen.CopyPixels(new GRectangle(scrX, scrY, 16, 16));
+
+			for (int j = 0; j < 16; j++)
+				Array.Copy(cell, j * 16, inset.Snapshot, ((scrY - inset.Area.Y + j) * inset.Area.Width) + (scrX - inset.Area.X), 16);
+		}
 
 		/// <summary>
 		/// The unit the human player is giving orders to while it blinks (UnitManagement.F0_1866_0ad6), null between

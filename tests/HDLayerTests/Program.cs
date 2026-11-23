@@ -1464,6 +1464,37 @@ GBitmap other4()
 			}
 		using var topFile = File.Create(topOut);
 		ground.Encode(topFile, SKEncodedImageFormat.Png, 100);
+
+		// TOPVIEW_BATTLE: a strip of frames of a battle, a red legion attacking the blue phalanx, the attacker winning
+		if (Environment.GetEnvironmentVariable("TOPVIEW_BATTLE") is string battleOut)
+		{
+			using SKBitmap clean = SKBitmap.Decode(engineFile).Copy(SKColorType.Bgra8888);
+			float bcx = ground.Width / 128f, bcy = ground.Height / 128f;
+			var battleScene = new IsoView.Scene();
+			battleScene.Units.Add((4, 5, 3, Red));
+			battleScene.Units.Add((3, 5, 2, Blue));
+			top.Render(bcx, bcy, battleScene);
+			float[] times = { 0f, 0.2f, 0.32f, 0.45f, 0.65f, 0.85f, 1f };
+			using var strip = new SKBitmap(times.Length * 192, 128, SKColorType.Bgra8888, SKAlphaType.Premul);
+			using var stripCanvas = new SKCanvas(strip);
+			for (int f = 0; f < times.Length; f++)
+			{
+				uint[] frame = top.BattleFrame(times[f], (4, 5), (3, 5), true, 3);
+				using var shot = clean.Copy();
+				for (int y = 0; y < shot.Height; y++)
+					for (int x = 0; x < shot.Width; x++)
+					{
+						uint o = frame[(y * shot.Width) + x], a = o >> 24;
+						SKColor g = shot.GetPixel(x, y);
+						uint Mix(uint top8, byte under) => Math.Min(255u, top8 + ((under * (255 - a)) + 127) / 255);
+						shot.SetPixel(x, y, new SKColor((byte)Mix((o >> 16) & 0xff, g.Red), (byte)Mix((o >> 8) & 0xff, g.Green), (byte)Mix(o & 0xff, g.Blue)));
+					}
+				stripCanvas.DrawBitmap(shot, new SKRect(3 * 64 - 32, 5 * 64 - 64, 3 * 64 + 160, 5 * 64 + 64), new SKRect(f * 192, 0, (f + 1) * 192, 128));
+			}
+			top.EndBattle();
+			using var battleFile = File.Create(battleOut);
+			strip.Encode(battleFile, SKEncodedImageFormat.Png, 100);
+		}
 	}
 
 	string? output = Environment.GetEnvironmentVariable("PAINTED_PREVIEW");

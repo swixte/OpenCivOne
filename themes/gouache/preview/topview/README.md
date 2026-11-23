@@ -27,6 +27,9 @@ The gouache set has nine units and no huts or resources of its own. The other 19
 | `06_ingame_paris.jpg` | Paris, in blue, on the French island. |
 | `07_ingame_rome_clearing_2x.png` | Rome in the clearing the painted ground opens round it. |
 | `08_after_change_escape_no_crash.jpg` | Back on the map after CHANGE, Escape, Escape, the sequence that used to crash. |
+| `09_ingame_battle_frames.jpg` | A real battle in game: a Babylonian legion attacks the Roman catapult; dust bursts at the clash, and the catapult greys and fades. |
+| `10_battle_frames_harness.png` | The same battle drawing, frame by frame (`TOPVIEW_BATTLE` in the harness): lunge, clash, fall back, smoke. |
+| `11_city_screen_map_2x.png` | The city screen's small map: the painted hamlet and grassland shield under the worked-tile icons. |
 
 ## Also fixed
 
@@ -35,11 +38,10 @@ The gouache set has nine units and no huts or resources of its own. The other 19
 - **Escape crash.** Closing the production list with Escape crashed the game; now the city keeps what it was building.
 - **`compose.py` with Pillow 12.** It runs again; a numpy value passed as a blur radius had broken it.
 
-## Not changed
+## Battles and the city screen
 
-- The city screen's small map keeps the classic sprites.
-- Battles play the classic animation.
-- The gouache theme has no walls art of its own, so walled towns use the ladder's `_w` pictures.
+- **Battles** are painted too: the attacker lunges and falls back, dust and sparks burst where they meet, and the loser greys, sinks and fades under rising smoke. No art files are needed, so they work for any theme with this view.
+- **The city screen's small map** gets the same painted town, foreign units, huts, resources and shields, drawn through a second overlay (`GBitmap.Inset`). The worked-tile icons stay on top. Walled towns use the ladder's `_w` pictures, there as on the map.
 
 ## Reproducing
 
@@ -47,4 +49,4 @@ The gouache set has nine units and no huts or resources of its own. The other 19
 TOPVIEW_PREVIEW=out.png TOPVIEW_THEME=themes/gouache/hd TOPVIEW_FALLBACK=assets TOPVIEW_ENGINE=themes/gouache/preview/engine-v8.png dotnet run --project tests/HDLayerTests -c Release
 ```
 
-The in-game shots come from a Debug build run under Xvfb with the stand-in data (`HD_SET=hd4 tools/standin/build.sh`) and `themes/gouache/hd` copied to `~/Dos/Civ1/themes/gouache`. The preferences were `{"Theme": "gouache", "Debug": {"DebugMode": true}}`, and extra units were placed in the save with `../ingame/place_units.py` from the `gouache-ingame-shots` branch.
+Add `TOPVIEW_BATTLE=battle.png` for the battle frames. The in-game shots come from a Debug build run under Xvfb with the stand-in data (`HD_SET=hd4 tools/standin/build.sh`) and `themes/gouache/hd` copied to `~/Dos/Civ1/themes/gouache`. The preferences were `{"Theme": "gouache", "Debug": {"DebugMode": true}}`, and extra units were placed in the save with `../ingame/place_units.py` from the `gouache-ingame-shots` branch.
