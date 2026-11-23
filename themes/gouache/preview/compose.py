@@ -61,14 +61,18 @@ CITIES = ';'.join(f'{x},{y},{step}' for x, y, _, _, _, step, _ in TOWNS)
 
 UNITS = [(7, 6, 'settlers', 'blue', True), (3, 5, 'phalanx', 'blue', False), (9, 2, 'knights', 'blue', False),
          (5, 9, 'catapult', 'blue', False), (12, 5, 'trireme', 'blue', False),
-         (14, 3, 'legion', 'red', False), (14, 6, 'chariot', 'red', False), (19, 10, 'sail', 'red', False)]
+         (14, 4, 'legion', 'red', False), (14, 6, 'chariot', 'red', False), (19, 10, 'sail', 'red', False)]
+
+
+# how round a unit's base looks from the camera's height: 1 straight down, about 0.3 side-on
+BASE_SQUASH = 0.62
 
 
 def unit_base(col, c, active, ss=4):
-    """A unit's round base seen from the same low angle as the figure, like a miniature's: a squashed disc in the player's
-    colour with a thin darker side below it, a soft shadow and a highlight on its far half. Drawn large and scaled down,
-    so its edges are smooth. Centred on the middle of its top."""
-    rx, ry, side = c * 0.4 * ss, c * 0.4 * 0.3 * ss, c * 0.035 * ss
+    """A unit's round base seen from the same steep angle as the figure (about 65 degrees), like a miniature's on a table:
+    a slightly squashed disc in the player's colour with a thin darker side below it, a soft shadow and a highlight on its
+    far half. Drawn large and scaled down, so its edges are smooth. Centred on the middle of its top."""
+    rx, ry, side = c * 0.4 * ss, c * 0.4 * BASE_SQUASH * ss, c * 0.02 * ss
     w, h = round(2 * rx + 12 * ss), round(2 * ry + 2 * side + 12 * ss)
     cx, cy = w / 2, h / 2
     dark = tuple(int(v * 0.55) for v in col)
@@ -87,6 +91,26 @@ def unit_base(col, c, active, ss=4):
     im.alpha_composite(hl.filter(ImageFilter.GaussianBlur(ry * 0.25)))
     return im.resize((round(w / ss), round(h / ss)), Image.LANCZOS)
 
+
+def body(path, c, unit):
+    """A unit scaled by its body, not its outline, so a spear, lance, flag or oars do not shrink it: the box round its
+    solid parts fits the same space for every unit. Returns it with the point that goes on the middle of the base: the
+    middle of its body across and its feet (the bottom of its body, a little up) down for those that stand on the ground, and the middle of the
+    body for ships, which sit in the base like in water."""
+    u = Image.open(path).convert('RGBA')
+    solid = np.asarray(u.getchannel('A').filter(ImageFilter.MinFilter(11)), np.float32) > 128
+    ys, xs = np.nonzero(solid)
+    w, h = np.percentile(xs, 97) - np.percentile(xs, 3), np.percentile(ys, 97) - np.percentile(ys, 3)
+    f = min(c * 0.5 / w, c * 0.5 / h, c * 0.95 / max(u.size)) * UNIT_SIZE.get(unit, 1)
+    u = u.resize((round(u.width * f), round(u.height * f)), Image.LANCZOS)
+    if unit in SHIPS:
+        return u, (xs.mean() * f, ys.mean() * f)
+    return u, ((np.percentile(xs, 3) + w / 2) * f, (np.percentile(ys, 97) - 0.15 * h) * f)
+
+
+SHIPS = {'trireme', 'sail', 'frigate', 'ironclad', 'cruiser', 'battleship', 'submarine', 'carrier', 'transport'}
+# a few units read bigger or smaller than their box says (a broad shield, a lance across a horse)
+UNIT_SIZE = {'settlers': 1.15, 'catapult': 1.15, 'phalanx': 0.92, 'legion': 0.9, 'trireme': 1.1}
 
 def scene(scale):
     base = Image.open(ENGINE).convert('RGBA')
@@ -108,18 +132,22 @@ def scene(scale):
         for o in (2, 1):
             d.text((x * c + c / 2 + o * scale, ny + o * scale), name, font=font(12 * scale), fill=INK, anchor='mt')
         d.text((x * c + c / 2, ny), name, font=font(12 * scale), fill=(255, 250, 235), anchor='mt')
+    draw_units(im, scale)
+    return im.convert('RGB')
+
+
+def draw_units(im, scale):
+    """Each unit on its base, on the image im drawn at scale."""
+    c = CELL * scale
     for x, y, unit, player, active in UNITS:
-        # a round base seen from the same low angle as the figure, like a miniature's: a squashed disc with a thin
-        # darker side below it, in the player's colour; the figure stands in its middle
-        cx, cy = x * c + c / 2, y * c + c * 0.78
+        # a round base seen from the same steep angle as the figure, like a miniature's: a slightly squashed disc with
+        # a thin darker side below it, in the player's colour; the figure, seen mostly from above, sits over its middle
+        cx, cy = x * c + c / 2, y * c + c * 0.6
         b = unit_base(BLUE if player == 'blue' else RED, c, active)
         im.alpha_composite(b, (round(cx - b.width / 2), round(cy - b.height / 2)))
-        ry = c * 0.4 * 0.3
-        u = Image.open(OBJ + f'unit_{unit}.png').convert('RGBA')
-        f = c * 0.88 / max(u.size)
-        u = u.resize((round(u.width * f), round(u.height * f)), Image.LANCZOS)
-        im.alpha_composite(u, (round(cx - u.width / 2), round(cy + ry * 0.3 - u.height)))
-    return im.convert('RGB')
+        u, (bx, by) = body(OBJ + f'unit_{unit}.png', c, unit)
+        im.alpha_composite(u, (round(cx - bx), round(cy - by)))
+    return im
 
 
 # the ladder of town steps: a hamlet of huts, three steps of terracotta towns, a city with a gold-domed palace and a

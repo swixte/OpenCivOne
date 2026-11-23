@@ -1,0 +1,146 @@
+{
+ "unit_phalanx_a45": {
+  "prompt": "{STYLE} Repaint the same unit as the reference image, the same Greek hoplite with a large round blue-and-bronze shield and a long spear, with the same colours, design and painting style, but seen from a high three-quarter angle, the camera about 45 degrees above the ground, looking down on the top of the head, shoulders and shield while the face and front are still visible. Centred and filling most of the image, a bold, readable silhouette that stays clear when shrunk to a small game piece. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground under it, no base, no cast shadow, no text, no frame.",
+  "refs": [
+   "../hd/painted/objects/unit_phalanx.png"
+  ]
+ },
+ "unit_phalanx_a65": {
+  "prompt": "{STYLE} Repaint the same unit as the reference image, the same Greek hoplite with a large round blue-and-bronze shield and a long spear, with the same colours, design and painting style, but seen from a steep overhead angle, the camera about 65 degrees above the ground: we mostly see the top of the helmet, shoulders, the upper face of shields, horse backs and decks, with only a little of the front visible, strongly foreshortened. Centred and filling most of the image, a bold, readable silhouette that stays clear when shrunk to a small game piece. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground under it, no base, no cast shadow, no text, no frame.",
+  "refs": [
+   "../hd/painted/objects/unit_phalanx.png"
+  ]
+ },
+ "unit_phalanx_a90": {
+  "prompt": "{STYLE} Repaint the same unit as the reference image, the same Greek hoplite with a large round blue-and-bronze shield and a long spear, with the same colours, design and painting style, but seen from directly overhead, straight down like a map counter: only the top of the helmet, shoulders, shield tops, spear or lance lying across, the horse's back and neck, or the deck and sail from above. Centred and filling most of the image, a bold, readable silhouette that stays clear when shrunk to a small game piece. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground under it, no base, no cast shadow, no text, no frame.",
+  "refs": [
+   "../hd/painted/objects/unit_phalanx.png"
+  ]
+ },
+ "unit_knights_a45": {
+  "prompt": "{STYLE} Repaint the same unit as the reference image, the same armoured medieval knight with a lance on a barded warhorse, with the same colours, design and painting style, but seen from a high three-quarter angle, the camera about 45 degrees above the ground, looking down on the top of the head, shoulders and shield while the face and front are still visible. Centred and filling most of the image, a bold, readable silhouette that stays clear when shrunk to a small game piece. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground under it, no base, no cast shadow, no text, no frame.",
+  "refs": [
+   "../hd/painted/objects/unit_knights.png"
+  ]
+ },
+ "unit_knights_a65": {
+  "prompt": "{STYLE} Repaint the same unit as the reference image, the same armoured medieval knight with a lance on a barded warhorse, with the same colours, design and painting style, but seen from a steep overhead angle, the camera about 65 degrees above the ground: we mostly see the top of the helmet, shoulders, the upper face of shields, horse backs and decks, with only a little of the front visible, strongly foreshortened. Centred and filling most of the image, a bold, readable silhouette that stays clear when shrunk to a small game piece. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground under it, no base, no cast shadow, no text, no frame.",
+  "refs": [
+   "../hd/painted/objects/unit_knights.png"
+  ]
+ },
+ "unit_knights_a90": {
+  "prompt": "{STYLE} Repaint the same unit as the reference image, the same armoured medieval knight with a lance on a barded warhorse, with the same colours, design and painting style, but seen from directly overhead, straight down like a map counter: only the top of the helmet, shoulders, shield tops, spear or lance lying across, the horse's back and neck, or the deck and sail from above. Centred and filling most of the image, a bold, readable silhouette that stays clear when shrunk to a small game piece. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground under it, no base, no cast shadow, no text, no frame.",
+  "refs": [
+   "../hd/painted/objects/unit_knights.png"
+  ]
+ },
+ "unit_catapult_a45": {
+  "prompt": "{STYLE} Repaint the same unit as the reference image, the same wooden siege catapult with a small blue pennant, with the same colours, design and painting style, but seen from a high three-quarter angle, the camera about 45 degrees above the ground, looking down on the top of the head, shoulders and shield while the face and front are still visible. Centred and filling most of the image, a bold, readable silhouette that stays clear when shrunk to a small game piece. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground under it, no base, no cast shadow, no text, no frame.",
+  "refs": [
+   "../hd/painted/objects/unit_catapult.png"
+  ]
+ },
+ "unit_catapult_a65": {
+  "prompt": "{STYLE} Repaint the same unit as the reference image, the same wooden siege catapult with a small blue pennant, with the same colours, design and painting style, but seen from a steep overhead angle, the camera about 65 degrees above the ground: we mostly see the top of the helmet, shoulders, the upper face of shields, horse backs and decks, with only a little of the front visible, strongly foreshortened. Centred and filling most of the image, a bold, readable silhouette that stays clear when shrunk to a small game piece. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground under it, no base, no cast shadow, no text, no frame.",
+  "refs": [
+   "../hd/painted/objects/unit_catapult.png"
+  ]
+ },
+ "unit_catapult_a90": {
+  "prompt": "{STYLE} Repaint the same unit as the reference image, the same wooden siege catapult with a small blue pennant, with the same colours, design and painting style, but seen from directly overhead, straight down like a map counter: only the top of the helmet, shoulders, shield tops, spear or lance lying across, the horse's back and neck, or the deck and sail from above. Centred and filling most of the image, a bold, readable silhouette that stays clear when shrunk to a small game piece. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground under it, no base, no cast shadow, no text, no frame.",
+  "refs": [
+   "../hd/painted/objects/unit_catapult.png"
+  ]
+ },
+ "unit_trireme_a45": {
+  "prompt": "{STYLE} Repaint the same unit as the reference image, the same ancient trireme galley with banks of oars and a square sail, with the same colours, design and painting style, but seen from a high three-quarter angle, the camera about 45 degrees above the ground, looking down on the top of the head, shoulders and shield while the face and front are still visible. Centred and filling most of the image, a bold, readable silhouette that stays clear when shrunk to a small game piece. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground under it, no base, no cast shadow, no text, no frame.",
+  "refs": [
+   "../hd/painted/objects/unit_trireme.png"
+  ]
+ },
+ "unit_trireme_a65": {
+  "prompt": "{STYLE} Repaint the same unit as the reference image, the same ancient trireme galley with banks of oars and a square sail, with the same colours, design and painting style, but seen from a steep overhead angle, the camera about 65 degrees above the ground: we mostly see the top of the helmet, shoulders, the upper face of shields, horse backs and decks, with only a little of the front visible, strongly foreshortened. Centred and filling most of the image, a bold, readable silhouette that stays clear when shrunk to a small game piece. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground under it, no base, no cast shadow, no text, no frame.",
+  "refs": [
+   "../hd/painted/objects/unit_trireme.png"
+  ]
+ },
+ "unit_trireme_a90": {
+  "prompt": "{STYLE} Repaint the same unit as the reference image, the same ancient trireme galley with banks of oars and a square sail, with the same colours, design and painting style, but seen from directly overhead, straight down like a map counter: only the top of the helmet, shoulders, shield tops, spear or lance lying across, the horse's back and neck, or the deck and sail from above. Centred and filling most of the image, a bold, readable silhouette that stays clear when shrunk to a small game piece. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground under it, no base, no cast shadow, no text, no frame.",
+  "refs": [
+   "../hd/painted/objects/unit_trireme.png"
+  ]
+ },
+ "unit_settlers_a65": {
+  "prompt": "{STYLE} Repaint the same unit as the reference image, the same pioneer settler pushing a laden handcart, with the same colours, design and painting style, but seen from a steep overhead angle, the camera about 65 degrees above the ground: we mostly see the top of the helmet, shoulders, the upper face of shields, horse backs and decks, with only a little of the front visible, strongly foreshortened. Centred and filling most of the image, a bold, readable silhouette that stays clear when shrunk to a small game piece. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground under it, no base, no cast shadow, no text, no frame.",
+  "refs": [
+   "../hd/painted/objects/unit_settlers.png"
+  ]
+ },
+ "unit_legion_a65": {
+  "prompt": "{STYLE} Repaint the same unit as the reference image, the same Roman legionary with a large rectangular shield and a short sword, with the same colours, design and painting style, but seen from a steep overhead angle, the camera about 65 degrees above the ground: we mostly see the top of the helmet, shoulders, the upper face of shields, horse backs and decks, with only a little of the front visible, strongly foreshortened. Centred and filling most of the image, a bold, readable silhouette that stays clear when shrunk to a small game piece. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground under it, no base, no cast shadow, no text, no frame.",
+  "refs": [
+   "../hd/painted/objects/unit_legion.png"
+  ]
+ },
+ "unit_chariot_a65": {
+  "prompt": "{STYLE} Repaint the same unit as the reference image, the same two-horse ancient war chariot with a driver, with the same colours, design and painting style, but seen from a steep overhead angle, the camera about 65 degrees above the ground: we mostly see the top of the helmet, shoulders, the upper face of shields, horse backs and decks, with only a little of the front visible, strongly foreshortened. Centred and filling most of the image, a bold, readable silhouette that stays clear when shrunk to a small game piece. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground under it, no base, no cast shadow, no text, no frame.",
+  "refs": [
+   "../hd/painted/objects/unit_chariot.png"
+  ]
+ },
+ "unit_sail_a65": {
+  "prompt": "{STYLE} Repaint the same unit as the reference image, the same medieval sailing caravel, with the same colours, design and painting style, but seen from a steep overhead angle, the camera about 65 degrees above the ground: we mostly see the top of the helmet, shoulders, the upper face of shields, horse backs and decks, with only a little of the front visible, strongly foreshortened. Centred and filling most of the image, a bold, readable silhouette that stays clear when shrunk to a small game piece. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground under it, no base, no cast shadow, no text, no frame.",
+  "refs": [
+   "../hd/painted/objects/unit_sail.png"
+  ]
+ },
+ "unit_militia_a65": {
+  "prompt": "{STYLE} Repaint the same unit as the reference image, the same peasant militiaman with a spear, with the same colours, design and painting style, but seen from a steep overhead angle, the camera about 65 degrees above the ground: we mostly see the top of the helmet, shoulders, the upper face of shields, horse backs and decks, with only a little of the front visible, strongly foreshortened. Centred and filling most of the image, a bold, readable silhouette that stays clear when shrunk to a small game piece. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground under it, no base, no cast shadow, no text, no frame.",
+  "refs": [
+   "../hd/painted/objects/unit_militia.png"
+  ]
+ },
+ "unit_knights_a65b": {
+  "prompt": "{STYLE} Repaint the same unit as the reference image, the same armoured medieval knight with a lance on a barded warhorse, with the same colours, design and painting style, but seen from a steep overhead angle, the camera about 65 degrees above the ground: we mostly see the top of the helmet, shoulders, the upper face of shields, horse backs and decks, with only a little of the front visible, strongly foreshortened. Centred and filling most of the image, a bold, readable silhouette that stays clear when shrunk to a small game piece. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground under it, no base, no cast shadow, no text, no frame. The horse stands upright on all four legs, walking forward, its back and the rider's helmet and shoulders seen from above; it must not look like it is lying down.",
+  "refs": [
+   "../hd/painted/objects/unit_knights.png"
+  ]
+ },
+ "unit_chariot_a65c": {
+  "prompt": "{STYLE}  Repaint the same unit as the reference image, with the same colours, design and painting style, seen from a steep overhead angle, the camera about 65 degrees above the ground, like a painted miniature on a tabletop. A two-horse ancient war chariot with a driver, side by side horses and the chariot behind them, all pointing straight to the right, seen from above and slightly in front. The whole unit is compact, about as wide as it is deep, so it fits on a small round base. Centred and filling most of the image, a bold, readable silhouette that stays clear when shrunk to a small game piece. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground under it, no base, no cast shadow, no text, no frame.",
+  "refs": [
+   "../units/side-on/unit_chariot.png"
+  ]
+ },
+ "unit_chariot_a65d": {
+  "prompt": "{STYLE}  Repaint the same unit as the reference image, with the same colours, design and painting style, seen from a steep overhead angle, the camera about 65 degrees above the ground, like a painted miniature on a tabletop. A two-horse ancient war chariot with a driver, side by side horses and the chariot behind them, all pointing straight to the right, seen from above and slightly in front. The whole unit is compact, about as wide as it is deep, so it fits on a small round base. Centred and filling most of the image, a bold, readable silhouette that stays clear when shrunk to a small game piece. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground under it, no base, no cast shadow, no text, no frame.",
+  "refs": [
+   "../units/side-on/unit_chariot.png"
+  ]
+ },
+ "unit_trireme_a65c": {
+  "prompt": "{STYLE}  Repaint the same unit as the reference image, with the same colours, design and painting style, seen from a steep overhead angle, the camera about 65 degrees above the ground, like a painted miniature on a tabletop. An ancient trireme galley with a square sail and a short row of oars, the hull pointing to the right, seen from above; the oars are short and stay close to the hull. The whole unit is compact, about as wide as it is deep, so it fits on a small round base. Centred and filling most of the image, a bold, readable silhouette that stays clear when shrunk to a small game piece. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground under it, no base, no cast shadow, no text, no frame.",
+  "refs": [
+   "../units/side-on/unit_trireme.png"
+  ]
+ },
+ "unit_trireme_a65d": {
+  "prompt": "{STYLE}  Repaint the same unit as the reference image, with the same colours, design and painting style, seen from a steep overhead angle, the camera about 65 degrees above the ground, like a painted miniature on a tabletop. An ancient trireme galley with a square sail and a short row of oars, the hull pointing to the right, seen from above; the oars are short and stay close to the hull. The whole unit is compact, about as wide as it is deep, so it fits on a small round base. Centred and filling most of the image, a bold, readable silhouette that stays clear when shrunk to a small game piece. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground under it, no base, no cast shadow, no text, no frame.",
+  "refs": [
+   "../units/side-on/unit_trireme.png"
+  ]
+ },
+ "unit_settlers_a65c": {
+  "prompt": "{STYLE}  Repaint the same unit as the reference image, with the same colours, design and painting style, seen from a steep overhead angle, the camera about 65 degrees above the ground, like a painted miniature on a tabletop. A pioneer settler pushing a small laden handcart to the right, the man and the cart close together, seen from above and slightly in front, the man clearly standing upright on his feet. The whole unit is compact, about as wide as it is deep, so it fits on a small round base. Centred and filling most of the image, a bold, readable silhouette that stays clear when shrunk to a small game piece. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground under it, no base, no cast shadow, no text, no frame.",
+  "refs": [
+   "../units/side-on/unit_settlers.png"
+  ]
+ },
+ "unit_settlers_a65d": {
+  "prompt": "{STYLE}  Repaint the same unit as the reference image, with the same colours, design and painting style, seen from a steep overhead angle, the camera about 65 degrees above the ground, like a painted miniature on a tabletop. A pioneer settler pushing a small laden handcart to the right, the man and the cart close together, seen from above and slightly in front, the man clearly standing upright on his feet. The whole unit is compact, about as wide as it is deep, so it fits on a small round base. Centred and filling most of the image, a bold, readable silhouette that stays clear when shrunk to a small game piece. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground under it, no base, no cast shadow, no text, no frame.",
+  "refs": [
+   "../units/side-on/unit_settlers.png"
+  ]
+ }
+}
