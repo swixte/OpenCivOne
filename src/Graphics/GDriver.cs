@@ -55,6 +55,12 @@ namespace OpenCivOne.Graphics
 		}
 
 		/// <summary>
+		/// Whether map cells are being drawn in the map view (not the city screen's small map)
+		/// </summary>
+		public bool DrawsMapWindow => this.screens.GetValueByKey(0).HDOverflowClip is GRectangle clip &&
+			clip.X == 80 && clip.Y == 8 && clip.Width == 240 && clip.Height == 192;
+
+		/// <summary>
 		/// Area of the main screen where HD art reaching above map cells may be drawn, the map view by default
 		/// </summary>
 		public void SetHDOverflowClip(GRectangle rect)

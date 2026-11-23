@@ -139,7 +139,7 @@ namespace OpenCivOne
 			this.drawingMap = true;
 
 			// the isometric view on screen stays whole while the classic map is redrawn under it and the new view rendered
-			if (this.parent.IsoView != null)
+			if (this.parent.MapView != null)
 			{
 				GBitmap mapScreen = this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID);
 
@@ -147,7 +147,7 @@ namespace OpenCivOne
 				{
 					current.Hold = true;
 				}
-				else
+				else if (!this.parent.MapView.Blends)
 				{
 					// the first time, the window stays dark until the isometric view is ready, instead of showing the
 					// classic map being drawn
@@ -248,8 +248,8 @@ namespace OpenCivOne
 				}
 			}
 
-			// Draw city names
-			for (int i = 0; i < this.VisibleCities.Count; i++)
+			// Draw city names (a painted view writes its own)
+			for (int i = 0; i < this.VisibleCities.Count && !(this.PaintedView?.DrawsCities ?? false); i++)
 			{
 				CityInfo cityInfo = this.VisibleCities[i];
 
@@ -382,6 +382,11 @@ namespace OpenCivOne
 		/// <returns></returns>
 		public bool F0_2aea_03ba_DrawCell(int x, int y)
 		{
+			// the cell of the unit waiting for orders drawn without it: its blinking marker is off
+			if (this.BlinkUnit is (int player, int unit) && this.parent.GameData.Players[player].Units[unit].Position.X == x &&
+				this.parent.GameData.Players[player].Units[unit].Position.Y == y)
+				this.blinkShown = false;
+
 			bool drawn = this.DrawCellClassic(x, y);
 			this.RefreshIso(x, y);
 			this.SyncIsoCell(x, y);
@@ -396,7 +401,7 @@ namespace OpenCivOne
 		/// </summary>
 		private void SyncIsoCell(int x, int y)
 		{
-			if (this.parent.IsoView == null || this.drawingMap)
+			if (this.parent.MapView == null || this.drawingMap)
 				return;
 
 			int column = AdjustXPosition(x - this.parent.Var_d4cc_MapViewX), row = y - this.parent.Var_d75e_MapViewY;
@@ -583,7 +588,7 @@ namespace OpenCivOne
 					}
 				}
 
-				if (terrainType == TerrainTypeEnum.Grassland && (((7 * x) + (11 * y)) & 0x2) == 0)
+				if (HasShieldBonus(x, y, terrainType) && !(this.PaintedView?.DrawsFeatures ?? false))
 				{
 					// Draw grassland tiles with production bonus
 					// Instruction address 0x2aea:0x0996, size: 5
@@ -649,9 +654,11 @@ namespace OpenCivOne
 
 				// Instruction address 0x2aea:0x0b11, size: 3
 				// a print paints resources and huts into the map itself
-				bool paintsFeatures = this.parent.PaintedMap != null && this.parent.PaintedMap.PaintsFeatures;
+				// (and a painted view draws them itself, or its town covers them as the classic city square did)
+				bool skipFeatures = (this.parent.PaintedMap != null && this.parent.PaintedMap.PaintsFeatures) || (this.PaintedView?.DrawsFeatures ?? false) ||
+					((this.PaintedView?.DrawsCities ?? false) && terrainImprovements.HasFlag(TerrainImprovementFlagsEnum.City));
 
-				if (!paintsFeatures && F0_2aea_1836_CellHasSpecialResource(x, y))
+				if (!skipFeatures && F0_2aea_1836_CellHasSpecialResource(x, y))
 				{
 					// Draw special resources
 
@@ -660,7 +667,7 @@ namespace OpenCivOne
 				}
 
 				// Instruction address 0x2aea:0x0b3a, size: 3
-				if (!paintsFeatures && F0_2aea_1894_CellHasMinorTribeHut(x, y, terrainType))
+				if (!skipFeatures && F0_2aea_1894_CellHasMinorTribeHut(x, y, terrainType))
 				{
 					// Draw Minot tribe hut
 
@@ -709,7 +716,13 @@ namespace OpenCivOne
 						// Draw city white borders at the left and bottom sides
 						City city = this.parent.GameData.Cities[cityID];
 
-						if (city.PlayerID == this.parent.GameData.HumanPlayerID || city.VisibleSize > 0 || this.parent.GlobalPreferences.Debug.DebugMode)
+						if ((city.PlayerID == this.parent.GameData.HumanPlayerID || city.VisibleSize > 0 || this.parent.GlobalPreferences.Debug.DebugMode) &&
+							(this.PaintedView?.DrawsCities ?? false))
+						{
+							// a painted view draws the town, its size and its name over the painted ground
+							this.VisibleCities.Add(new CityInfo(scrX, scrY, cityID));
+						}
+						else if (city.PlayerID == this.parent.GameData.HumanPlayerID || city.VisibleSize > 0 || this.parent.GlobalPreferences.Debug.DebugMode)
 						{
 							// Instruction address 0x2aea:0x0c4b, size: 5
 							this.parent.DrawTools.DrawRectangle(scrX + 1, scrY + 1, 13, 13, 15);
@@ -859,7 +872,8 @@ namespace OpenCivOne
 				{
 					City city = this.parent.GameData.Cities[cityID];
 
-					if (city.PlayerID == this.parent.GameData.HumanPlayerID || city.VisibleSize > 0 || this.parent.GlobalPreferences.Debug.DebugMode)
+					if ((city.PlayerID == this.parent.GameData.HumanPlayerID || city.VisibleSize > 0 || this.parent.GlobalPreferences.Debug.DebugMode) &&
+						!(this.PaintedView?.DrawsCities ?? false))
 					{
 						this.parent.Graphics.DrawBitmapHDOverflow(this.parent.Var_aa_Screen0_Rectangle, scrX + 1, scrY + 1, this.parent.Array_d4ce[28]);
 					}
@@ -875,6 +889,9 @@ namespace OpenCivOne
 		/// <returns>true if unit is drawn, otherwise false</returns>
 		public bool F0_2aea_0e29_DrawUnit(int playerID, int unitID)
 		{
+			if (this.BlinkUnit == (playerID, unitID))
+				this.blinkShown = true;
+
 			bool drawn = this.DrawUnitClassic(playerID, unitID);
 			Unit drawnUnit = this.parent.GameData.Players[playerID].Units[unitID];
 			this.RefreshIso(drawnUnit.Position.X, drawnUnit.Position.Y);
@@ -895,6 +912,10 @@ namespace OpenCivOne
 
 			if (x >= 80 && x < 320 && y >= 8 && y < 193)
 			{
+				// a painted view draws the unit itself
+				if (this.PaintedView != null && this.PaintedView.DrawsUnit((int)unit.UnitType))
+					return true;
+
 				if ((unit.Status & UnitStatusEnum.Sentry) == UnitStatusEnum.None || GetTerrainType(unit.Position.X, unit.Position.Y) != TerrainTypeEnum.Water ||
 					this.parent.GameData.Units[(int)unit.UnitType].MovementType == UnitMovementTypeEnum.Water)
 				{
@@ -1528,7 +1549,7 @@ namespace OpenCivOne
 		/// </summary>
 		private void ShowIsoMap(int playerID)
 		{
-			IsoView? iso = this.parent.IsoView;
+			IMapView? iso = this.parent.MapView;
 			GBitmap screen = this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID);
 
 			if (iso == null)
@@ -1564,6 +1585,7 @@ namespace OpenCivOne
 				Explored = (x, y) => debug || (this.parent.GameData.MapVisibility[x, y] & mask) != 0,
 				Improvements = (x, y) => (int)F0_2aea_1585_GetVisibleTerrainImprovements(x, y),
 				Feature = (x, y) => (F0_2aea_1836_CellHasSpecialResource(x, y) ? 1 : 0) | (F0_2aea_1894_CellHasMinorTribeHut(x, y, GetTerrainType(x, y)) ? 2 : 0),
+				ShieldBonus = (x, y) => HasShieldBonus(x, y, GetTerrainType(x, y)),
 			};
 			uint[] colours = { 0xffc43a2c, 0xfff2ece0, 0xff3c9a46, 0xff3e5bd8, 0xffe0b830, 0xff2fb6c8, 0xffc84ab4, 0xff6a6a72 };
 
@@ -1616,12 +1638,24 @@ namespace OpenCivOne
 			scene.UnitStyle = (x, y) => unitStyles.TryGetValue((x, y), out string? st) ? st : "";
 			scene.CityLook = (x, y) => looks.TryGetValue((x, y), out var look) ? look : ("", 0);
 
+			// the unit waiting for the human player's orders, and whether its blinking marker is on
+			if (this.BlinkUnit is (int blinkPlayer, int blinkUnit))
+			{
+				Unit active = this.parent.GameData.Players[blinkPlayer].Units[blinkUnit];
+
+				if (active.UnitType != UnitTypeEnum.None && active.Position.Y >= 0 && active.Position.Y < 50)
+				{
+					scene.Active = (active.Position.X, active.Position.Y, (int)active.UnitType, colours[blinkPlayer & 7]);
+					scene.ActiveShown = this.blinkShown;
+				}
+			}
+
 			// the view is centred on the middle of the classic map window (15 x 12 cells)
 			float cx = this.parent.Var_d4cc_MapViewX + 7.5f, cy = this.parent.Var_d75e_MapViewY + 6f;
 			iso.Render(cx, cy, scene);
 			this.IsoCentre = (cx, cy);
 			GRectangle area = new GRectangle(80, 8, 240, 192);
-			screen.Over = new GBitmap.Overlay { Area = area, Pixels = iso.Pixels, Snapshot = screen.CopyPixels(area) };
+			screen.Over = new GBitmap.Overlay { Area = area, Pixels = iso.Pixels, Snapshot = screen.CopyPixels(area), Blend = iso.Blends };
 		}
 
 		/// <summary>
@@ -1709,7 +1743,7 @@ namespace OpenCivOne
 		/// </summary>
 		private void RefreshIso(int x, int y)
 		{
-			if (this.drawingMap || this.parent.IsoView == null)
+			if (this.drawingMap || this.parent.MapView == null)
 				return;
 
 			// the classic drawing goes into the snapshot first: repainting the isometric view takes a while, and until
@@ -1748,7 +1782,7 @@ namespace OpenCivOne
 		/// </summary>
 		public void SyncIsoSnapshot(int x, int y, int width, int height)
 		{
-			if (this.parent.IsoView == null)
+			if (this.parent.MapView == null)
 				return;
 
 			GBitmap screen = this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID);
@@ -1775,13 +1809,52 @@ namespace OpenCivOne
 		public (float X, float Y) IsoCentre { get; private set; }
 
 		/// <summary>
+		/// The painted view that draws over the cells being drawn now: none for the city screen's small map, which keeps
+		/// the classic city square, units and features
+		/// </summary>
+		private IMapView? PaintedView => this.parent.Graphics.DrawsMapWindow ? this.parent.MapView : null;
+
+		/// <summary>
+		/// The unit the human player is giving orders to while it blinks (UnitManagement.F0_1866_0ad6), null between
+		/// </summary>
+		public (int Player, int Unit)? BlinkUnit { get; set; }
+
+		private bool blinkShown = true;
+
+		/// <summary>
+		/// Whether a cell is grassland with the production bonus the map marks with a shield
+		/// </summary>
+		private static bool HasShieldBonus(int x, int y, TerrainTypeEnum terrainType) =>
+			terrainType == TerrainTypeEnum.Grassland && (((7 * x) + (11 * y)) & 0x2) == 0;
+
+		/// <summary>
+		/// The painted map's city feature bits for a cell (PaintedMap.City and the clearing's step): a city the human
+		/// player knows of opens a clearing in the painted ground, wider for a larger town
+		/// </summary>
+		public int CityClearing(int x, int y)
+		{
+			if (!F0_2aea_1585_GetVisibleTerrainImprovements(x, y).HasFlag(TerrainImprovementFlagsEnum.City))
+				return 0;
+
+			int cityID = GetCityByLocation(x, y);
+
+			if (cityID == -1)
+				return PaintedMap.City;
+
+			City city = this.parent.GameData.Cities[cityID];
+			int size = (city.PlayerID == this.parent.GameData.HumanPlayerID || this.parent.GlobalPreferences.Debug.DebugMode) ? city.ActualSize : city.VisibleSize;
+
+			return PaintedMap.City | (TopView.ClearingStep(Math.Max(1, size)) << PaintedMap.CityStepShift);
+		}
+
+		/// <summary>
 		/// Slides the unit at a cell to the next cell on the isometric map, in place of the classic map's sliding sprite
 		/// (which would show the classic unit over the isometric view). False when there is no isometric view or no unit
 		/// shown there, so the classic animation is played.
 		/// </summary>
 		public bool PlayIsoMove(GPoint from, GPoint direction)
 		{
-			IsoView? iso = this.parent.IsoView;
+			IMapView? iso = this.parent.MapView;
 			GBitmap screen = this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID);
 			GBitmap.Overlay? over = screen.Over;
 
@@ -1820,7 +1893,7 @@ namespace OpenCivOne
 		/// </summary>
 		public bool PlayIsoBattle(GPoint attacker, GPoint defender, bool attackerWins)
 		{
-			IsoView? iso = this.parent.IsoView;
+			IMapView? iso = this.parent.MapView;
 			GBitmap screen = this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID);
 			GBitmap.Overlay? over = screen.Over;
 
@@ -1857,7 +1930,7 @@ namespace OpenCivOne
 		/// </summary>
 		public GPoint MapClick(GPoint point)
 		{
-			IsoView? iso = this.parent.IsoView;
+			IMapView? iso = this.parent.MapView;
 
 			if (iso == null || point.X < 80 || point.Y < 8)
 				return point;

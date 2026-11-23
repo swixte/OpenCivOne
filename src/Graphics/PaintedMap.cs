@@ -674,8 +674,8 @@ namespace OpenCivOne.Graphics
 				{
 					hash = (hash * 31) + this.Terrain(x, y);
 
-					if (this.PaintsFeatures)
-						hash = (hash * 7) + this.Feature(x, y);
+					// a city's clearing is painted whatever the map's style
+					hash = (hash * 7) + (this.PaintsFeatures ? this.Feature(x, y) : (this.Feature(x, y) & (City | CityStepMask)));
 				}
 			}
 

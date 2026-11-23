@@ -30,7 +30,7 @@ namespace OpenCivOne
 		private LanguageTools languageTools;
 		private MapManagement mapManagement;
 		private PaintedMap? paintedMap = null;
-		private IsoView? isoView = null;
+		private IMapView? mapView = null;
 		private UnitManagement unitManagement;
 		private UnitGoTo unitGoTo;
 		private Actions oSegment_2459;
@@ -179,14 +179,24 @@ namespace OpenCivOne
 
 			// a theme with isometric art (hd/iso) shows the map window as an isometric view, at the HD size of the window
 			if (GBitmap.HDScale > 1)
-				this.isoView = IsoView.Load(hdPath, 240 * GBitmap.HDScale, 192 * GBitmap.HDScale);
+				this.mapView = IsoView.Load(hdPath, 240 * GBitmap.HDScale, 192 * GBitmap.HDScale);
+
+			// a painted map with painted towns and units shows them top-down over the classic map, as the theme's map
+			// renders do
+			if (this.mapView == null && this.paintedMap != null && GBitmap.HDScale > 1)
+				this.mapView = TopView.Load(hdPath, 240 * GBitmap.HDScale, 192 * GBitmap.HDScale, 16 * GBitmap.HDScale, $"{this.gameResourcePath}hd");
 
 			// a print paints resources and huts into the ground, with its trees and peaks
 			if (this.paintedMap != null)
 			{
+				// with the top-down view's painted towns, the ground opens a clearing round each city the human knows,
+				// wider for a larger town
+				bool clearings = this.mapView is TopView;
+
 				this.paintedMap.FeatureAt = (x, y) =>
 					(this.mapManagement!.F0_2aea_1836_CellHasSpecialResource(x, y) ? PaintedMap.SpecialResource : 0) |
-					(this.mapManagement.F0_2aea_1894_CellHasMinorTribeHut(x, y, this.mapManagement.GetTerrainType(x, y)) ? PaintedMap.MinorTribeHut : 0);
+					(this.mapManagement.F0_2aea_1894_CellHasMinorTribeHut(x, y, this.mapManagement.GetTerrainType(x, y)) ? PaintedMap.MinorTribeHut : 0) |
+					(clearings ? this.mapManagement.CityClearing(x, y) : 0);
 			}
 
 			#region Initialize Segments
@@ -633,7 +643,7 @@ namespace OpenCivOne
 		/// <summary>
 		/// The isometric view of the map window, when the theme has isometric art
 		/// </summary>
-		public IsoView? IsoView => this.isoView;
+		public IMapView? MapView => this.mapView;
 
 		public PaintedMap? PaintedMap
 		{

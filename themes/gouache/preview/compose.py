@@ -79,7 +79,7 @@ def unit_base(col, c, active, ss=4, r=0.4, squash=BASE_SQUASH):
     light = tuple(min(255, int(v * 1.3 + 40)) for v in col)
     im = Image.new('RGBA', (w, h), (0, 0, 0, 0))
     ImageDraw.Draw(im).ellipse([cx - rx, cy - ry + side * 1.5, cx + rx + side, cy + ry + side * 2], fill=(0, 0, 0, 100))
-    im = im.filter(ImageFilter.GaussianBlur(side * 0.7))
+    im = im.filter(ImageFilter.GaussianBlur(float(side * 0.7)))
     d = ImageDraw.Draw(im)
     if active:
         d.ellipse([cx - rx - 2.5 * ss, cy - ry - 2.5 * ss, cx + rx + 2.5 * ss, cy + ry + side + 2.5 * ss], outline='white', width=round(1.5 * ss))
@@ -90,7 +90,7 @@ def unit_base(col, c, active, ss=4, r=0.4, squash=BASE_SQUASH):
     d.ellipse([cx - rx, cy - ry, cx + rx, cy + ry], outline=(250, 244, 226), width=round(0.9 * ss))
     hl = Image.new('RGBA', (w, h), (0, 0, 0, 0))
     ImageDraw.Draw(hl).ellipse([cx - rx * 0.8, cy - ry * 0.85, cx + rx * 0.5, cy - ry * 0.1], fill=light + (120,))
-    im.alpha_composite(hl.filter(ImageFilter.GaussianBlur(ry * 0.25)))
+    im.alpha_composite(hl.filter(ImageFilter.GaussianBlur(float(ry * 0.25))))
     return im.resize((round(w / ss), round(h / ss)), Image.LANCZOS)
 
 

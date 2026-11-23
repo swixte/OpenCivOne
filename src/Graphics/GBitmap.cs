@@ -1029,6 +1029,12 @@ namespace OpenCivOne.Graphics
 			/// in between
 			/// </summary>
 			public bool Hold;
+
+			/// <summary>
+			/// The overlay's pixels are premultiplied by alpha and drawn over the bitmap's own (the classic map shows where
+			/// the overlay is clear), rather than replacing them
+			/// </summary>
+			public bool Blend;
 		}
 
 		public Overlay? Over
@@ -1110,6 +1116,27 @@ namespace OpenCivOne.Graphics
 				Array.Copy(this.aPixels, ((area.Y + y) * this.iWidth) + area.X, copy, y * area.Width, area.Width);
 
 			return copy;
+		}
+
+		/// <summary>
+		/// A premultiplied colour drawn over an opaque one, keeping the opaque one's alpha byte
+		/// </summary>
+		private static uint BlendPremultiplied(uint top, uint under)
+		{
+			uint a = top >> 24;
+
+			if (a == 0)
+				return under;
+
+			if (a == 255)
+				return (top & 0xffffff) | (under & 0xff000000);
+
+			uint keep = 255 - a;
+			uint r = ((top >> 16) & 0xff) + ((((under >> 16) & 0xff) * keep) + 127) / 255;
+			uint g = ((top >> 8) & 0xff) + ((((under >> 8) & 0xff) * keep) + 127) / 255;
+			uint b = (top & 0xff) + (((under & 0xff) * keep) + 127) / 255;
+
+			return (under & 0xff000000) | (Math.Min(r, 255u) << 16) | (Math.Min(g, 255u) << 8) | Math.Min(b, 255u);
 		}
 
 		public void WriteScaledPixels(IntPtr destination, int stride)
@@ -1220,7 +1247,10 @@ namespace OpenCivOne.Graphics
 							if (over != null && j >= over.Area.X && j < over.Area.X + over.Area.Width && i >= over.Area.Y && i < over.Area.Y + over.Area.Height &&
 								(over.Hold || (shows != null ? shows[((i - over.Area.Y) * over.Area.Width) + (j - over.Area.X)] :
 									over.Snapshot[((i - over.Area.Y) * over.Area.Width) + (j - over.Area.X)] == this.aPixels[pixelAddress])))
-								pixel = over.Pixels[((((i - over.Area.Y) * HDScale) + k) * over.Area.Width * HDScale) + ((j - over.Area.X) * HDScale) + l];
+							{
+								uint top = over.Pixels[((((i - over.Area.Y) * HDScale) + k) * over.Area.Width * HDScale) + ((j - over.Area.X) * HDScale) + l];
+								pixel = over.Blend ? BlendPremultiplied(top, pixel) : top;
+							}
 
 							rows[(k * hdWidth) + (j * HDScale) + l] = (int)pixel;
 						}
@@ -1786,10 +1816,13 @@ namespace OpenCivOne.Graphics
 							}
 
 							// the original pixel under the region follows the majority of its HD pixels:
-							// a key color index, the closest palette color, or transparent
+							// a key color index, the closest palette color, or transparent. Any key pixel makes the original
+							// pixel the key's index: a key pixel shows the color of the original pixel under it, so in a
+							// block shared with a rim or a figure (most of a small unit's base) a palette color there would
+							// turn the key pixels that color instead of the player's. The other HD pixels keep their own colors.
 							int index = 0;
 
-							if (primaryCount + secondaryCount > 0 && primaryCount + secondaryCount >= visibleCount)
+							if (primaryCount + secondaryCount > 0)
 							{
 								index = (secondaryCount > primaryCount) ? secondaryIndex : primaryIndex;
 							}

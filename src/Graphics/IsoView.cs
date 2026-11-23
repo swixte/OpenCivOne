@@ -14,8 +14,17 @@ namespace OpenCivOne.Graphics
 	/// rivers and roads under them, then cities with their plates and flags, units with their banners, and mist over
 	/// unexplored land. The art comes from a theme's hd/iso folder (see tools/hdart/iso_assets.py).
 	/// </summary>
-	public sealed class IsoView
+	public sealed class IsoView : IMapView
 	{
+		// the isometric view covers the whole window and draws everything itself over the classic map
+		public bool Blends => false;
+
+		public bool DrawsCities => false;
+
+		public bool DrawsUnit(int type) => false;
+
+		public bool DrawsFeatures => false;
+
 		public const int TileWidth = 80, TileHeight = 40;
 		private const int MapWidth = 80, MapHeight = 50, TextureSize = 400;
 		// sizes are given for 192-pixel tiles, as the art was laid out
@@ -90,6 +99,18 @@ namespace OpenCivOne.Graphics
 			/// </summary>
 			public Func<int, int, string> UnitStyle = (x, y) => "";
 			public List<(int X, int Y, int Type, uint Colour)> Units = new List<(int, int, int, uint)>();
+
+			/// <summary>
+			/// The unit waiting for the human player's orders, at its cell (also in a city, where Units has none), and
+			/// whether its blinking marker shows at this moment; the top-down view rings it
+			/// </summary>
+			public (int X, int Y, int Type, uint Colour)? Active = null;
+			public bool ActiveShown = true;
+
+			/// <summary>
+			/// Whether a cell shows the grassland shield (the production bonus the classic map marks on some grassland)
+			/// </summary>
+			public Func<int, int, bool> ShieldBonus = (x, y) => false;
 		}
 
 		private IsoView(int width, int height, uint[] grass, uint[] sand, uint[] snow, uint[] sea, uint[] shallow)

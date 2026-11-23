@@ -503,6 +503,9 @@ namespace OpenCivOne
 
 			//MouseEvent mouseState;
 
+			// a painted map view rings the unit while it blinks
+			this.parent.MapManagement.BlinkUnit = (unitID < 128) ? (playerID, unitID) : null;
+
 			do
 			{
 				if (unitID >= 128)
@@ -597,6 +600,8 @@ namespace OpenCivOne
 				}
 			}
 			while (this.parent.CAPI.kbhit() == 0 && !this.parent.HasNewMouseEvent());
+
+			this.parent.MapManagement.BlinkUnit = null;
 		}
 
 		/// <summary>
