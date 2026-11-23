@@ -529,6 +529,10 @@ namespace OpenCivOne.Graphics
 					ty = y0 + ((c - th) / 2);
 				}
 
+				// on a small map (the city screen) the size is in the title, and its worked-cell marks would cover a badge
+				if (!names)
+					continue;
+
 				float s = 13 * c / 64f, u = c / 64f;
 				float bx = MathF.Max(x0 + u, tx - s + (2 * u)), by = MathF.Max(y0 + u, ty - (4 * u));
 				fill.Color = ToColor(town.Colour);
@@ -539,9 +543,6 @@ namespace OpenCivOne.Graphics
 				string size = town.Size.ToString();
 				fill.Color = Lightness(town.Colour) > 0.72f ? Ink : SKColors.White;
 				DrawCentred(canvas, size, bx + ((s + u) / 2), by + ((s + u) / 2), badgeFont, fill, true);
-
-				if (!names)
-					continue;
 
 				float ny = MathF.Min(y0 + c, ty + th + (2 * u));
 				float nx = x0 + (c / 2f);

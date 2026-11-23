@@ -30,6 +30,10 @@ The gouache set has nine units and no huts or resources of its own. The other 19
 | `09_ingame_battle_frames.jpg` | A real battle in game: a Babylonian legion attacks the Roman catapult; dust bursts at the clash, and the catapult greys and fades. |
 | `10_battle_frames_harness.png` | The same battle drawing, frame by frame (`TOPVIEW_BATTLE` in the harness): lunge, clash, fall back, smoke. |
 | `11_city_screen_map_2x.png` | The city screen's small map: the painted hamlet and grassland shield under the worked-tile icons. |
+| `12_ingame_big_cities.jpg`, `13_ingame_walled_rome_and_capital_3x.png` | Larger cities in game (sizes set in the save): Rome at size 9 with City Walls as the walled city with its domed palace, and Babylon at 13 as the marble capital, each in its clearing. |
+| `14_ingame_walled_paris_4x.png` | Paris at size 6 with walls: the walled terracotta town. |
+| `15_city_screen_size9_2x.png` | Rome's city screen at size 9: the walled town at the centre of its small map. The size badge is left out there, since the title gives the population and the worked-tile icons would cover it. |
+| `16_after_city_screen.jpg` | Back on the map after closing the city screen, nothing left over from it. |
 
 ## Also fixed
 
@@ -41,7 +45,7 @@ The gouache set has nine units and no huts or resources of its own. The other 19
 ## Battles and the city screen
 
 - **Battles** are painted too: the attacker lunges and falls back, dust and sparks burst where they meet, and the loser greys, sinks and fades under rising smoke. No art files are needed, so they work for any theme with this view.
-- **The city screen's small map** gets the same painted town, foreign units, huts, resources and shields, drawn through a second overlay (`GBitmap.Inset`). The worked-tile icons stay on top. Walled towns use the ladder's `_w` pictures, there as on the map.
+- **The city screen's small map** gets the same painted town, foreign units, huts, resources and shields, drawn through a second overlay (`GBitmap.Inset`). The worked-tile icons stay on top, so the size badge is left out there; the title gives the population. Walled towns use the ladder's `_w` pictures, there as on the map.
 
 ## Reproducing
 
