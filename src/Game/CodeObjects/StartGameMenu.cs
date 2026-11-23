@@ -864,6 +864,15 @@ namespace OpenCivOne
 				this.parent.Array_d4ce[16 + i] = this.parent.Graphics.F0_VGA_0b85_ScreenToBitmap(1, (i * 16) + 1, 113, 15, 15);
 			}
 
+			// A theme can paint its towns as they grow, in the twelve unused slots after the units in the second unit row:
+			// six steps, then the same six walled. A slot without HD art keeps the original city sprite.
+			for (int i = 0; i < 12; i++)
+			{
+				int sprite = this.parent.Graphics.F0_VGA_0b85_ScreenToBitmap(1, ((8 + i) * 16) + 1, 177, 15, 15);
+
+				this.parent.TownSprites[i] = this.parent.Graphics.BitmapHasHDArt(sprite) ? sprite : -1;
+			}
+
 			for (int i = 0; i < 8; i++)
 			{
 				// Instruction address 0x0000:0x1960, size: 5

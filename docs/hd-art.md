@@ -79,6 +79,11 @@ An optional `style.txt` in the painted art folder (lines of `name value`) change
 - `paper`: how much colours lean towards cream paper.
 - `clouds`, `grade`: the strength of the cloud shadows and the warm colour grade (1 each); `shallows`: the width of the
   shallow water; `coastline 1`: the printed coast in the painterly mode too.
+- `coastwarp`: how far coasts and terrain borders wander from the grid (1 as before, up to 2); `groundblend`: how wide
+  land terrains blend into each other (1 as before, up to 2.2), so the cell corners of a border don't show.
+- `layout 1` without `print`: the scenery is laid out like a print's, but painted. Open grassland then gets now and
+  then a copse, a tight clump of small trees, rather than lone ones, and mountains a main peak off the middle of its
+  own height, often with a lower one beside it, so a range has a ragged skyline.
 
 A terrain can also have a ground texture of its own: `forest`, `hills`, `mountains` and `jungle` in `ground/` replace
 the mix those terrains use otherwise. `themes/ukiyo-e/hd/painted` uses all of this.
@@ -258,6 +263,7 @@ Coordinates are in the original 320x200 sheets.
 | SP257 | x = 80 + 16 * i, y = 128 | Fog borders toward unexplored N, E, S, W. |
 | SP257 | x = 16 * i + 1, y = 97, 15x15 | Explosion frames. |
 | SP257 | x = 16 * (j % 20) + 1, y = 161 + 16 * (j / 20), 15x15 | Units in UnitTypeEnum order. |
+| SP257 | x = 16 * (8 + i) + 1, y = 177, 15x15 | Optional: a theme's towns as they grow, in the 12 unused slots after the units: steps 0-5 (hamlet, three towns, city, capital), then the same walled. The game picks one by the city's size (MapManagement.TownStep) when the slot has HD art, and otherwise draws the city sprite. On the painted map the size then stands on a small plaque drawn at HD resolution. |
 
 ## Starting point for artists
 

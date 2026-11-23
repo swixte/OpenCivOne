@@ -52,14 +52,15 @@ def soft_town(path):
 
 # (cell x, cell y, player, name, size, step 0-5, walled); a town always fits inside its one cell, smaller towns covering
 # less of it in a smaller clearing (the engine's, from PAINTED_CITIES with the same steps)
-TOWNS = [(6, 4, 'blue', 'Babylon', 9, 4, False), (5, 6, 'blue', 'Ur', 3, 1, False), (3, 7, 'blue', 'Thebes', 14, 5, True),
-         (18, 5, 'red', 'Kish', 4, 2, False), (10, 5, 'blue', 'Mari', 5, 2, True),
-         (16, 4, 'red', 'Nineveh', 6, 3, True), (15, 7, 'red', 'Assur', 1, 0, False)]
+# the step is the one the game draws for the size (MapManagement.TownStep): Thebes is the capital, with the palace
+TOWNS = [(6, 4, 'blue', 'Babylon', 12, 4, False), (5, 6, 'blue', 'Ur', 3, 1, False), (3, 7, 'blue', 'Thebes', 14, 5, True),
+         (18, 5, 'red', 'Kish', 5, 2, False), (10, 5, 'blue', 'Mari', 5, 2, True),
+         (16, 4, 'red', 'Nineveh', 8, 3, True), (15, 7, 'red', 'Assur', 1, 0, False)]
 STEP_SIZE = (0.42, 0.56, 0.7, 0.84, 0.98, 0.98)
 CITIES = ';'.join(f'{x},{y},{step}' for x, y, _, _, _, step, _ in TOWNS)
 
 
-UNITS = [(7, 6, 'settlers', 'blue', True), (3, 5, 'phalanx', 'blue', False), (9, 2, 'knights', 'blue', False),
+UNITS = [(7, 6, 'settlers', 'blue', True), (3, 5, 'phalanx', 'blue', False), (8, 4, 'knights', 'blue', False),
          (5, 9, 'catapult', 'blue', False), (12, 5, 'trireme', 'blue', False),
          (14, 4, 'legion', 'red', False), (14, 6, 'chariot', 'red', False), (19, 10, 'sail', 'red', False)]
 
@@ -137,22 +138,27 @@ def body(path, c, unit, player='blue'):
             fl, fr, lift = np.percentile(xs[feet], 2), np.percentile(xs[feet], 98), 0.06
         ax, ay, half = (fl + fr) / 2, bottom - lift * (bottom - top), (fr - fl) / 2
     f = min(c * UNIT_SCALE * UNIT_SIZE.get(unit, 1), c * 0.95 / max(u.size))
-    # nothing reaches more than a little way out of the cell sideways from the middle of the base: a long pike makes
-    # its man smaller rather than pushing him off his base
-    f = min(f, c * 0.56 / max(ax, u.width - ax))
+    # nothing reaches out of the cell sideways from the middle of the base (the game's sprite leaves the cell's first
+    # sixteenth empty): a long pike or a long ship is drawn smaller rather than cut off or pushed off its base
+    f = min(f, c * 0.43 / ax, c * 0.49 / (u.width - ax))
     u = u.resize((round(u.width * f), round(u.height * f)), Image.LANCZOS)
     return u, (ax * f, ay * f), half * f
 
 
-FOOT = {'phalanx', 'legion', 'militia', 'musketeers', 'riflemen', 'mech_infantry'}
+FOOT = {'phalanx', 'legion', 'militia', 'musketeers', 'riflemen', 'diplomat'}
 SHIPS = {'trireme', 'sail', 'frigate', 'ironclad', 'cruiser', 'battleship', 'submarine', 'carrier', 'transport'}
 # the sheet's pixels per cell: its largest unit, a ship, is about 300 pixels long and a cell across
 UNIT_SCALE = 0.92 / 306
 # men on foot drawn a little smaller still than the sheet has them, so the size of a unit says what it is
 # and their bases as on a tabletop: a small round one for a man on foot, larger for horses and carts, largest for ships
-BASE_R = {'phalanx': 0.2, 'legion': 0.2, 'militia': 0.2, 'settlers': 0.38, 'knights': 0.3, 'chariot': 0.32, 'catapult': 0.32,
+BASE_R = {'phalanx': 0.2, 'legion': 0.2, 'militia': 0.2, 'musketeers': 0.2, 'riflemen': 0.2, 'diplomat': 0.2, 'settlers': 0.38, 'knights': 0.3, 'chariot': 0.32, 'catapult': 0.32,
           'trireme': 0.44, 'sail': 0.42}
-UNIT_SIZE = {'phalanx': 0.95, 'legion': 0.95, 'militia': 0.95}
+UNIT_SIZE = {'phalanx': 0.95, 'legion': 0.95, 'militia': 0.95,
+             # the 4x set's units, enlarged to about the sheet's scale, sized against the painted ones
+             'musketeers': 0.85, 'riflemen': 0.85, 'diplomat': 0.8, 'cavalry': 1.3, 'cannon': 0.85, 'artillery': 0.9,
+             'armor': 0.9, 'mech_infantry': 0.85, 'caravan': 0.85, 'fighter': 0.95, 'bomber': 1.05, 'nuclear': 0.8,
+             'frigate': 1.15, 'ironclad': 1.15, 'cruiser': 1.15, 'battleship': 1.2, 'submarine': 1.1, 'carrier': 1.2,
+             'transport': 1.15}
 # the ships are painted from lower down, nearer side-on, so their bases are flatter ovals to match
 UNIT_SQUASH = {'trireme': 0.4, 'sail': 0.48}
 
@@ -195,9 +201,48 @@ def draw_units(im, scale):
     return im
 
 
+def town_fixes(t, step, walled):
+    """Fixes the ladder's art needs at game size: the hamlet's thatch reads as hot orange, so it turns to straw; walls
+    of the small walled towns are a hairline, so their ring gets a pale stone top and a dark outer edge; and the large
+    walled towns sit on a soft apron of trodden earth, so their square wall doesn't look cut out of the grass."""
+    a = np.asarray(t, np.float32).copy()
+    rgb, alpha = a[..., :3], a[..., 3]
+    if step == 0:
+        r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+        orange = np.clip((r - b - 60) / 60, 0, 1) * np.clip((r - g - 15) / 40, 0, 1)
+        lum = rgb.mean(-1, keepdims=True)
+        straw = np.array([226, 196, 112], np.float32) * (lum / 150)
+        rgb[:] = rgb + (straw - rgb) * (0.75 * orange)[..., None]
+    size = max(t.size)
+    if walled and step in (1, 2):
+        solid = Image.fromarray(((alpha > 170) * 255).astype('uint8'))
+        w = max(3, round(size * 0.012))
+        outer = np.asarray(solid.filter(ImageFilter.MaxFilter(2 * w + 1)), np.float32) / 255
+        inner = np.asarray(solid.filter(ImageFilter.MinFilter(2 * w + 1)), np.float32) / 255
+        top = np.clip(alpha / 255 - inner, 0, 1)
+        rim = np.clip(outer - alpha / 255, 0, 1)
+        rgb[:] = rgb + (np.array([236, 222, 186], np.float32) - rgb) * (0.85 * top)[..., None]
+        rgb[:] = rgb * (1 - rim[..., None]) + np.array([58, 44, 30], np.float32) * rim[..., None]
+        alpha[:] = np.maximum(alpha, rim * 230)
+    out = Image.fromarray(np.dstack([rgb, alpha]).clip(0, 255).astype('uint8'), 'RGBA')
+    if walled and step >= 4:
+        pad = round(size * 0.06)
+        apron = Image.new('RGBA', (t.width + 2 * pad, t.height + 2 * pad), (0, 0, 0, 0))
+        m = Image.new('L', apron.size, 0)
+        m.paste(t.getchannel('A'), (pad, pad))
+        m = m.filter(ImageFilter.MaxFilter(2 * (pad // 2) + 1)).filter(ImageFilter.GaussianBlur(pad / 2))
+        earth = Image.new('RGBA', apron.size, (150, 120, 78, 255))
+        earth.putalpha(m.point(lambda v: v * 0.55))
+        apron.alpha_composite(earth)
+        apron.alpha_composite(out, (pad, pad))
+        out = apron
+    return out
+
+
 # the ladder of town steps: a hamlet of huts, three steps of terracotta towns, a city with a gold-domed palace and a
 # marble capital; walled versions from step 1 up
-TOWN_ART = {(i, w): soft_town(f'../hd/painted/towns/ladder/t{i}_{"w" if w else "o"}.png') for i in range(6) for w in (False, True)}
+TOWN_ART = {(i, w): town_fixes(soft_town(f'../hd/painted/towns/ladder/t{i}_{"w" if w else "o"}.png'), i, w)
+            for i in range(6) for w in (False, True)}
 ENGINE = sys.argv[1] if len(sys.argv) > 1 else 'engine.png'
 OUT = sys.argv[2] if len(sys.argv) > 2 else ''
 scene(1).save(OUT + 'map.jpg', quality=90)

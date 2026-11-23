@@ -1553,6 +1553,63 @@ GBitmap other4()
 	GBitmap.HDScale = 2;
 }
 
+// GAME_SPRITES=SP257.PIC;THEME_DIR;OUT.png renders a theme's map sprites the way the game cuts and draws them: the unit
+// row recoloured for three players (as StartGameMenu does) and every unit drawn, and the town ladder (the slots after
+// the units, see TownSprites) drawn as a city is, with the player's dark colour swapped in for index 5
+if (Environment.GetEnvironmentVariable("GAME_SPRITES") is string gameSprites)
+{
+	string[] parts = gameSprites.Split(';');
+	GBitmap.HDScale = 4;
+	GBitmap.HDDirectory = parts[1];
+	var sheet = GBitmap.FromPICFile(parts[0], false)!;
+	var screen1 = new GBitmap();
+	sheet.CopyPalette(screen1);
+	screen1.DrawBitmap(0, 0, sheet, false);
+	var screen0 = new GBitmap();
+	sheet.CopyPalette(screen0);
+	screen0.FillRectangle(new GRectangle(0, 0, 320, 200), 2, PixelWriteModeEnum.Normal);
+	GBitmap Cut(GBitmap from, int x, int y) { var b = new GBitmap(15, 15); from.CopyPalette(b); b.DrawBitmap(0, 0, from, new GRectangle(x, y, 15, 15), false); return b; }
+	byte[] colours = { 12, 15, 10, 9, 14, 11, 13, 7 }, darks = { 4, 7, 2, 1, 10, 3, 4, 8 };
+	int[] players = { 3, 0, 1 };
+	// cities as MapManagement draws them on the painted map: the town for the size (TownStep), walled from the walled
+	// half of the ladder, the player's dark colour for index 5, then the size on its HD plaque
+	(int Size, bool Palace, bool Walls)[] cities = { (1, false, false), (3, false, false), (6, false, false), (9, false, false),
+		(13, false, false), (14, true, false), (2, false, true), (4, false, true), (7, false, true), (10, false, true), (12, false, true), (16, true, true) };
+	for (int t = 0; t < cities.Length; t++)
+	{
+		var (size, palace, walls) = cities[t];
+		int player = players[t % 3], x = t * 24 + 8, y = 12;
+		int step = OpenCivOne.MapManagement.TownStep(size, palace);
+		screen0.DrawBitmap(x + 1, y + 1, Cut(screen1, ((8 + step + (walls ? 6 : 0)) * 16) + 1, 177), true);
+		screen0.ReplaceColor(new GRectangle(x + 2, y + 2, 12, 12), 5, darks[player]);
+		byte plaque = darks[player];
+		screen0.DrawHDPlaque(x + 1, y + 1, $"{size}", plaque, (byte)(plaque == 7 || plaque == 10 || plaque == 11 || plaque == 14 || plaque == 15 ? 0 : 15));
+	}
+	for (int p = 0; p < players.Length; p++)
+	{
+		var band = new GBitmap(320, 32);
+		sheet.CopyPalette(band);
+		band.DrawBitmap(0, 0, screen1, new GRectangle(0, 160, 320, 32), false);
+		band.ReplaceColor(new GRectangle(0, 0, 320, 32), 10, colours[players[p]]);
+		band.ReplaceColor(new GRectangle(0, 0, 320, 32), 2, darks[players[p]]);
+		for (int j = 0; j < 28; j++)
+			screen0.DrawBitmap((j % 14) * 22 + 8, 40 + (p * 2 + j / 14) * 26, Cut(band, (j % 20) * 16 + 1, (j / 20) * 16), true);
+	}
+	int w = 320 * 4, h = 200 * 4;
+	IntPtr mem = Marshal.AllocHGlobal(w * h * 4);
+	screen0.WriteScaledPixels(mem, w * 4);
+	using var image = new SKBitmap(w, h, SKColorType.Bgra8888, SKAlphaType.Premul);
+	int[] pixels = new int[w * h];
+	Marshal.Copy(mem, pixels, 0, pixels.Length);
+	for (int i = 0; i < pixels.Length; i++) pixels[i] |= unchecked((int)0xff000000);
+	Marshal.Copy(pixels, 0, image.GetPixels(), pixels.Length);
+	Marshal.FreeHGlobal(mem);
+	using (var file = File.Create(parts[2])) image.Encode(file, SKEncodedImageFormat.Png, 100);
+	Console.WriteLine($"game sprites written to {parts[2]}");
+	GBitmap.HDDirectory = null;
+	GBitmap.HDScale = 2;
+}
+
 int Brightness(uint c) => (int)(((c >> 16) & 0xff) + ((c >> 8) & 0xff) + (c & 0xff)) / 3;
 
 Directory.Delete(dir, true);

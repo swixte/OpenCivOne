@@ -714,6 +714,63 @@ namespace OpenCivOne.Graphics
 		}
 
 		/// <summary>
+		/// Draws a small plaque with a short text on it in the HD layer, its top left corner at the indexed pixel (x, y):
+		/// a rounded box in the palette color fillIndex with a dark edge and the text in inkIndex, in a bold serif face at
+		/// HD resolution, like the city size on the painted map's previews. Returns false when there is no HD scale to draw at.
+		/// </summary>
+		public bool DrawHDPlaque(int x, int y, string text, byte fillIndex, byte inkIndex)
+		{
+			if (HDScale < 2 || x < 0 || y < 0 || x >= this.iWidth || y >= this.iHeight)
+				return false;
+
+			this.EnsureHDLayer();
+
+			using SKTypeface typeface = SKTypeface.FromFamilyName("Georgia", SKFontStyle.Bold) ?? SKTypeface.Default;
+			using SKFont font = new SKFont(typeface, 2.9f * HDScale);
+			using SKPaint paint = new SKPaint { IsAntialias = true };
+			float textWidth = font.MeasureText(text);
+			float edge = 0.3f * HDScale, radius = 0.6f * HDScale;
+			int width = (int)MathF.Ceiling(textWidth + (1.4f * HDScale)), height = (int)MathF.Ceiling(3.4f * HDScale);
+			using SKBitmap plaque = new SKBitmap(width, height, SKColorType.Bgra8888, SKAlphaType.Unpremul);
+
+			using (SKCanvas canvas = new SKCanvas(plaque))
+			{
+				uint fill = this.oPalette[fillIndex].ToUInt32(), ink = this.oPalette[inkIndex].ToUInt32();
+				canvas.Clear(SKColors.Transparent);
+				paint.Color = new SKColor(20, 18, 16);
+				canvas.DrawRoundRect(0, 0, width, height, radius, radius, paint);
+				paint.Color = new SKColor((byte)(fill >> 16), (byte)(fill >> 8), (byte)fill);
+				canvas.DrawRoundRect(edge, edge, width - (2 * edge), height - (2 * edge), radius * 0.7f, radius * 0.7f, paint);
+				paint.Color = new SKColor((byte)(ink >> 16), (byte)(ink >> 8), (byte)ink);
+				canvas.DrawText(text, (width - textWidth) / 2, (height / 2f) + (font.Size * 0.36f), font, paint);
+			}
+
+			// the indexed pixels under it show their palette color in HD first, so the plaque's corners sit on them
+			for (int py = y; py < Math.Min(this.iHeight, y + ((height + HDScale - 1) / HDScale)); py++)
+			{
+				for (int px = x; px < Math.Min(this.iWidth, x + ((width + HDScale - 1) / HDScale)); px++)
+					this.MaterializeHDPixel(px, py);
+			}
+
+			int hdWidth = this.iWidth * HDScale;
+
+			for (int py = 0; py < height && (y * HDScale) + py < this.iHeight * HDScale; py++)
+			{
+				for (int px = 0; px < width && (x * HDScale) + px < hdWidth; px++)
+				{
+					SKColor color = plaque.GetPixel(px, py);
+
+					if (color.Alpha >= 128)
+						this._hdPixels![(((y * HDScale) + py) * hdWidth) + (x * HDScale) + px] = 0xff000000 | ((uint)color.Red << 16) | ((uint)color.Green << 8) | color.Blue;
+				}
+			}
+
+			this.bModified = true;
+
+			return true;
+		}
+
+		/// <summary>
 		/// Shows an unexplored cell of a print over the 16x16 indexed pixels at (x, y), see PaintedMap.CopyFogCell
 		/// </summary>
 		public void DrawPaintedFog(int x, int y, PaintedMap map, int mapX, int mapY)

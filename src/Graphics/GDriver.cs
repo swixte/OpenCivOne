@@ -525,6 +525,29 @@ namespace OpenCivOne.Graphics
 			}
 		}
 
+		/// <summary>
+		/// Draws a small plaque with a text in a screen's HD layer (see GBitmap.DrawHDPlaque); false when it can't
+		/// </summary>
+		public bool DrawHDPlaque(CRectangle rect, int x, int y, string text, byte fillIndex, byte inkIndex)
+		{
+			lock (VCPU.GraphicsLock)
+			{
+				return this.screens.ContainsKey(rect.ScreenID) &&
+					this.screens.GetValueByKey(rect.ScreenID).DrawHDPlaque(rect.Left + x, rect.Top + y, text, fillIndex, inkIndex);
+			}
+		}
+
+		/// <summary>
+		/// True when a bitmap shows any HD art
+		/// </summary>
+		public bool BitmapHasHDArt(int bitmapID)
+		{
+			lock (VCPU.GraphicsLock)
+			{
+				return this.bitmaps.ContainsKey(bitmapID) && this.bitmaps.GetValueByKey(bitmapID).HDMask is bool[] mask && Array.IndexOf(mask, true) >= 0;
+			}
+		}
+
 		public void DrawBitmapHDOverflow(CRectangle rect, int x, int y, int bitmapID)
 		{
 			if (this.screens.ContainsKey(rect.ScreenID) && this.bitmaps.ContainsKey(bitmapID))

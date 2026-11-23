@@ -75,6 +75,8 @@ namespace OpenCivOne.Graphics
 
 		// how far coasts and terrain borders wander from the grid (coastwarp, 1 as before; more makes rounder, craggier coasts)
 		private float coastWarp = 1;
+		// how wide land terrains blend into each other (groundblend, 1 as before; more hides the cell corners of a border)
+		private float groundBlend = 1;
 
 		private readonly Func<int, int, int> terrainAt;
 		private readonly int cell;
@@ -300,6 +302,7 @@ namespace OpenCivOne.Graphics
 						case "trees": map.treeScale = Math.Clamp(value, 0.15f, 2); break;
 						case "jungle": map.jungleScale = Math.Clamp(value, 0.15f, 2); break;
 						case "coastwarp": map.coastWarp = Math.Clamp(value, 0.5f, 2); break;
+						case "groundblend": map.groundBlend = Math.Clamp(value, 0.5f, 2.2f); break;
 						case "pattern": map.pattern = Math.Clamp(value, 0.25f, 8); break;
 						case "seapattern": map.seaPattern = Math.Clamp(value, 0.25f, 8); break;
 						case "paper": map.paper = Math.Clamp(value, 0, 1); break;
@@ -812,7 +815,7 @@ namespace OpenCivOne.Graphics
 			// which pixels are open water (1) or river (2): they move when the screen is shown (see GBitmap.SeaAlpha)
 			byte[] water = new byte[size * size];
 
-			float warpAmount = 14 * k * this.coastWarp, groundRadius = 13 * k, coastRadius = 5 * k * this.coastWarp, surfRadius = 24 * k, depthRadius = 70 * k * this.shallows;
+			float warpAmount = 14 * k * this.coastWarp, groundRadius = 13 * k * this.groundBlend, coastRadius = 5 * k * this.coastWarp, surfRadius = 24 * k, depthRadius = 70 * k * this.shallows;
 			// a wandering coast also gets a fine, craggy edge
 			float crag = this.coastWarp > 1 ? 0.3f * warpAmount : 0;
 			float riverWidth = 3.6f * k, bankWidth = 6.5f * k;
@@ -1992,13 +1995,46 @@ namespace OpenCivOne.Graphics
 				case Mountains:
 					if (feature != 0)
 						this.Place(placements, "mountains", random, left + (Range(random, 26, 38) * k) + awayX, top + (Range(random, 38, 44) * k) + awayY, Range(random, 64, 74) * k * shore, true);
+					else if (!this.print)
+					{
+						// painted peaks vary: a main peak off the middle and of its own height, and often a lower one behind
+						// it to the side, so a range has a ragged skyline instead of standing in rows of the same cone
+						float mainX = Range(random, 20, 44);
+						this.Place(placements, "mountains", random, left + (mainX * k) + awayX, top + (Range(random, 52, 62) * k) + awayY, Range(random, 64, 100) * k * lower * shore, true);
+
+						if (random.NextDouble() < 0.6)
+						{
+							float sideX = mainX < 32 ? Range(random, 40, 54) : Range(random, 10, 24);
+							this.Place(placements, "mountains", random, left + (sideX * k) + awayX, top + (Range(random, 38, 48) * k) + awayY, Range(random, 42, 62) * k * lower * shore, true);
+						}
+					}
 					else
 						this.Place(placements, "mountains", random, left + (Range(random, 26, 38) * k) + awayX, top + (Range(random, 54, 62) * k) + awayY, Range(random, 78, 96) * k * lower * shore, true);
 					break;
 
 				case Grassland:
-				case River:
+				case River when this.print:
 					// a print scatters more, smaller trees over open land
+					if (!this.print)
+					{
+						// painted scenery laid out like a print has small trees, so open land gets now and then a copse, a
+						// tight clump of them, instead: a lone small tree reads as a speck
+						if (random.NextDouble() < 0.18 && Distance(left + 32 * k, top + 40 * k, fx, fy) >= clear * 1.2f)
+						{
+							float copseX = left + Range(random, 18, 46) * k, copseY = top + Range(random, 26, 50) * k;
+
+							for (int n = 3 + random.Next(3); n >= 0; n--)
+							{
+								float x = copseX + Range(random, -8, 8) * k, baseY = copseY + Range(random, -5, 5) * k;
+
+								if (rivers == null || rivers.Distance(x, baseY) > 7 * k)
+									this.Place(placements, "trees", random, x, baseY, Range(random, 30, 38) * k);
+							}
+						}
+
+						break;
+					}
+
 					for (int n = random.Next(4); n >= 0; n--)
 					{
 						float x = left + Range(random, 6, 58) * k, baseY = top + Range(random, 12, 62) * k, height = Range(random, 17, 24) * k;

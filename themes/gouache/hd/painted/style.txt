@@ -10,4 +10,5 @@ beach 1
 softrivers 1
 trees 0.3
 jungle 0.18
-coastwarp 1.7
+coastwarp 2
+groundblend 2.2

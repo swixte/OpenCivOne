@@ -56,7 +56,8 @@ for y in range(H):
         else:
             c = 'p' if w < 0.42 else 'g' if w < 0.55 else 'f' if w < 0.7 else 's' if w > 0.8 else 'g'
         grid[y, x] = c
-# rivers: from a few hills or mountains, always a step nearer the sea, through the low land on the way
+# rivers: from a few hills or mountains toward the sea, through the low land on the way; they may wander along the
+# same distance from the sea for a while, so they bend instead of running straight down the slope
 dist = np.where(grid == 'o', 0, 999)
 for _ in range(W + H):
     for y in range(1, H - 1):
@@ -66,9 +67,16 @@ for _ in range(W + H):
 starts = [(y, x) for y in range(H) for x in range(W) if grid[y, x] in 'hm' and dist[y, x] >= 3]
 rng.shuffle(starts)
 for y, x in starts[:4]:
+    seen = {(y, x)}
     while dist[y, x] > 0:
-        nb = [(y + dy, x + dx) for dy, dx in ((0, 1), (1, 0), (0, -1), (-1, 0)) if dist[y + dy, x + dx] < dist[y, x]]
-        y, x = rng.choice(nb)
+        steps = [(y + dy, x + dx) for dy, dx in ((0, 1), (1, 0), (0, -1), (-1, 0))]
+        down = [p for p in steps if dist[p] < dist[y, x]]
+        # a step along may not run beside the river's own course, which would paint two parallel channels
+        def beside(p):
+            return sum(grid[p[0] + dy, p[1] + dx] == 'r' for dy, dx in ((0, 1), (1, 0), (0, -1), (-1, 0))) > 1
+        along = [p for p in steps if dist[p] == dist[y, x] and p not in seen and grid[p] != 'r' and not beside(p)]
+        y, x = rng.choice(along) if along and rng.random() < 0.35 else rng.choice(down)
+        seen.add((y, x))
         if grid[y, x] in 'pgdfjs':
             grid[y, x] = 'r'
 rows = [''.join(r) for r in grid]
@@ -83,13 +91,15 @@ rng.shuffle(good)
 towns = []
 for x, y in good:
     if all(max(abs(x - a), abs(y - b)) >= 3 for a, b, *_ in towns) and len(towns) < 10:
-        step = rng.choice([0, 1, 1, 2, 2, 3, 3, 4, 5]) if towns else 5
+        # one capital, the first town; the others grow up to a city
+        step = rng.choice([0, 1, 1, 2, 2, 3, 3, 4]) if towns else 5
         size = [1, 3, 5, 7, 10, 14][step] + rng.randint(0, 1)
         towns.append((x, y, 'blue' if x < W / 2 else 'red', names[len(towns)], size, step, step >= 2 and rng.random() < 0.5))
 taken = {(a, b) for a, b, *_ in towns}
 landu = ['settlers', 'militia', 'phalanx', 'legion', 'knights', 'chariot', 'catapult']
 units = []
-spots = [(x, y) for y in range(1, H - 1) for x in range(1, W - 1) if grid[y, x] != 'o' and (x, y) not in taken
+# units stand on open land, not on peaks
+spots = [(x, y) for y in range(1, H - 1) for x in range(1, W - 1) if grid[y, x] not in 'om' and (x, y) not in taken
          and any(max(abs(x - a), abs(y - b)) <= 2 for a, b, *_ in towns)]
 rng.shuffle(spots)
 for x, y in spots[:10]:
