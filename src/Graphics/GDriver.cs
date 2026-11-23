@@ -528,12 +528,12 @@ namespace OpenCivOne.Graphics
 		/// <summary>
 		/// Draws a small plaque with a text in a screen's HD layer (see GBitmap.DrawHDPlaque); false when it can't
 		/// </summary>
-		public bool DrawHDPlaque(CRectangle rect, int x, int y, string text, byte fillIndex, byte inkIndex)
+		public bool DrawHDPlaque(CRectangle rect, int x, int y, string text, byte fillIndex, byte inkIndex, bool goldRim = false)
 		{
 			lock (VCPU.GraphicsLock)
 			{
 				return this.screens.ContainsKey(rect.ScreenID) &&
-					this.screens.GetValueByKey(rect.ScreenID).DrawHDPlaque(rect.Left + x, rect.Top + y, text, fillIndex, inkIndex);
+					this.screens.GetValueByKey(rect.ScreenID).DrawHDPlaque(rect.Left + x, rect.Top + y, text, fillIndex, inkIndex, goldRim);
 			}
 		}
 

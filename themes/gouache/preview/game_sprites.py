@@ -72,7 +72,7 @@ def region(unit):
     top = TALL * SCALE
     cell = (C, C + top)
     u, (ax, ay), half = compose.body(OBJ + f'unit_{unit}.png', C, unit, 'blue')
-    r = min(max(compose.BASE_R.get(unit, 0.3), half / C + 0.05), 0.47)
+    r = min(max(compose.BASE_R.get(unit, 0.3), half / C + 0.05) * 1.1, 0.47)
     cx, cy = C / 2, top + C * (0.6 if unit in compose.SHIPS else 0.7)
     # the base drawn in neutral grey: its grey pixels become key shades, its pale rim and soft shadow stay as they are
     base = compose.unit_base((128, 128, 128), C, False, r=r, squash=compose.UNIT_SQUASH.get(unit, BASE_SQUASH))
@@ -130,8 +130,10 @@ def irrigation(seed=3):
     rng = np.random.default_rng(seed)
     n = 16 * SCALE
     y, x = np.mgrid[0:n, 0:n].astype(np.float32)
-    noise = np.asarray(Image.fromarray((rng.random((n // 4, n // 4)) * 255).astype(np.uint8)).resize((n, n), Image.BICUBIC), np.float32) / 255
-    split = n / 2 + (noise[0, :8].mean() - 0.5) * 8
+    # brush grain at full resolution, and a coarse wobble for the patch's edge
+    noise = 0.5 + (rng.random((n, n)).astype(np.float32) - 0.5) * 0.5
+    wobble = np.asarray(Image.fromarray((rng.random((8, 8)) * 255).astype(np.uint8)).resize((n, n), Image.BICUBIC), np.float32) / 255
+    split = n / 2 + (wobble[0, 0] - 0.5) * 8
     plot = (x >= split).astype(int) + 2 * (y >= split).astype(int)
     across = np.where(np.isin(plot, (0, 3)), y, x)
     furrow = (np.sin(across * np.pi / 3.2) > 0).astype(np.float32)
@@ -144,8 +146,9 @@ def irrigation(seed=3):
     bank = np.clip(3.6 - ditch, 0, 1) - water
     rgb = rgb * (1 - water[..., None]) + np.array([70, 130, 190], np.float32) * water[..., None]
     rgb = rgb * (1 - 0.5 * bank[..., None]) + np.array([200, 190, 140], np.float32) * 0.5 * bank[..., None]
-    edge = np.minimum(np.minimum(x, n - 1 - x), np.minimum(y, n - 1 - y))
-    alpha = np.clip((edge - 1) / 7, 0, 1) * 0.88 * (0.85 + 0.15 * noise)
+    # the patch's edge wanders, so it sits in the ground rather than on it like a square decal
+    edge = np.minimum(np.minimum(x, n - 1 - x), np.minimum(y, n - 1 - y)) - wobble * 9
+    alpha = np.clip((edge - 1) / 5, 0, 1) * 0.9
     return Image.fromarray(np.dstack([rgb, alpha * 255]).clip(0, 255).astype(np.uint8), 'RGBA')
 
 
@@ -153,19 +156,20 @@ def shield_bonus():
     """The grassland production bonus for 153_41 (7x7): a small heraldic shield, deep red with a gold rim and a soft
     shadow, smaller and quieter than the 4x set's so the grass shows round it."""
     ss, n = 8, 7 * SCALE
+    small = 0.72
     big = n * ss
     im = Image.new('RGBA', (big, big), (0, 0, 0, 0))
     d = ImageDraw.Draw(im)
     def shield(dx, dy, s):
-        cx, top, w, h = big / 2 + dx, big * 0.16 + dy, big * 0.56 * s, big * 0.66 * s
+        cx, top, w, h = big / 2 + dx, big * 0.3 + dy, big * 0.56 * s * small, big * 0.66 * s * small
         return [(cx - w / 2, top), (cx + w / 2, top), (cx + w / 2, top + h * 0.45), (cx, top + h), (cx - w / 2, top + h * 0.45)]
     d.polygon(shield(big * 0.06, big * 0.07, 1), fill=(0, 0, 0, 110))
     im = im.filter(ImageFilter.GaussianBlur(big * 0.04))
     d = ImageDraw.Draw(im)
     d.polygon(shield(0, 0, 1), fill=(60, 34, 14, 255))
-    d.polygon(shield(0, big * 0.012, 0.86), fill=(212, 168, 70, 255))
-    d.polygon(shield(0, big * 0.03, 0.66), fill=(158, 34, 28, 255))
-    d.polygon(shield(-big * 0.05, big * 0.02, 0.3), fill=(196, 70, 56, 255))
+    d.polygon(shield(0, big * 0.009, 0.86), fill=(186, 152, 84, 255))
+    d.polygon(shield(0, big * 0.022, 0.66), fill=(132, 52, 40, 255))
+    d.polygon(shield(-big * 0.035, big * 0.015, 0.3), fill=(160, 82, 66, 255))
     return im.resize((n, n), Image.LANCZOS)
 
 

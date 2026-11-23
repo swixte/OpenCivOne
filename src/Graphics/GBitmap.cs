@@ -716,9 +716,11 @@ namespace OpenCivOne.Graphics
 		/// <summary>
 		/// Draws a small plaque with a short text on it in the HD layer, its top left corner at the indexed pixel (x, y):
 		/// a rounded box in the palette color fillIndex with a dark edge and the text in inkIndex, in a bold serif face at
-		/// HD resolution, like the city size on the painted map's previews. Returns false when there is no HD scale to draw at.
+		/// HD resolution, like the city size on the painted map's previews. A light fill is darkened a little so the plaque
+		/// stands out from pale ground; goldRim gives it a gold edge (a defended city). Returns false when there is no HD
+		/// scale to draw at.
 		/// </summary>
-		public bool DrawHDPlaque(int x, int y, string text, byte fillIndex, byte inkIndex)
+		public bool DrawHDPlaque(int x, int y, string text, byte fillIndex, byte inkIndex, bool goldRim = false)
 		{
 			if (HDScale < 2 || x < 0 || y < 0 || x >= this.iWidth || y >= this.iHeight)
 				return false;
@@ -730,17 +732,27 @@ namespace OpenCivOne.Graphics
 			using SKPaint paint = new SKPaint { IsAntialias = true };
 			float textWidth = font.MeasureText(text);
 			float edge = 0.3f * HDScale, radius = 0.6f * HDScale;
-			int width = (int)MathF.Ceiling(textWidth + (1.4f * HDScale)), height = (int)MathF.Ceiling(3.4f * HDScale);
+			int width = (int)MathF.Ceiling(textWidth + ((goldRim ? 1.7f : 1.4f) * HDScale)), height = (int)MathF.Ceiling((goldRim ? 3.7f : 3.4f) * HDScale);
 			using SKBitmap plaque = new SKBitmap(width, height, SKColorType.Bgra8888, SKAlphaType.Unpremul);
 
 			using (SKCanvas canvas = new SKCanvas(plaque))
 			{
 				uint fill = this.oPalette[fillIndex].ToUInt32(), ink = this.oPalette[inkIndex].ToUInt32();
+				float fr = (fill >> 16) & 0xff, fg = (fill >> 8) & 0xff, fb = fill & 0xff;
+				float dim = ((0.3f * fr) + (0.59f * fg) + (0.11f * fb)) > 150 ? 0.78f : 1;
 				canvas.Clear(SKColors.Transparent);
-				paint.Color = new SKColor(20, 18, 16);
+				paint.Color = goldRim ? new SKColor(214, 170, 64) : new SKColor(20, 18, 16);
 				canvas.DrawRoundRect(0, 0, width, height, radius, radius, paint);
-				paint.Color = new SKColor((byte)(fill >> 16), (byte)(fill >> 8), (byte)fill);
-				canvas.DrawRoundRect(edge, edge, width - (2 * edge), height - (2 * edge), radius * 0.7f, radius * 0.7f, paint);
+
+				if (goldRim)
+				{
+					paint.Color = new SKColor(20, 18, 16);
+					canvas.DrawRoundRect(edge, edge, width - (2 * edge), height - (2 * edge), radius * 0.8f, radius * 0.8f, paint);
+				}
+
+				float inset = goldRim ? 2 * edge : edge;
+				paint.Color = new SKColor((byte)(fr * dim), (byte)(fg * dim), (byte)(fb * dim));
+				canvas.DrawRoundRect(inset, inset, width - (2 * inset), height - (2 * inset), radius * 0.7f, radius * 0.7f, paint);
 				paint.Color = new SKColor((byte)(ink >> 16), (byte)(ink >> 8), (byte)ink);
 				canvas.DrawText(text, (width - textWidth) / 2, (height / 2f) + (font.Size * 0.36f), font, paint);
 			}

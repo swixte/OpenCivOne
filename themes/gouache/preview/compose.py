@@ -56,7 +56,7 @@ def soft_town(path):
 TOWNS = [(6, 4, 'blue', 'Babylon', 12, 4, False), (5, 6, 'blue', 'Ur', 3, 1, False), (3, 7, 'blue', 'Thebes', 14, 5, True),
          (18, 5, 'red', 'Kish', 5, 2, False), (10, 5, 'blue', 'Mari', 5, 2, True),
          (16, 4, 'red', 'Nineveh', 8, 3, True), (15, 7, 'red', 'Assur', 1, 0, False)]
-STEP_SIZE = (0.42, 0.56, 0.7, 0.84, 0.98, 0.98)
+STEP_SIZE = (0.6, 0.7, 0.78, 0.88, 0.98, 0.98)
 CITIES = ';'.join(f'{x},{y},{step}' for x, y, _, _, _, step, _ in TOWNS)
 
 
@@ -193,7 +193,8 @@ def draw_units(im, scale):
         # a round base seen from the same angle as the figure, like a miniature's: a squashed disc with a thin darker
         # side below it, in the player's colour, under the figure's feet (or a ship's hull), at least its type's size
         u, (ax, ay), half = body(OBJ + f'unit_{unit}.png', c, unit, player)
-        r = min(max(BASE_R.get(unit, 0.3), half / c + 0.05), 0.47)
+        # a tenth larger than the body's footprint needs, so a man on foot still reads on his base at game size
+        r = min(max(BASE_R.get(unit, 0.3), half / c + 0.05) * 1.1, 0.47)
         cx, cy = x * c + c / 2, y * c + c * (0.6 if unit in SHIPS else 0.7)
         b = unit_base(BLUE if player == 'blue' else RED, c, active, r=r, squash=UNIT_SQUASH.get(unit, BASE_SQUASH))
         im.alpha_composite(b, (round(cx - b.width / 2), round(cy - b.height / 2)))
@@ -211,20 +212,31 @@ def town_fixes(t, step, walled):
         r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
         orange = np.clip((r - b - 60) / 60, 0, 1) * np.clip((r - g - 15) / 40, 0, 1)
         lum = rgb.mean(-1, keepdims=True)
-        straw = np.array([226, 196, 112], np.float32) * (lum / 150)
-        rgb[:] = rgb + (straw - rgb) * (0.75 * orange)[..., None]
+        straw = np.array([200, 156, 78], np.float32) * (lum / 150)
+        rgb[:] = rgb + (straw - rgb) * (0.6 * orange)[..., None]
     size = max(t.size)
-    if walled and step in (1, 2):
+    if walled and step <= 2:
+        # about a game pixel wide once the town is shrunk into its cell
         solid = Image.fromarray(((alpha > 170) * 255).astype('uint8'))
-        w = max(3, round(size * 0.012))
+        w = max(3, round(size * (0.022 if step == 0 else 0.03)))
         outer = np.asarray(solid.filter(ImageFilter.MaxFilter(2 * w + 1)), np.float32) / 255
         inner = np.asarray(solid.filter(ImageFilter.MinFilter(2 * w + 1)), np.float32) / 255
         top = np.clip(alpha / 255 - inner, 0, 1)
         rim = np.clip(outer - alpha / 255, 0, 1)
-        rgb[:] = rgb + (np.array([236, 222, 186], np.float32) - rgb) * (0.85 * top)[..., None]
+        rgb[:] = rgb + (np.array([206, 190, 150], np.float32) - rgb) * (0.8 * top)[..., None]
         rgb[:] = rgb * (1 - rim[..., None]) + np.array([58, 44, 30], np.float32) * rim[..., None]
         alpha[:] = np.maximum(alpha, rim * 230)
     out = Image.fromarray(np.dstack([rgb, alpha]).clip(0, 255).astype('uint8'), 'RGBA')
+    if step <= 2:
+        # the small towns cast a soft shadow down and to the right, so they sit on the ground with some weight
+        pad, off = round(size * 0.06), round(size * 0.035)
+        lifted = Image.new('RGBA', (t.width + 2 * pad, t.height + 2 * pad), (0, 0, 0, 0))
+        shade = Image.new('L', lifted.size, 0)
+        shade.paste(out.getchannel('A'), (pad + off, pad + off))
+        shade = shade.filter(ImageFilter.GaussianBlur(size * 0.02)).point(lambda v: v * 0.4)
+        lifted.alpha_composite(Image.merge('RGBA', [Image.new('L', lifted.size, 30)] * 3 + [shade]))
+        lifted.alpha_composite(out, (pad, pad))
+        out = lifted
     if walled and step >= 4:
         pad = round(size * 0.06)
         apron = Image.new('RGBA', (t.width + 2 * pad, t.height + 2 * pad), (0, 0, 0, 0))

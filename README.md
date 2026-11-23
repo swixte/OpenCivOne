@@ -177,7 +177,7 @@ MicroProse and its successors never released the original source code which rema
 
 <p>The files from the Release should be copied directly into installed and working Original game directory. The game can be run by running the OpenCivOne executable.</p>
 
-## How to compile the code (.NET Core 8 SDK required)
+## How to compile the code (.NET 10 SDK required to build; the game targets and runs on .NET 8, but Avalonia 12's XAML generator needs the newer compiler)
 
 If you want to Debug (or Compile) the code with VSCodium, Visual Studio Code or Visual Studio Community Edition, it is assumed that:
 <ul>

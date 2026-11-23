@@ -743,6 +743,7 @@ namespace OpenCivOne
 							this.parent.Graphics.F0_VGA_009a_ReplaceColor(this.parent.Var_aa_Screen0_Rectangle, scrX + 2, scrY + 2, 12, 12, 5,
 								this.parent.Array_1956[city.PlayerID]);
 
+							bool sizeOnPlaque = false;
 							int citySize = (city.PlayerID == this.parent.GameData.HumanPlayerID || this.parent.GlobalPreferences.Debug.DebugMode) ?
 									city.ActualSize : city.VisibleSize;
 
@@ -772,7 +773,11 @@ namespace OpenCivOne
 									byte plaqueColor = this.parent.Array_1956[city.PlayerID];
 									byte plaqueInk = (byte)(plaqueColor == 7 || plaqueColor == 10 || plaqueColor == 11 || plaqueColor == 14 || plaqueColor == 15 ? 0 : 15);
 
-									if (!this.parent.Graphics.DrawHDPlaque(this.parent.Var_aa_Screen0_Rectangle, scrX + 1, scrY + 1, sizeText, plaqueColor, plaqueInk))
+									// a defended city's plaque gets a gold rim, in place of the black square round the cell
+									bool defended = F0_2aea_1458_GetCellActiveUnitID(x, y) != -1 || city.FirstFortifiedCityUnits[0] != -1;
+									sizeOnPlaque = this.parent.Graphics.DrawHDPlaque(this.parent.Var_aa_Screen0_Rectangle, scrX + 1, scrY + 1, sizeText, plaqueColor, plaqueInk, defended);
+
+									if (!sizeOnPlaque)
 									{
 										int mapFontID = this.parent.Var_aa_Screen0_Rectangle.FontID;
 										this.parent.Var_aa_Screen0_Rectangle.FontID = 2;
@@ -791,7 +796,7 @@ namespace OpenCivOne
 							}
 
 							// Instruction address 0x2aea:0x0d9c, size: 3
-							if (F0_2aea_1458_GetCellActiveUnitID(x, y) != -1 || city.FirstFortifiedCityUnits[0] != -1)
+							if (!sizeOnPlaque && (F0_2aea_1458_GetCellActiveUnitID(x, y) != -1 || city.FirstFortifiedCityUnits[0] != -1))
 							{
 								// Draw city defenders
 

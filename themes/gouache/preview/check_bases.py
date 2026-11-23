@@ -16,7 +16,7 @@ d = ImageDraw.Draw(row)
 c = CELL * Z
 for i, n in enumerate(NAMES):
     u, (ax, ay), half = compose.body(OBJ + f'unit_{n}.png', c, n)
-    r = min(max(compose.BASE_R.get(n, 0.3), half / c + 0.05), 0.47)
+    r = min(max(compose.BASE_R.get(n, 0.3), half / c + 0.05) * 1.1, 0.47)
     sq = compose.UNIT_SQUASH.get(n, BASE_SQUASH)
     cx, cy = i * c + c / 2, c * (0.6 if n in compose.SHIPS else 0.7)
     rx, ry = r * c, r * c * sq
