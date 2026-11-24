@@ -1438,7 +1438,7 @@ GBitmap other4()
 		Check(top != null, "top view: loads the theme's painted towns and units");
 		const uint Blue = 0xff3058be, Red = 0xffc03428;
 		var topScene = new IsoView.Scene();
-		var walled = new HashSet<(int, int)> { (3, 7), (10, 5), (16, 4) };
+		var walled = new HashSet<(int, int)> { (3, 7), (10, 5), (16, 4), (5, 6), (18, 5) };
 		foreach (var t in new[] { (6, 4, Blue, "Babylon", 9), (5, 6, Blue, "Ur", 3), (3, 7, Blue, "Thebes", 14), (18, 5, Red, "Kish", 4),
 			(10, 5, Blue, "Mari", 5), (16, 4, Red, "Nineveh", 6), (15, 7, Red, "Assur", 1) })
 			topScene.Cities.Add((t.Item1, t.Item2, t.Item4, t.Item5, t.Item3));
@@ -1494,6 +1494,31 @@ GBitmap other4()
 			top.EndBattle();
 			using var battleFile = File.Create(battleOut);
 			strip.Encode(battleFile, SKEncodedImageFormat.Png, 100);
+
+			// and at sea: a red trireme attacking a blue sailing ship, the attacker losing
+			var seaScene = new IsoView.Scene();
+			seaScene.Units.Add((15, 9, 16, Red));
+			seaScene.Units.Add((14, 9, 17, Blue));
+			top.Render(bcx, bcy, seaScene);
+			using var seaStrip = new SKBitmap(times.Length * 192, 128, SKColorType.Bgra8888, SKAlphaType.Premul);
+			using var seaCanvas = new SKCanvas(seaStrip);
+			for (int f = 0; f < times.Length; f++)
+			{
+				uint[] frame = top.BattleFrame(times[f], (15, 9), (14, 9), false, 5);
+				using var shot = clean.Copy();
+				for (int y = 0; y < shot.Height; y++)
+					for (int x = 0; x < shot.Width; x++)
+					{
+						uint o = frame[(y * shot.Width) + x], a = o >> 24;
+						SKColor g = shot.GetPixel(x, y);
+						uint Mix(uint top8, byte under) => Math.Min(255u, top8 + ((under * (255 - a)) + 127) / 255);
+						shot.SetPixel(x, y, new SKColor((byte)Mix((o >> 16) & 0xff, g.Red), (byte)Mix((o >> 8) & 0xff, g.Green), (byte)Mix(o & 0xff, g.Blue)));
+					}
+				seaCanvas.DrawBitmap(shot, new SKRect(14 * 64 - 32, 9 * 64 - 64, 14 * 64 + 160, 9 * 64 + 64), new SKRect(f * 192, 0, (f + 1) * 192, 128));
+			}
+			top.EndBattle();
+			using var seaFile = File.Create(Path.ChangeExtension(battleOut, null) + "-sea.png");
+			seaStrip.Encode(seaFile, SKEncodedImageFormat.Png, 100);
 		}
 	}
 

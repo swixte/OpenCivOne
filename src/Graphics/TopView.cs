@@ -512,7 +512,9 @@ namespace OpenCivOne.Graphics
 				if (!InView(x0, y0))
 					continue;
 
-				SKBitmap? art = this.towns[Step(town.Size), scene.Walls(Wrap(town.X), town.Y) ? 1 : 0] ?? this.towns[Step(town.Size), 0];
+				int step = Step(town.Size);
+				bool walled = scene.Walls(Wrap(town.X), town.Y);
+				SKBitmap? art = this.towns[step, walled ? 1 : 0] ?? this.towns[step, 0];
 				float tx = x0, ty = y0, tw = c * 0.6f, th = c * 0.6f;
 
 				if (art != null)
@@ -522,6 +524,11 @@ namespace OpenCivOne.Graphics
 					tx = MathF.Round(x0 + ((c - tw) / 2));
 					ty = MathF.Round(y0 + ((c - th) / 2));
 					canvas.DrawBitmap(art, tx, ty, image);
+
+					// a small town's painted walls are a pixel wide at game size: a stone ring with corner towers in the
+					// walls' own colours makes them read, as the larger towns' do
+					if (walled && step <= 2)
+						this.DrawSmallWalls(canvas, tx, ty, tw, th);
 				}
 				else
 				{
@@ -617,6 +624,31 @@ namespace OpenCivOne.Graphics
 			System.Runtime.InteropServices.MemoryMarshal.Cast<byte, uint>(target.GetPixelSpan()).CopyTo(result);
 
 			return result;
+		}
+
+		private void DrawSmallWalls(SKCanvas canvas, float x, float y, float w, float h)
+		{
+			float u = this.cell / 64f, inset = 1.2f * u;
+			SKRect ring = new SKRect(x + inset, y + inset + (h * 0.04f), x + w - inset, y + h - inset);
+			float r = MathF.Min(ring.Width, ring.Height) * 0.22f;
+			using SKPaint shadow = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2.8f * u, Color = new SKColor(40, 30, 18, 120) };
+			using SKPaint stone = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.6f * u, Color = new SKColor(204, 182, 136) };
+			using SKPaint top = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 0.6f * u, Color = new SKColor(238, 224, 186, 170) };
+			canvas.DrawRoundRect(new SKRect(ring.Left, ring.Top + (0.8f * u), ring.Right, ring.Bottom + (0.8f * u)), r, r, shadow);
+			canvas.DrawRoundRect(ring, r, r, stone);
+			canvas.DrawRoundRect(new SKRect(ring.Left, ring.Top - (0.4f * u), ring.Right, ring.Bottom - (0.4f * u)), r, r, top);
+
+			using SKPaint tower = new SKPaint { IsAntialias = true, Color = new SKColor(198, 176, 128) };
+			using SKPaint towerShadow = new SKPaint { IsAntialias = true, Color = new SKColor(40, 30, 18, 120) };
+			using SKPaint ink = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 0.6f * u, Color = new SKColor(60, 44, 28) };
+			float t = 1.8f * u, k = r * 0.3f;
+
+			foreach ((float tx, float ty) in new[] { (ring.Left + k, ring.Top + k), (ring.Right - k, ring.Top + k), (ring.Left + k, ring.Bottom - k), (ring.Right - k, ring.Bottom - k), (ring.MidX, ring.Bottom) })
+			{
+				canvas.DrawCircle(tx, ty + (0.6f * u), t, towerShadow);
+				canvas.DrawCircle(tx, ty, t, tower);
+				canvas.DrawCircle(tx, ty, t, ink);
+			}
 		}
 
 		private void DrawUnit(SKCanvas canvas, UnitArt art, float x0, float y0, uint colour, int marks, bool ring,

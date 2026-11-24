@@ -34,6 +34,10 @@ The gouache set has nine units and no huts or resources of its own. The other 19
 | `14_ingame_walled_paris_4x.png` | Paris at size 6 with walls: the walled terracotta town. |
 | `15_city_screen_size9_2x.png` | Rome's city screen at size 9: the walled town at the centre of its small map. The size badge is left out there, since the title gives the population and the worked-tile icons would cover it. |
 | `16_after_city_screen.jpg` | Back on the map after closing the city screen, nothing left over from it. |
+| `17_ingame_sizes_2_to_8.jpg` | In game, every step of the ladder between hamlet and city: Rome at 2, 3 (walled) and 7; Babylon at 4, 5 (walled) and 8 (walled). |
+| `18_ingame_small_walled_towns.png` | Small walled towns (sizes 3 and 5) with their stone ring and corner towers. |
+| `19_ingame_babylon_captured.jpg`, `20_ingame_captured_city_screen.jpg` | A Roman legion captures Babylon at size 3: the town keeps its picture and clearing and changes to a white Roman badge at size 2; its city screen shows the nearby Babylonian units in green. |
+| `21_sea_battle_frames_harness.png` | A battle at sea: a red trireme attacks a blue sailing ship and loses, greying and fading under smoke on the water. |
 
 ## Also fixed
 
@@ -47,10 +51,32 @@ The gouache set has nine units and no huts or resources of its own. The other 19
 - **Battles** are painted too: the attacker lunges and falls back, dust and sparks burst where they meet, and the loser greys, sinks and fades under rising smoke. No art files are needed, so they work for any theme with this view.
 - **The city screen's small map** gets the same painted town, foreign units, huts, resources and shields, drawn through a second overlay (`GBitmap.Inset`). The worked-tile icons stay on top, so the size badge is left out there; the title gives the population. Walled towns use the ladder's `_w` pictures, there as on the map.
 
+## Review, element by element
+
+Each element on the map, judged against `compose.py`'s renders and checked in the running game unless noted:
+
+| Element | Verdict |
+| --- | --- |
+| Painted ground, coasts, rivers, moving water | Unchanged painted map; shows between all objects. |
+| Towns, sizes 1 to 13 | Right ladder picture for each size, in a clearing scaled to the town (`17`, `13`). |
+| Walled towns | Walled pictures at every step; at sizes 2 to 5 the painted walls are a pixel wide, so a stone ring with corner towers in the walls' colours is drawn over them (`18`). This is the one place the game draws more than `compose.py` does. |
+| Size badge and name | Same size, place and type as the renders, in each player's colour; white Roman badges read on all grounds. |
+| The nine gouache units | Same scale, anchors and bases as the renders, in all eight player colours. |
+| The other 19 units | Default painted set, toned and sized by kind; they sit on bases like the gouache units (`02`). Their painting is a little crisper than gouache, the one remaining style difference, until gouache versions are painted. |
+| Huts, resources, grassland shield | Painted objects, toned; the shield is small and quiet. |
+| Unit states (active, sentry, fortified, stack, orders) | Painted forms; checked in game for active, fortified and stacks. |
+| Moving units | Slide smoothly between cells. |
+| Battles, land and sea | Painted lunge, dust, smoke and fade (`09` in game; `10`, `21` frame by frame). |
+| City capture | Town, clearing and badge change hands cleanly (`19`). |
+| City screen's small map | Painted town and foreign units under the worked-tile icons; no badge there (`15`, `20`). |
+| Dialogs and menus | Drawn over the map as before; the painted map comes back clean after each. |
+
+Still classic, outside the map: the interface panels, fonts and full-screen pictures (the stand-in data has placeholders for those).
+
 ## Reproducing
 
 ```bash
 TOPVIEW_PREVIEW=out.png TOPVIEW_THEME=themes/gouache/hd TOPVIEW_FALLBACK=assets TOPVIEW_ENGINE=themes/gouache/preview/engine-v8.png dotnet run --project tests/HDLayerTests -c Release
 ```
 
-Add `TOPVIEW_BATTLE=battle.png` for the battle frames. The in-game shots come from a Debug build run under Xvfb with the stand-in data (`HD_SET=hd4 tools/standin/build.sh`) and `themes/gouache/hd` copied to `~/Dos/Civ1/themes/gouache`. The preferences were `{"Theme": "gouache", "Debug": {"DebugMode": true}}`, and extra units were placed in the save with `../ingame/place_units.py` from the `gouache-ingame-shots` branch.
+Add `TOPVIEW_BATTLE=battle.png` for the battle frames (it also writes `battle-sea.png`). The in-game shots come from a Debug build run under Xvfb with the stand-in data (`HD_SET=hd4 tools/standin/build.sh`) and `themes/gouache/hd` copied to `~/Dos/Civ1/themes/gouache`. The preferences were `{"Theme": "gouache", "Debug": {"DebugMode": true}}`, and extra units were placed in the save with `../ingame/place_units.py` from the `gouache-ingame-shots` branch.
