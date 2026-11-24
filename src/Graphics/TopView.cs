@@ -50,7 +50,8 @@ namespace OpenCivOne.Graphics
 			["ironclad"] = 0.44f, ["cruiser"] = 0.42f, ["battleship"] = 0.42f, ["submarine"] = 0.4f, ["carrier"] = 0.42f, ["transport"] = 0.44f };
 
 		// the share of a cell each step of the town ladder covers: a hamlet, three steps of towns, a city, a capital
-		private static readonly float[] StepSize = { 0.42f, 0.56f, 0.7f, 0.84f, 0.98f, 0.98f };
+		// a hamlet a little larger than the renders have it, so it reads at game size next to the units' bases
+		private static readonly float[] StepSize = { 0.5f, 0.58f, 0.7f, 0.84f, 0.98f, 0.98f };
 		private static readonly SKColor Ink = new SKColor(20, 18, 16);
 		private static readonly SKColor NameColour = new SKColor(255, 250, 235);
 		private static readonly SKColor Rim = new SKColor(250, 244, 226);
@@ -189,7 +190,7 @@ namespace OpenCivOne.Graphics
 			if (hutPath != null && Decode(hutPath) is SKBitmap hutRaw)
 			{
 				using SKBitmap toned = hutOwn ? hutRaw : Toned(hutRaw);
-				view.hut = Resize(toned, c * 0.56f / Math.Max(toned.Width, toned.Height));
+				view.hut = Resize(toned, c * 0.44f / Math.Max(toned.Width, toned.Height));
 
 				if (!hutOwn)
 					hutRaw.Dispose();
@@ -201,8 +202,13 @@ namespace OpenCivOne.Graphics
 
 				if (path != null && Decode(path) is SKBitmap raw)
 				{
-					using SKBitmap toned = own ? raw : Toned(raw);
-					view.resources[i] = Resize(toned, c * 0.46f / Math.Max(toned.Width, toned.Height));
+					using SKBitmap toned0 = own ? raw.Copy() : Toned(raw);
+					// fish sit cold and silver on the warm sea, and coal and peat are near-black lumps on the yellow
+					// ground: both are warmed and lifted towards the painting's earth colours, and the fish drawn smaller
+					string res = ResourceNames[i];
+					using SKBitmap toned = res == "fish" ? Graded(toned0, 0.25f, 1.12f, 0.98f, 0.8f) :
+						res is "coal" or "peat" ? Graded(toned0, 0.38f, 1.14f, 1.0f, 0.82f) : toned0.Copy();
+					view.resources[i] = Resize(toned, c * (res == "fish" ? 0.36f : 0.46f) / Math.Max(toned.Width, toned.Height));
 
 					if (!own)
 						raw.Dispose();
@@ -1094,6 +1100,27 @@ namespace OpenCivOne.Graphics
 				SolidWidth = solidWidth * f,
 				SolidHeight = solidHeight * f,
 			};
+		}
+
+		/// <summary>
+		/// A painting graded towards the theme's light: shadows lifted by lift (0 to 1), then each channel scaled
+		/// </summary>
+		private static SKBitmap Graded(SKBitmap t, float lift, float kr, float kg, float kb)
+		{
+			SKBitmap result = new SKBitmap(new SKImageInfo(t.Width, t.Height, SKColorType.Rgba8888, SKAlphaType.Unpremul));
+
+			for (int y = 0; y < t.Height; y++)
+			{
+				for (int x = 0; x < t.Width; x++)
+				{
+					SKColor p = t.GetPixel(x, y);
+					float Lift(float v) => v + ((255 - v) * lift * (1 - (v / 255f)));
+					result.SetPixel(x, y, new SKColor((byte)Math.Clamp(Lift(p.Red) * kr, 0, 255), (byte)Math.Clamp(Lift(p.Green) * kg, 0, 255),
+						(byte)Math.Clamp(Lift(p.Blue) * kb, 0, 255), p.Alpha));
+				}
+			}
+
+			return result;
 		}
 
 		/// <summary>
