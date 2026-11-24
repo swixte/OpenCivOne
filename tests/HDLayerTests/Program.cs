@@ -1452,8 +1452,8 @@ GBitmap other4()
 		// cavalry, cannon, diplomat, caravan, armor
 		foreach (var (x, t) in new[] { (2, 2), (3, 7), (4, 8), (5, 4), (6, 5), (7, 6), (8, 9), (9, 26), (10, 27), (11, 11) })
 			topScene.Units.Add((x, 8, t, Blue));
-		// a hut and a special resource on grassland
-		topScene.Terrain = (x, y) => 2;
+		// use the real test-island terrain so coastal towns (e.g. Mari, Assur) know where the ocean lies
+		topScene.Terrain = (x, y) => (x, y) == (10, 7) ? 2 : (x >= 0 && x < 22 && y >= 0 && y < 12) ? map[x + 4, y + 2] : 10;
 		topScene.Feature = (x, y) => (x, y) == (4, 3) ? 2 : (x, y) == (10, 7) ? 1 : 0;
 		topScene.Active = (7, 6, 0, Blue);
 		// a fortified phalanx, a legion with an order in progress, a stack
@@ -1574,6 +1574,49 @@ GBitmap other4()
 				}
 			using var showFile = File.Create(showOut);
 			showGround.Encode(showFile, SKEncodedImageFormat.Png, 100);
+		}
+		// TOPVIEW_COASTS: renders small & large coastal cities on East, West, North, South coasts and a 1-tile island
+		if (Environment.GetEnvironmentVariable("TOPVIEW_COASTS") is string coastOut &&
+			Environment.GetEnvironmentVariable("TOPVIEW_COAST_GROUND") is string coastGroundFile)
+		{
+			using SKBitmap cg = SKBitmap.Decode(coastGroundFile).Copy(SKColorType.Bgra8888);
+			TopView cTop = TopView.Load(topTheme, cg.Width, cg.Height, 64, Environment.GetEnvironmentVariable("TOPVIEW_FALLBACK"))!;
+			string[] cRows = File.ReadAllLines(Environment.GetEnvironmentVariable("PAINTED_SCENE")!).Where(r => r.Length > 0).ToArray();
+			var cScene = new IsoView.Scene
+			{
+				Terrain = (x, y) => (y >= 0 && y < cRows.Length && x >= 0 && x < cRows[y].Length) ? codes.IndexOf(cRows[y][x]) : 10,
+				Explored = (x, y) => true,
+			};
+			// Top coast (N): small (4,1) & large (8,1); West coast (W): small (2,2) & large (2,3);
+			// East coast (E): small (10,2) & large (10,3); South coast (S): small (4,4) & large (8,4);
+			// 1-tile islands (all 4 sides water): small (2,6) & large (9,6)
+			var cCities = new[]
+			{
+				(4, 1, "NorthS", 3, Blue, false), (8, 1, "NorthL", 9, Blue, true),
+				(2, 2, "WestS", 2, Red, false),   (2, 3, "WestL", 8, Red, true),
+				(10, 2, "EastS", 3, Blue, true),  (10, 3, "EastL", 9, Blue, true),
+				(4, 4, "SouthS", 3, Red, false),  (8, 4, "SouthL", 9, Red, true),
+				(2, 6, "IsleS", 2, Blue, false),  (9, 6, "IsleL", 12, Blue, true),
+			};
+			var cw = new HashSet<(int, int)>();
+			foreach (var (cx, cy, nm, sz, col, wl) in cCities)
+			{
+				cScene.Cities.Add((cx, cy, nm, sz, col));
+				if (wl) cw.Add((cx, cy));
+			}
+			cScene.Walls = (x, y) => cw.Contains((x, y));
+			cTop.Render(cg.Width / 128f, cg.Height / 128f, cScene);
+			uint[] co = cTop.Pixels;
+			for (int y = 0; y < cg.Height; y++)
+				for (int x = 0; x < cg.Width; x++)
+				{
+					uint o = co[(y * cg.Width) + x], a = o >> 24;
+					SKColor g = cg.GetPixel(x, y);
+					uint Mix(uint top8, byte under) => Math.Min(255u, top8 + ((under * (255 - a)) + 127) / 255);
+					cg.SetPixel(x, y, new SKColor((byte)Mix((o >> 16) & 0xff, g.Red), (byte)Mix((o >> 8) & 0xff, g.Green), (byte)Mix(o & 0xff, g.Blue)));
+				}
+			using var cf = File.Create(coastOut);
+			cg.Encode(cf, SKEncodedImageFormat.Png, 100);
 		}
 	}
 

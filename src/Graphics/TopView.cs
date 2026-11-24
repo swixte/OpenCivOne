@@ -78,6 +78,8 @@ namespace OpenCivOne.Graphics
 		private long signature = long.MinValue;
 		private readonly UnitArt?[] units = new UnitArt?[UnitNames.Length];
 		private readonly SKBitmap?[,] towns = new SKBitmap?[6, 2];
+		// coastal docks/harbors: [0 = small town pier (sizes 1-5), 1 = large city harbor (sizes 6+)], [0=E, 1=W, 2=S, 3=N]
+		private readonly SKBitmap?[,] ports = new SKBitmap?[2, 4];
 		private readonly SKTypeface face;
 		private readonly SKTypeface badgeFace;
 		// huts and special resources (by terrain id, ResourceNames), painted into the view in place of the classic sprites
@@ -237,6 +239,26 @@ namespace OpenCivOne.Graphics
 					using SKBitmap soft = SoftTown(raw, w == 1 && step > 0);
 					float f = c * StepSize[step] / Math.Max(soft.Width, soft.Height);
 					view.towns[step, w] = Resize(soft, f);
+				}
+			}
+
+			// coastal docks & harbors (port_small_{e,w,s,n}.png, port_large_{e,w,s,n}.png)
+			string[] dirSuffix = { "e", "w", "s", "n" };
+			float[] portScale = { 0.50f, 0.66f };
+
+			for (int tier = 0; tier < 2; tier++)
+			{
+				string tierName = tier == 0 ? "small" : "large";
+
+				for (int d = 0; d < 4; d++)
+				{
+					string path = Path.Combine(objects, $"port_{tierName}_{dirSuffix[d]}.png");
+
+					if (!File.Exists(path) || Decode(path) is not SKBitmap raw)
+						continue;
+
+					using (raw)
+						view.ports[tier, d] = Resize(raw, c * portScale[tier] / Math.Max(raw.Width, raw.Height));
 				}
 			}
 
@@ -718,6 +740,31 @@ namespace OpenCivOne.Graphics
 			}
 		}
 
+		/// <summary>
+		/// Picks the best cardinal coastal side (0=E, 1=W, 3=N, 2=S) for a city's dock/harbor, or -1 if inland.
+		/// Prefers East/West/North before South so the dock stays clear of the town name label when possible.
+		/// </summary>
+		private static int CoastalPortDirection(IsoView.Scene scene, int wx, int y)
+		{
+			bool IsSea(int cx, int cy) => cy >= 0 && cy < MapHeight && scene.Explored(Wrap(cx), cy) && scene.Terrain(Wrap(cx), cy) == Water;
+
+			if (IsSea(wx + 1, y)) return 0;
+			if (IsSea(wx - 1, y)) return 1;
+			if (IsSea(wx, y - 1)) return 3;
+			if (IsSea(wx, y + 1)) return 2;
+
+			return -1;
+		}
+
+		private static void DrawDock(SKCanvas canvas, SKBitmap dock, float px, float py, int c, SKPaint image)
+		{
+			float u = c / 64f;
+			// soft dark-teal reflection/shadow on the water beneath the pier and boats
+			using SKPaint waterShade = new SKPaint { IsAntialias = true, Color = new SKColor(10, 32, 46, 95), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 2.0f * u) };
+			canvas.DrawOval(new SKRect(px + (dock.Width * 0.10f), py + (dock.Height * 0.25f) + (2 * u), px + (dock.Width * 0.94f), py + (dock.Height * 0.98f) + (2 * u)), waterShade);
+			canvas.DrawBitmap(dock, px, py, image);
+		}
+
 		private static float Ease(float x) => x * x * (3 - (2 * x));
 
 		/// <summary>
@@ -840,13 +887,53 @@ namespace OpenCivOne.Graphics
 					th = art.Height;
 					tx = MathF.Round(x0 + ((c - tw) / 2));
 					ty = MathF.Round(y0 + ((c - th) / 2));
-					canvas.DrawBitmap(art, tx, ty, image);
 				}
 				else
 				{
 					tx = x0 + ((c - tw) / 2);
 					ty = y0 + ((c - th) / 2);
 				}
+
+				// coastal city port/dock: if any cardinal neighbour is Water, extend a pier/harbor from the town into the sea
+				int portDir = CoastalPortDirection(scene, Wrap(town.X), town.Y);
+				int portTier = town.Size >= 6 ? 1 : 0;
+				SKBitmap? dock = portDir >= 0 ? (this.ports[portTier, portDir] ?? this.ports[0, portDir]) : null;
+				float dockX = 0, dockY = 0;
+
+				if (dock != null)
+				{
+					float pu = c / 64f;
+
+					switch (portDir)
+					{
+						case 0: // East
+							dockX = MathF.Round(tx + tw - (dock.Width * 0.30f));
+							dockY = MathF.Round(y0 + ((c - dock.Height) / 2f) + (2 * pu));
+							break;
+						case 1: // West (nudged slightly down so the top-left city size badge never covers the pier)
+							dockX = MathF.Round(tx - (dock.Width * 0.70f));
+							dockY = MathF.Round(y0 + ((c - dock.Height) / 2f) + (5 * pu));
+							break;
+						case 2: // South (tucked snugly into the south wall/gate)
+							dockX = MathF.Round(x0 + ((c - dock.Width) / 2f));
+							dockY = MathF.Round(ty + th - (dock.Height * 0.38f));
+							break;
+						case 3: // North (tucked snugly into the north wall)
+							dockX = MathF.Round(x0 + ((c - dock.Width) / 2f));
+							dockY = MathF.Round(ty - (dock.Height * 0.64f));
+							break;
+					}
+
+					// East, West, and North docks tuck behind the town's edge; South dock sits in front of the south wall
+					if (portDir != 2)
+						DrawDock(canvas, dock, dockX, dockY, c, image);
+				}
+
+				if (art != null)
+					canvas.DrawBitmap(art, tx, ty, image);
+
+				if (dock != null && portDir == 2)
+					DrawDock(canvas, dock, dockX, dockY, c, image);
 
 				// on a small map (the city screen) the size is in the title, and its worked-cell marks would cover a badge
 				if (!names)
@@ -882,7 +969,12 @@ namespace OpenCivOne.Graphics
 				DrawBadgeCentred(canvas, size, bmx, bmy, badgeFont, fill);
 
 				// the name is written after the units, so a unit in or below the town never covers it
-				labels.Add((town.Name, x0 + (c / 2f), MathF.Min(y0 + c, ty + th + (2 * u))));
+				float labelY = MathF.Min(y0 + c, ty + th + (2 * u));
+
+				if (dock != null && portDir == 2)
+					labelY = MathF.Max(labelY, dockY + dock.Height - (2 * u));
+
+				labels.Add((town.Name, x0 + (c / 2f), labelY));
 			}
 
 			// units, back to front, each on its base; the unit waiting for orders also in a city, ringed while its marker
