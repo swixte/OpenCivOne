@@ -223,7 +223,7 @@ namespace OpenCivOne.Graphics
 					if (raw == null)
 						continue;
 
-					using SKBitmap soft = SoftTown(raw);
+					using SKBitmap soft = SoftTown(raw, w == 1 && step > 0);
 					float f = c * StepSize[step] / Math.Max(soft.Width, soft.Height);
 					view.towns[step, w] = Resize(soft, f);
 				}
@@ -524,11 +524,6 @@ namespace OpenCivOne.Graphics
 					tx = MathF.Round(x0 + ((c - tw) / 2));
 					ty = MathF.Round(y0 + ((c - th) / 2));
 					canvas.DrawBitmap(art, tx, ty, image);
-
-					// a small town's painted walls are a pixel wide at game size: a stone ring with corner towers in the
-					// walls' own colours makes them read, as the larger towns' do
-					if (walled && step <= 2)
-						this.DrawSmallWalls(canvas, tx, ty, tw, th);
 				}
 				else
 				{
@@ -624,31 +619,6 @@ namespace OpenCivOne.Graphics
 			System.Runtime.InteropServices.MemoryMarshal.Cast<byte, uint>(target.GetPixelSpan()).CopyTo(result);
 
 			return result;
-		}
-
-		private void DrawSmallWalls(SKCanvas canvas, float x, float y, float w, float h)
-		{
-			float u = this.cell / 64f, inset = 1.2f * u;
-			SKRect ring = new SKRect(x + inset, y + inset + (h * 0.04f), x + w - inset, y + h - inset);
-			float r = MathF.Min(ring.Width, ring.Height) * 0.22f;
-			using SKPaint shadow = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2.8f * u, Color = new SKColor(40, 30, 18, 120) };
-			using SKPaint stone = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.6f * u, Color = new SKColor(204, 182, 136) };
-			using SKPaint top = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 0.6f * u, Color = new SKColor(238, 224, 186, 170) };
-			canvas.DrawRoundRect(new SKRect(ring.Left, ring.Top + (0.8f * u), ring.Right, ring.Bottom + (0.8f * u)), r, r, shadow);
-			canvas.DrawRoundRect(ring, r, r, stone);
-			canvas.DrawRoundRect(new SKRect(ring.Left, ring.Top - (0.4f * u), ring.Right, ring.Bottom - (0.4f * u)), r, r, top);
-
-			using SKPaint tower = new SKPaint { IsAntialias = true, Color = new SKColor(198, 176, 128) };
-			using SKPaint towerShadow = new SKPaint { IsAntialias = true, Color = new SKColor(40, 30, 18, 120) };
-			using SKPaint ink = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 0.6f * u, Color = new SKColor(60, 44, 28) };
-			float t = 1.8f * u, k = r * 0.3f;
-
-			foreach ((float tx, float ty) in new[] { (ring.Left + k, ring.Top + k), (ring.Right - k, ring.Top + k), (ring.Left + k, ring.Bottom - k), (ring.Right - k, ring.Bottom - k), (ring.MidX, ring.Bottom) })
-			{
-				canvas.DrawCircle(tx, ty + (0.6f * u), t, towerShadow);
-				canvas.DrawCircle(tx, ty, t, tower);
-				canvas.DrawCircle(tx, ty, t, ink);
-			}
 		}
 
 		private void DrawUnit(SKCanvas canvas, UnitArt art, float x0, float y0, uint colour, int marks, bool ring,
@@ -1052,7 +1022,7 @@ namespace OpenCivOne.Graphics
 		/// magenta spill, its own ground (gardens, earth) letting the terrain show through, and more contrast and colour
 		/// than the generated painting has, so it reads at game size
 		/// </summary>
-		private static SKBitmap SoftTown(SKBitmap t)
+		private static SKBitmap SoftTown(SKBitmap t, bool walls = false)
 		{
 			int w = t.Width, h = t.Height, n = w * h;
 			float[] r = new float[n], g = new float[n], b = new float[n], a = new float[n];
@@ -1099,7 +1069,8 @@ namespace OpenCivOne.Graphics
 				}
 			}
 
-			float[] soft = Blur(Erode(a, w, h, 3), w, h, 6);
+			// a walled town's walls run round its very edge: its outline is only lightly softened, so they stay
+			float[] soft = walls ? Blur(Erode(a, w, h, 1), w, h, 1.5f) : Blur(Erode(a, w, h, 3), w, h, 6);
 			float[] built = new float[n];
 
 			for (int i = 0; i < n; i++)
@@ -1107,6 +1078,16 @@ namespace OpenCivOne.Graphics
 				a[i] = MathF.Min(a[i], soft[i]);
 				float bright = (r[i] + g[i] + b[i]) / 3, sat = MathF.Max(r[i], MathF.Max(g[i], b[i])) - MathF.Min(r[i], MathF.Min(g[i], b[i]));
 				built[i] = (((r[i] > g[i] * 1.3f) && (r[i] > 110)) || ((bright > 165) && (sat < 70)) || (bright < 60)) ? 255 : 0;
+			}
+
+			// and the band along its edge, where the walls stand, stays solid whatever its colour
+			if (walls)
+			{
+				float[] inner = Erode(a, w, h, Math.Max(4, w / 28));
+
+				for (int i = 0; i < n; i++)
+					if (a[i] > 128 && inner[i] < 128)
+						built[i] = 255;
 			}
 
 			built = Blur(Dilate(built, w, h, 2), w, h, 2);

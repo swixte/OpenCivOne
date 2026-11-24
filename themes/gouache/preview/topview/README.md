@@ -35,7 +35,8 @@ The gouache set has nine units and no huts or resources of its own. The other 19
 | `15_city_screen_size9_2x.png` | Rome's city screen at size 9: the walled town at the centre of its small map. The size badge is left out there, since the title gives the population and the worked-tile icons would cover it. |
 | `16_after_city_screen.jpg` | Back on the map after closing the city screen, nothing left over from it. |
 | `17_ingame_sizes_2_to_8.jpg` | In game, every step of the ladder between hamlet and city: Rome at 2, 3 (walled) and 7; Babylon at 4, 5 (walled) and 8 (walled). |
-| `18_ingame_small_walled_towns.png` | Small walled towns (sizes 3 and 5) with their stone ring and corner towers. |
+| `18_ingame_small_walled_towns.png` | Small walled towns in game (sizes 3 and 5): their own painted walls. |
+| `22_walled_towns_sizes_3_to_14.png` | Walled towns from size 3 to 14 (harness): the painted walls at every step. |
 | `19_ingame_babylon_captured.jpg`, `20_ingame_captured_city_screen.jpg` | A Roman legion captures Babylon at size 3: the town keeps its picture and clearing and changes to a white Roman badge at size 2; its city screen shows the nearby Babylonian units in green. |
 | `21_sea_battle_frames_harness.png` | A battle at sea: a red trireme attacks a blue sailing ship and loses, greying and fading under smoke on the water. |
 
@@ -59,7 +60,7 @@ Each element on the map, judged against `compose.py`'s renders and checked in th
 | --- | --- |
 | Painted ground, coasts, rivers, moving water | Unchanged painted map; shows between all objects. |
 | Towns, sizes 1 to 13 | Right ladder picture for each size, in a clearing scaled to the town (`17`, `13`). |
-| Walled towns | Walled pictures at every step; at sizes 2 to 5 the painted walls are a pixel wide, so a stone ring with corner towers in the walls' colours is drawn over them (`18`). This is the one place the game draws more than `compose.py` does. |
+| Walled towns | Walled pictures at every step. The walls run round each picture's very edge, which `compose.py`'s edge softening eats away on small towns, so a walled picture's outline is softened only lightly and its edge band stays solid: the painted walls, towers and gates show from size 2 up (`18`, `22`). On the smallest walled town (sizes 2 and 3) the painted wall is a low thin one. |
 | Size badge and name | Same size, place and type as the renders, in each player's colour; white Roman badges read on all grounds. |
 | The nine gouache units | Same scale, anchors and bases as the renders, in all eight player colours. |
 | The other 19 units | Default painted set, toned and sized by kind; they sit on bases like the gouache units (`02`). Their painting is a little crisper than gouache, the one remaining style difference, until gouache versions are painted. |
