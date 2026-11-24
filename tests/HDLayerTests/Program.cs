@@ -1526,6 +1526,47 @@ GBitmap other4()
 			using var seaFile = File.Create(Path.ChangeExtension(battleOut, null) + "-sea.png");
 			seaStrip.Encode(seaFile, SKEncodedImageFormat.Png, 100);
 		}
+
+		// TOPVIEW_SHOWCASE: all 28 units in Blue and Red, all 11 resources + hut, and all 6 walled town steps
+		if (Environment.GetEnvironmentVariable("TOPVIEW_SHOWCASE") is string showOut)
+		{
+			using SKBitmap showGround = SKBitmap.Decode(engineFile).Copy(SKColorType.Bgra8888);
+			var showScene = new IsoView.Scene();
+			for (int t = 0; t < 14; t++)
+			{
+				showScene.Units.Add((2 + t, 1, t, Blue));
+				showScene.Units.Add((2 + t, 2, t, Red));
+			}
+			for (int t = 14; t < 28; t++)
+			{
+				showScene.Units.Add((2 + (t - 14), 4, t, Blue));
+				showScene.Units.Add((2 + (t - 14), 5, t, Red));
+			}
+			// Row 7: hut at x=2, resources 0..10 at x=4..14
+			showScene.Terrain = (x, y) => (y == 7 && x >= 4 && x <= 14) ? (x - 4) : 2;
+			showScene.Feature = (x, y) => (y == 7 && x == 2) ? 2 : (y == 7 && x >= 4 && x <= 14) ? 1 : 0;
+			// Row 9: all 6 walled town steps (sizes 1, 3, 5, 7, 9, 14)
+			var wSizes = new[] { (3, "Hamlet", 1), (5, "Ur", 3), (7, "Mari", 5), (9, "Nineveh", 7), (11, "Babylon", 9), (13, "Thebes", 14) };
+			var wSet = new HashSet<(int, int)>();
+			foreach (var (cx, nm, sz) in wSizes)
+			{
+				showScene.Cities.Add((cx, 9, nm, sz, Blue));
+				wSet.Add((cx, 9));
+			}
+			showScene.Walls = (x, y) => wSet.Contains((x, y));
+			top.Render(showGround.Width / 128f, showGround.Height / 128f, showScene);
+			uint[] sOver = top.Pixels;
+			for (int y = 0; y < showGround.Height; y++)
+				for (int x = 0; x < showGround.Width; x++)
+				{
+					uint o = sOver[(y * showGround.Width) + x], a = o >> 24;
+					SKColor g = showGround.GetPixel(x, y);
+					uint Mix(uint top8, byte under) => Math.Min(255u, top8 + ((under * (255 - a)) + 127) / 255);
+					showGround.SetPixel(x, y, new SKColor((byte)Mix((o >> 16) & 0xff, g.Red), (byte)Mix((o >> 8) & 0xff, g.Green), (byte)Mix(o & 0xff, g.Blue)));
+				}
+			using var showFile = File.Create(showOut);
+			showGround.Encode(showFile, SKEncodedImageFormat.Png, 100);
+		}
 	}
 
 	string? output = Environment.GetEnvironmentVariable("PAINTED_PREVIEW");

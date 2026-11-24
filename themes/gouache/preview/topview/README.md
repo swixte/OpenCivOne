@@ -17,7 +17,7 @@ Gameplay marks have painted forms:
 - a stack shows a second base behind;
 - a unit with an order in progress shows its letter on a paper tag.
 
-The gouache set has nine units and no huts or resources of its own. The other 19 units, the huts and the resources come from the default painted set, toned brighter and sized to the gouache unit of their kind, so the musketeers stand as tall as a phalanx. The grassland shield is drawn smaller and quieter.
+All 28 Civ1 units now have native gouache miniatures painted at the same ~65-degree overhead angle, shared scale, dark ink outlines and royal-blue player-colour gear (`units/sheet_foot_b.png`, `sheet_gunpowder.jpg`, `sheet_modern.jpg`, `sheet_ships_a.jpg`, `sheet_ships_b.jpg`). The tribal hut and five land resources (`oasis`, `horses`, `wheat`, `pheasant`, `caribou`) also have native gouache paintings (`resources/sheet_land.jpg`); the remaining six mineral/coast/sea resources (`coal`, `peat`, `gold`, `gems`, `seal`, `fish`) still use the toned fallback set. The grassland shield is drawn smaller and quieter.
 
 | File | Shows |
 | --- | --- |
@@ -44,6 +44,10 @@ The gouache set has nine units and no huts or resources of its own. The other 19
 | `28_ingame_name_over_active_unit.png` | A blinking unit inside Rome, its ring on and off: the name stays on top. |
 | `29_ingame_final.jpg` | The whole map window in game with everything above. |
 | `30_resources_hut_hamlet_before_after.jpg` | In game, before (left) and after (right): fish smaller and warmer, coal lifted from a black lump into the ground's colours, the hut smaller, the size-1 hamlet larger. |
+| `31_all_28_units_blue_red_2x.png` | All 28 Civ1 units (9 original + 19 newly painted gouache miniatures) rendered by `TopView` in Blue and Red at 2x (`TOPVIEW_SHOWCASE`). |
+| `32_walled_towns_t1w_before_after.png` | Walled towns before (top) and after (bottom) repainting `t1_w.png` (sizes 2–3, Ur) with thicker sandstone walls, corner towers, and no outer bushes. |
+| `33_units_native_vs_borrowed_before_after.png` | Before (top, borrowed side-on sprites) vs after (bottom, native 65° gouache miniatures) for musketeers, riflemen, cavalry, cannon, diplomat, caravan, and armor beside phalanx, knights, and catapult. |
+| `34_resources_hut_1x_3x.png` | Native gouache hut and 5 land resources (`oasis`, `horses`, `wheat`, `pheasant`, `caribou`) alongside the 6 remaining fallback resources (`coal`, `gold`, `seal`, `peat`, `gems`, `fish`) at 1x and 3x. |
 | `24_painted_effects_check.png` | The drawn effects after repainting them as dabs: the fortified earth bank, a stack's second base, and battle smoke on land and sea. |
 | `19_ingame_babylon_captured.jpg`, `20_ingame_captured_city_screen.jpg` | A Roman legion captures Babylon at size 3: the town keeps its picture and clearing and changes to a white Roman badge at size 2; its city screen shows the nearby Babylonian units in green. |
 | `21_sea_battle_frames_harness.png` | A battle at sea: a red trireme attacks a blue sailing ship and loses, greying and fading under smoke on the water. |
@@ -68,14 +72,13 @@ Each element on the map, judged against `compose.py`'s renders and checked in th
 
 | Element | Verdict |
 | --- | --- |
-| Painted ground, coasts, rivers, moving water | Unchanged painted map; shows between all objects. |
+| Painted ground, coasts, rivers, moving water | Unchanged painted map, plus `PaintedMap.RiverCentre` ported so 2-cell-wide rivers paint as one river instead of two parallel channels joined by rungs. |
 | Towns, sizes 1 to 13 | The hamlet is drawn a little larger than in the renders (half a cell) so it reads at game size (`30`). |
 | Towns (ladder) | Right ladder picture for each size, in a clearing scaled to the town (`17`, `13`). |
-| Walled towns | Walled pictures at every step. The walls run round each picture's very edge, which `compose.py`'s edge softening eats away on small towns, so a walled picture's outline is softened only lightly and its edge band stays solid: the painted walls, towers and gates show from size 2 up (`18`, `22`). At sizes 2 and 3 the walled town is about 37 pixels across and its painted wall is under a pixel wide, so it barely shows; brightening its stone made no visible difference. Only a repainted small walled town with thicker walls would change that. |
+| Walled towns | Walled pictures at every step. `t1_w.png` (sizes 2–3) was repainted with thicker warm sandstone walls, bold square corner towers, an arched gate, and no outer bushes (`32`), so painted walls now read clearly from size 2 all the way to size 14. |
 | Size badge and name | Same size, place and type as the renders, in each player's colour; white Roman badges read on all grounds. |
-| The nine gouache units | Same scale, anchors and bases as the renders, in all eight player colours. |
-| The other 19 units | Default painted set, sized by kind and colour-matched to the gouache units' measured lightness, contrast and saturation (`26`); they stand on bases like the gouache units, the caravan's driver and camel on one. Their brushwork is a little finer than gouache, which only painting them anew would change. |
-| Huts, resources, grassland shield | Painted objects, toned; fish warmed and smaller, coal and peat lifted out of black, the hut in scale with a hamlet (`30`). The shield is painted in the towns' terracotta with a gold rim, lit and soft-edged (`27`). |
+| All 28 gouache units | All 28 units are now native 65° overhead gouache miniatures at one shared scale, anchored on miniature bases in all player colours (`31`, `33`). Submarine hull steel is desaturated so only its conning-tower band and pennant take player colour; diplomat anchored on feet and mech infantry as vehicle. |
+| Huts, resources, grassland shield | Tribal hut and 5 land resources (`oasis`, `horses`, `wheat`, `pheasant`, `caribou`) are native gouache (`34`). The other 6 resources (`coal`, `peat`, `gold`, `gems`, `seal`, `fish`) remain on the toned fallback set (`30`, `34`). The grassland shield is painted in the towns' terracotta with a gold rim (`27`). |
 | Unit states (active, sentry, fortified, stack, orders) | Painted forms: the fortified bank and battle sparks and smoke are laid on as soft dabs of paint with light from the top left, not flat strokes (`24`); a stack's second base peeks out behind. Checked in game for active and fortified. |
 | Scrolling | While the ground is redrawn, the painted objects are hidden for a moment instead of standing on the old cells. |
 | Town names | Written after the units, so a unit in a town never covers its name (`28`). |

@@ -28,7 +28,7 @@ namespace OpenCivOne.Graphics
 			"submarine", "carrier", "transport", "nuclear", "diplomat", "caravan" };
 
 		// as compose.py: men on foot stand on their feet, ships sit in the water by their hulls
-		private static readonly HashSet<string> Foot = new HashSet<string> { "phalanx", "legion", "militia", "musketeers", "riflemen", "mech_infantry" };
+		private static readonly HashSet<string> Foot = new HashSet<string> { "phalanx", "legion", "militia", "musketeers", "riflemen", "diplomat" };
 		private static readonly HashSet<string> Ships = new HashSet<string> { "trireme", "sail", "frigate", "ironclad", "cruiser", "battleship", "submarine", "carrier", "transport" };
 		// the sheet's pixels per cell: its largest unit, a ship, is about 300 pixels long and a cell across
 		private const float UnitScale = 0.92f / 306;
@@ -39,7 +39,7 @@ namespace OpenCivOne.Graphics
 			["phalanx"] = 0.2f, ["legion"] = 0.2f, ["militia"] = 0.2f, ["settlers"] = 0.38f, ["knights"] = 0.3f, ["chariot"] = 0.32f,
 			["catapult"] = 0.32f, ["trireme"] = 0.44f, ["sail"] = 0.42f,
 			// units the theme has not painted, by kind
-			["musketeers"] = 0.2f, ["riflemen"] = 0.2f, ["diplomat"] = 0.2f, ["cavalry"] = 0.3f, ["caravan"] = 0.42f,
+			["musketeers"] = 0.2f, ["riflemen"] = 0.2f, ["diplomat"] = 0.2f, ["cavalry"] = 0.33f, ["caravan"] = 0.42f,
 			["cannon"] = 0.32f, ["artillery"] = 0.32f, ["armor"] = 0.34f, ["mech_infantry"] = 0.34f, ["fighter"] = 0.34f,
 			["bomber"] = 0.38f, ["nuclear"] = 0.24f, ["frigate"] = 0.42f, ["ironclad"] = 0.42f, ["cruiser"] = 0.44f,
 			["battleship"] = 0.46f, ["submarine"] = 0.42f, ["carrier"] = 0.46f, ["transport"] = 0.44f,
@@ -202,16 +202,16 @@ namespace OpenCivOne.Graphics
 
 				if (path != null && Decode(path) is SKBitmap raw)
 				{
-					using SKBitmap toned0 = own ? raw.Copy() : Toned(raw);
-					// fish sit cold and silver on the warm sea, and coal and peat are near-black lumps on the yellow
-					// ground: both are warmed and lifted towards the painting's earth colours, and the fish drawn smaller
-					string res = ResourceNames[i];
-					using SKBitmap toned = res == "fish" ? Graded(toned0, 0.25f, 1.12f, 0.98f, 0.8f) :
-						res is "coal" or "peat" ? Graded(toned0, 0.38f, 1.14f, 1.0f, 0.82f) : toned0.Copy();
-					view.resources[i] = Resize(toned, c * (res == "fish" ? 0.36f : 0.46f) / Math.Max(toned.Width, toned.Height));
-
-					if (!own)
-						raw.Dispose();
+					using (raw)
+					{
+						using SKBitmap toned0 = own ? raw.Copy() : Toned(raw);
+						// borrowed fish sit cold and silver on the warm sea, and coal and peat are near-black lumps on the
+						// yellow ground: warm and lift them when borrowed, and draw fish smaller
+						string res = ResourceNames[i];
+						using SKBitmap toned = !own && res == "fish" ? Graded(toned0, 0.25f, 1.12f, 0.98f, 0.8f) :
+							!own && res is "coal" or "peat" ? Graded(toned0, 0.38f, 1.14f, 1.0f, 0.82f) : toned0.Copy();
+						view.resources[i] = Resize(toned, c * (res == "fish" ? 0.36f : 0.46f) / Math.Max(toned.Width, toned.Height));
+					}
 				}
 			}
 
