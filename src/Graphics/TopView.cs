@@ -379,15 +379,14 @@ namespace OpenCivOne.Graphics
 					using SKPaint dust = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = c * 0.06f * (1 - k), Color = new SKColor(196, 168, 120, a), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, c * 0.03f) };
 					canvas.DrawOval(new SKRect(mx - r, my - (r * 0.6f), mx + r, my + (r * 0.6f)), dust);
 
-					// sparks flying out from the clash
-					using SKPaint spark = new SKPaint { IsAntialias = true, StrokeWidth = c * 0.026f, StrokeCap = SKStrokeCap.Round, Color = new SKColor(255, 214, 120, a) };
-
-					for (int i = 0; i < 9; i++)
+					// sparks flying out from the clash: small soft dabs of warm light, not lines
+					for (int i = 0; i < 10; i++)
 					{
 						double angle = rng.NextDouble() * Math.PI * 2;
-						float len = c * (0.15f + (0.25f * (float)rng.NextDouble())), from = len * k, to = from + (c * 0.06f);
+						float len = c * (0.12f + (0.25f * (float)rng.NextDouble())) * (0.4f + (0.6f * k));
 						float ax = (float)Math.Cos(angle), ay = (float)Math.Sin(angle) * 0.7f;
-						canvas.DrawLine(mx + (ax * from), my + (ay * from), mx + (ax * to), my + (ay * to), spark);
+						PaintDab(canvas, mx + (ax * len), my + (ay * len), c * (0.022f + (0.012f * (float)rng.NextDouble())),
+							new SKColor(255, (byte)(206 + rng.Next(40)), (byte)(120 + rng.Next(60)), a), c * 0.012f);
 					}
 				}
 
@@ -405,11 +404,19 @@ namespace OpenCivOne.Graphics
 							continue;
 
 						float ox = ((float)rng.NextDouble() - 0.5f) * c * 0.5f, rise = c * (0.15f + (0.55f * kk)) * (0.7f + (0.6f * (float)rng.NextDouble()));
-						float r = c * (0.1f + (0.18f * kk));
-						byte shade = (byte)(70 + rng.Next(50));
-						byte a = (byte)(170 * MathF.Sin(kk * MathF.PI));
-						using SKPaint puff = new SKPaint { IsAntialias = true, Color = new SKColor(shade, (byte)(shade - 6), (byte)(shade - 14), a), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, r * 0.45f) };
-						canvas.DrawCircle(lx + ox + (ox * kk), ly - rise, r, puff);
+						float r = c * (0.08f + (0.15f * kk));
+						float alpha = 0.8f * MathF.Sin(kk * MathF.PI);
+						float px = lx + ox + (ox * kk), py = ly - rise;
+						// a billow of grey smoke built of several small, uneven dabs, as gouache is laid on: dark underneath,
+						// a mid grey body, pale where the light catches the top left
+						for (int dab = 0; dab < 5; dab++)
+						{
+							float dx2 = ((float)rng.NextDouble() - 0.5f) * r * 1.1f, dy2 = ((float)rng.NextDouble() - 0.5f) * r * 0.8f;
+							float rr = r * (0.45f + (0.3f * (float)rng.NextDouble()));
+							PaintDab(canvas, px + dx2 + (rr * 0.18f), py + dy2 + (rr * 0.25f), rr, new SKColor(66, 64, 66, (byte)(110 * alpha)), rr * 0.6f);
+							PaintDab(canvas, px + dx2, py + dy2, rr * 0.8f, new SKColor(122, 120, 120, (byte)(120 * alpha)), rr * 0.55f);
+							PaintDab(canvas, px + dx2 - (rr * 0.25f), py + dy2 - (rr * 0.3f), rr * 0.42f, new SKColor(206, 202, 192, (byte)(110 * alpha)), rr * 0.45f);
+						}
 					}
 				}
 			}
@@ -418,6 +425,21 @@ namespace OpenCivOne.Graphics
 		}
 
 		private static float Ease(float x) => x * x * (3 - (2 * x));
+
+		/// <summary>
+		/// A dab of paint: a soft-edged blob, a little irregular, as a brush leaves it
+		/// </summary>
+		private static void PaintDab(SKCanvas canvas, float x, float y, float r, SKColor colour, float soft)
+		{
+			using SKPaint paint = new SKPaint { IsAntialias = true, Color = colour, MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, Math.Max(0.3f, soft)) };
+			canvas.DrawOval(new SKRect(x - r, y - (r * 0.82f), x + r, y + (r * 0.82f)), paint);
+		}
+
+		private static SKColor Mix(SKColor a, SKColor b, float t)
+		{
+			t = Math.Clamp(t, 0, 1);
+			return new SKColor((byte)(a.Red + ((b.Red - a.Red) * t)), (byte)(a.Green + ((b.Green - a.Green) * t)), (byte)(a.Blue + ((b.Blue - a.Blue) * t)), (byte)(a.Alpha + ((b.Alpha - a.Alpha) * t)));
+		}
 
 		public void EndBattle()
 		{
@@ -504,6 +526,8 @@ namespace OpenCivOne.Graphics
 				}
 			}
 
+			var labels = new List<(string Name, float X, float Y)>();
+
 			// towns, top to bottom: the town, its size badge on its top-left corner, its name under it
 			foreach (var town in scene.Cities.OrderBy(t => t.Y).ThenBy(t => Near(t.X, cx)))
 			{
@@ -546,13 +570,8 @@ namespace OpenCivOne.Graphics
 				fill.Color = Lightness(town.Colour) > 0.72f ? Ink : SKColors.White;
 				DrawCentred(canvas, size, bx + ((s + u) / 2), by + ((s + u) / 2), badgeFont, fill, true);
 
-				float ny = MathF.Min(y0 + c, ty + th + (2 * u));
-				float nx = x0 + (c / 2f);
-				fill.Color = Ink;
-				DrawCentred(canvas, town.Name, nx + (2 * u), ny + (2 * u), nameFont, fill, false);
-				DrawCentred(canvas, town.Name, nx + u, ny + u, nameFont, fill, false);
-				fill.Color = NameColour;
-				DrawCentred(canvas, town.Name, nx, ny, nameFont, fill, false);
+				// the name is written after the units, so a unit in or below the town never covers it
+				labels.Add((town.Name, x0 + (c / 2f), MathF.Min(y0 + c, ty + th + (2 * u))));
 			}
 
 			// units, back to front, each on its base; the unit waiting for orders also in a city, ringed while its marker
@@ -613,6 +632,16 @@ namespace OpenCivOne.Graphics
 					canvas.Restore();
 			}
 
+			foreach ((string name, float nx, float ny) in labels)
+			{
+				float u = c / 64f;
+				fill.Color = Ink;
+				DrawCentred(canvas, name, nx + (2 * u), ny + (2 * u), nameFont, fill, false);
+				DrawCentred(canvas, name, nx + u, ny + u, nameFont, fill, false);
+				fill.Color = NameColour;
+				DrawCentred(canvas, name, nx, ny, nameFont, fill, false);
+			}
+
 			effects?.Invoke(canvas, left, top);
 			canvas.Flush();
 			uint[] result = new uint[w * h];
@@ -632,18 +661,45 @@ namespace OpenCivOne.Graphics
 
 			// more units on the cell: a second base behind this one
 			if ((marks & 4) != 0)
-				this.DrawBase(canvas, cx + (3 * u), cy - (3 * u), rx, ry, side, col, false, fill, stroke);
+				this.DrawBase(canvas, cx + (rx * 0.32f) + (2 * u), cy - (ry * 0.55f) - (2 * u), rx, ry, side, col, false, fill, stroke);
 
-			// fortified: a low ring of earth and stakes round the base
+			// fortified: a low bank of earth round the base, painted in dabs of earth and grass with a stake or two,
+			// lit from the top left like the rest of the painting
 			if ((marks & 2) != 0)
 			{
-				SKRect bank = new SKRect(cx - rx - (4 * u), cy - ry - (2 * u), cx + rx + (4 * u), cy + ry + side + (4 * u));
-				stroke.StrokeWidth = 3.2f * u;
-				stroke.Color = new SKColor(92, 70, 44);
-				canvas.DrawOval(bank, stroke);
-				stroke.StrokeWidth = 1.2f * u;
-				stroke.Color = new SKColor(150, 122, 82);
-				canvas.DrawOval(new SKRect(bank.Left, bank.Top - u, bank.Right, bank.Bottom - u), stroke);
+				Random dabs = new Random(7);
+				float bx = rx + (4 * u), by = ry + (3 * u);
+
+				for (int pass = 0; pass < 2; pass++)
+				{
+					for (int i = 0; i < 34; i++)
+					{
+						float a = i / 34f * MathF.PI * 2;
+						float px = cx + (MathF.Cos(a) * bx), py = cy + (side / 2) + (MathF.Sin(a) * by);
+						float lit = 0.5f - (0.5f * MathF.Sin(a + 0.8f));
+						SKColor earth = Mix(new SKColor(96, 72, 42), new SKColor(176, 146, 96), lit * 0.8f + (0.2f * (float)dabs.NextDouble()));
+
+						if (pass == 0)
+							PaintDab(canvas, px + (0.8f * u), py + (1.2f * u), 2.6f * u, new SKColor(30, 22, 12, 90), 1.2f * u);
+						else
+						{
+							PaintDab(canvas, px, py, (1.9f + (0.7f * (float)dabs.NextDouble())) * u, earth, 0.5f * u);
+
+							if (dabs.NextDouble() < 0.25)
+								PaintDab(canvas, px, py - (0.9f * u), 0.9f * u, Mix(new SKColor(96, 120, 52), new SKColor(150, 160, 80), lit), 0.4f * u);
+						}
+					}
+				}
+
+				// a few sharpened stakes along the front of the bank
+				using SKPaint stake = new SKPaint { IsAntialias = true, StrokeWidth = 1.1f * u, StrokeCap = SKStrokeCap.Round, Color = new SKColor(78, 54, 30, 230) };
+
+				for (int i = -2; i <= 2; i++)
+				{
+					float a = (MathF.PI / 2) + (i * 0.38f);
+					float sx = cx + (MathF.Cos(a) * bx), sy = cy + (side / 2) + (MathF.Sin(a) * by);
+					canvas.DrawLine(sx, sy, sx + (i * 0.4f * u), sy - (3.2f * u), stake);
+				}
 			}
 
 			this.DrawBase(canvas, cx, cy, rx, ry, side, col, ring, fill, stroke);

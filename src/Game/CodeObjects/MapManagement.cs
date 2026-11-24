@@ -146,11 +146,17 @@ namespace OpenCivOne
 			{
 				GBitmap mapScreen = this.parent.Graphics.Screens.GetValueByKey(this.parent.Var_aa_Screen0_Rectangle.ScreenID);
 
-				if (mapScreen.Over is GBitmap.Overlay current)
+				if (this.parent.MapView.Blends)
+				{
+					// the painted objects are drawn over the classic ground: while the ground is redrawn (scrolled), the
+					// old objects would stand on the wrong cells, so they are not shown until the new view is ready
+					mapScreen.Over = null;
+				}
+				else if (mapScreen.Over is GBitmap.Overlay current)
 				{
 					current.Hold = true;
 				}
-				else if (!this.parent.MapView.Blends)
+				else
 				{
 					// the first time, the window stays dark until the isometric view is ready, instead of showing the
 					// classic map being drawn
@@ -1641,6 +1647,7 @@ namespace OpenCivOne
 						continue;
 
 					int owner = F0_2aea_14e0_GetCellActiveUnitPlayerID(x, y);
+					unitID = this.ShownUnitID(owner, unitID);
 					Unit unit = this.parent.GameData.Players[owner].Units[unitID];
 
 					if (debug || owner == this.parent.GameData.HumanPlayerID || (unit.VisibleByPlayer & mask) != 0)
@@ -1670,6 +1677,38 @@ namespace OpenCivOne
 			}
 
 			return scene;
+		}
+
+		/// <summary>
+		/// The unit a cell shows, as the classic map picks it (F0_2aea_125b_DrawWaterUnit): at sea the ship carrying the
+		/// others, elsewhere the stack's best defender
+		/// </summary>
+		private int ShownUnitID(int playerID, int unitID)
+		{
+			Unit unit = this.parent.GameData.Players[playerID].Units[unitID];
+
+			if (unit.NextUnitID != -1 && GetTerrainType(unit.Position.X, unit.Position.Y) == TerrainTypeEnum.Water &&
+				this.parent.GameData.Units[(int)unit.UnitType].MovementType != UnitMovementTypeEnum.Water)
+			{
+				int current = unitID;
+
+				for (int guard = 0; guard < 128; guard++)
+				{
+					current = this.parent.GameData.Players[playerID].Units[current].NextUnitID;
+
+					if (current < 0 || current == unitID)
+						break;
+
+					if (this.parent.GameData.Units[(int)this.parent.GameData.Players[playerID].Units[current].UnitType].MovementType == UnitMovementTypeEnum.Water)
+						return current;
+				}
+
+				return unitID;
+			}
+
+			int best = this.parent.UnitManagement.F0_1866_1122_GetBestDefenseUnitInStack(playerID, unitID);
+
+			return best >= 0 && best < 128 ? best : unitID;
 		}
 
 		/// <summary>

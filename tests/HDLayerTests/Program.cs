@@ -1452,6 +1452,8 @@ GBitmap other4()
 		topScene.Terrain = (x, y) => 2;
 		topScene.Feature = (x, y) => (x, y) == (4, 3) ? 2 : (x, y) == (10, 7) ? 1 : 0;
 		topScene.Active = (7, 6, 0, Blue);
+		// a fortified phalanx, a legion with an order in progress, a stack
+		topScene.UnitMarks = (x, y) => (x, y) == (3, 5) ? 2 : (x, y) == (14, 4) ? ('R' << 8) : (x, y) == (14, 6) ? 4 : 0;
 		top!.Render(ground.Width / 128f, ground.Height / 128f, topScene);
 		uint[] over = top.Pixels;
 		for (int y = 0; y < ground.Height; y++)

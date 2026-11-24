@@ -37,6 +37,8 @@ The gouache set has nine units and no huts or resources of its own. The other 19
 | `17_ingame_sizes_2_to_8.jpg` | In game, every step of the ladder between hamlet and city: Rome at 2, 3 (walled) and 7; Babylon at 4, 5 (walled) and 8 (walled). |
 | `18_ingame_small_walled_towns.png` | Small walled towns in game (sizes 3 and 5): their own painted walls. |
 | `22_walled_towns_sizes_3_to_14.png` | Walled towns from size 3 to 14 (harness): the painted walls at every step. |
+| `23_reference_vs_game_check.png` | The aesthetic check: `compose.py` reference crops above, the game below (towns, units on bases, a fortified unit, a town name). |
+| `24_painted_effects_check.png` | The drawn effects after repainting them as dabs: the fortified earth bank, a stack's second base, and battle smoke on land and sea. |
 | `19_ingame_babylon_captured.jpg`, `20_ingame_captured_city_screen.jpg` | A Roman legion captures Babylon at size 3: the town keeps its picture and clearing and changes to a white Roman badge at size 2; its city screen shows the nearby Babylonian units in green. |
 | `21_sea_battle_frames_harness.png` | A battle at sea: a red trireme attacks a blue sailing ship and loses, greying and fading under smoke on the water. |
 
@@ -54,6 +56,8 @@ The gouache set has nine units and no huts or resources of its own. The other 19
 
 ## Review, element by element
 
+Visual changes go through the `aesthetic-check` skill (`.claude/skills/aesthetic-check/SKILL.md`): side-by-side crops against the reference renders, at game size and enlarged, in the real game.
+
 Each element on the map, judged against `compose.py`'s renders and checked in the running game unless noted:
 
 | Element | Verdict |
@@ -65,9 +69,11 @@ Each element on the map, judged against `compose.py`'s renders and checked in th
 | The nine gouache units | Same scale, anchors and bases as the renders, in all eight player colours. |
 | The other 19 units | Default painted set, toned and sized by kind; they sit on bases like the gouache units (`02`). Their painting is a little crisper than gouache, the one remaining style difference, until gouache versions are painted. |
 | Huts, resources, grassland shield | Painted objects, toned; the shield is small and quiet. |
-| Unit states (active, sentry, fortified, stack, orders) | Painted forms; checked in game for active, fortified and stacks. |
+| Unit states (active, sentry, fortified, stack, orders) | Painted forms: the fortified bank and battle sparks and smoke are laid on as soft dabs of paint with light from the top left, not flat strokes (`24`); a stack's second base peeks out behind. Checked in game for active and fortified. |
+| Scrolling | While the ground is redrawn, the painted objects are hidden for a moment instead of standing on the old cells. |
+| Town names | Written after the units, so a unit in a town never covers its name. |
 | Moving units | Slide smoothly between cells. |
-| Battles, land and sea | Painted lunge, dust, smoke and fade (`09` in game; `10`, `21` frame by frame). |
+| Battles, land and sea | Painted lunge, dust, smoke and fade (`09` in game; `10`, `21` frame by frame). A sea battle has not been caught in game: ships placed by editing a save stay hidden until they move, and the AI ships did not attack in the turns recorded. |
 | City capture | Town, clearing and badge change hands cleanly (`19`). |
 | City screen's small map | Painted town and foreign units under the worked-tile icons; no badge there (`15`, `20`). |
 | Dialogs and menus | Drawn over the map as before; the painted map comes back clean after each. |
