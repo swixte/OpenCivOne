@@ -111,6 +111,11 @@ namespace OpenCivOne.Graphics
 			/// Whether a cell shows the grassland shield (the production bonus the classic map marks on some grassland)
 			/// </summary>
 			public Func<int, int, bool> ShieldBonus = (x, y) => false;
+
+			/// <summary>
+			/// Distance in cell units from a coastal cell's centre along cardinal (dx, dy) to the painted shoreline
+			/// </summary>
+			public Func<int, int, int, int, float> ShoreDistance = (x, y, dx, dy) => 0.48f;
 		}
 
 		private IsoView(int width, int height, uint[] grass, uint[] sand, uint[] snow, uint[] sea, uint[] shallow)

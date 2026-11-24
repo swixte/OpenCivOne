@@ -1611,6 +1611,7 @@ namespace OpenCivOne
 				Improvements = (x, y) => (int)F0_2aea_1585_GetVisibleTerrainImprovements(x, y),
 				Feature = (x, y) => (F0_2aea_1836_CellHasSpecialResource(x, y) ? 1 : 0) | (F0_2aea_1894_CellHasMinorTribeHut(x, y, GetTerrainType(x, y)) ? 2 : 0),
 				ShieldBonus = (x, y) => HasShieldBonus(x, y, GetTerrainType(x, y)),
+				ShoreDistance = (x, y, dx, dy) => this.parent.PaintedMap != null ? this.parent.PaintedMap.ShoreDistance(x, y, dx, dy) : 0.48f,
 			};
 			uint[] colours = { 0xffc43a2c, 0xfff2ece0, 0xff3c9a46, 0xff3e5bd8, 0xffe0b830, 0xff2fb6c8, 0xffc84ab4, 0xff6a6a72 };
 
@@ -1904,6 +1905,7 @@ namespace OpenCivOne
 				Improvements = all.Improvements,
 				Feature = all.Feature,
 				ShieldBonus = all.ShieldBonus,
+				ShoreDistance = all.ShoreDistance,
 				Walls = all.Walls,
 				UnitMarks = all.UnitMarks,
 				UnitStyle = all.UnitStyle,

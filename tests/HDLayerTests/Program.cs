@@ -1575,7 +1575,7 @@ GBitmap other4()
 			using var showFile = File.Create(showOut);
 			showGround.Encode(showFile, SKEncodedImageFormat.Png, 100);
 		}
-		// TOPVIEW_COASTS: renders small & large coastal cities on East, West, North, South coasts and a 1-tile island
+		// TOPVIEW_COASTS: renders all 4 harbor tiers across East, West, North, South coasts and 1-tile islands
 		if (Environment.GetEnvironmentVariable("TOPVIEW_COASTS") is string coastOut &&
 			Environment.GetEnvironmentVariable("TOPVIEW_COAST_GROUND") is string coastGroundFile)
 		{
@@ -1587,16 +1587,16 @@ GBitmap other4()
 				Terrain = (x, y) => (y >= 0 && y < cRows.Length && x >= 0 && x < cRows[y].Length) ? codes.IndexOf(cRows[y][x]) : 10,
 				Explored = (x, y) => true,
 			};
-			// Top coast (N): small (4,1) & large (8,1); West coast (W): small (2,2) & large (2,3);
-			// East coast (E): small (10,2) & large (10,3); South coast (S): small (4,4) & large (8,4);
-			// 1-tile islands (all 4 sides water): small (2,6) & large (9,6)
+			PaintedMap cPainted = PaintedMap.Load(Path.Combine(topTheme, "painted"), 64, (px, py) => cScene.Terrain(px - 4, py - 2))!;
+			cScene.ShoreDistance = (x, y, dx, dy) => cPainted.ShoreDistance(x + 4, y + 2, dx, dy);
+			// Covers all 4 harbor tiers (p0=2, p1=4, p2=8, p3=12) across North, West, East, South shorelines & 1-tile islands
 			var cCities = new[]
 			{
-				(4, 1, "NorthS", 3, Blue, false), (8, 1, "NorthL", 9, Blue, true),
-				(2, 2, "WestS", 2, Red, false),   (2, 3, "WestL", 8, Red, true),
-				(10, 2, "EastS", 3, Blue, true),  (10, 3, "EastL", 9, Blue, true),
-				(4, 4, "SouthS", 3, Red, false),  (8, 4, "SouthL", 9, Red, true),
-				(2, 6, "IsleS", 2, Blue, false),  (9, 6, "IsleL", 12, Blue, true),
+				(4, 1, "North1", 2, Blue, false), (8, 1, "North3", 8, Blue, true),
+				(2, 2, "West0",  2, Red, false),  (2, 3, "West2",  8, Red, true),
+				(10, 2, "East1", 4, Blue, true),  (10, 3, "East3", 12, Blue, true),
+				(4, 4, "South1", 4, Red, false),  (8, 4, "South2", 8, Red, true),
+				(2, 6, "Isle0",  2, Blue, false), (9, 6, "Isle3", 12, Blue, true),
 			};
 			var cw = new HashSet<(int, int)>();
 			foreach (var (cx, cy, nm, sz, col, wl) in cCities)

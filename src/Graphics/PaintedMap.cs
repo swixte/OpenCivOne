@@ -693,6 +693,80 @@ namespace OpenCivOne.Graphics
 			return ((x % MapWidth) + MapWidth) % MapWidth;
 		}
 
+		/// <summary>
+		/// Exact warped land weight at a continuous world pixel position, matching Paint's coast edge contour
+		/// </summary>
+		private float LandFraction(float wx, float wy)
+		{
+			float k = this.cell / 64f;
+			float warpAmount = 14 * k * this.coastWarp, coastRadius = 5 * k * this.coastWarp;
+			float crag = this.coastWarp > 1 ? 0.3f * warpAmount : 0;
+			float ox = ((this.Noise(wx, wy, 24 * k, 1) - 0.5f) * 2 * warpAmount) + ((this.Noise(wx, wy, 8 * k, 2) - 0.5f) * 0.6f * warpAmount);
+			float oy = ((this.Noise(wx, wy, 24 * k, 3) - 0.5f) * 2 * warpAmount) + ((this.Noise(wx, wy, 8 * k, 4) - 0.5f) * 0.6f * warpAmount);
+
+			if (crag > 0)
+			{
+				ox += (this.Noise(wx, wy, 3 * k, 11) - 0.5f) * crag;
+				oy += (this.Noise(wx, wy, 3 * k, 12) - 0.5f) * crag;
+			}
+
+			float qx = wx + ox, qy = wy + oy;
+			int ci = (int)MathF.Floor(qx / this.cell), cj = (int)MathF.Floor(qy / this.cell);
+			float land = 0;
+
+			for (int dj = -1; dj <= 1; dj++)
+			{
+				float wyC = this.Weight(qy, cj + dj, coastRadius);
+
+				if (wyC <= 0)
+					continue;
+
+				for (int di = -1; di <= 1; di++)
+				{
+					if (this.Terrain(ci + di, cj + dj) != Water)
+						land += wyC * this.Weight(qx, ci + di, coastRadius);
+				}
+			}
+
+			return land;
+		}
+
+		/// <summary>
+		/// Distance in cell-width units from a coastal cell's centre along cardinal direction (dx, dy) to the actual painted shoreline
+		/// </summary>
+		public float ShoreDistance(int cellX, int cellY, int dx, int dy)
+		{
+			if (this.print || (dx == 0 && dy == 0))
+				return 0.48f;
+
+			float k = this.cell / 64f;
+			float wx0 = (cellX + 0.5f) * this.cell, wy0 = (cellY + 0.5f) * this.cell;
+			float perpX = -dy, perpY = dx;
+			float[] offsets = { -5 * k, 0f, 5 * k };
+			float[] hits = new float[3];
+			float step = Math.Max(1f, 1 * k), start = 10 * k, end = 58 * k;
+
+			for (int r = 0; r < 3; r++)
+			{
+				float bx = wx0 + (perpX * offsets[r]), by = wy0 + (perpY * offsets[r]);
+				float hit = end;
+
+				for (float d = start; d <= end; d += step)
+				{
+					if (this.LandFraction(bx + (dx * d), by + (dy * d)) < 0.5f)
+					{
+						hit = d;
+						break;
+					}
+				}
+
+				hits[r] = hit;
+			}
+
+			Array.Sort(hits);
+			return Math.Clamp(hits[1] / this.cell, 0.34f, 0.62f);
+		}
+
 		private int Feature(int x, int y)
 		{
 			return (this.FeatureAt == null || y < 0 || y >= MapHeight) ? 0 : this.FeatureAt(WrapX(x), y);

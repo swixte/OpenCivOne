@@ -78,8 +78,8 @@ namespace OpenCivOne.Graphics
 		private long signature = long.MinValue;
 		private readonly UnitArt?[] units = new UnitArt?[UnitNames.Length];
 		private readonly SKBitmap?[,] towns = new SKBitmap?[6, 2];
-		// coastal docks/harbors: [0 = small town pier (sizes 1-5), 1 = large city harbor (sizes 6+)], [0=E, 1=W, 2=S, 3=N]
-		private readonly SKBitmap?[,] ports = new SKBitmap?[2, 4];
+		// coastal harbors: 4 size tiers (0=hamlet landing, 1=town wharf, 2=stone port, 3=classical harbor) x 4 cardinal shores (0=E, 1=W, 2=S, 3=N)
+		private readonly SKBitmap?[,] ports = new SKBitmap?[4, 4];
 		private readonly SKTypeface face;
 		private readonly SKTypeface badgeFace;
 		// huts and special resources (by terrain id, ResourceNames), painted into the view in place of the classic sprites
@@ -242,21 +242,21 @@ namespace OpenCivOne.Graphics
 				}
 			}
 
-			// coastal docks & harbors (port_small_{e,w,s,n}.png, port_large_{e,w,s,n}.png)
+			// coastal harbors across 4 size tiers (port_{0,1,2,3}_{e,w,s,n}.png): sized relative to painted coastal villages & towns so harbors are unmistakable without dwarfing cities
 			string[] dirSuffix = { "e", "w", "s", "n" };
-			float[] portScale = { 0.50f, 0.66f };
+			float[] portScale = { 0.42f, 0.50f, 0.54f, 0.64f };
 
-			for (int tier = 0; tier < 2; tier++)
+			for (int tier = 0; tier < 4; tier++)
 			{
-				string tierName = tier == 0 ? "small" : "large";
-
 				for (int d = 0; d < 4; d++)
 				{
-					string path = Path.Combine(objects, $"port_{tierName}_{dirSuffix[d]}.png");
+					string path = Path.Combine(objects, $"port_{tier}_{dirSuffix[d]}.png");
 
 					if (!File.Exists(path) || Decode(path) is not SKBitmap raw)
 						continue;
 
+					// keep raw width/height scaling so multi-pier harbors preserve proper house roof & vessel proportion,
+					// and scale North/South to match the cross-axis span cleanly
 					using (raw)
 						view.ports[tier, d] = Resize(raw, c * portScale[tier] / Math.Max(raw.Width, raw.Height));
 				}
@@ -741,27 +741,87 @@ namespace OpenCivOne.Graphics
 		}
 
 		/// <summary>
-		/// Picks the best cardinal coastal side (0=E, 1=W, 3=N, 2=S) for a city's dock/harbor, or -1 if inland.
-		/// Prefers East/West/North before South so the dock stays clear of the town name label when possible.
+		/// Harbor tier for a coastal city of a given population size (0 hamlet landing .. 3 grand classical harbor)
+		/// </summary>
+		public static int PortTier(int size) => size <= 2 ? 0 : size <= 5 ? 1 : size <= 9 ? 2 : 3;
+
+		/// <summary>
+		/// Picks the best cardinal coastal side (0=E, 1=W, 3=N, 2=S) for a city's harbor by preferring more open sea
+		/// over an enclosed pond, or -1 if inland
 		/// </summary>
 		private static int CoastalPortDirection(IsoView.Scene scene, int wx, int y)
 		{
 			bool IsSea(int cx, int cy) => cy >= 0 && cy < MapHeight && scene.Explored(Wrap(cx), cy) && scene.Terrain(Wrap(cx), cy) == Water;
 
-			if (IsSea(wx + 1, y)) return 0;
-			if (IsSea(wx - 1, y)) return 1;
-			if (IsSea(wx, y - 1)) return 3;
-			if (IsSea(wx, y + 1)) return 2;
+			(int Dir, int Dx, int Dy)[] dirs = { (0, 1, 0), (1, -1, 0), (3, 0, -1), (2, 0, 1) };
+			int bestDir = -1, bestScore = 0;
 
-			return -1;
+			foreach (var (dir, dx, dy) in dirs)
+			{
+				if (!IsSea(wx + dx, y + dy))
+					continue;
+
+				int score = 1;
+				if (IsSea(wx + (2 * dx), y + (2 * dy))) score++;
+				if (IsSea(wx + dx - dy, y + dy + dx)) score++;
+				if (IsSea(wx + dx + dy, y + dy - dx)) score++;
+
+				if (score > bestScore)
+				{
+					bestScore = score;
+					bestDir = dir;
+				}
+			}
+
+			return bestDir;
+		}
+
+		/// <summary>
+		/// Subtle slightly-curved trodden earth lane connecting an inland town clearing to its shoreline harbor
+		/// </summary>
+		private static void PaintHarborPath(SKCanvas canvas, float x0, float y0, float x1, float y1, int tier, float u)
+		{
+			float dx = x1 - x0, dy = y1 - y0;
+			float len = MathF.Sqrt((dx * dx) + (dy * dy));
+
+			if (len < 3f * u)
+				return;
+
+			float nx = -dy / len, ny = dx / len;
+			float bend = ((tier & 1) == 0 ? 1f : -1f) * 2.2f * u;
+			float mx = ((x0 + x1) * 0.5f) + (nx * bend), my = ((y0 + y1) * 0.5f) + (ny * bend);
+			float w = (2.2f + (0.35f * tier)) * u;
+
+			using SKPath lane = new SKPath();
+			lane.MoveTo(x0, y0);
+			lane.QuadTo(mx, my, x1, y1);
+
+			using SKPaint verge = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round, StrokeWidth = w + (2.0f * u), Color = new SKColor(68, 48, 24, 90), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 1.1f * u) };
+			using SKPaint bed = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round, StrokeWidth = w, Color = new SKColor(186, 150, 88, 200), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 0.5f * u) };
+			canvas.DrawPath(lane, verge);
+			canvas.DrawPath(lane, bed);
+
+			int dabs = Math.Max(4, (int)MathF.Round(len / (3.2f * u)));
+			for (int i = 1; i < dabs; i++)
+			{
+				float t = i / (float)dabs, it = 1 - t;
+				float qx = (it * it * x0) + (2 * it * t * mx) + (t * t * x1);
+				float qy = (it * it * y0) + (2 * it * t * my) + (t * t * y1);
+				PaintDab(canvas, qx, qy, (1.1f + (0.15f * tier)) * u, new SKColor(214, 184, 122, 165), 0.45f * u);
+			}
 		}
 
 		private static void DrawDock(SKCanvas canvas, SKBitmap dock, float px, float py, int c, SKPaint image)
 		{
 			float u = c / 64f;
-			// soft dark-teal reflection/shadow on the water beneath the pier and boats
-			using SKPaint waterShade = new SKPaint { IsAntialias = true, Color = new SKColor(10, 32, 46, 95), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 2.0f * u) };
-			canvas.DrawOval(new SKRect(px + (dock.Width * 0.10f), py + (dock.Height * 0.25f) + (2 * u), px + (dock.Width * 0.94f), py + (dock.Height * 0.98f) + (2 * u)), waterShade);
+			// soft water-shadow shaped directly to the piers, breakwaters and moored boats (light from top-left)
+			using SKPaint shadowPaint = new SKPaint
+			{
+				IsAntialias = true,
+				ColorFilter = SKColorFilter.CreateBlendMode(new SKColor(8, 28, 42, 95), SKBlendMode.SrcIn),
+				MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 1.6f * u)
+			};
+			canvas.DrawBitmap(dock, px + (1.5f * u), py + (2.0f * u), shadowPaint);
 			canvas.DrawBitmap(dock, px, py, image);
 		}
 
@@ -894,45 +954,62 @@ namespace OpenCivOne.Graphics
 					ty = y0 + ((c - th) / 2);
 				}
 
-				// coastal city port/dock: if any cardinal neighbour is Water, extend a pier/harbor from the town into the sea
+				// coastal harbor anchored directly on the painted shoreline edge (detached from smaller cities with a trodden lane)
 				int portDir = CoastalPortDirection(scene, Wrap(town.X), town.Y);
-				int portTier = town.Size >= 6 ? 1 : 0;
+				int portTier = PortTier(town.Size);
 				SKBitmap? dock = portDir >= 0 ? (this.ports[portTier, portDir] ?? this.ports[0, portDir]) : null;
 				float dockX = 0, dockY = 0;
 
 				if (dock != null)
 				{
 					float pu = c / 64f;
+					const float landFrac = 0.44f;
+					(int dx, int dy) = portDir == 0 ? (1, 0) : portDir == 1 ? (-1, 0) : portDir == 2 ? (0, 1) : (0, -1);
+					float mcx = x0 + (c * 0.5f), mcy = y0 + (c * 0.5f);
+					float shoreDist = scene.ShoreDistance(Wrap(town.X), town.Y, dx, dy);
+					float sx = mcx + (dx * shoreDist * c), sy = mcy + (dy * shoreDist * c);
 
-					switch (portDir)
+				// on large towns whose walls reach close to shore, cap how far the harbor overlaps behind the wall
+				float fMax = portDir switch { 0 => tx + tw - (2 * pu), 1 => tx - dock.Width + (2 * pu), 2 => ty + th - (2 * pu), _ => ty - dock.Height + (2 * pu) };
+				switch (portDir)
+				{
+					case 0: // East
+						dockX = MathF.Round(MathF.Max(sx - (dock.Width * landFrac), fMax));
+						dockY = MathF.Round(mcy - (dock.Height * 0.5f));
+						break;
+					case 1: // West (nudge down slightly if close to the top-left size badge)
+						dockX = MathF.Round(MathF.Min(sx - (dock.Width * (1f - landFrac)), fMax));
+						dockY = MathF.Round(mcy - (dock.Height * 0.5f) + (dockX + dock.Width > tx - (2 * pu) ? 3.0f * pu : 0f));
+						break;
+					case 2: // South
+						dockX = MathF.Round(mcx - (dock.Width * 0.5f));
+						dockY = MathF.Round(MathF.Max(sy - (dock.Height * landFrac), fMax));
+						break;
+					case 3: // North
+						dockX = MathF.Round(mcx - (dock.Width * 0.5f));
+						dockY = MathF.Round(MathF.Min(sy - (dock.Height * (1f - landFrac)), fMax));
+						break;
+				}
+
+					// Extend a warm trodden harbor lane from the town centre out to the landward harbor edge whenever detached (or nearly detached)
+					float gap = portDir == 0 ? (dockX - (tx + tw)) : portDir == 1 ? (tx - (dockX + dock.Width)) :
+						portDir == 2 ? (dockY - (ty + th)) : (ty - (dockY + dock.Height));
+					if (gap > -4 * pu)
 					{
-						case 0: // East
-							dockX = MathF.Round(tx + tw - (dock.Width * 0.30f));
-							dockY = MathF.Round(y0 + ((c - dock.Height) / 2f) + (2 * pu));
-							break;
-						case 1: // West (nudged slightly down so the top-left city size badge never covers the pier)
-							dockX = MathF.Round(tx - (dock.Width * 0.70f));
-							dockY = MathF.Round(y0 + ((c - dock.Height) / 2f) + (5 * pu));
-							break;
-						case 2: // South (tucked snugly into the south wall/gate)
-							dockX = MathF.Round(x0 + ((c - dock.Width) / 2f));
-							dockY = MathF.Round(ty + th - (dock.Height * 0.38f));
-							break;
-						case 3: // North (tucked snugly into the north wall)
-							dockX = MathF.Round(x0 + ((c - dock.Width) / 2f));
-							dockY = MathF.Round(ty - (dock.Height * 0.64f));
-							break;
+						float laneEndX = portDir == 0 ? dockX + (dock.Width * landFrac) : portDir == 1 ? dockX + (dock.Width * (1f - landFrac)) : mcx;
+						float laneEndY = portDir == 2 ? dockY + (dock.Height * landFrac) : portDir == 3 ? dockY + (dock.Height * (1f - landFrac)) : mcy;
+						PaintHarborPath(canvas, mcx, mcy, laneEndX, laneEndY, portTier, pu);
 					}
 
-					// East, West, and North docks tuck behind the town's edge; South dock sits in front of the south wall
-					if (portDir != 2)
+					// North harbors tuck behind the north edge of the town; also East/West/South draw after the town so piers/quays sit over the clearing
+					if (portDir == 3)
 						DrawDock(canvas, dock, dockX, dockY, c, image);
 				}
 
 				if (art != null)
 					canvas.DrawBitmap(art, tx, ty, image);
 
-				if (dock != null && portDir == 2)
+				if (dock != null && portDir != 3)
 					DrawDock(canvas, dock, dockX, dockY, c, image);
 
 				// on a small map (the city screen) the size is in the title, and its worked-cell marks would cover a badge
@@ -972,7 +1049,7 @@ namespace OpenCivOne.Graphics
 				float labelY = MathF.Min(y0 + c, ty + th + (2 * u));
 
 				if (dock != null && portDir == 2)
-					labelY = MathF.Max(labelY, dockY + dock.Height - (2 * u));
+					labelY = MathF.Max(labelY, dockY + dock.Height + (2 * u));
 
 				// strip classic fixed-width padding and trailing NULs from GameData.CityNames so SkiaSharp never draws a tofu box or offsets centring
 				string cleanName = town.Name.TrimEnd('\0', ' ', '\t', '\r', '\n');

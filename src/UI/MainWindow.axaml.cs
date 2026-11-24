@@ -237,11 +237,11 @@ namespace OpenCivOne.UI
 								int cx = this.game.MapManagement.AdjustXPosition(this.game.Var_d4cc_MapViewX + 7);
 								int cy = Math.Clamp(this.game.Var_d75e_MapViewY + 6, 4, 45);
 								var found = new List<(int x, int y, int dir)>();
-								for (int r = 1; r <= 12 && found.Count < 3; r++)
+								for (int r = 1; r <= 7 && found.Count < 4; r++)
 								{
-									for (int dy = -r; dy <= r && found.Count < 3; dy++)
+									for (int dy = -r; dy <= r && found.Count < 4; dy++)
 									{
-										for (int dx = -r; dx <= r && found.Count < 3; dx++)
+										for (int dx = -r; dx <= r && found.Count < 4; dx++)
 										{
 											if (Math.Abs(dx) != r && Math.Abs(dy) != r) continue;
 											int tx = this.game.MapManagement.AdjustXPosition(cx + dx);
@@ -251,18 +251,26 @@ namespace OpenCivOne.UI
 											if (t == TerrainTypeEnum.Water || t == TerrainTypeEnum.Mountains) continue;
 											if ((this.game.MapManagement.F0_2aea_1585_GetVisibleTerrainImprovements(tx, ty) & TerrainImprovementFlagsEnum.City) != 0) continue;
 											if (found.Any(p => Math.Abs(p.x - tx) + Math.Abs(p.y - ty) < 3)) continue;
+											(int D, int Dx, int Dy)[] cDirs = { (0, 1, 0), (1, -1, 0), (3, 0, -1), (2, 0, 1) };
 											int dir = -1;
-											if (this.game.MapManagement.GetTerrainType(tx + 1, ty) == TerrainTypeEnum.Water) dir = 0;
-											else if (this.game.MapManagement.GetTerrainType(tx - 1, ty) == TerrainTypeEnum.Water) dir = 1;
-											else if (this.game.MapManagement.GetTerrainType(tx, ty - 1) == TerrainTypeEnum.Water) dir = 2;
-											else if (this.game.MapManagement.GetTerrainType(tx, ty + 1) == TerrainTypeEnum.Water) dir = 3;
+											foreach (var (d, ox, oy) in cDirs)
+											{
+												if (this.game.MapManagement.GetTerrainType(tx + ox, ty + oy) == TerrainTypeEnum.Water &&
+													this.game.MapManagement.GetTerrainType(tx + (2 * ox), ty + (2 * oy)) == TerrainTypeEnum.Water &&
+													this.game.MapManagement.GetTerrainType(tx + ox - oy, ty + oy + ox) == TerrainTypeEnum.Water &&
+													this.game.MapManagement.GetTerrainType(tx + ox + oy, ty + oy - ox) == TerrainTypeEnum.Water)
+												{
+													dir = d;
+													break;
+												}
+											}
 											if (dir < 0) continue;
-											if (found.Any(p => p.dir == dir) && r < 6) continue;
+											if (found.Any(p => p.dir == dir) && r < 5) continue;
 											found.Add((tx, ty, dir));
 										}
 									}
 								}
-								sbyte[] sizes = { 7, 3, 2 };
+								sbyte[] sizes = { 12, 7, 4, 2 };
 								int nextSlot = 0;
 								for (int i = 0; i < found.Count; i++)
 								{
@@ -277,7 +285,8 @@ namespace OpenCivOne.UI
 									c.ActualSize = sizes[i];
 									c.VisibleSize = c.ActualSize;
 									c.NameID = (byte)(nextSlot + 1);
-									if (i <= 1) c.AddImprovement(ImprovementEnum.CityWalls);
+									if (i == 0 || i == 2) c.AddImprovement(ImprovementEnum.CityWalls);
+									this.game.GameData.Players[human].CityCount++;
 									this.game.MapManagement.F0_2aea_1653_SetTerrainImprovements(tx, ty, TerrainImprovementFlagsEnum.City | TerrainImprovementFlagsEnum.Road);
 									this.game.MapManagement.F0_2aea_1601_UpdateVisibleCellStatus(tx, ty);
 									for (int oy = -1; oy <= 1; oy++)
@@ -295,8 +304,20 @@ namespace OpenCivOne.UI
 										}
 									nextSlot++;
 								}
-								int vx = this.game.MapManagement.AdjustXPosition((found.Count > 0 ? found[0].x : cx) - 7);
-								int vy = Math.Clamp((found.Count > 0 ? found[0].y : cy) - 6, 0, 38);
+								// centre the live camera on the centroid of placed coastal cities so all 4 are visible together
+								int sumDx = 0, sumY = 0;
+								foreach (var (fx, fy, _) in found)
+								{
+									int diff = fx - cx;
+									if (diff > 40) diff -= 80;
+									if (diff < -40) diff += 80;
+									sumDx += diff;
+									sumY += fy;
+								}
+								int avgX = found.Count > 0 ? cx + (sumDx / found.Count) : cx;
+								int avgY = found.Count > 0 ? sumY / found.Count : cy;
+								int vx = this.game.MapManagement.AdjustXPosition(avgX - 7);
+								int vy = Math.Clamp(avgY - 6, 0, 38);
 								int savedPopFlag = this.game.Var_3484;
 								this.game.Var_3484 = -2;
 								this.game.MapManagement.F0_2aea_0008_DrawVisibleMap(human, vx, vy);
