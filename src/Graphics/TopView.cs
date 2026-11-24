@@ -39,7 +39,7 @@ namespace OpenCivOne.Graphics
 			["phalanx"] = 0.2f, ["legion"] = 0.2f, ["militia"] = 0.2f, ["settlers"] = 0.38f, ["knights"] = 0.3f, ["chariot"] = 0.32f,
 			["catapult"] = 0.32f, ["trireme"] = 0.44f, ["sail"] = 0.42f,
 			// units the theme has not painted, by kind
-			["musketeers"] = 0.2f, ["riflemen"] = 0.2f, ["diplomat"] = 0.2f, ["cavalry"] = 0.3f, ["caravan"] = 0.36f,
+			["musketeers"] = 0.2f, ["riflemen"] = 0.2f, ["diplomat"] = 0.2f, ["cavalry"] = 0.3f, ["caravan"] = 0.42f,
 			["cannon"] = 0.32f, ["artillery"] = 0.32f, ["armor"] = 0.34f, ["mech_infantry"] = 0.34f, ["fighter"] = 0.34f,
 			["bomber"] = 0.38f, ["nuclear"] = 0.24f, ["frigate"] = 0.42f, ["ironclad"] = 0.42f, ["cruiser"] = 0.44f,
 			["battleship"] = 0.46f, ["submarine"] = 0.42f, ["carrier"] = 0.46f, ["transport"] = 0.44f,
@@ -167,6 +167,9 @@ namespace OpenCivOne.Graphics
 			// then the others, each the size of the theme's own unit of its kind (another set is painted at another
 			// scale): men on foot as tall as a phalanx, horsemen as a knight, carts as the settlers, guns, tanks and
 			// aircraft as wide as a catapult, ships as a sailing ship
+			// the look of the theme's own units, measured, so units from another set can be brought to it
+			(float Mean, float Spread, float Saturation) look = PaintLook(view.units.Where(u => u != null).Select(u => u!.Picture));
+
 			foreach ((int type, string path) in borrowed)
 			{
 				string name = UnitNames[type];
@@ -176,7 +179,7 @@ namespace OpenCivOne.Graphics
 				UnitArt? reference = view.units[likeType] ?? view.units.FirstOrDefault(u => u != null);
 				bool byHeight = Foot.Contains(name) || name == "diplomat" || name == "cavalry";
 				(float, bool)? size = reference == null ? null : ((byHeight ? reference.SolidHeight : reference.SolidWidth), byHeight);
-				view.units[type] = LoadUnit(path, name, c, true, size);
+				view.units[type] = LoadUnit(path, name, c, true, size, look);
 			}
 
 
@@ -424,6 +427,38 @@ namespace OpenCivOne.Graphics
 			return this.Paint(this.lastCentre.X, this.lastCentre.Y, this.lastScene, (x, y) => Pose(x, y), Effects);
 		}
 
+		/// <summary>
+		/// The grassland shield painted as the towns are: a small heater shield in their terracotta with a muted gold rim,
+		/// lit from the top left, soft-edged, with a soft shadow, centred on (x, y)
+		/// </summary>
+		private static void PaintShield(SKCanvas canvas, float x, float y, int c)
+		{
+			float u = c / 64f, w = 10f * u, h = 12f * u;
+
+			SKPath Outline(float dx, float dy, float k)
+			{
+				var path = new SKPath();
+				float l = x - (w * k / 2) + dx, r = x + (w * k / 2) + dx, t = y - (h * k / 2) + dy, b = y + (h * k / 2) + dy;
+				path.MoveTo(l, t);
+				path.LineTo(r, t);
+				path.LineTo(r, t + (h * k * 0.45f));
+				path.QuadTo(r, t + (h * k * 0.85f), (l + r) / 2, b);
+				path.QuadTo(l, t + (h * k * 0.85f), l, t + (h * k * 0.45f));
+				path.Close();
+				return path;
+			}
+
+			using SKPath shadow = Outline(0.9f * u, 1.3f * u, 1.05f), rim = Outline(0, 0, 1), body = Outline(0, 0, 0.78f), lit = Outline(-0.7f * u, -0.9f * u, 0.4f);
+			using SKPaint shadowPaint = new SKPaint { IsAntialias = true, Color = new SKColor(28, 20, 10, 110), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 1.1f * u) };
+			using SKPaint rimPaint = new SKPaint { IsAntialias = true, Color = new SKColor(214, 176, 98), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 0.35f * u) };
+			using SKPaint bodyPaint = new SKPaint { IsAntialias = true, Color = new SKColor(158, 70, 42), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 0.35f * u) };
+			using SKPaint litPaint = new SKPaint { IsAntialias = true, Color = new SKColor(206, 112, 70, 170), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 0.8f * u) };
+			canvas.DrawPath(shadow, shadowPaint);
+			canvas.DrawPath(rim, rimPaint);
+			canvas.DrawPath(body, bodyPaint);
+			canvas.DrawPath(lit, litPaint);
+		}
+
 		private static float Ease(float x) => x * x * (3 - (2 * x));
 
 		/// <summary>
@@ -503,12 +538,7 @@ namespace OpenCivOne.Graphics
 						int feature = scene.Feature(wx, y), terrain = scene.Terrain(wx, y);
 
 						if (this.shield != null && scene.ShieldBonus(wx, y))
-						{
-							float sx = ((x - left) * c) + ((c - this.shield.Width) / 2f), sy = ((y - top) * c) + ((c - this.shield.Height) / 2f);
-							canvas.DrawOval(new SKRect(sx, sy + (this.shield.Height * 0.7f), sx + this.shield.Width, sy + (this.shield.Height * 1.05f)), shade);
-							using SKPaint quiet = new SKPaint { IsAntialias = true, Color = SKColors.White.WithAlpha(215) };
-							canvas.DrawBitmap(this.shield, MathF.Round(sx), MathF.Round(sy), quiet);
-						}
+							PaintShield(canvas, ((x - left) * c) + (c / 2f), ((y - top) * c) + (c / 2f), c);
 
 						SKBitmap? art = (feature & 2) != 0 ? this.hut : (feature & 1) != 0 && terrain >= 0 && terrain < this.resources.Length ? this.resources[terrain] : null;
 
@@ -913,14 +943,15 @@ namespace OpenCivOne.Graphics
 		/// stands on its base under the lowest part of its solid body, a man on foot on his feet; a ship sits in its base
 		/// by its hull
 		/// </summary>
-		private static UnitArt? LoadUnit(string path, string name, int c, bool tone, (float Pixels, bool Height)? like)
+		private static UnitArt? LoadUnit(string path, string name, int c, bool tone, (float Pixels, bool Height)? like,
+			(float Mean, float Spread, float Saturation)? look = null)
 		{
 			using SKBitmap? decoded = Decode(path);
 
 			if (decoded == null)
 				return null;
 
-			using SKBitmap raw = tone ? Toned(decoded) : decoded.Copy();
+			using SKBitmap raw = !tone ? decoded.Copy() : look.HasValue ? Matched(decoded, look.Value) : Toned(decoded);
 
 			int w = raw.Width, h = raw.Height;
 			float[] alpha = new float[w * h];
@@ -985,6 +1016,27 @@ namespace OpenCivOne.Graphics
 					lift = 0.06f;
 				}
 
+				// a caravan's driver walks beside his camel, too thin for the solid body: the base is set by his feet too,
+				// from the plain outline, so both stand on it
+				if (name == "caravan")
+				{
+					var outlineX = new List<float>();
+					var outlineY = new List<float>();
+
+					for (int y = 0; y < h; y++)
+						for (int x = 0; x < w; x++)
+							if (alpha[(y * w) + x] > 128)
+							{
+								outlineX.Add(x);
+								outlineY.Add(y);
+							}
+
+					bottom = Percentile(outlineY, 99);
+					fl = Percentile(outlineX, 1);
+					fr = Percentile(outlineX, 99);
+					lift = 0.12f;
+				}
+
 				ax = (fl + fr) / 2;
 				ay = bottom - (lift * (bottom - top));
 				half = (fr - fl) / 2;
@@ -1042,6 +1094,68 @@ namespace OpenCivOne.Graphics
 				SolidWidth = solidWidth * f,
 				SolidHeight = solidHeight * f,
 			};
+		}
+
+		/// <summary>
+		/// The look of a set of paintings, over their solid pixels: mean and spread of lightness (0-255), and mean
+		/// saturation (max - min channel)
+		/// </summary>
+		private static (float Mean, float Spread, float Saturation) PaintLook(IEnumerable<SKBitmap> pictures)
+		{
+			double sum = 0, sq = 0, sat = 0;
+			long n = 0;
+
+			foreach (SKBitmap b in pictures)
+			{
+				for (int y = 0; y < b.Height; y++)
+				{
+					for (int x = 0; x < b.Width; x++)
+					{
+						SKColor p = b.GetPixel(x, y);
+
+						if (p.Alpha < 200)
+							continue;
+
+						float l = (0.3f * p.Red) + (0.59f * p.Green) + (0.11f * p.Blue);
+						sum += l;
+						sq += l * l;
+						sat += Math.Max(p.Red, Math.Max(p.Green, p.Blue)) - Math.Min(p.Red, Math.Min(p.Green, p.Blue));
+						n++;
+					}
+				}
+			}
+
+			if (n == 0)
+				return (128, 50, 60);
+
+			double mean = sum / n;
+
+			return ((float)mean, (float)Math.Sqrt(Math.Max(1, (sq / n) - (mean * mean))), (float)(sat / n));
+		}
+
+		/// <summary>
+		/// A painting from another set brought to the theme's look: its lightness moved and stretched to the theme's mean
+		/// and spread, and its colour to the theme's saturation, keeping its hues
+		/// </summary>
+		private static SKBitmap Matched(SKBitmap t, (float Mean, float Spread, float Saturation) target)
+		{
+			(float mean, float spread, float saturation) = PaintLook(new[] { t });
+			float k = Math.Clamp(target.Spread / spread, 0.6f, 1.4f), ks = Math.Clamp(target.Saturation / Math.Max(1, saturation), 0.7f, 1.8f);
+			SKBitmap result = new SKBitmap(new SKImageInfo(t.Width, t.Height, SKColorType.Rgba8888, SKAlphaType.Unpremul));
+
+			for (int y = 0; y < t.Height; y++)
+			{
+				for (int x = 0; x < t.Width; x++)
+				{
+					SKColor p = t.GetPixel(x, y);
+					float l = (0.3f * p.Red) + (0.59f * p.Green) + (0.11f * p.Blue);
+					float nl = ((l - mean) * k) + target.Mean;
+					float r = nl + ((p.Red - l) * ks), g = nl + ((p.Green - l) * ks), b = nl + ((p.Blue - l) * ks);
+					result.SetPixel(x, y, new SKColor((byte)Math.Clamp(r, 0, 255), (byte)Math.Clamp(g, 0, 255), (byte)Math.Clamp(b, 0, 255), p.Alpha));
+				}
+			}
+
+			return result;
 		}
 
 		/// <summary>

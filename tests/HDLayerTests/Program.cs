@@ -1446,8 +1446,12 @@ GBitmap other4()
 		// settlers, phalanx, knights, catapult, trireme, legion, chariot, sail, and two units the theme has not painted
 		// (musketeers, cannon)
 		foreach (var u in new[] { (7, 6, 0, Blue), (3, 5, 2, Blue), (9, 2, 7, Blue), (5, 9, 8, Blue), (12, 5, 16, Blue), (14, 4, 3, Red), (14, 6, 10, Red), (19, 10, 17, Red),
-			(8, 8, 4, Blue), (12, 8, 9, Red) })
+			(14, 9, 18, Red), (15, 10, 19, Blue) })
 			topScene.Units.Add(u);
+		// a row comparing the theme's units (phalanx, knights, catapult) with borrowed ones: musketeers, riflemen,
+		// cavalry, cannon, diplomat, caravan, armor
+		foreach (var (x, t) in new[] { (2, 2), (3, 7), (4, 8), (5, 4), (6, 5), (7, 6), (8, 9), (9, 26), (10, 27), (11, 11) })
+			topScene.Units.Add((x, 8, t, Blue));
 		// a hut and a special resource on grassland
 		topScene.Terrain = (x, y) => 2;
 		topScene.Feature = (x, y) => (x, y) == (4, 3) ? 2 : (x, y) == (10, 7) ? 1 : 0;
