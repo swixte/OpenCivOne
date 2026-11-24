@@ -17,7 +17,7 @@ Gameplay marks have painted forms:
 - a stack shows a second base behind;
 - a unit with an order in progress shows its letter on a paper tag.
 
-All 28 Civ1 units now have native gouache miniatures painted at the same ~65-degree overhead angle, shared scale, dark ink outlines and royal-blue player-colour gear (`units/sheet_foot_b.png`, `sheet_gunpowder.jpg`, `sheet_modern.jpg`, `sheet_ships_a.jpg`, `sheet_ships_b.jpg`). The tribal hut and five land resources (`oasis`, `horses`, `wheat`, `pheasant`, `caribou`) also have native gouache paintings (`resources/sheet_land.jpg`); the remaining six mineral/coast/sea resources (`coal`, `peat`, `gold`, `gems`, `seal`, `fish`) still use the toned fallback set. The grassland shield is drawn smaller and quieter.
+All 28 Civ1 units now have native gouache miniatures painted at the same ~65-degree overhead angle, shared scale, dark ink outlines and royal-blue player-colour gear (`units/sheet_foot_b.png`, `sheet_gunpowder.jpg`, `sheet_modern.jpg`, `sheet_ships_a.jpg`, `sheet_ships_b.jpg`). All 12 map objects — the tribal hut and all 11 special resources (`oasis`, `horses`, `wheat`, `pheasant`, `coal`, `gold`, `caribou`, `seal`, `peat`, `gems`, `fish`) — are native gouache (`resources/sheet_land.jpg`, `resources/sheet_minerals_sea.jpg`), and coastal cities extend native gouache docks/harbors (`towns/ports_small.jpg`, `towns/ports_large.jpg`) into adjacent water on all four cardinal shoreline sides. Roads and railroads are hand-painted in `TopView.cs`, and the grassland bonus shield is a quiet weathered olive-stone emblem.
 
 | File | Shows |
 | --- | --- |
@@ -47,7 +47,13 @@ All 28 Civ1 units now have native gouache miniatures painted at the same ~65-deg
 | `31_all_28_units_blue_red_2x.png` | All 28 Civ1 units (9 original + 19 newly painted gouache miniatures) rendered by `TopView` in Blue and Red at 2x (`TOPVIEW_SHOWCASE`). |
 | `32_walled_towns_t1w_before_after.png` | Walled towns before (top) and after (bottom) repainting `t1_w.png` (sizes 2–3, Ur) with thicker sandstone walls, corner towers, and no outer bushes. |
 | `33_units_native_vs_borrowed_before_after.png` | Before (top, borrowed side-on sprites) vs after (bottom, native 65° gouache miniatures) for musketeers, riflemen, cavalry, cannon, diplomat, caravan, and armor beside phalanx, knights, and catapult. |
-| `34_resources_hut_1x_3x.png` | Native gouache hut and 5 land resources (`oasis`, `horses`, `wheat`, `pheasant`, `caribou`) alongside the 6 remaining fallback resources (`coal`, `gold`, `seal`, `peat`, `gems`, `fish`) at 1x and 3x. |
+| `34_resources_hut_1x_3x.png` | Pass 1 native gouache hut and 5 land resources (`oasis`, `horses`, `wheat`, `pheasant`, `caribou`) at 1x and 3x. |
+| `35_terrain_mountains_clearings.png` | Pass 2 painted world: softer `groundblend 1.65`, interlocking tinted mountain ranges, grassland copses, and warm trodden-earth town clearings painted cleanly over rivers. |
+| `36_badges_roads_coal_shields_2x.png` | Pass 2 harness 2x check: crisp lining-figure sans-serif city size badges, hand-painted meandering dirt roads & railroads, faceted gouache coal/peat, and quiet weathered olive-stone shields. |
+| `37_coastal_ports_all4_sides.png` | Pass 3 coastal docks/harbors harness check (`TOPVIEW_COASTS`): East, West, North, South, and 1-tile island cities in both small oak dock (sizes 1–5) and large sandstone harbor (sizes 6+) tiers. |
+| `38_all_12_native_resources_1x_3x.png` | All 12 map objects (`hut` + all 11 special resources: `oasis`, `horses`, `wheat`, `pheasant`, `coal`, `gold`, `caribou`, `seal`, `peat`, `gems`, `fish`) in 100% native gouache at 1x and 3x. |
+| `39_live_ingame_turn1_rome.png` | Real live running `OpenCivOne` screenshot (1280×800): Turn 1 Rome founded with crisp `[1]` badge, warm trodden-earth clearing, soft olive-stone shield, and blended coastal terrain. |
+| `40_live_ingame_coastal_ports_roads.png` | Real live running `OpenCivOne` screenshot (1280×800): coastal docks/harbors attached on East (`Nicopolis`), South (`Caesarea` size 7 walled harbor), and West (`Carthage` size 3 walled town), meandering painted dirt roads, native resources, interlocking mountains, and trimmed centred city labels. |
 | `24_painted_effects_check.png` | The drawn effects after repainting them as dabs: the fortified earth bank, a stack's second base, and battle smoke on land and sea. |
 | `19_ingame_babylon_captured.jpg`, `20_ingame_captured_city_screen.jpg` | A Roman legion captures Babylon at size 3: the town keeps its picture and clearing and changes to a white Roman badge at size 2; its city screen shows the nearby Babylonian units in green. |
 | `21_sea_battle_frames_harness.png` | A battle at sea: a red trireme attacks a blue sailing ship and loses, greying and fading under smoke on the water. |
@@ -72,13 +78,15 @@ Each element on the map, judged against `compose.py`'s renders and checked in th
 
 | Element | Verdict |
 | --- | --- |
-| Painted ground, coasts, rivers, moving water | Unchanged painted map, plus `PaintedMap.RiverCentre` ported so 2-cell-wide rivers paint as one river instead of two parallel channels joined by rungs. |
-| Towns, sizes 1 to 13 | The hamlet is drawn a little larger than in the renders (half a cell) so it reads at game size (`30`). |
-| Towns (ladder) | Right ladder picture for each size, in a clearing scaled to the town (`17`, `13`). |
-| Walled towns | Walled pictures at every step. `t1_w.png` (sizes 2–3) was repainted with thicker warm sandstone walls, bold square corner towers, an arched gate, and no outer bushes (`32`), so painted walls now read clearly from size 2 all the way to size 14. |
-| Size badge and name | Same size, place and type as the renders, in each player's colour; white Roman badges read on all grounds. |
+| Painted ground, coasts, rivers, moving water | Softened biome transitions (`groundblend 1.65`), interlocking varied/tinted mountain ranges with border saddle ridges, grassland copses, wide-river `RiverCentre` fix, warm trodden-earth town clearings painted after rivers, and calm ocean/river ebb-and-flow (`WaterPeriod = 9500 ms`) (`35`, `39`, `40`). |
+| Towns, sizes 1 to 13 | The hamlet is drawn a little larger than in the renders (half a cell) so it reads at game size (`30`, `39`). |
+| Towns (ladder) | Right ladder picture for each size, in a warm trodden-earth clearing scaled to the town (`17`, `13`, `35`, `40`). |
+| Walled towns | Walled pictures at every step. `t1_w.png` (sizes 2–3) was repainted with thicker warm sandstone walls, bold square corner towers, an arched gate, and no outer bushes (`32`, `40`), so painted walls read clearly from size 2 all the way to size 14. |
+| Coastal docks and harbors | Native gouache piers and harbors attach to coastal cities on all four cardinal shoreline sides (E, W, N, S; `port_small_*` for sizes 1–5, `port_large_*` for sizes 6+); West piers nudge down clear of the top-left size badge and South piers shift the town name cleanly below (`37`, `40`). |
+| Size badge and name | Bold lining-figure sans-serif badges (`11.5 px`) centred by tight ink bounds on a bevelled plaque with drop shadow, and fixed-width trailing spaces/NULs trimmed from `GameData.CityNames` so player and AI city names centre cleanly without tofu glyphs (`36`, `39`, `40`). |
+| Roads and railroads | Hand-painted meandering warm ochre dirt roads (verge + brushwork dabs) and gravel/sleeper/twin-iron railroads in `TopView.cs`, replacing classic `SP257` sprites (`36`, `40`). |
 | All 28 gouache units | All 28 units are now native 65° overhead gouache miniatures at one shared scale, anchored on miniature bases in all player colours (`31`, `33`). Submarine hull steel is desaturated so only its conning-tower band and pennant take player colour; diplomat anchored on feet and mech infantry as vehicle. |
-| Huts, resources, grassland shield | Tribal hut and 5 land resources (`oasis`, `horses`, `wheat`, `pheasant`, `caribou`) are native gouache (`34`). The other 6 resources (`coal`, `peat`, `gold`, `gems`, `seal`, `fish`) remain on the toned fallback set (`30`, `34`). The grassland shield is painted in the towns' terracotta with a gold rim (`27`). |
+| Huts, resources, grassland shield | All 12 map objects — the tribal hut and all 11 special resources (`oasis`, `horses`, `wheat`, `pheasant`, `coal`, `gold`, `caribou`, `seal`, `peat`, `gems`, `fish`) — are 100% native gouache (`38`, `40`). The grassland bonus shield is a quiet weathered olive-stone emblem (`36`, `39`, `40`). |
 | Unit states (active, sentry, fortified, stack, orders) | Painted forms: the fortified bank and battle sparks and smoke are laid on as soft dabs of paint with light from the top left, not flat strokes (`24`); a stack's second base peeks out behind. Checked in game for active and fortified. |
 | Scrolling | While the ground is redrawn, the painted objects are hidden for a moment instead of standing on the old cells. |
 | Town names | Written after the units, so a unit in a town never covers its name (`28`). |

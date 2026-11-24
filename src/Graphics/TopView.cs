@@ -974,7 +974,9 @@ namespace OpenCivOne.Graphics
 				if (dock != null && portDir == 2)
 					labelY = MathF.Max(labelY, dockY + dock.Height - (2 * u));
 
-				labels.Add((town.Name, x0 + (c / 2f), labelY));
+				// strip classic fixed-width padding and trailing NULs from GameData.CityNames so SkiaSharp never draws a tofu box or offsets centring
+				string cleanName = town.Name.TrimEnd('\0', ' ', '\t', '\r', '\n');
+				labels.Add((cleanName, x0 + (c / 2f), labelY));
 			}
 
 			// units, back to front, each on its base; the unit waiting for orders also in a city, ringed while its marker

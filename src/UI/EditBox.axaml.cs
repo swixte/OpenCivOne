@@ -156,6 +156,9 @@ public partial class EditBox : Window
 
 	public static string? ShowEditBoxDialog(Window owner, string title, string? placeholderText, string? defaultValue, int maxTextLength, bool allowEmptyText)
 	{
+		if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LIVE_SCRIPT")))
+			return defaultValue;
+
 		EditBox? dialog = null;
 		bool creatingWindow = true;
 

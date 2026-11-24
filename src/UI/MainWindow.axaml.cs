@@ -41,7 +41,12 @@ namespace OpenCivOne.UI
 
 		// painted water moves at about ten frames a second, so screens that show it are drawn again that often
 		private readonly System.Diagnostics.Stopwatch waterClock = System.Diagnostics.Stopwatch.StartNew();
-		private const int WaterFrameMilliseconds = 100;
+		private const int WaterFrameMilliseconds = 115;
+
+		// optional LIVE_SCRIPT automation for visual aesthetic-checks in the real running game (inactive unless set)
+		private readonly Queue<string> liveScript = new Queue<string>();
+		private readonly System.Diagnostics.Stopwatch liveClock = System.Diagnostics.Stopwatch.StartNew();
+		private long liveWaitUntil = 0;
 
 		public MainWindow()
 		{
@@ -117,6 +122,12 @@ namespace OpenCivOne.UI
 			this.gameThread = new Thread(new ThreadStart(GameThread));
 			this.gameThread.Name = "OpenCivOne game thread";
 			this.gameThread.Start();
+
+			if (Environment.GetEnvironmentVariable("LIVE_SCRIPT") is string script && script.Length > 0)
+			{
+				foreach (string step in script.Split(',', StringSplitOptions.RemoveEmptyEntries))
+					this.liveScript.Enqueue(step.Trim());
+			}
 		}
 
 		private void Timer_Tick(object? sender, EventArgs e)
@@ -170,6 +181,143 @@ namespace OpenCivOne.UI
 				}
 
 				RedrawScreens(false);
+
+				if (this.liveScript.Count > 0 && this.liveClock.ElapsedMilliseconds >= this.liveWaitUntil)
+				{
+					string cmd = this.liveScript.Peek();
+
+					if (cmd == "bootmap")
+					{
+						GBitmap? s0 = this.game.Graphics.Screens.ContainsKey(0) ? this.game.Graphics.Screens.GetValueByKey(0) : null;
+
+						if (s0?.Over != null)
+						{
+							this.liveScript.Dequeue();
+							this.liveWaitUntil = this.liveClock.ElapsedMilliseconds + 1200;
+						}
+						else
+						{
+							lock (OpenCivOneGame.KeyboardAndMouseLock)
+								if (this.game.Keys.Count == 0)
+									this.game.Keys.Enqueue(13);
+							this.liveWaitUntil = this.liveClock.ElapsedMilliseconds + 500;
+						}
+					}
+					else
+					{
+						this.liveScript.Dequeue();
+
+						if (cmd.StartsWith("w:") && long.TryParse(cmd.Substring(2), out long ms))
+						{
+							this.liveWaitUntil = this.liveClock.ElapsedMilliseconds + ms;
+						}
+						else if (cmd.StartsWith("k:") && int.TryParse(cmd.Substring(2), out int key))
+						{
+							lock (OpenCivOneGame.KeyboardAndMouseLock)
+								this.game.Keys.Enqueue(key);
+						}
+						else if (cmd == "reveal")
+						{
+							int human = this.game.GameData.HumanPlayerID;
+							ushort mask = (ushort)(1 << human);
+							for (int y = 0; y < 50; y++)
+								for (int x = 0; x < 80; x++)
+									this.game.GameData.MapVisibility[x, y] |= mask;
+
+							int vx = this.game.MapManagement.AdjustXPosition(this.game.Var_d4cc_MapViewX);
+							int vy = Math.Clamp(this.game.Var_d75e_MapViewY, 0, 38);
+							this.game.MapManagement.F0_2aea_0008_DrawVisibleMap(human, vx, vy);
+							this.liveWaitUntil = this.liveClock.ElapsedMilliseconds + 600;
+						}
+						else if (cmd == "coastal")
+						{
+							try
+							{
+								int human = this.game.GameData.HumanPlayerID;
+								int cx = this.game.MapManagement.AdjustXPosition(this.game.Var_d4cc_MapViewX + 7);
+								int cy = Math.Clamp(this.game.Var_d75e_MapViewY + 6, 4, 45);
+								var found = new List<(int x, int y, int dir)>();
+								for (int r = 1; r <= 12 && found.Count < 3; r++)
+								{
+									for (int dy = -r; dy <= r && found.Count < 3; dy++)
+									{
+										for (int dx = -r; dx <= r && found.Count < 3; dx++)
+										{
+											if (Math.Abs(dx) != r && Math.Abs(dy) != r) continue;
+											int tx = this.game.MapManagement.AdjustXPosition(cx + dx);
+											int ty = cy + dy;
+											if (ty < 3 || ty > 46) continue;
+											TerrainTypeEnum t = this.game.MapManagement.GetTerrainType(tx, ty);
+											if (t == TerrainTypeEnum.Water || t == TerrainTypeEnum.Mountains) continue;
+											if ((this.game.MapManagement.F0_2aea_1585_GetVisibleTerrainImprovements(tx, ty) & TerrainImprovementFlagsEnum.City) != 0) continue;
+											if (found.Any(p => Math.Abs(p.x - tx) + Math.Abs(p.y - ty) < 3)) continue;
+											int dir = -1;
+											if (this.game.MapManagement.GetTerrainType(tx + 1, ty) == TerrainTypeEnum.Water) dir = 0;
+											else if (this.game.MapManagement.GetTerrainType(tx - 1, ty) == TerrainTypeEnum.Water) dir = 1;
+											else if (this.game.MapManagement.GetTerrainType(tx, ty - 1) == TerrainTypeEnum.Water) dir = 2;
+											else if (this.game.MapManagement.GetTerrainType(tx, ty + 1) == TerrainTypeEnum.Water) dir = 3;
+											if (dir < 0) continue;
+											if (found.Any(p => p.dir == dir) && r < 6) continue;
+											found.Add((tx, ty, dir));
+										}
+									}
+								}
+								sbyte[] sizes = { 7, 3, 2 };
+								int nextSlot = 0;
+								for (int i = 0; i < found.Count; i++)
+								{
+									while (nextSlot < 128 && this.game.GameData.Cities[nextSlot].Status != CityStatusEnum.Invalid)
+										nextSlot++;
+									if (nextSlot >= 128) break;
+									var (tx, ty, _) = found[i];
+									City c = this.game.GameData.Cities[nextSlot];
+									c.Status = CityStatusEnum.WaterAccess;
+									c.PlayerID = (short)human;
+									c.Position = new GPoint(tx, ty);
+									c.ActualSize = sizes[i];
+									c.VisibleSize = c.ActualSize;
+									c.NameID = (byte)(nextSlot + 1);
+									if (i <= 1) c.AddImprovement(ImprovementEnum.CityWalls);
+									this.game.MapManagement.F0_2aea_1653_SetTerrainImprovements(tx, ty, TerrainImprovementFlagsEnum.City | TerrainImprovementFlagsEnum.Road);
+									this.game.MapManagement.F0_2aea_1601_UpdateVisibleCellStatus(tx, ty);
+									for (int oy = -1; oy <= 1; oy++)
+										for (int ox = -1; ox <= 1; ox++)
+										{
+											if (ox == 0 && oy == 0) continue;
+											int rx = this.game.MapManagement.AdjustXPosition(tx + ox);
+											int ry = ty + oy;
+											if (ry >= 2 && ry <= 47 && this.game.MapManagement.GetTerrainType(rx, ry) != TerrainTypeEnum.Water &&
+												(Math.Abs(ox) + Math.Abs(oy) == 1))
+											{
+												this.game.MapManagement.F0_2aea_1653_SetTerrainImprovements(rx, ry, TerrainImprovementFlagsEnum.Road);
+												this.game.MapManagement.F0_2aea_1601_UpdateVisibleCellStatus(rx, ry);
+											}
+										}
+									nextSlot++;
+								}
+								int vx = this.game.MapManagement.AdjustXPosition((found.Count > 0 ? found[0].x : cx) - 7);
+								int vy = Math.Clamp((found.Count > 0 ? found[0].y : cy) - 6, 0, 38);
+								int savedPopFlag = this.game.Var_3484;
+								this.game.Var_3484 = -2;
+								this.game.MapManagement.F0_2aea_0008_DrawVisibleMap(human, vx, vy);
+								this.game.Var_3484 = savedPopFlag;
+							}
+							catch (Exception ex)
+							{
+								Console.Error.WriteLine($"LIVE_SCRIPT coastal error: {ex.Message}");
+							}
+							this.liveWaitUntil = this.liveClock.ElapsedMilliseconds + 600;
+						}
+						else if (cmd.StartsWith("shot:"))
+						{
+							SaveLiveShot(cmd.Substring(5));
+						}
+						else if (cmd == "quit")
+						{
+							Environment.Exit(0);
+						}
+					}
+				}
 			}
 		}
 
@@ -659,6 +807,23 @@ namespace OpenCivOne.UI
 
 					oScreen.Visible = !oScreen.Visible;
 				}
+			}
+		}
+
+		private void SaveLiveShot(string path)
+		{
+			lock (VCPU.GraphicsLock)
+			{
+				if (!this.game.Graphics.Screens.ContainsKey(0))
+					return;
+
+				GBitmap s0 = this.game.Graphics.Screens.GetValueByKey(0);
+				int scale = GBitmap.HDScale;
+				int w = s0.Width * scale, h = s0.Height * scale;
+				using var sk = new SkiaSharp.SKBitmap(new SkiaSharp.SKImageInfo(w, h, SkiaSharp.SKColorType.Bgra8888, SkiaSharp.SKAlphaType.Opaque));
+				s0.WriteScaledPixels(sk.GetPixels(), w * 4);
+				using var fs = File.Create(path);
+				sk.Encode(fs, SkiaSharp.SKEncodedImageFormat.Png, 100);
 			}
 		}
 
