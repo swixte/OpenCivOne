@@ -613,7 +613,7 @@ namespace OpenCivOne
 					this.parent.Graphics.F0_VGA_0c3e_DrawBitmapToScreen(this.parent.Var_aa_Screen0_Rectangle, scrX, scrY, this.parent.Array_d4ce[6]);
 				}
 
-				if (terrainImprovements.HasFlag(TerrainImprovementFlagsEnum.Road))
+				if (terrainImprovements.HasFlag(TerrainImprovementFlagsEnum.Road) && !(this.PaintedView?.DrawsFeatures ?? false))
 				{
 					// Draw roads and railroads
 					int roadIcon = (terrainImprovements.HasFlag(TerrainImprovementFlagsEnum.RailRoad)) ? 0 : 6;

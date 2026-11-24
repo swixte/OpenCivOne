@@ -293,8 +293,8 @@ namespace OpenCivOne.Graphics
 		public const uint SeaAlpha = 0xfd000000;
 		public const uint RiverAlpha = 0xfc000000;
 
-		// one loop of the water's movement, in milliseconds
-		private const float WaterPeriod = 1800f;
+		// one loop of the water's movement, in milliseconds (slow, peaceful tidal swell)
+		private const float WaterPeriod = 9500f;
 		private static readonly System.Diagnostics.Stopwatch _waterClock = System.Diagnostics.Stopwatch.StartNew();
 
 		/// <summary>
@@ -1323,9 +1323,9 @@ namespace OpenCivOne.Graphics
 				for (int y = 0; y < height; y++)
 				{
 					float yy = y / s;
-					this.seaX[y] = (int)MathF.Round(((2.0f * MathF.Sin((yy / 23f) + phase)) + (0.7f * MathF.Sin((yy / 7f) - (2 * phase)))) * s);
-					this.lightRowSin[y] = MathF.Sin(yy / 29f);
-					this.lightRowCos[y] = MathF.Cos(yy / 29f);
+					this.seaX[y] = (int)MathF.Round(((1.3f * MathF.Sin((yy / 42f) + phase)) + (0.35f * MathF.Sin((yy / 19f) - phase))) * s);
+					this.lightRowSin[y] = MathF.Sin(yy / 44f);
+					this.lightRowCos[y] = MathF.Cos(yy / 44f);
 				}
 
 				this.seaY = new int[width];
@@ -1335,12 +1335,12 @@ namespace OpenCivOne.Graphics
 				for (int x = 0; x < width; x++)
 				{
 					float xx = x / s;
-					this.seaY[x] = (int)MathF.Round(((1.5f * MathF.Cos((xx / 31f) + phase)) + (0.5f * MathF.Cos((xx / 9f) + (2 * phase)))) * s);
-					this.lightColumnSin[x] = MathF.Sin((xx / 17f) - (2 * phase));
-					this.lightColumnCos[x] = MathF.Cos((xx / 17f) - (2 * phase));
+					this.seaY[x] = (int)MathF.Round(((1.0f * MathF.Cos((xx / 52f) + phase)) + (0.25f * MathF.Cos((xx / 23f) - phase))) * s);
+					this.lightColumnSin[x] = MathF.Sin((xx / 34f) - phase);
+					this.lightColumnCos[x] = MathF.Cos((xx / 34f) - phase);
 				}
 
-				// rivers: indexed by x + y and by x - y + height
+				// rivers: indexed by x + y and by x - y + height (gentle slow current)
 				this.riverX = new int[width + height];
 				this.riverY = new int[width + height];
 				this.riverLight = new float[width + height];
@@ -1348,12 +1348,12 @@ namespace OpenCivOne.Graphics
 				for (int d = 0; d < width + height; d++)
 				{
 					float dd = d / s;
-					this.riverX[d] = (int)MathF.Round(MathF.Sin((dd / 5f) - (2 * phase)) * s * 1.2f);
-					this.riverLight[d] = 0.94f + (0.08f * MathF.Sin((dd / 9f) - (2 * phase)));
+					this.riverX[d] = (int)MathF.Round(MathF.Sin((dd / 11f) - phase) * s * 0.7f);
+					this.riverLight[d] = 0.965f + (0.045f * MathF.Sin((dd / 16f) - phase));
 				}
 
 				for (int d = 0; d < width + height; d++)
-					this.riverY[d] = (int)MathF.Round(MathF.Cos(((d - height) / s / 5f) - (2 * phase)) * s * 1.2f);
+					this.riverY[d] = (int)MathF.Round(MathF.Cos(((d - height) / s / 11f) - phase) * s * 0.7f);
 			}
 
 			/// <summary>
@@ -1369,7 +1369,7 @@ namespace OpenCivOne.Graphics
 					sx = x + this.seaX[y];
 					sy = y + this.seaY[x];
 					// sin(a + b) from the row and column tables
-					light = 0.93f + (0.07f * ((this.lightColumnSin[x] * this.lightRowCos[y]) + (this.lightColumnCos[x] * this.lightRowSin[y])));
+					light = 0.965f + (0.04f * ((this.lightColumnSin[x] * this.lightRowCos[y]) + (this.lightColumnCos[x] * this.lightRowSin[y])));
 				}
 				else
 				{

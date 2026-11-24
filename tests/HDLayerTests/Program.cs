@@ -1545,13 +1545,21 @@ GBitmap other4()
 			// Row 7: hut at x=2, resources 0..10 at x=4..14
 			showScene.Terrain = (x, y) => (y == 7 && x >= 4 && x <= 14) ? (x - 4) : 2;
 			showScene.Feature = (x, y) => (y == 7 && x == 2) ? 2 : (y == 7 && x >= 4 && x <= 14) ? 1 : 0;
-			// Row 9: all 6 walled town steps (sizes 1, 3, 5, 7, 9, 14)
-			var wSizes = new[] { (3, "Hamlet", 1), (5, "Ur", 3), (7, "Mari", 5), (9, "Nineveh", 7), (11, "Babylon", 9), (13, "Thebes", 14) };
+			showScene.ShieldBonus = (x, y) => (y == 6 && (x == 3 || x == 5 || x == 7 || x == 9));
+			// Road & railroad test network along row 8..9 connecting the towns
+			var roadCells = new HashSet<(int, int)> { (3, 9), (4, 9), (5, 9), (6, 9), (7, 9), (7, 8), (8, 8), (9, 8), (9, 9) };
+			var railCells = new HashSet<(int, int)> { (9, 9), (10, 9), (11, 9), (12, 9), (13, 9) };
+			showScene.Improvements = (x, y) =>
+				(roadCells.Contains((x, y)) ? 0x8 : 0) |
+				(railCells.Contains((x, y)) ? 0x18 : 0);
+			// Row 9: all 6 walled town steps (sizes 1, 2 cyan Peking, 3, 5, 7, 9, 14)
+			const uint Cyan = 0xff2fb6c8;
+			var wSizes = new[] { (3, "Assur", 1, Blue, false), (5, "Peking", 2, Cyan, false), (7, "Ur", 3, Blue, true), (9, "Mari", 5, Red, true), (11, "Babylon", 9, Blue, true), (13, "Thebes", 14, Blue, true) };
 			var wSet = new HashSet<(int, int)>();
-			foreach (var (cx, nm, sz) in wSizes)
+			foreach (var (cx, nm, sz, col, wl) in wSizes)
 			{
-				showScene.Cities.Add((cx, 9, nm, sz, Blue));
-				wSet.Add((cx, 9));
+				showScene.Cities.Add((cx, 9, nm, sz, col));
+				if (wl) wSet.Add((cx, 9));
 			}
 			showScene.Walls = (x, y) => wSet.Contains((x, y));
 			top.Render(showGround.Width / 128f, showGround.Height / 128f, showScene);

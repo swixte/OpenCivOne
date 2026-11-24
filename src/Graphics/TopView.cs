@@ -79,6 +79,7 @@ namespace OpenCivOne.Graphics
 		private readonly UnitArt?[] units = new UnitArt?[UnitNames.Length];
 		private readonly SKBitmap?[,] towns = new SKBitmap?[6, 2];
 		private readonly SKTypeface face;
+		private readonly SKTypeface badgeFace;
 		// huts and special resources (by terrain id, ResourceNames), painted into the view in place of the classic sprites
 		private SKBitmap? hut;
 		private readonly SKBitmap?[] resources = new SKBitmap?[ResourceNames.Length];
@@ -97,6 +98,7 @@ namespace OpenCivOne.Graphics
 			this.rows = height / (float)cell;
 			this.pixels = new uint[width * height];
 			this.face = SerifFace();
+			this.badgeFace = SansFace();
 		}
 
 		public int Width => this.width;
@@ -282,7 +284,8 @@ namespace OpenCivOne.Graphics
 							if (y < 0 || y >= MapHeight)
 								continue;
 
-							sig = (sig * 7) + (scene.Explored(Wrap(x), y) ? scene.Feature(Wrap(x), y) + (scene.Terrain(Wrap(x), y) * 4) + (scene.ShieldBonus(Wrap(x), y) ? 64 : 0) : 99);
+							sig = (sig * 7) + (scene.Explored(Wrap(x), y) ? scene.Feature(Wrap(x), y) + (scene.Terrain(Wrap(x), y) * 4) +
+								(scene.ShieldBonus(Wrap(x), y) ? 64 : 0) + ((scene.Improvements(Wrap(x), y) & 0x19) * 128) : 99);
 						}
 					}
 				}
@@ -434,12 +437,12 @@ namespace OpenCivOne.Graphics
 		}
 
 		/// <summary>
-		/// The grassland shield painted as the towns are: a small heater shield in their terracotta with a muted gold rim,
-		/// lit from the top left, soft-edged, with a soft shadow, centred on (x, y)
+		/// The grassland production-bonus marker (+1 shield in Civ1): a quiet, grounded weathered-stone &amp; muted antique-bronze
+		/// shield emblem nestled into the grass so it stays readable for gameplay without clashing like a bright red sign
 		/// </summary>
 		private static void PaintShield(SKCanvas canvas, float x, float y, int c)
 		{
-			float u = c / 64f, w = 10f * u, h = 12f * u;
+			float u = c / 64f, w = 8.5f * u, h = 9.5f * u;
 
 			SKPath Outline(float dx, float dy, float k)
 			{
@@ -454,15 +457,265 @@ namespace OpenCivOne.Graphics
 				return path;
 			}
 
-			using SKPath shadow = Outline(0.9f * u, 1.3f * u, 1.05f), rim = Outline(0, 0, 1), body = Outline(0, 0, 0.78f), lit = Outline(-0.7f * u, -0.9f * u, 0.4f);
-			using SKPaint shadowPaint = new SKPaint { IsAntialias = true, Color = new SKColor(28, 20, 10, 110), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 1.1f * u) };
-			using SKPaint rimPaint = new SKPaint { IsAntialias = true, Color = new SKColor(214, 176, 98), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 0.35f * u) };
-			using SKPaint bodyPaint = new SKPaint { IsAntialias = true, Color = new SKColor(158, 70, 42), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 0.35f * u) };
-			using SKPaint litPaint = new SKPaint { IsAntialias = true, Color = new SKColor(206, 112, 70, 170), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 0.8f * u) };
+			using SKPath shadow = Outline(0.7f * u, 1.0f * u, 1.06f), rim = Outline(0, 0, 1), body = Outline(0, 0, 0.74f), lit = Outline(-0.6f * u, -0.7f * u, 0.38f);
+			using SKPaint shadowPaint = new SKPaint { IsAntialias = true, Color = new SKColor(26, 30, 14, 95), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 1.0f * u) };
+			using SKPaint rimPaint = new SKPaint { IsAntialias = true, Color = new SKColor(198, 182, 128, 220), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 0.25f * u) };
+			using SKPaint bodyPaint = new SKPaint { IsAntialias = true, Color = new SKColor(118, 122, 74, 215), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 0.25f * u) };
+			using SKPaint litPaint = new SKPaint { IsAntialias = true, Color = new SKColor(172, 174, 118, 150), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 0.6f * u) };
 			canvas.DrawPath(shadow, shadowPaint);
 			canvas.DrawPath(rim, rimPaint);
 			canvas.DrawPath(body, bodyPaint);
 			canvas.DrawPath(lit, litPaint);
+		}
+
+		/// <summary>
+		/// Painted gouache country roads (warm ochre dirt tracks with earthy umber verges) and railroads (gravel ballast,
+		/// timber sleepers and twin dark-iron rails), curving organically between connected cells
+		/// </summary>
+		private static void PaintRoads(SKCanvas canvas, float left, float top, float cols, float rows, int c, IsoView.Scene scene)
+		{
+			const int CityFlag = 0x1, RoadFlag = 0x8, RailFlag = 0x10;
+			float u = c / 64f;
+
+			static float Hash01(int x, int y, int seed)
+			{
+				uint h = (uint)((x * 374761393) ^ (y * 668265263) ^ (seed * 1442695041));
+				h = (h ^ (h >> 13)) * 1274126177u;
+				return ((h ^ (h >> 16)) & 0xffff) / 65535f;
+			}
+
+			(float X, float Y) Point(int x, int y, int imp)
+			{
+				float px = ((x - left) + 0.5f) * c, py = ((y - top) + 0.5f) * c;
+
+				// roads meet a city cleanly at its centre; open-land road waypoints meander slightly
+				if ((imp & CityFlag) == 0)
+				{
+					int wx = Wrap(x);
+					px += (Hash01(wx, y, 1) - 0.5f) * 7f * u;
+					py += (Hash01(wx, y, 2) - 0.5f) * 7f * u;
+				}
+
+				return (px, py);
+			}
+
+			var roadSegs = new List<(float X0, float Y0, float Mx, float My, float X1, float Y1)>();
+			var railSegs = new List<(float X0, float Y0, float Mx, float My, float X1, float Y1)>();
+			var soloRoad = new List<(float X, float Y)>();
+			var soloRail = new List<(float X, float Y)>();
+
+			int yMin = Math.Max(0, (int)MathF.Floor(top) - 1), yMax = Math.Min(MapHeight - 1, (int)MathF.Ceiling(top + rows) + 1);
+			int xMin = (int)MathF.Floor(left) - 1, xMax = (int)MathF.Ceiling(left + cols) + 1;
+			(int Dx, int Dy)[] forward = { (1, 0), (-1, 1), (0, 1), (1, 1) };
+			(int Dx, int Dy)[] allDirs = { (-1, -1), (0, -1), (1, -1), (-1, 0), (1, 0), (-1, 1), (0, 1), (1, 1) };
+
+			for (int y = yMin; y <= yMax; y++)
+			{
+				for (int x = xMin; x <= xMax; x++)
+				{
+					int wx = Wrap(x);
+
+					if (!scene.Explored(wx, y))
+						continue;
+
+					int imp = scene.Improvements(wx, y);
+
+					if ((imp & (RoadFlag | RailFlag)) == 0)
+						continue;
+
+					(float ax, float ay) = Point(x, y, imp);
+					bool hasNeighbour = false;
+
+					foreach ((int dx, int dy) in allDirs)
+					{
+						int ny = y + dy;
+
+						if (ny < 0 || ny >= MapHeight)
+							continue;
+
+						int nwx = Wrap(x + dx);
+
+						if (scene.Explored(nwx, ny) && (scene.Improvements(nwx, ny) & (RoadFlag | RailFlag | CityFlag)) != 0)
+						{
+							hasNeighbour = true;
+							break;
+						}
+					}
+
+					if (!hasNeighbour)
+					{
+						if ((imp & RailFlag) != 0)
+							soloRail.Add((ax, ay));
+						else
+							soloRoad.Add((ax, ay));
+					}
+
+					foreach ((int dx, int dy) in forward)
+					{
+						int nx = x + dx, ny = y + dy;
+
+						if (ny < 0 || ny >= MapHeight)
+							continue;
+
+						int nwx = Wrap(nx);
+
+						if (!scene.Explored(nwx, ny))
+							continue;
+
+						int nImp = scene.Improvements(nwx, ny);
+
+						if ((nImp & (RoadFlag | RailFlag | CityFlag)) == 0)
+							continue;
+
+						// skip diagonal shortcut when either orthogonal corner already bridges the two cells
+						if (dx != 0 && dy != 0)
+						{
+							int impA = scene.Improvements(Wrap(x + dx), y), impB = scene.Improvements(wx, y + dy);
+
+							if ((impA & (RoadFlag | RailFlag | CityFlag)) != 0 || (impB & (RoadFlag | RailFlag | CityFlag)) != 0)
+								continue;
+						}
+
+						(float bx, float by) = Point(nx, ny, nImp);
+						float mx = (ax + bx) / 2, my = (ay + by) / 2;
+						float px = -(by - ay), py = bx - ax;
+						float len = MathF.Sqrt((px * px) + (py * py));
+
+						if (len > 1)
+						{
+							float bend = (Hash01(wx * 3 + nwx, y * 5 + ny, 3) - 0.5f) * 16f * u;
+							mx += px / len * bend;
+							my += py / len * bend;
+						}
+
+						bool isRail = ((imp & (RailFlag | CityFlag)) != 0) && ((nImp & (RailFlag | CityFlag)) != 0) &&
+							(((imp & RailFlag) != 0) || ((nImp & RailFlag) != 0));
+
+						if (isRail)
+							railSegs.Add((ax, ay, mx, my, bx, by));
+						else
+							roadSegs.Add((ax, ay, mx, my, bx, by));
+					}
+				}
+			}
+
+			// Dirt roads: hand-painted warm ochre country lane made of overlapping soft brushwork dabs along the curve
+			if (roadSegs.Count > 0 || soloRoad.Count > 0)
+			{
+				using SKPath roadPath = new SKPath();
+
+				foreach (var s in roadSegs)
+				{
+					roadPath.MoveTo(s.X0, s.Y0);
+					roadPath.QuadTo(s.Mx, s.My, s.X1, s.Y1);
+				}
+
+				using SKPaint verge = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round, StrokeJoin = SKStrokeJoin.Round, StrokeWidth = 6.6f * u, Color = new SKColor(68, 48, 24, 115), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 1.3f * u) };
+				using SKPaint bed = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round, StrokeJoin = SKStrokeJoin.Round, StrokeWidth = 4.0f * u, Color = new SKColor(186, 150, 88, 225), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 0.55f * u) };
+
+				if (roadSegs.Count > 0)
+				{
+					canvas.DrawPath(roadPath, verge);
+					canvas.DrawPath(roadPath, bed);
+
+					// painterly texture along each curve: slightly irregular warm ochre & sunlit cream dabs
+					foreach (var s in roadSegs)
+					{
+						float dist = MathF.Sqrt(((s.X1 - s.X0) * (s.X1 - s.X0)) + ((s.Y1 - s.Y0) * (s.Y1 - s.Y0)));
+						int steps = Math.Max(6, (int)MathF.Round(dist / (3.4f * u)));
+
+						for (int i = 0; i <= steps; i++)
+						{
+							float t = i / (float)steps, it = 1 - t;
+							float qx = (it * it * s.X0) + (2 * it * t * s.Mx) + (t * t * s.X1);
+							float qy = (it * it * s.Y0) + (2 * it * t * s.My) + (t * t * s.Y1);
+							float j1 = Hash01((int)qx, (int)qy, 7) - 0.5f, j2 = Hash01((int)qx, (int)qy, 11) - 0.5f;
+							float rDab = (1.6f + (0.9f * Hash01((int)qx, (int)qy, 13))) * u;
+							SKColor dabCol = Mix(new SKColor(174, 136, 76, 175), new SKColor(224, 196, 136, 195), Hash01((int)qx, (int)qy, 17));
+							PaintDab(canvas, qx + (j1 * 1.4f * u), qy + (j2 * 1.4f * u), rDab, dabCol, 0.5f * u);
+						}
+					}
+				}
+
+				foreach ((float sx, float sy) in soloRoad)
+				{
+					PaintDab(canvas, sx, sy, 4.8f * u, new SKColor(68, 48, 24, 120), 1.1f * u);
+					PaintDab(canvas, sx, sy, 3.1f * u, new SKColor(186, 150, 88, 225), 0.5f * u);
+					PaintDab(canvas, sx - (0.4f * u), sy - (0.4f * u), 1.5f * u, new SKColor(224, 196, 136, 190), 0.35f * u);
+				}
+			}
+
+			// Railroads: gravel ballast, timber sleepers, twin dark-iron rails
+			if (railSegs.Count > 0 || soloRail.Count > 0)
+			{
+				using SKPath railPath = new SKPath();
+
+				foreach (var s in railSegs)
+				{
+					railPath.MoveTo(s.X0, s.Y0);
+					railPath.QuadTo(s.Mx, s.My, s.X1, s.Y1);
+				}
+
+				using SKPaint ballast = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round, StrokeJoin = SKStrokeJoin.Round, StrokeWidth = 6.4f * u, Color = new SKColor(92, 82, 68, 175), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 0.7f * u) };
+				using SKPaint tiePaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round, StrokeWidth = 1.25f * u, Color = new SKColor(66, 46, 28, 225) };
+				using SKPaint railDark = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round, StrokeWidth = 1.2f * u, Color = new SKColor(46, 48, 52, 240) };
+				using SKPaint railGlint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round, StrokeWidth = 0.55f * u, Color = new SKColor(204, 206, 200, 165) };
+
+				if (railSegs.Count > 0)
+				{
+					canvas.DrawPath(railPath, ballast);
+
+					foreach (var s in railSegs)
+					{
+						float dist = MathF.Sqrt(((s.X1 - s.X0) * (s.X1 - s.X0)) + ((s.Y1 - s.Y0) * (s.Y1 - s.Y0)));
+						int steps = Math.Max(4, (int)MathF.Round(dist / (4.4f * u)));
+						using SKPath leftRail = new SKPath(), rightRail = new SKPath();
+
+						for (int i = 0; i <= steps; i++)
+						{
+							float t = i / (float)steps, it = 1 - t;
+							float qx = (it * it * s.X0) + (2 * it * t * s.Mx) + (t * t * s.X1);
+							float qy = (it * it * s.Y0) + (2 * it * t * s.My) + (t * t * s.Y1);
+							float tx = (2 * it * (s.Mx - s.X0)) + (2 * t * (s.X1 - s.Mx));
+							float ty = (2 * it * (s.My - s.Y0)) + (2 * t * (s.Y1 - s.My));
+							float tl = MathF.Sqrt((tx * tx) + (ty * ty));
+
+							if (tl < 0.01f)
+								continue;
+
+							float nx = -ty / tl, ny = tx / tl;
+
+							if (i > 0 && i < steps)
+								canvas.DrawLine(qx - (nx * 2.5f * u), qy - (ny * 2.5f * u), qx + (nx * 2.5f * u), qy + (ny * 2.5f * u), tiePaint);
+
+							float lx = qx - (nx * 1.4f * u), ly = qy - (ny * 1.4f * u);
+							float rx = qx + (nx * 1.4f * u), ry = qy + (ny * 1.4f * u);
+
+							if (i == 0)
+							{
+								leftRail.MoveTo(lx, ly);
+								rightRail.MoveTo(rx, ry);
+							}
+							else
+							{
+								leftRail.LineTo(lx, ly);
+								rightRail.LineTo(rx, ry);
+							}
+						}
+
+						canvas.DrawPath(leftRail, railDark);
+						canvas.DrawPath(rightRail, railDark);
+						canvas.DrawPath(leftRail, railGlint);
+						canvas.DrawPath(rightRail, railGlint);
+					}
+				}
+
+				foreach ((float sx, float sy) in soloRail)
+				{
+					PaintDab(canvas, sx, sy, 4.8f * u, new SKColor(92, 82, 68, 185), 0.7f * u);
+					PaintDab(canvas, sx, sy, 2.2f * u, new SKColor(52, 54, 58, 225), 0.25f * u);
+				}
+			}
 		}
 
 		private static float Ease(float x) => x * x * (3 - (2 * x));
@@ -521,11 +774,15 @@ namespace OpenCivOne.Graphics
 			(float X, float Y) Corner(int x, int y) => ((Near(x, cx) - left) * c, (y - top) * c);
 			bool InView(float px, float py) => px > -2 * c && px < w + c && py > -c && py < h + c;
 
-			using SKFont badgeFont = new SKFont(this.face, 10 * c / 64f);
+			using SKFont badgeFont = new SKFont(this.badgeFace, 11.5f * c / 64f) { Edging = SKFontEdging.Antialias, Subpixel = false };
 			using SKFont nameFont = new SKFont(this.face, 12 * c / 64f);
 			using SKPaint fill = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill };
 			using SKPaint stroke = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke };
 			using SKPaint image = new SKPaint { IsAntialias = true };
+
+			// painted roads and railroads first, directly over the painted ground
+			if (this.DrawsFeatures)
+				PaintRoads(canvas, left, top, cols, rows, c, scene);
 
 			// huts and special resources on the explored cells in view, under the towns and units
 			if (this.DrawsFeatures)
@@ -595,16 +852,34 @@ namespace OpenCivOne.Graphics
 				if (!names)
 					continue;
 
-				float s = 13 * c / 64f, u = c / 64f;
-				float bx = MathF.Max(x0 + u, tx - s + (2 * u)), by = MathF.Max(y0 + u, ty - (4 * u));
+				float s = 15 * c / 64f, u = c / 64f;
+				float bx = MathF.Round(MathF.Max(x0 + u, tx - s + (3 * u))), by = MathF.Round(MathF.Max(y0 + u, ty - (4 * u)));
+				float bw = MathF.Round(s + u), bh = MathF.Round(s + u);
+				// soft drop shadow behind the painted badge plaque
+				fill.Color = new SKColor(18, 14, 10, 115);
+				canvas.DrawRoundRect(bx + u, by + (1.5f * u), bw, bh, 2 * u, 2 * u, fill);
 				fill.Color = ToColor(town.Colour);
-				canvas.DrawRect(bx, by, s + u, s + u, fill);
+				canvas.DrawRoundRect(bx, by, bw, bh, 2 * u, 2 * u, fill);
+				// subtle warm top-left highlight & bottom-right bevel so the plaque sits with the gouache art
+				stroke.Color = new SKColor(255, 250, 235, 90);
+				stroke.StrokeWidth = u;
+				canvas.DrawLine(bx + u, by + u, bx + bw - u, by + u, stroke);
+				canvas.DrawLine(bx + u, by + u, bx + u, by + bh - u, stroke);
 				stroke.Color = Ink;
 				stroke.StrokeWidth = u;
-				canvas.DrawRect(bx + (u / 2), by + (u / 2), s, s, stroke);
+				canvas.DrawRoundRect(bx + (u / 2), by + (u / 2), bw - u, bh - u, 1.5f * u, 1.5f * u, stroke);
 				string size = town.Size.ToString();
-				fill.Color = Lightness(town.Colour) > 0.72f ? Ink : SKColors.White;
-				DrawCentred(canvas, size, bx + ((s + u) / 2), by + ((s + u) / 2), badgeFont, fill, true);
+				bool darkText = Lightness(town.Colour) > 0.72f;
+				float bmx = bx + (bw / 2f), bmy = by + (bh / 2f);
+
+				if (!darkText)
+				{
+					fill.Color = new SKColor(16, 14, 12, 175);
+					DrawBadgeCentred(canvas, size, bmx + (0.7f * u), bmy + (0.8f * u), badgeFont, fill);
+				}
+
+				fill.Color = darkText ? Ink : SKColors.White;
+				DrawBadgeCentred(canvas, size, bmx, bmy, badgeFont, fill);
 
 				// the name is written after the units, so a unit in or below the town never covers it
 				labels.Add((town.Name, x0 + (c / 2f), MathF.Min(y0 + c, ty + th + (2 * u))));
@@ -867,6 +1142,28 @@ namespace OpenCivOne.Graphics
 			SKFontMetrics m = font.Metrics;
 			float baseline = middle ? y - ((m.Ascent + m.Descent) / 2) - (m.Descent * 0.15f) : y - m.Ascent;
 			canvas.DrawText(text, x - (w / 2), baseline, font, paint);
+		}
+
+		/// <summary>
+		/// Tight glyph-bounds centring for city badge numerals so lining figures sit crisp and dead-centre on every OS
+		/// </summary>
+		private static void DrawBadgeCentred(SKCanvas canvas, string text, float cx, float cy, SKFont font, SKPaint paint)
+		{
+			font.MeasureText(text, out SKRect bounds, paint);
+			canvas.DrawText(text, MathF.Round(cx - bounds.MidX), MathF.Round(cy - bounds.MidY), font, paint);
+		}
+
+		private static SKTypeface SansFace()
+		{
+			foreach (string family in new[] { "Segoe UI", "DejaVu Sans", "Liberation Sans", "Arial" })
+			{
+				SKTypeface? face = SKTypeface.FromFamilyName(family, SKFontStyle.Bold);
+
+				if (face != null && string.Equals(face.FamilyName, family, StringComparison.OrdinalIgnoreCase))
+					return face;
+			}
+
+			return SKTypeface.FromFamilyName("sans-serif", SKFontStyle.Bold) ?? SKTypeface.Default;
 		}
 
 		private static SKTypeface SerifFace()
