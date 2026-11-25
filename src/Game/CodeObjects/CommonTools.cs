@@ -37,6 +37,10 @@ namespace OpenCivOne
 		{
 			// function body
 			this.parent.GameData.RandomSeed = (ushort)(this.parent.CAPI.time(0) & 0x7fff);
+
+			// OPENCIVONE_SEED: the same world every time, for before and after renders of a visual change
+			if (ushort.TryParse(Environment.GetEnvironmentVariable("OPENCIVONE_SEED"), out ushort seed))
+				this.parent.GameData.RandomSeed = (ushort)(seed & 0x7fff);
 			this.parent.CAPI.srand(this.parent.GameData.RandomSeed);
 		}
 

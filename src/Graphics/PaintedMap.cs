@@ -75,6 +75,10 @@ namespace OpenCivOne.Graphics
 
 		// how far coasts and terrain borders wander from the grid (coastwarp, 1 as before; more makes rounder, craggier coasts)
 		private float coastWarp = 1;
+
+		// surf, how strong the broken white line off the coast is (1); beachtone, 1 for a beach of sand lightened to
+		// cream, 0 for one in the desert's own sand
+		private float surf = 1, beachTone = 1;
 		// how wide land terrains blend into each other (groundblend, 1 as before; more hides cell corners)
 		private float groundBlend = 1;
 
@@ -309,6 +313,8 @@ namespace OpenCivOne.Graphics
 						case "pattern": map.pattern = Math.Clamp(value, 0.25f, 8); break;
 						case "seapattern": map.seaPattern = Math.Clamp(value, 0.25f, 8); break;
 						case "paper": map.paper = Math.Clamp(value, 0, 1); break;
+						case "surf": map.surf = Math.Clamp(value, 0, 1.5f); break;
+						case "beachtone": map.beachTone = Math.Clamp(value, 0, 1); break;
 					}
 				}
 			}
@@ -982,9 +988,11 @@ namespace OpenCivOne.Graphics
 							// a beach: pale dry sand fading into the land, a little darker where the sand is wet
 							int bi = this.TextureIndex(sand, wx, wy);
 							float sandy = Smooth(0.97f, 0.62f, land), wet = 1 - (0.2f * Smooth(0.62f, 0.5f, land));
-							r[i] = ((gr * (1 - sandy)) + (((sand.R[bi] * 0.7f) + 68) * sandy)) * wet;
-							g[i] = ((gg * (1 - sandy)) + (((sand.G[bi] * 0.7f) + 68) * sandy)) * wet;
-							b[i] = ((gb * (1 - sandy)) + (((sand.B[bi] * 0.7f) + 68) * sandy)) * wet;
+							// the beach's colour: the desert sand lightened to cream (beachtone 1) or as it is (0)
+							float lift = 1 - (0.3f * this.beachTone), cream = 68 * this.beachTone;
+							r[i] = ((gr * (1 - sandy)) + (((sand.R[bi] * lift) + cream) * sandy)) * wet;
+							g[i] = ((gg * (1 - sandy)) + (((sand.G[bi] * lift) + cream) * sandy)) * wet;
+							b[i] = ((gb * (1 - sandy)) + (((sand.B[bi] * lift) + cream) * sandy)) * wet;
 						}
 						else
 						{
@@ -1025,7 +1033,7 @@ namespace OpenCivOne.Graphics
 						float foamNoise = (this.Noise(wx, wy, 12 * k, 5) * 0.7f) + (this.Noise(wx, wy, 4 * k, 6) * 0.3f);
 						float surf = Smooth(0.2f, 0.34f, surfLand) * Smooth(0.5f, 0.4f, land) * Smooth(0.4f, 0.7f, foamNoise);
 						surf += Smooth(0.08f, 0.14f, surfLand) * Smooth(0.2f, 0.14f, surfLand) * Smooth(0.6f, 0.8f, foamNoise) * 0.35f;
-						surf = Math.Min(surf, 1) * 0.7f;
+						surf = Math.Min(surf, 1) * 0.7f * this.surf;
 						r[i] = (wr * (1 - surf)) + (210 * surf);
 						g[i] = (wg * (1 - surf)) + (216 * surf);
 						b[i] = (wb * (1 - surf)) + (205 * surf);

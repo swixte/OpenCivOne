@@ -1,7 +1,7 @@
 {
   "name": "gouache",
   "concept": "concept.png",
-  "style": "rich opaque gouache like a premium illustrated board game, chunky confident brushwork, warm light from the top left, saturated but harmonious real natural colour, high contrast",
+  "style": "opaque gouache in the manner of a hand-painted atlas, confident brushwork, one warm light from the top left with cool shadows, a muted natural palette (slate sea, sage grass, straw plains, pale sand, dark forest masses), clear bands of value so the map reads in grey, colour kept for what matters",
   "quality": "medium",
   "map_prompts": "painted_prompts.json",
   "pictures": {}

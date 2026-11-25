@@ -1654,8 +1654,8 @@ namespace OpenCivOne.Graphics
 		}
 
 		/// <summary>
-		/// Art from another painted set brought nearer the theme's look: more contrast and colour, and lighter, as
-		/// compose.soft_town brightens the towns (a little less, as it is already drawn to be read at game size)
+		/// Art from another painted set brought nearer the theme's look: a little more contrast and a little less colour,
+		/// as compose.soft_town treats the towns
 		/// </summary>
 		private static SKBitmap Toned(SKBitmap t)
 		{
@@ -1666,14 +1666,11 @@ namespace OpenCivOne.Graphics
 				for (int x = 0; x < t.Width; x++)
 				{
 					SKColor p = t.GetPixel(x, y);
-					float[] c = { ((p.Red - 110) * 1.18f) + 110, ((p.Green - 110) * 1.18f) + 110, ((p.Blue - 110) * 1.18f) + 110 };
+					float[] c = { ((p.Red - 110) * 1.1f) + 110, ((p.Green - 110) * 1.1f) + 110, ((p.Blue - 110) * 1.1f) + 110 };
 					float grey = (c[0] + c[1] + c[2]) / 3;
 
 					for (int k = 0; k < 3; k++)
-					{
-						c[k] = grey + ((c[k] - grey) * 1.3f);
-						c[k] = 255 * MathF.Pow(Math.Clamp(c[k], 0, 255) / 255f, 0.82f);
-					}
+						c[k] = Math.Clamp(grey + ((c[k] - grey) * 0.9f), 0, 255);
 
 					result.SetPixel(x, y, new SKColor((byte)Math.Clamp(c[0], 0, 255), (byte)Math.Clamp(c[1], 0, 255), (byte)Math.Clamp(c[2], 0, 255), p.Alpha));
 				}
@@ -1684,8 +1681,8 @@ namespace OpenCivOne.Graphics
 
 		/// <summary>
 		/// A town with its outskirts faded out (compose.soft_town): the keyed edge pulled in and feathered and cleared of
-		/// magenta spill, its own ground (gardens, earth) letting the terrain show through, and more contrast and colour
-		/// than the generated painting has, so it reads at game size
+		/// magenta spill, its own ground (gardens, earth) letting the terrain show through, a little more contrast and a
+		/// little less colour than the generated painting, so it reads by its dark roofs rather than by colour
 		/// </summary>
 		private static SKBitmap SoftTown(SKBitmap t, bool walls = false)
 		{
@@ -1764,20 +1761,19 @@ namespace OpenCivOne.Graphics
 				{
 					int i = (y * w) + x;
 					float alpha = a[i] * (0.3f + (0.7f * built[i] / 255f));
-					float[] c = { ((r[i] - 110) * 1.25f) + 110, ((g[i] - 110) * 1.25f) + 110, ((b[i] - 110) * 1.25f) + 110 };
+					// a town stands out by its dark roof masses, not by extra colour: a little more contrast (deepening the
+					// roofs), a little less colour than the painting, so it sits in the quiet ground round it
+					float[] c = { ((r[i] - 110) * 1.15f) + 110, ((g[i] - 110) * 1.15f) + 110, ((b[i] - 110) * 1.15f) + 110 };
 					float grey = (c[0] + c[1] + c[2]) / 3;
 
 					for (int k = 0; k < 3; k++)
-					{
-						c[k] = grey + ((c[k] - grey) * 1.3f);
-						c[k] = 255 * MathF.Pow(Math.Clamp(c[k], 0, 255) / 255f, 0.8f);
-					}
+						c[k] = Math.Clamp(grey + ((c[k] - grey) * 0.9f), 0, 255);
 
 					float mean = (c[0] + c[1] + c[2]) / 3, spread = MathF.Max(c[0], MathF.Max(c[1], c[2])) - MathF.Min(c[0], MathF.Min(c[1], c[2]));
 					float pale = Math.Clamp((mean - 170) / 50, 0, 1) * Math.Clamp(1 - (spread / 90), 0, 1);
 
 					for (int k = 0; k < 3; k++)
-						c[k] += (255 - c[k]) * 0.6f * pale;
+						c[k] += (255 - c[k]) * 0.35f * pale;
 
 					result.SetPixel(x, y, new SKColor((byte)Math.Clamp(c[0], 0, 255), (byte)Math.Clamp(c[1], 0, 255), (byte)Math.Clamp(c[2], 0, 255), (byte)Math.Clamp(alpha, 0, 255)));
 				}

@@ -38,15 +38,14 @@ def soft_town(path):
     built = ((r > g * 1.3) & (r > 110)) | ((bright > 165) & (sat < 70)) | (bright < 60)
     built = np.asarray(Image.fromarray((built * 255).astype('uint8')).filter(ImageFilter.MaxFilter(5)).filter(ImageFilter.GaussianBlur(2)), np.float32) / 255
     alpha = alpha * (0.3 + 0.7 * built)
-    # more contrast than the generated painting has, so a town stands out from the terrain round it
-    rgb = (rgb - 110) * 1.25 + 110
-    # and brighter, richer roofs and lanes: the dense towns come out dark and brown, and turn to mush at game size
+    # a town stands out by its dark roof masses, not by extra colour: a little more contrast (deepening the roofs) and
+    # a little less colour than the painting, so it sits in the quiet ground round it (as TopView.SoftTown)
+    rgb = (rgb - 110) * 1.15 + 110
     grey = rgb.mean(-1, keepdims=True)
-    rgb = grey + (rgb - grey) * 1.3
-    rgb = 255 * (rgb.clip(0, 255) / 255) ** 0.8
-    # marble and pale stone go whiter still, so a capital's white heart shows even on sand
+    rgb = (grey + (rgb - grey) * 0.9).clip(0, 255)
+    # marble and pale stone a little lighter, so a capital's white heart shows
     pale = np.clip((rgb.mean(-1) - 170) / 50, 0, 1) * np.clip(1 - (rgb.max(-1) - rgb.min(-1)) / 90, 0, 1)
-    rgb = rgb + (255 - rgb) * (0.6 * pale)[..., None]
+    rgb = rgb + (255 - rgb) * (0.35 * pale)[..., None]
     return Image.fromarray(np.dstack([rgb, alpha]).clip(0, 255).astype('uint8'), 'RGBA')
 
 
