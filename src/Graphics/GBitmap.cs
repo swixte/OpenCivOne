@@ -293,14 +293,17 @@ namespace OpenCivOne.Graphics
 		public const uint SeaAlpha = 0xfd000000;
 		public const uint RiverAlpha = 0xfc000000;
 
-		// one loop of the water's movement, in milliseconds (slow, peaceful tidal swell)
+		// one loop of the water's movement, in milliseconds (slow, peaceful tidal swell), and pollution smoke drift loop
 		private const float WaterPeriod = 9500f;
+		private const float SmokePeriod = 5400f;
 		private static readonly System.Diagnostics.Stopwatch _waterClock = System.Diagnostics.Stopwatch.StartNew();
 
 		/// <summary>
-		/// Painted water moves; when false it is drawn still
+		/// Painted water and pollution smoke animate when true; when false both stay still
 		/// </summary>
 		public static bool AnimateWater { get; set; } = true;
+
+		public static float CurrentSmokePhase => AnimateWater ? (float)((_waterClock.Elapsed.TotalMilliseconds % SmokePeriod) / SmokePeriod) : 0.28f;
 
 		/// <summary>
 		/// The last WriteScaledPixels showed painted water, so the screen has to be shown again for it to move
@@ -1012,6 +1015,160 @@ namespace OpenCivOne.Graphics
 		/// </summary>
 		/// <param name="destination">Address of the top left pixel</param>
 		/// <param name="stride">Length of one destination row, in bytes</param>
+		public readonly struct SmokeSource
+		{
+			public readonly float X, Y, Cell;
+			public readonly int Seed;
+
+			public SmokeSource(float x, float y, float cell, int seed)
+			{
+				this.X = x;
+				this.Y = y;
+				this.Cell = cell;
+				this.Seed = seed;
+			}
+		}
+
+		private readonly struct SmokePuff
+		{
+			public readonly float X, Y, InvR2, R, G, B, Alpha;
+			public readonly int MinX, MaxX, MinY, MaxY;
+
+			public SmokePuff(float x, float y, float radius, float r, float g, float b, float alpha)
+			{
+				this.X = x;
+				this.Y = y;
+				this.InvR2 = 1f / Math.Max(1f, radius * radius);
+				this.R = r;
+				this.G = g;
+				this.B = b;
+				this.Alpha = alpha;
+				int rad = (int)MathF.Ceiling(radius);
+				this.MinX = (int)MathF.Floor(x) - rad;
+				this.MaxX = (int)MathF.Ceiling(x) + rad;
+				this.MinY = (int)MathF.Floor(y) - rad;
+				this.MaxY = (int)MathF.Ceiling(y) + rad;
+			}
+		}
+
+		private static float SmokeHash01(int seed, int k)
+		{
+			uint h = (uint)((seed * 374761393) ^ (k * 668265263));
+			h = (h ^ (h >> 13)) * 1274126177u;
+			return ((h ^ (h >> 16)) & 0xffff) / 65535f;
+		}
+
+		private static SmokePuff[]? BuildSmokePuffs(SmokeSource[]? sources, float phase)
+		{
+			if (sources == null || sources.Length == 0)
+				return null;
+
+			const int PuffsPerSource = 5;
+			var puffs = new SmokePuff[sources.Length * PuffsPerSource];
+			int idx = 0;
+
+			for (int s = 0; s < sources.Length; s++)
+			{
+				SmokeSource src = sources[s];
+				float c = src.Cell;
+
+				for (int p = 0; p < PuffsPerSource; p++)
+				{
+					float t = (phase + (p * 0.20f) + SmokeHash01(src.Seed, p)) % 1f;
+					float px = src.X + ((SmokeHash01(src.Seed, p + 10) - 0.5f) * 0.26f * c) + (0.14f * c * t) + (MathF.Sin((t * 6.283185f) + (p * 1.7f)) * 0.045f * c);
+					float py = src.Y - ((0.08f + (0.50f * t)) * c);
+					float r = (0.11f + (0.16f * t)) * c;
+					float alpha = (0.50f + (0.12f * SmokeHash01(src.Seed, p + 20))) * MathF.Sin(t * MathF.PI);
+					float col = 68f + (70f * t);
+					puffs[idx++] = new SmokePuff(px, py, r, col + 2f, col, col - 3f, alpha);
+				}
+			}
+
+			return puffs;
+		}
+
+		private static uint CompositeSmoke(uint pixel, SmokePuff[] puffs, int ox, int oy)
+		{
+			float r = (pixel >> 16) & 0xff, g = (pixel >> 8) & 0xff, b = pixel & 0xff;
+			float sr = 0f, sg = 0f, sb = 0f, sa = 0f;
+
+			for (int i = 0; i < puffs.Length; i++)
+			{
+				ref readonly SmokePuff pf = ref puffs[i];
+				if (ox < pf.MinX || ox > pf.MaxX || oy < pf.MinY || oy > pf.MaxY)
+					continue;
+
+				float dx = ox - pf.X, dy = oy - pf.Y;
+				float d2 = ((dx * dx) + (dy * dy)) * pf.InvR2;
+				if (d2 >= 1f)
+					continue;
+
+				float falloff = 1f - d2;
+				float a = pf.Alpha * falloff * (1f - (0.35f * d2));
+				if (a <= 0.002f)
+					continue;
+
+				float keep = 1f - a;
+				sr = (pf.R * a) + (sr * keep);
+				sg = (pf.G * a) + (sg * keep);
+				sb = (pf.B * a) + (sb * keep);
+				sa = a + (sa * keep);
+			}
+
+			if (sa <= 0.002f)
+				return pixel;
+
+			float underKeep = 1f - sa;
+			uint rr = (uint)Math.Clamp(sr + (r * underKeep), 0f, 255f);
+			uint gg = (uint)Math.Clamp(sg + (g * underKeep), 0f, 255f);
+			uint bb = (uint)Math.Clamp(sb + (b * underKeep), 0f, 255f);
+			return (pixel & 0xff000000u) | (rr << 16) | (gg << 8) | bb;
+		}
+
+		/// <summary>
+		/// Renders soft animated smoke wisps directly onto an ARGB pixel buffer for preview sheets and tests
+		/// </summary>
+		public static void ApplySmoke(uint[] buffer, int width, int height, SmokeSource[]? sources, float phase)
+		{
+			SmokePuff[]? puffs = BuildSmokePuffs(sources, phase);
+			if (puffs == null)
+				return;
+
+			for (int p = 0; p < puffs.Length; p++)
+			{
+				ref readonly SmokePuff pf = ref puffs[p];
+				int x0 = Math.Max(0, pf.MinX), x1 = Math.Min(width - 1, pf.MaxX);
+				int y0 = Math.Max(0, pf.MinY), y1 = Math.Min(height - 1, pf.MaxY);
+
+				for (int y = y0; y <= y1; y++)
+				{
+					float dy = y - pf.Y;
+					int row = y * width;
+
+					for (int x = x0; x <= x1; x++)
+					{
+						float dx = x - pf.X;
+						float d2 = ((dx * dx) + (dy * dy)) * pf.InvR2;
+						if (d2 >= 1f)
+							continue;
+
+						float falloff = 1f - d2;
+						float a = pf.Alpha * falloff * (1f - (0.35f * d2));
+						if (a <= 0.002f)
+							continue;
+
+						uint px = buffer[row + x];
+						float r = (px >> 16) & 0xff, g = (px >> 8) & 0xff, b = px & 0xff;
+						float keep = 1f - a;
+						uint rr = (uint)Math.Clamp((pf.R * a) + (r * keep), 0f, 255f);
+						uint gg = (uint)Math.Clamp((pf.G * a) + (g * keep), 0f, 255f);
+						uint bb = (uint)Math.Clamp((pf.B * a) + (b * keep), 0f, 255f);
+						buffer[row + x] = (px & 0xff000000u) | (rr << 16) | (gg << 8) | bb;
+					}
+				}
+			}
+		}
+
 		/// <summary>
 		/// An overlay shown over part of this bitmap when it is written out: a picture at HD resolution for an area of
 		/// original pixels, shown wherever the original pixels still hold what Snapshot recorded (anything drawn over the
@@ -1022,6 +1179,7 @@ namespace OpenCivOne.Graphics
 			public GRectangle Area = new GRectangle(0, 0, 0, 0);
 			public uint[] Pixels = Array.Empty<uint>();
 			public byte[] Snapshot = Array.Empty<byte>();
+			public SmokeSource[]? Smoke;
 
 			/// <summary>
 			/// While the game redraws the whole map window (a new view), the overlay is shown everywhere in its area,
@@ -1224,7 +1382,10 @@ namespace OpenCivOne.Graphics
 			}
 
 			WaterFrame? water = (AnimateWater && this._hdPixels != null) ? new WaterFrame(hdWidth, this.iHeight * HDScale) : null;
-			bool showsWater = false;
+			float smokePhase = CurrentSmokePhase;
+			SmokePuff[]? overSmoke = BuildSmokePuffs(over?.Smoke, smokePhase);
+			SmokePuff[]? insetSmoke = BuildSmokePuffs(inset?.Smoke, smokePhase);
+			bool showsWater = overSmoke != null || insetSmoke != null;
 
 			// the rows are independent: they are worked out on all cores
 			System.Threading.Tasks.Parallel.For(0, this.iHeight, () => new int[hdWidth * HDScale], (i, _, rows) =>
@@ -1265,16 +1426,22 @@ namespace OpenCivOne.Graphics
 								(over.Hold || (shows != null ? shows[((i - over.Area.Y) * over.Area.Width) + (j - over.Area.X)] :
 									over.Snapshot[((i - over.Area.Y) * over.Area.Width) + (j - over.Area.X)] == this.aPixels[pixelAddress])))
 							{
-								uint top = over.Pixels[((((i - over.Area.Y) * HDScale) + k) * over.Area.Width * HDScale) + ((j - over.Area.X) * HDScale) + l];
+								int ox = ((j - over.Area.X) * HDScale) + l, oy = ((i - over.Area.Y) * HDScale) + k;
+								uint top = over.Pixels[(oy * over.Area.Width * HDScale) + ox];
 								pixel = over.Blend ? BlendPremultiplied(top, pixel) : top;
+								if (overSmoke != null)
+									pixel = CompositeSmoke(pixel, overSmoke, ox, oy);
 							}
 
 							if (inset != null && j >= inset.Area.X && j < inset.Area.X + inset.Area.Width && i >= inset.Area.Y && i < inset.Area.Y + inset.Area.Height &&
 								(inset.Hold || (insetShows != null ? insetShows[((i - inset.Area.Y) * inset.Area.Width) + (j - inset.Area.X)] :
 									inset.Snapshot[((i - inset.Area.Y) * inset.Area.Width) + (j - inset.Area.X)] == this.aPixels[pixelAddress])))
 							{
-								uint top = inset.Pixels[((((i - inset.Area.Y) * HDScale) + k) * inset.Area.Width * HDScale) + ((j - inset.Area.X) * HDScale) + l];
+								int ix = ((j - inset.Area.X) * HDScale) + l, iy = ((i - inset.Area.Y) * HDScale) + k;
+								uint top = inset.Pixels[(iy * inset.Area.Width * HDScale) + ix];
 								pixel = inset.Blend ? BlendPremultiplied(top, pixel) : top;
+								if (insetSmoke != null)
+									pixel = CompositeSmoke(pixel, insetSmoke, ix, iy);
 							}
 
 							rows[(k * hdWidth) + (j * HDScale) + l] = (int)pixel;

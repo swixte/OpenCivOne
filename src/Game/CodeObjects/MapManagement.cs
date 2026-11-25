@@ -592,7 +592,7 @@ namespace OpenCivOne
 					// The painted map replaces the terrain at HD resolution, the ocean, grass and river tiles above still set the indexed pixels
 					this.parent.Graphics.DrawPaintedCell(this.parent.Var_aa_Screen0_Rectangle, scrX, scrY, paintedMap, this.AdjustXPosition(x), y);
 
-					if (drawIrrigation)
+					if (drawIrrigation && !(this.PaintedView?.DrawsImprovements ?? false))
 					{
 						this.parent.Graphics.F0_VGA_0c3e_DrawBitmapToScreen(this.parent.Var_aa_Screen0_Rectangle, scrX, scrY, this.parent.Array_d4ce[4]);
 					}
@@ -605,7 +605,7 @@ namespace OpenCivOne
 					this.parent.Graphics.F0_VGA_0c3e_DrawBitmapToScreen(this.parent.Var_aa_Screen0_Rectangle, scrX + 4, scrY + 4, this.parent.Var_b880);
 				}
 
-				if (terrainImprovements.HasFlag(TerrainImprovementFlagsEnum.Pollution))
+				if (terrainImprovements.HasFlag(TerrainImprovementFlagsEnum.Pollution) && !(this.PaintedView?.DrawsImprovements ?? false))
 				{
 					// Draw pollution
 
@@ -654,7 +654,7 @@ namespace OpenCivOne
 					}
 				}
 
-				if (terrainImprovements.HasFlag(TerrainImprovementFlagsEnum.Mines) && this.parent.Var_dcfc == 0)
+				if (terrainImprovements.HasFlag(TerrainImprovementFlagsEnum.Mines) && this.parent.Var_dcfc == 0 && !(this.PaintedView?.DrawsImprovements ?? false))
 				{
 					// Draw mines
 
@@ -685,7 +685,7 @@ namespace OpenCivOne
 					this.parent.Graphics.F0_VGA_0c3e_DrawBitmapToScreen(this.parent.Var_aa_Screen0_Rectangle, scrX, scrY, this.parent.Array_d4ce[31]);
 				}
 
-				if (terrainImprovements.HasFlag(TerrainImprovementFlagsEnum.Fortress))
+				if (terrainImprovements.HasFlag(TerrainImprovementFlagsEnum.Fortress) && !(this.PaintedView?.DrawsImprovements ?? false))
 				{
 					// Draw fortresses
 
@@ -1596,7 +1596,7 @@ namespace OpenCivOne
 			iso.Render(cx, cy, scene);
 			this.IsoCentre = (cx, cy);
 			GRectangle area = new GRectangle(80, 8, 240, 192);
-			screen.Over = new GBitmap.Overlay { Area = area, Pixels = iso.Pixels, Snapshot = screen.CopyPixels(area), Blend = iso.Blends };
+			screen.Over = new GBitmap.Overlay { Area = area, Pixels = iso.Pixels, Snapshot = screen.CopyPixels(area), Blend = iso.Blends, Smoke = (iso as TopView)?.SmokeSources };
 		}
 
 		/// <summary>
@@ -1612,6 +1612,7 @@ namespace OpenCivOne
 				Feature = (x, y) => (F0_2aea_1836_CellHasSpecialResource(x, y) ? 1 : 0) | (F0_2aea_1894_CellHasMinorTribeHut(x, y, GetTerrainType(x, y)) ? 2 : 0),
 				ShieldBonus = (x, y) => HasShieldBonus(x, y, GetTerrainType(x, y)),
 				ShoreDistance = (x, y, dx, dy) => this.parent.PaintedMap != null ? this.parent.PaintedMap.ShoreDistance(x, y, dx, dy) : 0.48f,
+				WaterKindAt = (mx, my) => this.parent.PaintedMap != null ? this.parent.PaintedMap.WaterKindAt(mx, my) : 0,
 			};
 			uint[] colours = { 0xffc43a2c, 0xfff2ece0, 0xff3c9a46, 0xff3e5bd8, 0xffe0b830, 0xff2fb6c8, 0xffc84ab4, 0xff6a6a72 };
 
@@ -1906,6 +1907,7 @@ namespace OpenCivOne
 				Feature = all.Feature,
 				ShieldBonus = all.ShieldBonus,
 				ShoreDistance = all.ShoreDistance,
+				WaterKindAt = all.WaterKindAt,
 				Walls = all.Walls,
 				UnitMarks = all.UnitMarks,
 				UnitStyle = all.UnitStyle,
@@ -1917,7 +1919,7 @@ namespace OpenCivOne
 
 			GRectangle area = new GRectangle(128, 24, 80, 80);
 			uint[] pixels = top.RenderSmall(city.Position.X + 0.5f, city.Position.Y + 0.5f, 5, 5, scene);
-			screen.Inset = new GBitmap.Overlay { Area = area, Pixels = pixels, Snapshot = screen.CopyPixels(area), Blend = true };
+			screen.Inset = new GBitmap.Overlay { Area = area, Pixels = pixels, Snapshot = screen.CopyPixels(area), Blend = true, Smoke = top.LastSmallSmokeSources };
 		}
 
 		/// <summary>

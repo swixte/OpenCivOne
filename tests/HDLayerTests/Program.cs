@@ -1588,9 +1588,8 @@ GBitmap other4()
 				Explored = (x, y) => true,
 			};
 			PaintedMap cPainted = PaintedMap.Load(Path.Combine(topTheme, "painted"), 64, (px, py) => cScene.Terrain(px - 4, py - 2))!;
-			cScene.ShoreDistance = (x, y, dx, dy) => cPainted.ShoreDistance(x + 4, y + 2, dx, dy);
 			// Covers all 4 harbor tiers (p0=2, p1=4, p2=8, p3=12) across North, West, East, South shorelines & 1-tile islands
-			var cCities = new[]
+			var cCities = new List<(int X, int Y, string Name, int Size, uint Colour, bool Walled)>
 			{
 				(4, 1, "North1", 2, Blue, false), (8, 1, "North3", 8, Blue, true),
 				(2, 2, "West0",  2, Red, false),  (2, 3, "West2",  8, Red, true),
@@ -1598,6 +1597,99 @@ GBitmap other4()
 				(4, 4, "South1", 4, Red, false),  (8, 4, "South2", 8, Red, true),
 				(2, 6, "Isle0",  2, Blue, false), (9, 6, "Isle3", 12, Blue, true),
 			};
+			var cCityLooks = new Dictionary<(int, int), (string, int)>();
+			if (Environment.GetEnvironmentVariable("TOPVIEW_COAST_CITIES") is string coastCitiesEnv)
+			{
+				cCities.Clear();
+				foreach (string entry in coastCitiesEnv.Split(';', StringSplitOptions.RemoveEmptyEntries))
+				{
+					string[] parts = entry.Split(',');
+					uint col = parts[4] switch { "r" => Red, "c" => 0xff2fb6c8u, _ => Blue };
+					int cx = int.Parse(parts[0]), cy = int.Parse(parts[1]);
+					cCities.Add((cx, cy, parts[2], int.Parse(parts[3]), col, parts[5] == "1"));
+					if (parts.Length >= 8)
+						cCityLooks[(cx, cy)] = (parts[6].Trim(), int.Parse(parts[7]));
+				}
+			}
+			var cCityFeat = cCities.ToDictionary(c => (c.X + 4, c.Y + 2), c => PaintedMap.City | (TopView.ClearingStep(c.Size) << PaintedMap.CityStepShift));
+			if (Environment.GetEnvironmentVariable("PAINTED_RESOURCES") is string cResEnv)
+			{
+				foreach (string entry in cResEnv.Split(';', StringSplitOptions.RemoveEmptyEntries))
+				{
+					string[] parts = entry.Split(',');
+					var key = (int.Parse(parts[0]) + 4, int.Parse(parts[1]) + 2);
+					cCityFeat[key] = cCityFeat.GetValueOrDefault(key) | PaintedMap.SpecialResource;
+				}
+			}
+			if (Environment.GetEnvironmentVariable("PAINTED_ROADS") is string cRoadEnv)
+			{
+				foreach (string entry in cRoadEnv.Split(';', StringSplitOptions.RemoveEmptyEntries))
+				{
+					string[] parts = entry.Split(',');
+					var key = (int.Parse(parts[0]) + 4, int.Parse(parts[1]) + 2);
+					cCityFeat[key] = cCityFeat.GetValueOrDefault(key) | PaintedMap.RoadCorridor;
+				}
+			}
+			cPainted.FeatureAt = (fx, fy) => cCityFeat.GetValueOrDefault((fx, fy));
+			cScene.ShoreDistance = (x, y, dx, dy) => cPainted.ShoreDistance(x + 4, y + 2, dx, dy);
+			cScene.WaterKindAt = (mx, my) => cPainted.WaterKindAt(mx + 4f, my + 2f);
+			cScene.CityLook = (x, y) => cCityLooks.TryGetValue((x, y), out var lk) ? lk : ("", 0);
+
+			var cFeat = new Dictionary<(int, int), int>();
+			if (Environment.GetEnvironmentVariable("PAINTED_RESOURCES") is string topResEnv)
+			{
+				foreach (string entry in topResEnv.Split(';', StringSplitOptions.RemoveEmptyEntries))
+				{
+					string[] parts = entry.Split(',');
+					var key = (int.Parse(parts[0]), int.Parse(parts[1]));
+					cFeat[key] = cFeat.GetValueOrDefault(key) | 1;
+				}
+			}
+			if (Environment.GetEnvironmentVariable("TOPVIEW_FEATURES") is string topFeatEnv)
+			{
+				foreach (string entry in topFeatEnv.Split(';', StringSplitOptions.RemoveEmptyEntries))
+				{
+					string[] parts = entry.Split(',');
+					var key = (int.Parse(parts[0]), int.Parse(parts[1]));
+					cFeat[key] = cFeat.GetValueOrDefault(key) | int.Parse(parts[2]);
+				}
+			}
+			cScene.Feature = (x, y) => cFeat.GetValueOrDefault((x, y));
+
+			var cImps = cCities.ToDictionary(c => (c.X, c.Y), _ => 0x1);
+			if (Environment.GetEnvironmentVariable("TOPVIEW_IMPROVEMENTS") is string topImpEnv)
+			{
+				foreach (string entry in topImpEnv.Split(';', StringSplitOptions.RemoveEmptyEntries))
+				{
+					string[] parts = entry.Split(',');
+					var key = (int.Parse(parts[0]), int.Parse(parts[1]));
+					int val = Convert.ToInt32(parts[2], 16);
+					cImps[key] = cImps.GetValueOrDefault(key) | val;
+				}
+			}
+			cScene.Improvements = (x, y) => cImps.GetValueOrDefault((x, y));
+
+			var cShields = new HashSet<(int, int)>();
+			if (Environment.GetEnvironmentVariable("TOPVIEW_SHIELDS") is string topShieldEnv)
+			{
+				foreach (string entry in topShieldEnv.Split(';', StringSplitOptions.RemoveEmptyEntries))
+				{
+					string[] parts = entry.Split(',');
+					cShields.Add((int.Parse(parts[0]), int.Parse(parts[1])));
+				}
+			}
+			cScene.ShieldBonus = (x, y) => cShields.Contains((x, y));
+
+			if (Environment.GetEnvironmentVariable("TOPVIEW_UNITS") is string topUnitsEnv)
+			{
+				foreach (string entry in topUnitsEnv.Split(';', StringSplitOptions.RemoveEmptyEntries))
+				{
+					string[] parts = entry.Split(',');
+					uint ucol = parts[3] switch { "r" => Red, "c" => 0xff2fb6c8u, _ => Blue };
+					cScene.Units.Add((int.Parse(parts[0]), int.Parse(parts[1]), int.Parse(parts[2]), ucol));
+				}
+			}
+
 			var cw = new HashSet<(int, int)>();
 			foreach (var (cx, cy, nm, sz, col, wl) in cCities)
 			{
@@ -1607,16 +1699,44 @@ GBitmap other4()
 			cScene.Walls = (x, y) => cw.Contains((x, y));
 			cTop.Render(cg.Width / 128f, cg.Height / 128f, cScene);
 			uint[] co = cTop.Pixels;
+			uint[] comp = new uint[cg.Width * cg.Height];
 			for (int y = 0; y < cg.Height; y++)
 				for (int x = 0; x < cg.Width; x++)
 				{
 					uint o = co[(y * cg.Width) + x], a = o >> 24;
 					SKColor g = cg.GetPixel(x, y);
 					uint Mix(uint top8, byte under) => Math.Min(255u, top8 + ((under * (255 - a)) + 127) / 255);
-					cg.SetPixel(x, y, new SKColor((byte)Mix((o >> 16) & 0xff, g.Red), (byte)Mix((o >> 8) & 0xff, g.Green), (byte)Mix(o & 0xff, g.Blue)));
+					comp[(y * cg.Width) + x] = 0xff000000u | (Mix((o >> 16) & 0xff, g.Red) << 16) | (Mix((o >> 8) & 0xff, g.Green) << 8) | Mix(o & 0xff, g.Blue);
 				}
-			using var cf = File.Create(coastOut);
-			cg.Encode(cf, SKEncodedImageFormat.Png, 100);
+
+			void WriteCompBuffer(string destPath, uint[] buf, int bx0, int by0, int bw, int bh)
+			{
+				using var bmp = new SKBitmap(bw, bh, SKColorType.Bgra8888, SKAlphaType.Opaque);
+				for (int yy = 0; yy < bh; yy++)
+					for (int xx = 0; xx < bw; xx++)
+						bmp.SetPixel(xx, yy, new SKColor(buf[((by0 + yy) * cg.Width) + (bx0 + xx)]));
+				using var fs = File.Create(destPath);
+				bmp.Encode(fs, SKEncodedImageFormat.Png, 100);
+			}
+
+			float staticPhase = float.TryParse(Environment.GetEnvironmentVariable("TOPVIEW_SMOKE_PHASE"), out float sp) ? sp : 0.25f;
+			uint[] staticBuf = (uint[])comp.Clone();
+			GBitmap.ApplySmoke(staticBuf, cg.Width, cg.Height, cTop.SmokeSources, staticPhase);
+			WriteCompBuffer(coastOut, staticBuf, 0, 0, cg.Width, cg.Height);
+
+			if (Environment.GetEnvironmentVariable("TOPVIEW_SMOKE_FRAMES") is string framesDir && cTop.SmokeSources.Length > 0)
+			{
+				Directory.CreateDirectory(framesDir);
+				int fx0 = Math.Clamp((int)cTop.SmokeSources.Min(s => s.X) - 132, 0, Math.Max(0, cg.Width - 320));
+				int fy0 = Math.Clamp((int)cTop.SmokeSources.Min(s => s.Y) - 112, 0, Math.Max(0, cg.Height - 256));
+				int fw = Math.Min(320, cg.Width - fx0), fh = Math.Min(256, cg.Height - fy0);
+				for (int fi = 0; fi < 12; fi++)
+				{
+					uint[] fbuf = (uint[])comp.Clone();
+					GBitmap.ApplySmoke(fbuf, cg.Width, cg.Height, cTop.SmokeSources, fi / 12f);
+					WriteCompBuffer(Path.Combine(framesDir, $"frame_{fi:00}.png"), fbuf, fx0, fy0, fw, fh);
+				}
+			}
 		}
 	}
 
@@ -1642,13 +1762,42 @@ GBitmap other4()
 			painted = featured;
 		}
 		// PAINTED_CITIES ("x,y[,step];..." in preview cells) marks cities, whose cells the painting clears for them
+		// PAINTED_RESOURCES ("x,y;...") and PAINTED_ROADS ("x,y;...") mark minerals & road corridors on custom scenes
 		string? cities = Environment.GetEnvironmentVariable("PAINTED_CITIES");
-		if (cities != null)
+		string? resourcesEnv = Environment.GetEnvironmentVariable("PAINTED_RESOURCES");
+		string? roadsEnv = Environment.GetEnvironmentVariable("PAINTED_ROADS");
+		if (cities != null || resourcesEnv != null || roadsEnv != null)
 		{
-			var cityCells = cities.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(c => c.Split(','))
-				.ToDictionary(c => (int.Parse(c[0]) + 4, int.Parse(c[1]) + 2), c => PaintedMap.City | ((c.Length > 2 ? int.Parse(c[2]) : 5) << PaintedMap.CityStepShift));
-			var features = featured.FeatureAt;
-			featured.FeatureAt = (x, y) => (features?.Invoke(x, y) ?? 0) | cityCells.GetValueOrDefault((x, y));
+			var customFeat = new Dictionary<(int, int), int>();
+			if (cities != null)
+			{
+				foreach (string entry in cities.Split(';', StringSplitOptions.RemoveEmptyEntries))
+				{
+					string[] c = entry.Split(',');
+					var key = (int.Parse(c[0]) + 4, int.Parse(c[1]) + 2);
+					customFeat[key] = customFeat.GetValueOrDefault(key) | PaintedMap.City | ((c.Length > 2 ? int.Parse(c[2]) : 5) << PaintedMap.CityStepShift);
+				}
+			}
+			if (resourcesEnv != null)
+			{
+				foreach (string entry in resourcesEnv.Split(';', StringSplitOptions.RemoveEmptyEntries))
+				{
+					string[] c = entry.Split(',');
+					var key = (int.Parse(c[0]) + 4, int.Parse(c[1]) + 2);
+					customFeat[key] = customFeat.GetValueOrDefault(key) | PaintedMap.SpecialResource;
+				}
+			}
+			if (roadsEnv != null)
+			{
+				foreach (string entry in roadsEnv.Split(';', StringSplitOptions.RemoveEmptyEntries))
+				{
+					string[] c = entry.Split(',');
+					var key = (int.Parse(c[0]) + 4, int.Parse(c[1]) + 2);
+					customFeat[key] = customFeat.GetValueOrDefault(key) | PaintedMap.RoadCorridor;
+				}
+			}
+			var prevFeatures = featured.FeatureAt;
+			featured.FeatureAt = (x, y) => (resourcesEnv != null ? 0 : (prevFeatures?.Invoke(x, y) ?? 0)) | customFeat.GetValueOrDefault((x, y));
 		}
 		var clock = System.Diagnostics.Stopwatch.StartNew();
 		using var image = new SKBitmap(sceneW * 64, sceneH * 64, SKColorType.Bgra8888, SKAlphaType.Premul);
@@ -1743,7 +1892,574 @@ GBitmap other4()
 	GBitmap.LoadUIColors(Path.Combine(dir, "none.txt"));
 	Check(GBitmap.UIColor(2) == null, "colors: without the file the painted tone is used");
 	GBitmap.ClearUIMaterial();
+
+	// ---------- 13. live animated pollution smoke over overlays ----------
+	{
+		bool prevAnim = GBitmap.AnimateWater;
+		GBitmap.AnimateWater = true;
+		var smkBmp = new GBitmap(64, 64);
+		smkBmp.FillRectangle(new GRectangle(0, 0, 64, 64), 2, PixelWriteModeEnum.Normal);
+		byte[] snap = smkBmp.CopyPixels(new GRectangle(0, 0, 64, 64));
+		uint[] ovPx = new uint[256 * 256];
+		Array.Fill(ovPx, 0xff5a7a32u);
+		// Simulate a dialog drawn over bottom-left (0..20, 40..64) so Snapshot mismatches there
+		smkBmp.FillRectangle(new GRectangle(0, 40, 20, 24), 15, PixelWriteModeEnum.Normal);
+		smkBmp.Over = new GBitmap.Overlay
+		{
+			Area = new GRectangle(0, 0, 64, 64),
+			Pixels = ovPx,
+			Snapshot = snap,
+			Blend = true,
+			Smoke = new[] { new GBitmap.SmokeSource(128, 128, 64, 12345), new GBitmap.SmokeSource(40, 210, 64, 999) },
+		};
+		uint[] fS = Frame(smkBmp);
+		Check(smkBmp.ShowsWater, "smoke: Overlay.Smoke sets ShowsWater = true for live animation");
+
+		uint[] bufA = new uint[128 * 128];
+		uint[] bufB = new uint[128 * 128];
+		Array.Fill(bufA, 0xff5a7a32u);
+		Array.Fill(bufB, 0xff5a7a32u);
+		var srcs = new[] { new GBitmap.SmokeSource(64, 64, 64, 42) };
+		GBitmap.ApplySmoke(bufA, 128, 128, srcs, 0.0f);
+		GBitmap.ApplySmoke(bufB, 128, 128, srcs, 0.5f);
+		Check(!bufA.SequenceEqual(bufB), "smoke: animation phase moves rising wisps across frames");
+		Check(fS[(50 * 4) * 256 + (10 * 4)] == (PaletteColor(smkBmp, 15) & 0xffffff), "smoke: masked dialog pixels over the map stay untouched");
+		GBitmap.AnimateWater = prevAnim;
+	}
+
 	GBitmap.HDScale = 2;
+}
+
+if (Environment.GetEnvironmentVariable("TOPVIEW_RANDOM_WORLD") is string rndOutDir &&
+	Environment.GetEnvironmentVariable("TOPVIEW_THEME") is string rndTheme)
+{
+	const int MW = 80, MH = 50, Cell = 64;
+	const int W = MW * Cell, H = MH * Cell;
+	const int Desert = 0, Plains = 1, Grassland = 2, Forest = 3, Hills = 4, Mountains = 5, Arctic = 7, Swamp = 8, Jungle = 9, Water = 10, River = 11;
+
+	int seed = int.TryParse(Environment.GetEnvironmentVariable("TOPVIEW_WORLD_SEED"), out int parsedSeed)
+		? parsedSeed
+		: Random.Shared.Next(1, 65535);
+	Console.WriteLine($"TOPVIEW_RANDOM_WORLD generating 80x50 world (seed={seed})...");
+
+	OpenCivOne.MapInitAndIntro.SkipAnimation = true;
+	OpenCivOne.MapInitAndIntro.ForceTerrainSmoothing = false;
+	var game = new OpenCivOne.OpenCivOneGame(null!);
+	game.GameData.RandomSeed = (ushort)seed;
+	game.Var_d76a_EarthMap = false;
+	game.Var_7ef6_PlanetLandMass = 1;
+	game.Var_7ef8_PlanetTemperature = 1;
+	game.Var_7efa_PlanetClimate = 1;
+	game.Var_7efc_PlanetAge = 1;
+	game.MapInitAndIntro.GenerateNewMap();
+
+	var terr = new int[MW, MH];
+	var res = new bool[MW, MH];
+	var hut = new bool[MW, MH];
+	var imp = new int[MW, MH];
+	var terrainCounts = new int[12];
+	int hutsCount = 0;
+
+	for (int y = 0; y < MH; y++)
+	{
+		for (int x = 0; x < MW; x++)
+		{
+			var t = game.MapManagement.GetTerrainType(x, y);
+			int ti = (int)t;
+			terr[x, y] = ti;
+			if (ti >= 0 && ti < terrainCounts.Length)
+				terrainCounts[ti]++;
+			res[x, y] = game.MapManagement.F0_2aea_1836_CellHasSpecialResource(x, y);
+			hut[x, y] = game.MapManagement.F0_2aea_1894_CellHasMinorTribeHut(x, y, t);
+			if (hut[x, y])
+				hutsCount++;
+		}
+	}
+
+	int WrapX(int x) => ((x % MW) + MW) % MW;
+	bool InBoundsY(int y) => y >= 0 && y < MH;
+	int TorusDist(int ax, int ay, int bx, int by)
+	{
+		int dx = Math.Abs(ax - bx);
+		dx = Math.Min(dx, MW - dx);
+		return Math.Max(dx, Math.Abs(ay - by));
+	}
+
+	var rng = new Random(seed ^ 0x51a7);
+	var candidates = new List<(float Score, int X, int Y)>();
+	for (int y = 5; y < MH - 5; y++)
+	{
+		for (int x = 0; x < MW; x++)
+		{
+			int t = terr[x, y];
+			if (t is not (Grassland or Plains or River or Hills))
+				continue;
+
+			float score = (float)rng.NextDouble() * 3.5f + (t == River ? 2.5f : 0f);
+			bool coastal = false;
+			for (int dy = -2; dy <= 2; dy++)
+			{
+				for (int dx = -2; dx <= 2; dx++)
+				{
+					int nx = WrapX(x + dx), ny = y + dy;
+					int nt = InBoundsY(ny) ? terr[nx, ny] : Water;
+					if (Math.Abs(dx) + Math.Abs(dy) == 1 && nt == Water)
+						coastal = true;
+					score += nt switch
+					{
+						Grassland or River => 1.2f,
+						Plains => 0.9f,
+						Water => 0.55f,
+						Forest or Hills => 0.45f,
+						_ => 0f,
+					};
+					if (InBoundsY(ny) && res[nx, ny])
+						score += 1.4f;
+				}
+			}
+			if (coastal)
+				score += 1.8f;
+			candidates.Add((score, x, y));
+		}
+	}
+
+	candidates.Sort((a, b) => b.Score.CompareTo(a.Score));
+	var cityCoords = new List<(int X, int Y)>();
+	foreach (var cand in candidates)
+	{
+		if (cityCoords.Count >= 18)
+			break;
+		if (cityCoords.Exists(c => TorusDist(c.X, c.Y, cand.X, cand.Y) < 6))
+			continue;
+		cityCoords.Add((cand.X, cand.Y));
+	}
+
+	// Farthest-point cluster into 4 regional civilizations
+	uint[] civCols = { 0xffc03428u, 0xff3058beu, 0xff2fb6c8u, 0xffe0b830u };
+	string[] civStyles = { "cl", "eu", "ea", "eu" };
+	string[][] civCityNames =
+	{
+		new[] { "Rome", "Pompeii", "Neapolis", "Ravenna", "Veii", "Antium" },
+		new[] { "Paris", "London", "Lyon", "York", "Orleans", "Rheims" },
+		new[] { "Kyoto", "Edo", "Osaka", "Nara", "Sakai", "Kobe" },
+		new[] { "New York", "Boston", "Chicago", "Babylon", "Ur", "Memphis" },
+	};
+	int[] sizePool = { 13, 11, 10, 9, 8, 8, 7, 7, 6, 6, 5, 5, 4, 4, 3, 3, 2, 1 };
+	var civAnchors = new List<(int X, int Y, int Civ)>();
+	if (cityCoords.Count > 0)
+	{
+		civAnchors.Add((cityCoords[0].X, cityCoords[0].Y, 0));
+		for (int cIdx = 1; cIdx < 4 && civAnchors.Count < cityCoords.Count; cIdx++)
+		{
+			int bestIdx = 0, bestMinD = -1;
+			for (int i = 0; i < cityCoords.Count; i++)
+			{
+				int minD = civAnchors.Min(a => TorusDist(a.X, a.Y, cityCoords[i].X, cityCoords[i].Y));
+				if (minD > bestMinD)
+				{
+					bestMinD = minD;
+					bestIdx = i;
+				}
+			}
+			civAnchors.Add((cityCoords[bestIdx].X, cityCoords[bestIdx].Y, cIdx));
+		}
+	}
+
+	var civUsed = new int[4];
+	var cityData = new List<(int X, int Y, string Name, int Size, int Civ, string Style, int Age, bool Walled)>();
+	for (int i = 0; i < cityCoords.Count; i++)
+	{
+		(int cx, int cy) = cityCoords[i];
+		int civ = civAnchors
+			.OrderBy(a => civUsed[a.Civ] >= civCityNames[a.Civ].Length ? 9999 : TorusDist(a.X, a.Y, cx, cy))
+			.Select(a => a.Civ)
+			.FirstOrDefault();
+		int nIdx = Math.Min(civUsed[civ]++, civCityNames[civ].Length - 1);
+		string cname = civCityNames[civ][nIdx];
+		int size = i < sizePool.Length ? sizePool[i] : 3;
+		string style = (civ == 3 && nIdx >= 3) ? "cl" : civStyles[civ];
+		int age = civ switch
+		{
+			0 => size >= 9 ? 1 : 0,
+			1 => size >= 11 ? 3 : size >= 6 ? 2 : 1,
+			2 => size >= 10 ? 2 : size >= 5 ? 1 : 0,
+			_ => size >= 10 ? 3 : 2,
+		};
+		bool walled = size >= 6 && (i % 2 == 0);
+		cityData.Add((cx, cy, cname, size, civ, style, age, walled));
+		imp[cx, cy] = 0x9;
+	}
+
+	var citySet = cityData.Select(c => (c.X, c.Y)).ToHashSet();
+	var walledSet = cityData.Where(c => c.Walled).Select(c => (c.X, c.Y)).ToHashSet();
+	var cityLookMap = cityData.ToDictionary(c => (c.X, c.Y), c => (c.Style, c.Age));
+
+	// Worked farmland & mines around each city
+	(int Dx, int Dy)[] fourDirs = { (1, 0), (0, 1), (-1, 0), (0, -1) };
+	for (int ci = 0; ci < cityData.Count; ci++)
+	{
+		var c = cityData[ci];
+		for (int dy = -2; dy <= 2; dy++)
+		{
+			for (int dx = -2; dx <= 2; dx++)
+			{
+				if (dx == 0 && dy == 0)
+					continue;
+				int nx = WrapX(c.X + dx), ny = c.Y + dy;
+				if (!InBoundsY(ny) || citySet.Contains((nx, ny)))
+					continue;
+				int t = terr[nx, ny];
+				double roll = rng.NextDouble();
+				if (t is Mountains or Hills)
+				{
+					double mineChance = res[nx, ny] ? 0.65 : t == Hills ? 0.34 : 0.28;
+					if (roll < mineChance)
+						imp[nx, ny] |= 0x4;
+					else if (t == Hills && roll < mineChance + 0.16)
+						imp[nx, ny] |= 0x2;
+				}
+				else if (t == Desert)
+				{
+					bool nearWater = fourDirs.Any(d => InBoundsY(ny + d.Dy) && terr[WrapX(nx + d.Dx), ny + d.Dy] is River or Water);
+					if (roll < (nearWater ? 0.55 : 0.25))
+						imp[nx, ny] |= 0x2;
+					else if (roll > 0.76)
+						imp[nx, ny] |= 0x4;
+				}
+				else if (t is Grassland or Plains or River)
+				{
+					double irrChance = Math.Min(0.72, 0.22 + (c.Size * 0.04));
+					if (roll < irrChance)
+						imp[nx, ny] |= 0x2;
+				}
+			}
+		}
+	}
+
+	// Shortest overland road & railroad routes
+	float MoveCost(int x, int y) => terr[x, y] switch
+	{
+		Mountains => 4.2f,
+		Forest or Jungle or Swamp => 2.2f,
+		Hills => 1.8f,
+		River => 1.35f,
+		_ => 1.0f,
+	};
+
+	List<(int X, int Y)>? FindRoute((int X, int Y) a, (int X, int Y) b)
+	{
+		var dist = new Dictionary<(int, int), float> { [a] = 0 };
+		var prev = new Dictionary<(int, int), (int, int)>();
+		var open = new PriorityQueue<(int, int), float>();
+		open.Enqueue(a, 0);
+		(int Dx, int Dy)[] eight = { (1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1) };
+		while (open.TryDequeue(out var cur, out float d))
+		{
+			if (cur == b)
+				break;
+			if (d > dist[cur])
+				continue;
+			foreach (var (dx, dy) in eight)
+			{
+				int nx = WrapX(cur.Item1 + dx), ny = cur.Item2 + dy;
+				if (!InBoundsY(ny) || terr[nx, ny] == Water)
+					continue;
+				float nd = d + (MoveCost(nx, ny) * (dx != 0 && dy != 0 ? 1.15f : 1f)) - ((imp[nx, ny] & 0x8) != 0 ? 0.55f : 0f);
+				if (!dist.TryGetValue((nx, ny), out float old) || nd < old)
+				{
+					dist[(nx, ny)] = nd;
+					prev[(nx, ny)] = cur;
+					open.Enqueue((nx, ny), nd);
+				}
+			}
+		}
+		if (!prev.ContainsKey(b))
+			return null;
+		var path = new List<(int, int)>();
+		for ((int, int) p = b; p != a; p = prev[p])
+			path.Add(p);
+		path.Add(a);
+		return path;
+	}
+
+	foreach (var c in cityData)
+	{
+		foreach (var other in cityData.Where(o => (o.X, o.Y) != (c.X, c.Y)).OrderBy(o => TorusDist(c.X, c.Y, o.X, o.Y)).Take(3))
+		{
+			if (TorusDist(c.X, c.Y, other.X, other.Y) > 19)
+				continue;
+			foreach (var stepCell in FindRoute((c.X, c.Y), (other.X, other.Y)) ?? new List<(int, int)>())
+				imp[stepCell.X, stepCell.Y] |= 0x8;
+		}
+	}
+
+	var hubCities = cityData.Where(c => c.Size >= 6).OrderByDescending(c => c.Size).Take(8).ToList();
+	int railLinks = 0;
+	for (int i = 0; i < hubCities.Count && railLinks < 6; i++)
+	{
+		for (int j = i + 1; j < hubCities.Count && railLinks < 6; j++)
+		{
+			if (TorusDist(hubCities[i].X, hubCities[i].Y, hubCities[j].X, hubCities[j].Y) > 22)
+				continue;
+			var route = FindRoute((hubCities[i].X, hubCities[i].Y), (hubCities[j].X, hubCities[j].Y));
+			if (route != null)
+			{
+				foreach (var stepCell in route)
+					imp[stepCell.X, stepCell.Y] |= 0x18;
+				railLinks++;
+			}
+		}
+	}
+
+	// Strategic fortresses (4-6) on Hills or Plains away from cities
+	var forts = new List<(int X, int Y)>();
+	foreach (var c in cityData)
+	{
+		if (forts.Count >= 6)
+			break;
+		for (int dy = -3; dy <= 3 && forts.Count < 6; dy++)
+		{
+			for (int dx = -3; dx <= 3 && forts.Count < 6; dx++)
+			{
+				if (Math.Max(Math.Abs(dx), Math.Abs(dy)) != 3)
+					continue;
+				int fx = WrapX(c.X + dx), fy = c.Y + dy;
+				if (!InBoundsY(fy) || fy < 4 || fy >= MH - 4 || citySet.Contains((fx, fy)))
+					continue;
+				if ((terr[fx, fy] is Hills or Plains) && (imp[fx, fy] & 0x24) == 0 && !forts.Exists(o => TorusDist(o.X, o.Y, fx, fy) < 6) && rng.NextDouble() < 0.25)
+				{
+					imp[fx, fy] |= 0x20;
+					forts.Add((fx, fy));
+				}
+			}
+		}
+	}
+
+	// Industrial pollution around top 2 largest metropolises
+	var pollutions = new List<(int X, int Y)>();
+	foreach (var bigCity in cityData.OrderByDescending(c => c.Size).Take(2))
+	{
+		int added = 0;
+		for (int dy = -2; dy <= 2 && added < 2; dy++)
+		{
+			for (int dx = -2; dx <= 2 && added < 2; dx++)
+			{
+				if (Math.Max(Math.Abs(dx), Math.Abs(dy)) != 1 && Math.Max(Math.Abs(dx), Math.Abs(dy)) != 2)
+					continue;
+				int px = WrapX(bigCity.X + dx), py = bigCity.Y + dy;
+				if (!InBoundsY(py) || terr[px, py] == Water || citySet.Contains((px, py)) || (imp[px, py] & 0x24) != 0)
+					continue;
+				if (rng.NextDouble() < 0.35 || (added == 0 && dx >= 1))
+				{
+					imp[px, py] |= 0x40;
+					pollutions.Add((px, py));
+					added++;
+				}
+			}
+		}
+	}
+
+	// Clear tribal huts under cities and improvements
+	for (int y = 0; y < MH; y++)
+		for (int x = 0; x < MW; x++)
+			if (citySet.Contains((x, y)) || imp[x, y] != 0)
+				hut[x, y] = false;
+	hutsCount = 0;
+	for (int y = 0; y < MH; y++)
+		for (int x = 0; x < MW; x++)
+			if (hut[x, y])
+				hutsCount++;
+
+	// Build lists of mines & land/sea units
+	var mineList = new List<(int X, int Y, int Terrain, bool Special)>();
+	for (int y = 0; y < MH; y++)
+		for (int x = 0; x < MW; x++)
+			if ((imp[x, y] & 0x4) != 0)
+				mineList.Add((x, y, terr[x, y], res[x, y]));
+
+	var unitsList = new List<(int X, int Y, int Type, uint Colour)>();
+	var occupiedUnits = new HashSet<(int, int)>(citySet);
+	var unitMarks = new Dictionary<(int, int), int>();
+	var unitStyles = new Dictionary<(int, int), string>();
+
+	// Garrison 3 fortresses
+	int[] garTypes = { 2, 4, 5 };
+	for (int i = 0; i < Math.Min(3, forts.Count); i++)
+	{
+		var f = forts[i];
+		var owner = cityData.OrderBy(c => TorusDist(c.X, c.Y, f.X, f.Y)).First();
+		unitsList.Add((f.X, f.Y, garTypes[i % garTypes.Length], civCols[owner.Civ]));
+		occupiedUnits.Add((f.X, f.Y));
+		unitMarks[(f.X, f.Y)] = 2;
+		unitStyles[(f.X, f.Y)] = owner.Style;
+	}
+
+	// 2 mined hill/mountain workers or guards
+	int[] mineGuardTypes = { 2, 3 };
+	for (int i = 0; i < mineList.Count && i < 2; i++)
+	{
+		var m = mineList[(i * 3) % mineList.Count];
+		if (!occupiedUnits.Add((m.X, m.Y)))
+			continue;
+		var owner = cityData.OrderBy(c => TorusDist(c.X, c.Y, m.X, m.Y)).First();
+		unitsList.Add((m.X, m.Y, mineGuardTypes[i % 2], civCols[owner.Civ]));
+		unitStyles[(m.X, m.Y)] = owner.Style;
+	}
+
+	// Field units patrolling near cities
+	int[] fieldTypes = { 3, 7, 8, 0, 4, 5, 10, 2 };
+	for (int i = 0; i < cityData.Count && unitsList.Count < 20; i++)
+	{
+		var c = cityData[i];
+		foreach (var (dx, dy) in new[] { (1, 1), (-1, 1), (1, -1), (2, 0), (-1, -1), (0, 2) })
+		{
+			int ux = WrapX(c.X + dx), uy = c.Y + dy;
+			if (!InBoundsY(uy) || terr[ux, uy] == Water || !occupiedUnits.Add((ux, uy)))
+				continue;
+			int uType = fieldTypes[i % fieldTypes.Length];
+			unitsList.Add((ux, uy, uType, civCols[c.Civ]));
+			unitStyles[(ux, uy)] = c.Style;
+			if (uType == 0)
+				unitMarks[(ux, uy)] = 'I' << 8;
+			else if (i % 5 == 1)
+				unitMarks[(ux, uy)] = 4;
+			else if (i % 5 == 2)
+				unitMarks[(ux, uy)] = 1;
+			break;
+		}
+	}
+
+	// Coastal ships near coastal cities in real open bays/seas (>= 5 Water cells in 3x3)
+	int shipsAdded = 0;
+	foreach (var c in cityData)
+	{
+		if (shipsAdded >= 6)
+			break;
+		for (int r = 1; r <= 2 && shipsAdded < 6; r++)
+		{
+			bool placedShip = false;
+			for (int dy = -r; dy <= r && !placedShip; dy++)
+			{
+				for (int dx = -r; dx <= r && !placedShip; dx++)
+				{
+					int sx = WrapX(c.X + dx), sy = c.Y + dy;
+					if (!InBoundsY(sy) || terr[sx, sy] != Water)
+						continue;
+					int seaCount = 0;
+					for (int oy = -1; oy <= 1; oy++)
+						for (int ox = -1; ox <= 1; ox++)
+							if (InBoundsY(sy + oy) && terr[WrapX(sx + ox), sy + oy] == Water)
+								seaCount++;
+					if (seaCount < 5 || !occupiedUnits.Add((sx, sy)))
+						continue;
+					int sType = c.Age >= 3 ? 19 : c.Age == 2 ? 18 : c.Age == 1 ? 17 : 16;
+					unitsList.Add((sx, sy, sType, civCols[c.Civ]));
+					unitStyles[(sx, sy)] = c.Style;
+					shipsAdded++;
+					placedShip = true;
+				}
+			}
+		}
+	}
+
+	// Render painted ground 5120x3200 cleanly using CopyCell row transfers
+	int TerrainAt(int x, int y) => terr[WrapX(x), Math.Clamp(y, 0, MH - 1)];
+	var paintedMap = PaintedMap.Load(Path.Combine(rndTheme, "painted"), Cell, TerrainAt)!;
+	var clearingMap = cityData.ToDictionary(c => (c.X, c.Y), c => PaintedMap.City | (TopView.ClearingStep(c.Size) << PaintedMap.CityStepShift));
+	paintedMap.FeatureAt = (x, y) =>
+	{
+		int wx = WrapX(x), wy = Math.Clamp(y, 0, MH - 1);
+		int f = clearingMap.GetValueOrDefault((wx, wy));
+		if (res[wx, wy]) f |= PaintedMap.SpecialResource;
+		if ((imp[wx, wy] & 0x18) != 0) f |= PaintedMap.RoadCorridor;
+		return f;
+	};
+
+	uint[] groundBuf = new uint[W * H];
+	uint[] cellBuf = new uint[Cell * Cell];
+	for (int cy = 0; cy < MH; cy++)
+	{
+		for (int cx = 0; cx < MW; cx++)
+		{
+			paintedMap.CopyCell(cx, cy, cellBuf, 0, Cell);
+			for (int py = 0; py < Cell; py++)
+			{
+				int dstRow = ((cy * Cell) + py) * W + (cx * Cell);
+				int srcRow = py * Cell;
+				for (int px = 0; px < Cell; px++)
+					groundBuf[dstRow + px] = cellBuf[srcRow + px] | 0xff000000u;
+			}
+		}
+	}
+
+	var rndScene = new IsoView.Scene
+	{
+		Terrain = (x, y) => InBoundsY(y) ? terr[WrapX(x), y] : Arctic,
+		Explored = (_, _) => true,
+		Improvements = (x, y) => InBoundsY(y) ? imp[WrapX(x), y] : 0,
+		Feature = (x, y) => !InBoundsY(y) ? 0 : (res[WrapX(x), y] ? 1 : 0) | (hut[WrapX(x), y] ? 2 : 0),
+		ShieldBonus = (x, y) => InBoundsY(y) && terr[WrapX(x), y] == Grassland && (((7 * WrapX(x)) + (11 * y)) & 0x2) == 0,
+		Walls = (x, y) => InBoundsY(y) && walledSet.Contains((WrapX(x), y)),
+		CityLook = (x, y) => InBoundsY(y) && cityLookMap.TryGetValue((WrapX(x), y), out var lk) ? lk : ("", 0),
+		UnitMarks = (x, y) => InBoundsY(y) ? unitMarks.GetValueOrDefault((WrapX(x), y)) : 0,
+		UnitStyle = (x, y) => InBoundsY(y) ? unitStyles.GetValueOrDefault((WrapX(x), y), "") : "",
+		ShoreDistance = (x, y, dx, dy) => paintedMap.ShoreDistance(WrapX(x), Math.Clamp(y, 0, MH - 1), dx, dy),
+		WaterKindAt = (mx, my) => paintedMap.WaterKindAt(mx, my),
+	};
+	foreach (var c in cityData)
+		rndScene.Cities.Add((c.X, c.Y, c.Name, c.Size, civCols[c.Civ]));
+	foreach (var u in unitsList)
+		rndScene.Units.Add(u);
+
+	TopView worldTop = TopView.Load(rndTheme, W, H, Cell, Environment.GetEnvironmentVariable("TOPVIEW_FALLBACK"))!;
+	worldTop.Render(40f, 25f, rndScene);
+	uint[] overPx = worldTop.Pixels;
+	uint[] comp = new uint[W * H];
+	for (int i = 0; i < comp.Length; i++)
+	{
+		uint under = groundBuf[i], o = overPx[i], a = o >> 24;
+		if (a == 0)
+			comp[i] = under;
+		else if (a == 255)
+			comp[i] = o;
+		else
+		{
+			uint inv = 255u - a;
+			uint rr = Math.Min(255u, ((o >> 16) & 0xff) + (((((under >> 16) & 0xff) * inv) + 127) / 255));
+			uint gg = Math.Min(255u, ((o >> 8) & 0xff) + (((((under >> 8) & 0xff) * inv) + 127) / 255));
+			uint bb = Math.Min(255u, (o & 0xff) + ((((under & 0xff) * inv) + 127) / 255));
+			comp[i] = 0xff000000u | (rr << 16) | (gg << 8) | bb;
+		}
+	}
+
+	GBitmap.ApplySmoke(comp, W, H, worldTop.SmokeSources, 0.28f);
+
+	Directory.CreateDirectory(rndOutDir);
+	string fullPng = Path.Combine(rndOutDir, "world_full.png");
+	using (var outBmp = new SKBitmap(W, H, SKColorType.Bgra8888, SKAlphaType.Opaque))
+	{
+		Marshal.Copy(Array.ConvertAll(comp, v => unchecked((int)v)), 0, outBmp.GetPixels(), comp.Length);
+		using var fs = File.Create(fullPng);
+		outBmp.Encode(fs, SKEncodedImageFormat.Png, 100);
+	}
+
+	var metaObj = new
+	{
+		seed,
+		width = MW,
+		height = MH,
+		cellSize = Cell,
+		terrainCounts,
+		cities = cityData.Select(c => new { x = c.X, y = c.Y, name = c.Name, size = c.Size, civ = c.Civ, style = c.Style, age = c.Age, walled = c.Walled }).ToArray(),
+		mines = mineList.Select(m => new { x = m.X, y = m.Y, terrain = m.Terrain, special = m.Special }).ToArray(),
+		fortresses = forts.Select(f => new { x = f.X, y = f.Y }).ToArray(),
+		pollutions = pollutions.Select(p => new { x = p.X, y = p.Y }).ToArray(),
+		hutsCount,
+		unitsCount = unitsList.Count,
+	};
+	string metaJson = System.Text.Json.JsonSerializer.Serialize(metaObj, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+	File.WriteAllText(Path.Combine(rndOutDir, "world_meta.json"), metaJson);
+	Console.WriteLine($"TOPVIEW_RANDOM_WORLD wrote {fullPng} ({W}x{H}), cities={cityData.Count}, mines={mineList.Count}, forts={forts.Count}, pollutions={pollutions.Count}, huts={hutsCount}, units={unitsList.Count}");
 }
 
 int Brightness(uint c) => (int)(((c >> 16) & 0xff) + ((c >> 8) & 0xff) + (c & 0xff)) / 3;
