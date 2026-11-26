@@ -119,11 +119,6 @@ namespace OpenCivOne.Graphics
 
 		public const int SpecialResource = 1, MinorTribeHut = 2, City = 4, RoadCorridor = 8;
 
-		/// <summary>
-		/// A mine or a fortress on the cell: the scenery leaves room for it
-		/// </summary>
-		public const int MineSite = 256, FortressSite = 512;
-
 		// a city's size step (0 for a hamlet up to 5 for a great capital) in the feature bits above City: its clearing
 		// grows with it
 		public const int CityStepShift = 4, CityStepMask = 7 << CityStepShift;
@@ -257,7 +252,7 @@ namespace OpenCivOne.Graphics
 				}
 			}
 
-			foreach (string set in new[] { "trees", "jungle", "hills", "mountains", "mountains_gold", "hills_coal", "jungle_gems", "peaks" })
+			foreach (string set in new[] { "trees", "jungle", "hills", "mountains", "mountains_gold", "hills_coal", "jungle_gems" })
 			{
 				List<Sprite> list = new List<Sprite>();
 				string setFolder = Path.Combine(folder, set);
@@ -721,7 +716,7 @@ namespace OpenCivOne.Graphics
 					hash = (hash * 31) + this.Terrain(x, y);
 
 					// a city's clearing, special minerals, and road corridors are painted whatever the map's style
-					hash = (hash * 7) + (this.PaintsFeatures ? this.Feature(x, y) : (this.Feature(x, y) & (City | CityStepMask | SpecialResource | RoadCorridor | MineSite | FortressSite)));
+					hash = (hash * 7) + (this.PaintsFeatures ? this.Feature(x, y) : (this.Feature(x, y) & (City | CityStepMask | SpecialResource | RoadCorridor)));
 				}
 			}
 
@@ -1014,14 +1009,12 @@ namespace OpenCivOne.Graphics
 					float ciVal = Smooth(1.10f, 0.72f, reachIn);
 
 					// Larger cities cultivate an irregular garden & orchard fringe that blends softly into surrounding grass
-					// seen from above, a town and its fields fill its own tile and no more, so which tile it stands on is clear
-					float halfOut = this.topDown ? this.cell * 0.5f * 0.96f : this.cell * 0.5f * (0.82f + (0.10f * step));
+					// seen from above, a town's farmland reaches well out into the country round it
+					float halfOut = this.cell * 0.5f * (0.82f + (0.10f * step)) * (this.topDown ? 1.45f : 1f);
 					float exOut = MathF.Abs(x - ccx) / halfOut, eyOut = MathF.Abs(y - ccy) / halfOut;
-					float wobOut = this.topDown ? 0.04f * (this.Noise(x, y, 6 * k, 21) - 0.5f)
-						: (0.30f * (this.Noise(x, y, 11 * k, 21) - 0.5f)) + (0.12f * (this.Noise(x, y, 3.8f * k, 22) - 0.5f));
-					float shape = this.topDown ? 6f : 2.6f;
-					float reachOut = MathF.Pow(MathF.Pow(exOut, shape) + MathF.Pow(eyOut, shape), 1f / shape) + wobOut;
-					float coVal = this.topDown ? Smooth(1.0f, 0.88f, reachOut) : Smooth(1.18f, 0.72f, reachOut);
+					float wobOut = (0.30f * (this.Noise(x, y, 11 * k, 21) - 0.5f)) + (0.12f * (this.Noise(x, y, 3.8f * k, 22) - 0.5f));
+					float reachOut = MathF.Pow(MathF.Pow(exOut, 2.6f) + MathF.Pow(eyOut, 2.6f), 1f / 2.6f) + wobOut;
+					float coVal = Smooth(1.18f, 0.72f, reachOut);
 
 					if (coVal > outerVerge)
 					{
@@ -1557,86 +1550,20 @@ namespace OpenCivOne.Graphics
 						water[i] = 1;
 					}
 
-					// a road or railroad through mountains, hills or woods is cut into them: a lane of earth and scree along it,
-					// its walls (or the canopy's edge) in shadow, so the road runs through the land rather than over it
-					if (land >= 0.5f && this.topDown && this.FeatureAt != null)
+					// the tree line: where a wood meets open land, the trees cast a soft shadow out over the land to the lower right
+					// (the light comes from the top left), so a wood stands up out of the land instead of lying on it
+					if (land >= 0.5f && this.topDown && water[i] == 0)
 					{
-						int rci = (int)MathF.Floor((float)wx / this.cell), rcj = (int)MathF.Floor((float)wy / this.cell);
-						int here = grid.At(rci, rcj);
-						bool woods = here == Forest || here == Jungle, rocky = here == Mountains || here == Hills;
+						float wood = this.WoodAt(grid, qx, qy);
 
-						if ((woods || rocky) && ((this.Feature(rci, rcj) | this.Feature(rci - 1, rcj) | this.Feature(rci + 1, rcj) | this.Feature(rci, rcj - 1) | this.Feature(rci, rcj + 1) |
-							this.Feature(rci - 1, rcj - 1) | this.Feature(rci + 1, rcj + 1) | this.Feature(rci - 1, rcj + 1) | this.Feature(rci + 1, rcj - 1)) & RoadCorridor) != 0)
+						if (wood < 0.98f)
 						{
-							float half = (here == Mountains ? 10f : 8.5f) * k * (0.8f + (0.4f * this.Noise(wx, wy, 9 * k, 77)));
-							float rd = this.RoadDistance(wx, wy, rci, rcj);
-
-							if (rd < half * 1.8f)
-							{
-								// the lane's floor: packed earth and scree in rock, grass and earth under the trees
-								float floor = Smooth(half, half * 0.6f, rd);
-								float fr = woods ? 112 : 128, fg = woods ? 116 : 114, fb = woods ? 64 : 86;
-								float grain = 0.9f + (0.2f * this.Noise(wx, wy, 2.5f * k, 78));
-								// the terrain's own texture still shows through the floor, so the lane is part of the land
-								r[i] += ((fr * grain) - r[i]) * floor * 0.5f;
-								g[i] += ((fg * grain) - g[i]) * floor * 0.5f;
-								b[i] += ((fb * grain) - b[i]) * floor * 0.5f;
-
-								// the walls of the cut, or the canopy's edge: a band of shadow just outside the floor
-								float wall = Smooth(half * 0.75f, half * 1.05f, rd) * Smooth(half * 1.8f, half * 1.15f, rd);
-								float dark = wall * (woods ? 0.5f : 0.45f);
-								r[i] *= 1 - dark;
-								g[i] *= 1 - (dark * 0.9f);
-								b[i] *= 1 - (dark * 0.75f);
-							}
-						}
-					}
-
-					// a mine is cut into a mountain or hill: a levelled terrace round a dark adit, and a fan of pale spoil tipped
-					// down the slope below it; a fortress stands on a levelled earth platform inside a dark ditch
-					if (land >= 0.5f && this.topDown && this.FeatureAt != null)
-					{
-						int sci = (int)MathF.Floor((float)wx / this.cell), scj = (int)MathF.Floor((float)wy / this.cell);
-						int site = this.Feature(sci, scj), siteT = grid.At(sci, scj);
-						float cx0 = sci * this.cell, cy0 = scj * this.cell;
-
-						if ((site & MineSite) != 0 && (siteT == Mountains || siteT == Hills))
-						{
-							float mx = cx0 + (0.57f * this.cell), my = cy0 + (0.56f * this.cell);
-							float dx = wx - mx, dy = wy - my;
-							float wob = (this.Noise(wx, wy, 4 * k, 79) - 0.5f) * 3 * k;
-							// spoil: downhill (to the lower right), widening as it goes
-							float along = ((dx + dy) * 0.707f) + wob, across = MathF.Abs((dx - dy) * 0.707f);
-							float spoil = Smooth(-2 * k, 3 * k, along) * Smooth(28 * k, 18 * k, along) * Smooth(4.5f * k + (along * 0.5f), 1.5f * k + (along * 0.35f), across);
-							float speck = 0.85f + (0.3f * this.Noise(wx, wy, 1.6f * k, 80));
-							r[i] += ((196 * speck) - r[i]) * spoil * 0.92f;
-							g[i] += ((180 * speck) - g[i]) * spoil * 0.92f;
-							b[i] += ((150 * speck) - b[i]) * spoil * 0.92f;
-							// the terrace and the adit's dark mouth
-							float dist = MathF.Sqrt((dx * dx) + (dy * dy)) + wob;
-							float terrace = Smooth(12 * k, 8 * k, dist);
-							r[i] += (156 - r[i]) * terrace * 0.75f;
-							g[i] += (140 - g[i]) * terrace * 0.75f;
-							b[i] += (108 - b[i]) * terrace * 0.75f;
-							float mouth = Smooth(5 * k, 3.4f * k, MathF.Sqrt((dx * dx) + ((dy + (0.6f * k)) * (dy + (0.6f * k)) * 1.6f)));
-							r[i] += (24 - r[i]) * mouth;
-							g[i] += (20 - g[i]) * mouth;
-							b[i] += (18 - b[i]) * mouth;
-						}
-
-						if ((site & FortressSite) != 0)
-						{
-							float fx2 = cx0 + (0.5f * this.cell), fy2 = cy0 + (0.56f * this.cell);
-							float ex = (wx - fx2) / (0.37f * this.cell), ey = (wy - fy2) / (0.26f * this.cell);
-							float e = MathF.Sqrt((ex * ex) + (ey * ey)) + ((this.Noise(wx, wy, 5 * k, 83) - 0.5f) * 0.12f);
-							float platform = Smooth(1.05f, 0.9f, e);
-							r[i] += (132 - r[i]) * platform * 0.75f;
-							g[i] += (118 - g[i]) * platform * 0.75f;
-							b[i] += (86 - b[i]) * platform * 0.75f;
-							float ditch = Smooth(1.05f, 1.15f, e) * Smooth(1.45f, 1.2f, e) * 0.45f;
-							r[i] *= 1 - ditch;
-							g[i] *= 1 - (ditch * 0.9f);
-							b[i] *= 1 - (ditch * 0.8f);
+							float reachS = 7 * k;
+							float behind = Math.Max(this.WoodAt(grid, qx - reachS, qy - reachS), this.WoodAt(grid, qx - (reachS * 0.5f), qy - (reachS * 0.5f)));
+							float shadowW = Math.Max(0, behind - wood) * 0.45f;
+							r[i] *= 1 - shadowW;
+							g[i] *= 1 - (shadowW * 0.9f);
+							b[i] *= 1 - (shadowW * 0.72f);
 						}
 					}
 
@@ -1831,7 +1758,7 @@ namespace OpenCivOne.Graphics
 
 							// seen from above, the fields round a town are a part of the land in their own right
 							if (this.topDown)
-								vergeWeight = 0.85f;
+								vergeWeight = Math.Min(1, vergeWeight * 2.6f);
 							float rawMask = Math.Max(innerApron, outerVerge * vergeWeight);
 							float shoreKeep = (this.beach && water[i] != 2) ? 0.25f + (0.75f * Smooth(0.54f, 0.88f, land)) : 1f;
 							float blend = (water[i] == 2 ? Smooth(0.68f, 0.94f, innerApron) : rawMask) * shoreKeep;
@@ -1884,10 +1811,9 @@ namespace OpenCivOne.Graphics
 								// mountains seen from above are their relief: ridges and valleys lit much more strongly, and
 								// snow on the highest crests
 								float height = this.HeightAt(grid, wx, wy, k);
-								// mountains and hills carry their own painted light and snow: the ground's relief stays off them,
-								// or it smears over their ridges
-								strength *= 1 - (0.9f * Smooth(0.3f, 0.6f, height));
-								float snow = 0;
+								float high = Smooth(0.45f, 0.95f, height);
+								strength *= 1 + (1.3f * high);
+								float snow = Smooth(1.42f, 1.6f, height + ((this.Noise(wx, wy, 9 * k, 36) - 0.5f) * 0.12f)) * 0.85f;
 
 								if (snow > 0)
 								{
@@ -2892,7 +2818,8 @@ namespace OpenCivOne.Graphics
 				{
 					case Forest:
 					case Jungle:
-						// the canopy is the terrain's own painted ground; only a resource's picture stands on it
+						this.PlaceCrowns(placements, random, i, j, terrain, left, top, fx, fy, clear);
+
 						// a resource painted into the terrain's own picture still has its picture, or it would not show
 						if (gemJungle)
 							this.Place(placements, "jungle_gems", random, fx + (pushX * 0.4f), top + (48 * k) + (pushY * 0.4f), Range(random, 42, 48) * k * shore, true, 0, 0, false);
@@ -2905,9 +2832,6 @@ namespace OpenCivOne.Graphics
 						break;
 
 					case Mountains:
-						if (!goldMt && this.HasSpriteSet("peaks"))
-							this.PlacePeaks(placements, random, i, j, left, top, lower * shore);
-
 						if (goldMt)
 							this.Place(placements, "mountains_gold", random, left + (Range(random, 29, 35) * k) + pushX, top + (Range(random, 58, 62) * k) + pushY,
 								Range(random, 62, 68) * k * Math.Max(lower, 0.90f) * shore, true, Range(random, -0.02f, 0.03f), Range(random, -0.04f, 0.03f), false, maxWidth: 78 * k);
@@ -2918,8 +2842,7 @@ namespace OpenCivOne.Graphics
 					{
 						// open land seen from high above: lone trees scattered over it and the odd copse
 						bool grass = terrain == Grassland;
-						// plains stay open: trees there only blur them with grassland
-						int lone = 0;
+						int lone = grass ? 20 + random.Next(14) : 7 + random.Next(7);
 
 						for (int n = 0; n < lone; n++)
 						{
@@ -2929,7 +2852,7 @@ namespace OpenCivOne.Graphics
 								this.PlaceCrown(placements, random, x, y, Range(random, 2.6f, 3.8f) * k, Grassland);
 						}
 
-						if (!grass && random.NextDouble() < 0 && Distance(left + (32 * k), top + (32 * k), fx, fy) >= clear * 1.2f)
+						if (random.NextDouble() < (grass ? 0.35 : 0.15) && Distance(left + (32 * k), top + (32 * k), fx, fy) >= clear * 1.2f)
 						{
 							float copseX = left + (Range(random, 18, 46) * k), copseY = top + (Range(random, 18, 46) * k);
 
@@ -3257,40 +3180,6 @@ namespace OpenCivOne.Graphics
 			}
 		}
 
-		private static float RoadHash(int x, int y, int seed)
-		{
-			uint h = (uint)((x * 374761393) ^ (y * 668265263) ^ (seed * 1442695041));
-			h = (h ^ (h >> 13)) * 1274126177u;
-			return ((h ^ (h >> 16)) & 0xffff) / 65535f;
-		}
-
-		/// <summary>
-		/// Where a road passes through a cell, as an offset in pixels from the cell's centre (cell `c` pixels across): a
-		/// little off centre in open land, so roads meander; at a city's centre. The map window draws roads through these
-		/// points and the painted map cuts their lanes along the same course.
-		/// </summary>
-		public static (float X, float Y) RoadWaypoint(int wx, int y, bool city, bool mountains, float c)
-		{
-			if (city)
-				return (0, 0);
-
-			float u = c / 64f;
-			return ((RoadHash(wx, y, 1) - 0.5f) * 7f * u, ((RoadHash(wx, y, 2) - 0.5f) * 7f * u) + (mountains ? 3.5f * u : 0));
-		}
-
-		/// <summary>
-		/// How far a road between two cells bows sideways at its middle, in pixels; (wx, y) is the cell the road is drawn
-		/// from, the one whose neighbour (nwx, ny) lies east, south-west, south or south-east of it
-		/// </summary>
-		public static float RoadBend(int wx, int y, int nwx, int ny, float c) => (RoadHash((wx * 3) + nwx, (y * 5) + ny, 3) - 0.5f) * 16f * (c / 64f);
-
-		private (float X, float Y) RoadPoint(int x, int y)
-		{
-			int wx = WrapX(x);
-			(float ox, float oy) = RoadWaypoint(wx, y, (this.Feature(x, y) & City) != 0, this.Terrain(x, y) == Mountains, this.cell);
-			return ((x * this.cell) + (this.cell * 0.5f) + ox, (y * this.cell) + (this.cell * 0.5f) + oy);
-		}
-
 		/// <summary>
 		/// Distance in world pixels from point (x, y) to the road/rail segments crossing cell (ci, cj) and its neighbors
 		/// </summary>
@@ -3327,38 +3216,7 @@ namespace OpenCivOne.Graphics
 								continue;
 						}
 
-						if (this.topDown)
-						{
-							// the same bowed course the map window draws the road along, from the cell it is drawn from
-							bool fwd = (dx == 1 && dy == 0) || (dx == -1 && dy == 1) || (dx == 0 && dy == 1) || (dx == 1 && dy == 1);
-							int fx0 = fwd ? rx : nx, fy0 = fwd ? ry : ny, tx0 = fwd ? nx : rx, ty0 = fwd ? ny : ry;
-							(float pax, float pay) = this.RoadPoint(fx0, fy0);
-							(float pbx, float pby) = this.RoadPoint(tx0, ty0);
-							float mx = (pax + pbx) / 2, my = (pay + pby) / 2;
-							float perpX = -(pby - pay), perpY = pbx - pax, plen = MathF.Sqrt((perpX * perpX) + (perpY * perpY));
-
-							if (plen > 1)
-							{
-								float bendBy = RoadBend(WrapX(fx0), fy0, WrapX(tx0), ty0, this.cell);
-								mx += perpX / plen * bendBy;
-								my += perpY / plen * bendBy;
-							}
-
-							float lx = pax, ly = pay;
-							for (int st = 1; st <= 10; st++)
-							{
-								float t = st / 10f, it = 1 - t;
-								float qx = (it * it * pax) + (2 * it * t * mx) + (t * t * pbx), qy = (it * it * pay) + (2 * it * t * my) + (t * t * pby);
-								best = Math.Min(best, SegmentDistance(x, y, lx, ly, qx, qy));
-								lx = qx;
-								ly = qy;
-							}
-						}
-						else
-						{
-							best = Math.Min(best, SegmentDistance(x, y, ax, ay, (nx * this.cell) + half, (ny * this.cell) + half));
-						}
-
+						best = Math.Min(best, SegmentDistance(x, y, ax, ay, (nx * this.cell) + half, (ny * this.cell) + half));
 						linked = true;
 					}
 
@@ -3383,20 +3241,26 @@ namespace OpenCivOne.Graphics
 		{
 			float k = this.cell / 64f;
 			bool forest = terrain == Forest;
-			// a dense canopy of many small crowns, as a forest looks from high above
-			int across = forest ? 10 : 9;
+			// a dense canopy of many small crowns, as a forest looks from high above (as in satellite views)
+			int across = this.topDown ? (forest ? 15 : 13) : (forest ? 10 : 9);
 			float step = 64f / across;
 
-			for (int v = 0; v < across; v++)
+			// seen from above, the crowns fill the wood's painted (wandering) outline: the area round the cell is searched,
+			// and each crown belongs to the cell its warped position falls in, so neighbouring cells share none
+			int from = this.topDown ? -(across / 2) : 0, to = this.topDown ? across + (across / 2) : across;
+
+			for (int v = from; v < to; v++)
 			{
-				for (int u = 0; u < across; u++)
+				for (int u = from; u < to; u++)
 				{
 					float x = left + (((u + 0.5f) * step) + (Range(random, -0.4f, 0.4f) * step)) * k;
 					float y = top + (((v + 0.5f) * step) + (Range(random, -0.4f, 0.4f) * step)) * k;
 
-					// seen from above, a forest's own ground is its canopy: only a few crowns stand out of it
-					if (Distance(x, y, fx, fy) >= clear && !this.topDown)
-						this.PlaceCrown(placements, random, x, y, Range(random, forest ? 3.4f : 3.8f, forest ? 5.2f : 5.8f) * k, terrain);
+					if (this.topDown && this.WarpedCell(x, y) != (WrapX(i), j))
+						continue;
+
+					if (Distance(x, y, fx, fy) >= clear)
+						this.PlaceCrown(placements, random, x, y, (this.topDown ? Range(random, forest ? 2.3f : 2.7f, forest ? 3.4f : 3.9f) : Range(random, forest ? 3.4f : 3.8f, forest ? 5.2f : 5.8f)) * k, terrain);
 				}
 			}
 
@@ -3422,7 +3286,7 @@ namespace OpenCivOne.Graphics
 
 					float x = left + ((dx != 0) ? (dx > 0 ? 64 + depth : -depth) : along) * k;
 					float y = top + ((dy != 0) ? (dy > 0 ? 64 + depth : -depth) : along) * k;
-					this.PlaceCrown(placements, random, x, y, Range(random, 2.2f, 3.2f) * (1 - (into * 0.3f)) * k, terrain);
+					this.PlaceCrown(placements, random, x, y, Range(random, 2.4f, 3.6f) * (1 - (into * 0.3f)) * k, terrain);
 				}
 			}
 		}
@@ -3522,57 +3386,53 @@ namespace OpenCivOne.Graphics
 		}
 
 		/// <summary>
-		/// The peaks of a mountain cell seen from above, painted pictures from the theme's peaks set placed as one system with
-		/// what is built on the cell: they stand clear of a road or railroad through it (which then runs along the valley
-		/// between them), leave the flank where a mine goes in, and stand back round a fortress; and they reach a little
-		/// over the cell's edges, so neighbouring mountain cells join into a range
+		/// How much a point is inside a wood (forest or jungle), 0 to 1, with the cell borders softened a little and wandering
+		/// like the woods' painted edges
 		/// </summary>
-		private void PlacePeaks(List<Placement> placements, Random random, int i, int j, float left, float top, float scale)
+		/// <summary>
+		/// Whether the painted ground under a point is a wood: the cell under the point moved by the same wandering warp the
+		/// ground is painted with, so crowns follow the wood's painted edge instead of the cell's square
+		/// </summary>
+		private (int X, int Y) WarpedCell(float x, float y)
 		{
-			float k = this.cell / 64f;
-			int feature = this.Feature(i, j);
-			bool road = (feature & RoadCorridor) != 0, mine = (feature & MineSite) != 0, fort = (feature & FortressSite) != 0;
-			// spots kept free: the mine's mouth and the fortress, where the map window draws them
-			var keep = new List<(float X, float Y, float R)>();
+			float k = this.cell / 64f, warpAmount = 14 * k * this.coastWarp;
+			float ox = ((this.Noise(x, y, 24 * k, 1) - 0.5f) * 2 * warpAmount) + ((this.Noise(x, y, 8 * k, 2) - 0.5f) * 0.6f * warpAmount);
+			float oy = ((this.Noise(x, y, 24 * k, 3) - 0.5f) * 2 * warpAmount) + ((this.Noise(x, y, 8 * k, 4) - 0.5f) * 0.6f * warpAmount);
+			return (WrapX((int)MathF.Floor((x + ox) / this.cell)), (int)MathF.Floor((y + oy) / this.cell));
+		}
 
-			if (mine)
-				keep.Add((left + (36 * k), top + (36 * k), 15 * k));
+		private bool WoodUnder(float x, float y)
+		{
+			float k = this.cell / 64f, warpAmount = 14 * k * this.coastWarp;
+			float ox = ((this.Noise(x, y, 24 * k, 1) - 0.5f) * 2 * warpAmount) + ((this.Noise(x, y, 8 * k, 2) - 0.5f) * 0.6f * warpAmount);
+			float oy = ((this.Noise(x, y, 24 * k, 3) - 0.5f) * 2 * warpAmount) + ((this.Noise(x, y, 8 * k, 4) - 0.5f) * 0.6f * warpAmount);
+			int t = this.Terrain((int)MathF.Floor((x + ox) / this.cell), (int)MathF.Floor((y + oy) / this.cell));
+			return t == Forest || t == Jungle;
+		}
 
-			if (fort)
-				keep.Add((left + (32 * k), top + (36 * k), 27 * k));
+		private float WoodAt(TerrainGrid grid, float x, float y)
+		{
+			float k = this.cell / 64f, radius = 6 * k;
+			int ci = (int)MathF.Floor(x / this.cell), cj = (int)MathF.Floor(y / this.cell);
+			float sum = 0;
 
-			// candidate summits on a jittered grid across the cell, the biggest first
-			var spots = new List<(float X, float Y)>();
-			for (int v = 0; v < 3; v++)
-				for (int u = 0; u < 3; u++)
-					spots.Add((left + ((10 + (u * 22) + Range(random, -5, 5)) * k), top + ((10 + (v * 22) + Range(random, -5, 5)) * k)));
-
-			spots = spots.OrderBy(sp => Distance(sp.X, sp.Y, left + (32 * k), top + (32 * k)) + Range(random, 0, 10 * k)).ToList();
-			var placed = new List<(float X, float Y, float R)>();
-			bool open = !road && !mine && !fort;
-
-			foreach ((float x, float y) in spots)
+			for (int dj = -1; dj <= 1; dj++)
 			{
-				// one big massif fills an open cell; with something built on it, smaller peaks gather round it
-				// a big peak and smaller ones overlapping it, so the cell's mountains and its neighbours' join into a range
-				float radius = (placed.Count == 0 ? (open ? Range(random, 28, 33) : Range(random, 19, 24)) : Range(random, 16, 22)) * k * scale;
-				float roadRoom = road ? this.RoadDistance(x, y, i, j) : float.MaxValue;
+				float wy = this.Weight(y, cj + dj, radius);
 
-				if (roadRoom < radius * 0.7f)
-					radius = roadRoom / 0.7f;
-
-				if (keep.Any(kp => Distance(x, y, kp.X, kp.Y) < kp.R + (radius * 0.55f)))
+				if (wy <= 0)
 					continue;
 
-				if (radius < 9 * k || placed.Any(pp => Distance(x, y, pp.X, pp.Y) < (pp.R + radius) * 0.4f))
-					continue;
+				for (int di = -1; di <= 1; di++)
+				{
+					int t = grid.At(ci + di, cj + dj);
 
-				this.Place(placements, "peaks", random, x, y + radius, radius * 2, allowFlip: false);
-				placed.Add((x, y, radius));
-
-				if (placed.Count >= (open ? 3 : 4))
-					break;
+					if (t == Forest || t == Jungle)
+						sum += wy * this.Weight(x, ci + di, radius);
+				}
 			}
+
+			return Math.Clamp(sum, 0, 1);
 		}
 
 		private void PlaceCrown(List<Placement> placements, Random random, float x, float y, float radius, int terrain)

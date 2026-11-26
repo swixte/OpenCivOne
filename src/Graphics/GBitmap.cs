@@ -1088,11 +1088,11 @@ namespace OpenCivOne.Graphics
 					// treasure twinkles
 					for (int p = 0; p < PuffsPerSource; p++)
 					{
-						float t = ((phase * (src.Kind == 1 ? 9f : 6f)) + SmokeHash01(src.Seed, p + 30)) % 1f;
+						float t = ((phase * 6f) + SmokeHash01(src.Seed, p + 30)) % 1f;
 						float flash = MathF.Max(0f, 1f - (MathF.Abs(t - 0.5f) * 4.5f));
 						float gx = src.X + ((SmokeHash01(src.Seed, p + 40) - 0.5f) * 0.5f * c);
 						float gy = src.Y + ((SmokeHash01(src.Seed, p + 50) - 0.5f) * 0.36f * c);
-						float gr = (0.2f + (0.12f * SmokeHash01(src.Seed, p + 60))) * c * (src.Kind == 1 ? 1.25f : 1f) * (0.5f + (0.5f * flash));
+						float gr = (0.17f + (0.1f * SmokeHash01(src.Seed, p + 60))) * c * (0.5f + (0.5f * flash));
 						(float cr, float cg, float cb) = src.Kind == 1 ? (255f, 255f, 236f)
 							: (p % 3) switch { 0 => (200f, 240f, 255f), 1 => (255f, 210f, 240f), _ => (230f, 255f, 230f) };
 						puffs[idx++] = new SmokePuff(gx, gy, gr, cr, cg, cb, flash, true);

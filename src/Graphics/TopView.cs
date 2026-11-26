@@ -91,11 +91,6 @@ namespace OpenCivOne.Graphics
 		private GBitmap.SmokeSource[] smokeSources = Array.Empty<GBitmap.SmokeSource>();
 		private readonly List<SKBitmap> roadTrees = new List<SKBitmap>();
 		private readonly List<SKBitmap> roadJungle = new List<SKBitmap>();
-
-		/// <summary>
-		/// The painted map cuts mines on mountains and hills into the slope itself (a top-down painted map)
-		/// </summary>
-		public bool minesInGround = true;
 		private SKBitmap? shield;
 		private readonly Dictionary<(int Type, uint Colour, bool Grey), SKBitmap> coloured = new Dictionary<(int, uint, bool), SKBitmap>();
 
@@ -232,8 +227,8 @@ namespace OpenCivOne.Graphics
 						string res = ResourceNames[i];
 						using SKBitmap toned = !own && res == "fish" ? Graded(toned0, 0.25f, 1.12f, 0.98f, 0.8f) :
 							!own && res is "coal" or "peat" ? Graded(toned0, 0.38f, 1.14f, 1.0f, 0.82f) : toned0.Copy();
-						using SKBitmap sized = Resize(toned, c * (res == "fish" ? (own ? 0.72f : 0.36f) : 0.46f) / Math.Max(toned.Width, toned.Height));
-						view.resources[i] = sized.Copy();
+						using SKBitmap sized = Resize(toned, c * (res == "fish" ? (own ? 0.42f : 0.36f) : 0.46f) / Math.Max(toned.Width, toned.Height));
+						view.resources[i] = (own && res == "fish") ? CrispTown(sized, 0.25f) : sized.Copy();
 					}
 				}
 			}
@@ -613,28 +608,6 @@ namespace OpenCivOne.Graphics
 		/// </summary>
 		private static void PaintShield(SKCanvas canvas, float x, float y, int c)
 		{
-			// seen from above, the bonus of a grassland is its hay: three round stacks in a small mown patch
-			{
-				float uu = c / 64f;
-				using SKPaint mown = new SKPaint { IsAntialias = true, Color = new SKColor(170, 162, 84, 110), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 2.5f * uu) };
-				canvas.DrawOval(new SKRect(x - (9 * uu), y - (7 * uu), x + (9 * uu), y + (7 * uu)), mown);
-				(float dx, float dy)[] stacks = { (-4.2f, -1.8f), (3.6f, -2.6f), (0.2f, 3.4f) };
-				using SKPaint sh = new SKPaint { IsAntialias = true, Color = new SKColor(20, 24, 10, 150), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 0.9f * uu) };
-				using SKPaint hay = new SKPaint { IsAntialias = true, Color = new SKColor(196, 158, 70, 250) };
-				using SKPaint hayDark = new SKPaint { IsAntialias = true, Color = new SKColor(142, 106, 44, 250) };
-				using SKPaint hayLit = new SKPaint { IsAntialias = true, Color = new SKColor(240, 214, 128, 240), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 0.4f * uu) };
-				foreach ((float dx, float dy) in stacks)
-				{
-					float sx = x + (dx * uu), sy = y + (dy * uu), r = 3.1f * uu;
-					canvas.DrawCircle(sx + (1.3f * uu), sy + (1.5f * uu), r, sh);
-					canvas.DrawCircle(sx, sy, r, hayDark);
-					canvas.DrawCircle(sx - (0.4f * uu), sy - (0.4f * uu), r * 0.82f, hay);
-					canvas.DrawCircle(sx - (1.0f * uu), sy - (1.0f * uu), r * 0.38f, hayLit);
-				}
-
-				return;
-			}
-#pragma warning disable CS0162
 			float u = c / 64f, w = 10.2f * u, h = 11.4f * u;
 
 			SKPath Outline(float dx, float dy, float k)
@@ -659,7 +632,6 @@ namespace OpenCivOne.Graphics
 			canvas.DrawPath(rim, rimPaint);
 			canvas.DrawPath(body, bodyPaint);
 			canvas.DrawPath(lit, litPaint);
-#pragma warning restore CS0162
 		}
 
 		private static float Hash01(int x, int y, int seed)
@@ -812,28 +784,15 @@ namespace OpenCivOne.Graphics
 
 							bool isDesert = terrain == DesertTerrain || desertSource;
 
-							// irregular fields: each the ground nearest one of a scatter of points (about 2.4 across a cell),
-							// with hedgerows where two fields meet, as round the painted map's towns
-							const float Freq = 2.4f;
-							float vx = sx * Freq, vy = sy * Freq;
-							int gi0 = (int)MathF.Floor(vx), gj0 = (int)MathF.Floor(vy);
-							float f1 = float.MaxValue, f2 = float.MaxValue;
-							int pu = 0, pv = 0;
-							for (int nj = -1; nj <= 1; nj++)
-							{
-								for (int ni = -1; ni <= 1; ni++)
-								{
-									int ci2 = gi0 + ni, cj2 = gj0 + nj, wci = ((ci2 % 192) + 192) % 192;
-									float seedX = ci2 + 0.12f + (0.76f * Hash01(wci, cj2, 61)), seedY = cj2 + 0.12f + (0.76f * Hash01(wci, cj2, 62));
-									float dd = ((vx - seedX) * (vx - seedX)) + ((vy - seedY) * (vy - seedY));
-									if (dd < f1) { f2 = f1; f1 = dd; pu = ci2; pv = cj2; }
-									else if (dd < f2) { f2 = dd; }
-								}
-							}
+							// Staggered brick-bond crop plots in warped coordinates (~2.15 plots across a cell)
+							const float Freq = 2.15f;
+							float pyScaled = sy * Freq;
+							int pv = (int)MathF.Floor(pyScaled);
+							float pxScaled = (sx * Freq) + ((pv & 1) != 0 ? 0.38f : 0f);
+							int pu = (int)MathF.Floor(pxScaled);
 
-							float distBorder = (MathF.Sqrt(f2) - MathF.Sqrt(f1)) * 0.5f;
-							float angle = Hash01(((pu % 192) + 192) % 192, pv, 63) * MathF.PI;
-							float fu = (vx * MathF.Cos(angle)) + (vy * MathF.Sin(angle)), fv = fu;
+							float fu = pxScaled - pu, fv = pyScaled - pv;
+							float distBorder = MathF.Min(MathF.Min(fu, 1f - fu), MathF.Min(fv, 1f - fv));
 
 							int wpu = ((pu % 172) + 172) % 172;
 							float pick = Hash01(wpu, pv, 51);
@@ -856,9 +815,11 @@ namespace OpenCivOne.Graphics
 							}
 
 							// Brushed directional crop furrows inside each plot
-							float wave = MathF.Sin(fu * 24f);
-							rCol += wave * (isDesert ? 9f : 10f);
-							gCol += wave * (isDesert ? 8f : 9f);
+							bool horiz = Hash01(wpu, pv, 53) < 0.5f;
+							float fCoord = horiz ? fv : fu;
+							float wave = MathF.Sin((fCoord * 28f) + (terrain == HillsTerrain ? MathF.Sin(fu * MathF.PI) * 3.5f : 0f));
+							rCol += wave * (isDesert ? 13f : 16f);
+							gCol += wave * (isDesert ? 11f : 14f);
 							bCol += wave * 6f;
 
 							// Soft hedgerow & earthen lane along plot dividers
@@ -952,11 +913,14 @@ namespace OpenCivOne.Graphics
 				float px = ((x - left) + 0.5f) * c, py = ((y - top) + 0.5f) * c;
 
 				// roads meet a city cleanly at its centre; open-land waypoints meander slightly through mountain passes
-				// the same course as the painted map's lane for the road (PaintedMap.RoadWaypoint)
-				int wxp = Wrap(x);
-				(float ox, float oy) = PaintedMap.RoadWaypoint(wxp, y, (imp & CityFlag) != 0, y >= 0 && y < MapHeight && scene.Terrain(wxp, y) == MountainsTerrain, c);
-				px += ox;
-				py += oy;
+				if ((imp & CityFlag) == 0)
+				{
+					int wx = Wrap(x);
+					px += (Hash01(wx, y, 1) - 0.5f) * 7f * u;
+					py += (Hash01(wx, y, 2) - 0.5f) * 7f * u;
+					if (y >= 0 && y < MapHeight && scene.Terrain(wx, y) == MountainsTerrain)
+						py += 3.5f * u;
+				}
 
 				return (px, py);
 			}
@@ -1045,7 +1009,7 @@ namespace OpenCivOne.Graphics
 
 						if (len > 1)
 						{
-							float bend = PaintedMap.RoadBend(wx, y, nwx, ny, c);
+							float bend = (Hash01(wx * 3 + nwx, y * 5 + ny, 3) - 0.5f) * 16f * u;
 							mx += px / len * bend;
 							my += py / len * bend;
 						}
@@ -1072,8 +1036,8 @@ namespace OpenCivOne.Graphics
 					roadPath.QuadTo(s.Mx, s.My, s.X1, s.Y1);
 				}
 
-				using SKPaint verge = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round, StrokeJoin = SKStrokeJoin.Round, StrokeWidth = 6.0f * u, Color = new SKColor(58, 40, 20, 120), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 1.2f * u) };
-				using SKPaint bed = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round, StrokeJoin = SKStrokeJoin.Round, StrokeWidth = 3.4f * u, Color = new SKColor(176, 146, 98, 225), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 0.6f * u) };
+				using SKPaint verge = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round, StrokeJoin = SKStrokeJoin.Round, StrokeWidth = 7.0f * u, Color = new SKColor(58, 40, 20, 165), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 1.0f * u) };
+				using SKPaint bed = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round, StrokeJoin = SKStrokeJoin.Round, StrokeWidth = 4.0f * u, Color = new SKColor(202, 170, 112, 238), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 0.55f * u) };
 
 				if (roadSegs.Count > 0)
 				{
@@ -1093,7 +1057,7 @@ namespace OpenCivOne.Graphics
 							float qy = (it * it * s.Y0) + (2 * it * t * s.My) + (t * t * s.Y1);
 							float j1 = Hash01((int)qx, (int)qy, 7) - 0.5f, j2 = Hash01((int)qx, (int)qy, 11) - 0.5f;
 							float rDab = (1.6f + (0.9f * Hash01((int)qx, (int)qy, 13))) * u;
-							SKColor dabCol = Mix(new SKColor(160, 126, 78, 150), new SKColor(206, 180, 132, 165), Hash01((int)qx, (int)qy, 17));
+							SKColor dabCol = Mix(new SKColor(186, 148, 86, 185), new SKColor(236, 212, 158, 205), Hash01((int)qx, (int)qy, 17));
 							PaintDab(canvas, qx + (j1 * 1.4f * u), qy + (j2 * 1.4f * u), rDab, dabCol, 0.5f * u);
 						}
 					}
@@ -1118,7 +1082,7 @@ namespace OpenCivOne.Graphics
 					railPath.QuadTo(s.Mx, s.My, s.X1, s.Y1);
 				}
 
-				using SKPaint ballast = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round, StrokeJoin = SKStrokeJoin.Round, StrokeWidth = 4.6f * u, Color = new SKColor(92, 82, 68, 205), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 0.7f * u) };
+				using SKPaint ballast = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round, StrokeJoin = SKStrokeJoin.Round, StrokeWidth = 6.8f * u, Color = new SKColor(108, 96, 78, 195), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 0.7f * u) };
 				using SKPaint tiePaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round, StrokeWidth = 1.25f * u, Color = new SKColor(66, 46, 28, 225) };
 				using SKPaint railDark = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round, StrokeWidth = 1.2f * u, Color = new SKColor(46, 48, 52, 240) };
 				using SKPaint railGlint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round, StrokeWidth = 0.55f * u, Color = new SKColor(204, 206, 200, 165) };
@@ -1399,18 +1363,6 @@ namespace OpenCivOne.Graphics
 					PaintDab(canvas, px, py, rad, col, soft);
 			}
 
-			// on mountains and hills the painted map cuts the mine into the slope (its adit, terrace and spoil); only a
-			// small timber frame over the adit's mouth is drawn here
-			if (isSlope && this.minesInGround)
-			{
-				float ax = cellX + (0.57f * c), ay = cellY + (0.56f * c);
-				using SKPaint timber = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round, StrokeWidth = 1.9f * u, Color = new SKColor(110, 74, 38, 245) };
-				canvas.DrawLine(ax - (5.4f * u), ay - (3.8f * u), ax + (5.4f * u), ay - (3.8f * u), timber);
-				canvas.DrawLine(ax - (4.6f * u), ay - (3.8f * u), ax - (4.6f * u), ay + (2.6f * u), timber);
-				canvas.DrawLine(ax + (4.6f * u), ay - (3.8f * u), ax + (4.6f * u), ay + (2.6f * u), timber);
-				return;
-			}
-
 			SKBitmap? sprite = isSlope ? this.mineSlope : this.mineDesert;
 			if (sprite != null)
 			{
@@ -1617,7 +1569,7 @@ namespace OpenCivOne.Graphics
 				using SKPaint courtShade = new SKPaint { IsAntialias = true, Color = new SKColor(44, 36, 24, 36), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 2.2f * u) };
 				canvas.DrawOval(new SKRect(fcx - (rx * 0.88f), fcy - (ry * 0.85f), fcx + (rx * 0.88f), fcy + (ry * 0.85f)), courtShade);
 
-				using SKPaint outerShade = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 5.2f * u, Color = new SKColor(22, 18, 12, 120), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 1.5f * u) };
+				using SKPaint outerShade = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 5.2f * u, Color = new SKColor(22, 18, 12, 72), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 1.5f * u) };
 				using SKPath ring = new SKPath();
 				ring.MoveTo(vx[0] + (0.8f * u), vy[0] + (1.4f * u));
 				for (int k = 1; k < 8; k++)
@@ -1636,7 +1588,7 @@ namespace OpenCivOne.Graphics
 					face.LineTo(x1, y1 - wh);
 					face.LineTo(x0, y0 - wh);
 					face.Close();
-					fill.Color = litFace ? new SKColor(138, 128, 110, 248) : new SKColor(84, 78, 68, 248);
+					fill.Color = litFace ? new SKColor(156, 138, 104, 248) : new SKColor(102, 88, 66, 248);
 					canvas.DrawPath(face, fill);
 				}
 
@@ -1645,7 +1597,7 @@ namespace OpenCivOne.Graphics
 				stroke.StrokeWidth = 0.8f * u;
 				canvas.DrawLine(x0, y0, x1, y1, stroke);
 
-				stroke.Color = new SKColor(168, 158, 138, 248);
+				stroke.Color = new SKColor(208, 190, 150, 248);
 				stroke.StrokeWidth = wt;
 				canvas.DrawLine(x0, y0 - wh, x1, y1 - wh, stroke);
 
@@ -1659,7 +1611,7 @@ namespace OpenCivOne.Graphics
 				{
 					float mt = m / (float)(merlons + 1);
 					float mxP = x0 + ((x1 - x0) * mt), myP = y0 + ((y1 - y0) * mt) - wh;
-					fill.Color = new SKColor(186, 176, 154, 248);
+					fill.Color = new SKColor(222, 206, 168, 248);
 					canvas.DrawRect(mxP - (1.1f * u), myP - (1.8f * u), 2.2f * u, 1.5f * u, fill);
 					fill.Color = new SKColor(92, 78, 56, 220);
 					canvas.DrawRect(mxP - (1.1f * u), myP - (0.5f * u), 2.2f * u, 0.45f * u, fill);
