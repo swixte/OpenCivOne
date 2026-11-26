@@ -1660,17 +1660,43 @@ namespace OpenCivOne.Graphics
 							if (this.topDown)
 							{
 								// seen from above, a town sits in a patchwork of small fields with earth paths between them
-								float fieldSize = 11 * k;
-								float ux = (wx * 0.94f) + (wy * 0.34f), uy = (wy * 0.94f) - (wx * 0.34f);
-								ux += (this.Noise(wx, wy, 30 * k, 71) - 0.5f) * 6 * k;
-								uy += (this.Noise(wx, wy, 30 * k, 72) - 0.5f) * 6 * k;
-								int pu = (int)MathF.Floor(ux / fieldSize), pv = (int)MathF.Floor(uy / (fieldSize * 0.75f));
-								float su = (ux / fieldSize) - pu, sv = (uy / (fieldSize * 0.75f)) - pv;
+								float fieldSize = 12 * k;
+								float ux = wx + ((this.Noise(wx, wy, 26 * k, 71) - 0.5f) * 5 * k), uy = wy + ((this.Noise(wx, wy, 26 * k, 72) - 0.5f) * 5 * k);
+								int gi0 = (int)MathF.Floor(ux / fieldSize), gj0 = (int)MathF.Floor(uy / fieldSize);
+								float f1 = float.MaxValue, f2 = float.MaxValue;
+								int pu = 0, pv = 0;
+
+								// irregular fields: each is the ground nearest one of a scatter of points; hedges where two meet
+								for (int nj = -1; nj <= 1; nj++)
+								{
+									for (int ni = -1; ni <= 1; ni++)
+									{
+										int ci2 = gi0 + ni, cj2 = gj0 + nj;
+										float seedX = (ci2 + 0.1f + (0.8f * Hash(ci2, cj2, 75))) * fieldSize, seedY = (cj2 + 0.1f + (0.8f * Hash(ci2, cj2, 76))) * fieldSize;
+										float dd = ((ux - seedX) * (ux - seedX)) + ((uy - seedY) * (uy - seedY));
+
+										if (dd < f1)
+										{
+											f2 = f1;
+											f1 = dd;
+											pu = ci2;
+											pv = cj2;
+										}
+										else if (dd < f2)
+										{
+											f2 = dd;
+										}
+									}
+								}
+
+								float border = (MathF.Sqrt(f2) - MathF.Sqrt(f1)) / fieldSize;
 								float pick = Hash(pu, pv, 73);
 								(float pr, float pg, float pb) = pick < 0.25f ? (122f, 130f, 54f) : pick < 0.5f ? (170f, 150f, 70f) : pick < 0.72f ? (92f, 110f, 44f) : pick < 0.88f ? (184f, 160f, 88f) : (140f, 120f, 70f);
-								float furrow = 1 + (0.06f * MathF.Sin(((Hash(pu, pv, 74) > 0.5f ? su : sv) * 14) * MathF.PI));
+								float angle = Hash(pu, pv, 74) * MathF.PI;
+								float along = (ux * MathF.Cos(angle)) + (uy * MathF.Sin(angle));
+								float furrow = 1 + (0.06f * MathF.Sin(along / (1.1f * k)));
 								// hedgerows: dark green lines between the fields
-								float path = Smooth(0.1f, 0.02f, Math.Min(Math.Min(su, 1 - su), Math.Min(sv, 1 - sv)));
+								float path = Smooth(0.1f, 0.03f, border);
 								pr = Lerp(pr * furrow, 58f, path * 0.85f);
 								pg = Lerp(pg * furrow, 70f, path * 0.85f);
 								pb = Lerp(pb * furrow, 38f, path * 0.85f);
