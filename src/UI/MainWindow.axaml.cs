@@ -216,6 +216,18 @@ namespace OpenCivOne.UI
 							lock (OpenCivOneGame.KeyboardAndMouseLock)
 								this.game.Keys.Enqueue(key);
 						}
+						else if (cmd.StartsWith("improve:"))
+						{
+							// improve:X_Y_FLAGS sets a cell's terrain improvements (road 8, railroad 16, mine 4, fortress 32,
+							// irrigation 2), for photographing how they sit on the land
+							string[] xyf = cmd.Substring(8).Split('_');
+							if (xyf.Length == 3 && int.TryParse(xyf[0], out int ix) && int.TryParse(xyf[1], out int iy) && int.TryParse(xyf[2], out int flags))
+							{
+								this.game.MapManagement.F0_2aea_1653_SetTerrainImprovements(ix, iy, (TerrainImprovementFlagsEnum)flags);
+								int human = this.game.GameData.HumanPlayerID;
+								this.game.MapManagement.F0_2aea_0008_DrawVisibleMap(human, this.game.Var_d4cc_MapViewX, this.game.Var_d75e_MapViewY);
+							}
+						}
 						else if (cmd.StartsWith("view:"))
 						{
 							// view:X_Y moves the map window so its top left cell is (X, Y), for photographing the whole world

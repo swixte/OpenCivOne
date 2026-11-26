@@ -1555,6 +1555,41 @@ namespace OpenCivOne.Graphics
 						water[i] = 1;
 					}
 
+					// a road or railroad through mountains, hills or woods is cut into them: a lane of earth and scree along it,
+					// its walls (or the canopy's edge) in shadow, so the road runs through the land rather than over it
+					if (land >= 0.5f && this.topDown && this.FeatureAt != null)
+					{
+						int rci = (int)MathF.Floor((float)wx / this.cell), rcj = (int)MathF.Floor((float)wy / this.cell);
+						int here = grid.At(rci, rcj);
+						bool woods = here == Forest || here == Jungle, rocky = here == Mountains || here == Hills;
+
+						if ((woods || rocky) && ((this.Feature(rci, rcj) | this.Feature(rci - 1, rcj) | this.Feature(rci + 1, rcj) | this.Feature(rci, rcj - 1) | this.Feature(rci, rcj + 1) |
+							this.Feature(rci - 1, rcj - 1) | this.Feature(rci + 1, rcj + 1) | this.Feature(rci - 1, rcj + 1) | this.Feature(rci + 1, rcj - 1)) & RoadCorridor) != 0)
+						{
+							float half = (here == Mountains ? 10f : 8.5f) * k * (0.8f + (0.4f * this.Noise(wx, wy, 9 * k, 77)));
+							float rd = this.RoadDistance(wx, wy, rci, rcj);
+
+							if (rd < half * 1.8f)
+							{
+								// the lane's floor: packed earth and scree in rock, grass and earth under the trees
+								float floor = Smooth(half, half * 0.6f, rd);
+								float fr = woods ? 112 : 128, fg = woods ? 116 : 114, fb = woods ? 64 : 86;
+								float grain = 0.9f + (0.2f * this.Noise(wx, wy, 2.5f * k, 78));
+								// the terrain's own texture still shows through the floor, so the lane is part of the land
+								r[i] += ((fr * grain) - r[i]) * floor * 0.5f;
+								g[i] += ((fg * grain) - g[i]) * floor * 0.5f;
+								b[i] += ((fb * grain) - b[i]) * floor * 0.5f;
+
+								// the walls of the cut, or the canopy's edge: a band of shadow just outside the floor
+								float wall = Smooth(half * 0.75f, half * 1.05f, rd) * Smooth(half * 1.8f, half * 1.15f, rd);
+								float dark = wall * (woods ? 0.5f : 0.45f);
+								r[i] *= 1 - dark;
+								g[i] *= 1 - (dark * 0.9f);
+								b[i] *= 1 - (dark * 0.75f);
+							}
+						}
+					}
+
 					// rivers wind through river cells and on into the sea
 					if (land >= 0.5f)
 					{
@@ -3172,6 +3207,40 @@ namespace OpenCivOne.Graphics
 			}
 		}
 
+		private static float RoadHash(int x, int y, int seed)
+		{
+			uint h = (uint)((x * 374761393) ^ (y * 668265263) ^ (seed * 1442695041));
+			h = (h ^ (h >> 13)) * 1274126177u;
+			return ((h ^ (h >> 16)) & 0xffff) / 65535f;
+		}
+
+		/// <summary>
+		/// Where a road passes through a cell, as an offset in pixels from the cell's centre (cell `c` pixels across): a
+		/// little off centre in open land, so roads meander; at a city's centre. The map window draws roads through these
+		/// points and the painted map cuts their lanes along the same course.
+		/// </summary>
+		public static (float X, float Y) RoadWaypoint(int wx, int y, bool city, bool mountains, float c)
+		{
+			if (city)
+				return (0, 0);
+
+			float u = c / 64f;
+			return ((RoadHash(wx, y, 1) - 0.5f) * 7f * u, ((RoadHash(wx, y, 2) - 0.5f) * 7f * u) + (mountains ? 3.5f * u : 0));
+		}
+
+		/// <summary>
+		/// How far a road between two cells bows sideways at its middle, in pixels; (wx, y) is the cell the road is drawn
+		/// from, the one whose neighbour (nwx, ny) lies east, south-west, south or south-east of it
+		/// </summary>
+		public static float RoadBend(int wx, int y, int nwx, int ny, float c) => (RoadHash((wx * 3) + nwx, (y * 5) + ny, 3) - 0.5f) * 16f * (c / 64f);
+
+		private (float X, float Y) RoadPoint(int x, int y)
+		{
+			int wx = WrapX(x);
+			(float ox, float oy) = RoadWaypoint(wx, y, (this.Feature(x, y) & City) != 0, this.Terrain(x, y) == Mountains, this.cell);
+			return ((x * this.cell) + (this.cell * 0.5f) + ox, (y * this.cell) + (this.cell * 0.5f) + oy);
+		}
+
 		/// <summary>
 		/// Distance in world pixels from point (x, y) to the road/rail segments crossing cell (ci, cj) and its neighbors
 		/// </summary>
@@ -3208,7 +3277,38 @@ namespace OpenCivOne.Graphics
 								continue;
 						}
 
-						best = Math.Min(best, SegmentDistance(x, y, ax, ay, (nx * this.cell) + half, (ny * this.cell) + half));
+						if (this.topDown)
+						{
+							// the same bowed course the map window draws the road along, from the cell it is drawn from
+							bool fwd = (dx == 1 && dy == 0) || (dx == -1 && dy == 1) || (dx == 0 && dy == 1) || (dx == 1 && dy == 1);
+							int fx0 = fwd ? rx : nx, fy0 = fwd ? ry : ny, tx0 = fwd ? nx : rx, ty0 = fwd ? ny : ry;
+							(float pax, float pay) = this.RoadPoint(fx0, fy0);
+							(float pbx, float pby) = this.RoadPoint(tx0, ty0);
+							float mx = (pax + pbx) / 2, my = (pay + pby) / 2;
+							float perpX = -(pby - pay), perpY = pbx - pax, plen = MathF.Sqrt((perpX * perpX) + (perpY * perpY));
+
+							if (plen > 1)
+							{
+								float bendBy = RoadBend(WrapX(fx0), fy0, WrapX(tx0), ty0, this.cell);
+								mx += perpX / plen * bendBy;
+								my += perpY / plen * bendBy;
+							}
+
+							float lx = pax, ly = pay;
+							for (int st = 1; st <= 10; st++)
+							{
+								float t = st / 10f, it = 1 - t;
+								float qx = (it * it * pax) + (2 * it * t * mx) + (t * t * pbx), qy = (it * it * pay) + (2 * it * t * my) + (t * t * pby);
+								best = Math.Min(best, SegmentDistance(x, y, lx, ly, qx, qy));
+								lx = qx;
+								ly = qy;
+							}
+						}
+						else
+						{
+							best = Math.Min(best, SegmentDistance(x, y, ax, ay, (nx * this.cell) + half, (ny * this.cell) + half));
+						}
+
 						linked = true;
 					}
 

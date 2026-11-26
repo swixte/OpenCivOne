@@ -913,14 +913,11 @@ namespace OpenCivOne.Graphics
 				float px = ((x - left) + 0.5f) * c, py = ((y - top) + 0.5f) * c;
 
 				// roads meet a city cleanly at its centre; open-land waypoints meander slightly through mountain passes
-				if ((imp & CityFlag) == 0)
-				{
-					int wx = Wrap(x);
-					px += (Hash01(wx, y, 1) - 0.5f) * 7f * u;
-					py += (Hash01(wx, y, 2) - 0.5f) * 7f * u;
-					if (y >= 0 && y < MapHeight && scene.Terrain(wx, y) == MountainsTerrain)
-						py += 3.5f * u;
-				}
+				// the same course as the painted map's lane for the road (PaintedMap.RoadWaypoint)
+				int wxp = Wrap(x);
+				(float ox, float oy) = PaintedMap.RoadWaypoint(wxp, y, (imp & CityFlag) != 0, y >= 0 && y < MapHeight && scene.Terrain(wxp, y) == MountainsTerrain, c);
+				px += ox;
+				py += oy;
 
 				return (px, py);
 			}
@@ -1009,7 +1006,7 @@ namespace OpenCivOne.Graphics
 
 						if (len > 1)
 						{
-							float bend = (Hash01(wx * 3 + nwx, y * 5 + ny, 3) - 0.5f) * 16f * u;
+							float bend = PaintedMap.RoadBend(wx, y, nwx, ny, c);
 							mx += px / len * bend;
 							my += py / len * bend;
 						}
@@ -1036,8 +1033,8 @@ namespace OpenCivOne.Graphics
 					roadPath.QuadTo(s.Mx, s.My, s.X1, s.Y1);
 				}
 
-				using SKPaint verge = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round, StrokeJoin = SKStrokeJoin.Round, StrokeWidth = 7.0f * u, Color = new SKColor(58, 40, 20, 165), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 1.0f * u) };
-				using SKPaint bed = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round, StrokeJoin = SKStrokeJoin.Round, StrokeWidth = 4.0f * u, Color = new SKColor(202, 170, 112, 238), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 0.55f * u) };
+				using SKPaint verge = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round, StrokeJoin = SKStrokeJoin.Round, StrokeWidth = 6.0f * u, Color = new SKColor(58, 40, 20, 120), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 1.2f * u) };
+				using SKPaint bed = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round, StrokeJoin = SKStrokeJoin.Round, StrokeWidth = 3.4f * u, Color = new SKColor(176, 146, 98, 225), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 0.6f * u) };
 
 				if (roadSegs.Count > 0)
 				{
@@ -1057,7 +1054,7 @@ namespace OpenCivOne.Graphics
 							float qy = (it * it * s.Y0) + (2 * it * t * s.My) + (t * t * s.Y1);
 							float j1 = Hash01((int)qx, (int)qy, 7) - 0.5f, j2 = Hash01((int)qx, (int)qy, 11) - 0.5f;
 							float rDab = (1.6f + (0.9f * Hash01((int)qx, (int)qy, 13))) * u;
-							SKColor dabCol = Mix(new SKColor(186, 148, 86, 185), new SKColor(236, 212, 158, 205), Hash01((int)qx, (int)qy, 17));
+							SKColor dabCol = Mix(new SKColor(160, 126, 78, 150), new SKColor(206, 180, 132, 165), Hash01((int)qx, (int)qy, 17));
 							PaintDab(canvas, qx + (j1 * 1.4f * u), qy + (j2 * 1.4f * u), rDab, dabCol, 0.5f * u);
 						}
 					}
