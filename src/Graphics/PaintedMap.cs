@@ -1685,7 +1685,9 @@ namespace OpenCivOne.Graphics
 				}
 			});
 
-			this.PaintScenery(cx, cy, r, g, b, water, size, this.layout ? grid : null);
+			// which pixels the scenery covers with a picture: the relief, snow and regional colour are for the bare ground
+			byte[] covered = new byte[size * size];
+			this.PaintScenery(cx, cy, r, g, b, water, size, this.layout ? grid : null, null, covered);
 
 			// light: drifting cloud shadows and a slight warm grade on the highlights
 			uint[] pixels = new uint[size * size];
@@ -1699,7 +1701,10 @@ namespace OpenCivOne.Graphics
 					float cloud = Math.Clamp(((this.Noise(wx, wy, 160 * k, 7) * 0.7f) + (this.Noise(wx, wy, 60 * k, 8) * 0.3f) - 0.45f) * 2.2f, 0, 1);
 					float shade = 1 - (cloud * 0.35f * this.clouds);
 
-					if (water[i] == 0 && (this.relief > 0 || this.variety > 0))
+					// how much bare ground shows: pictures (a gold mountain, a gem glade, a resource) keep their own colours
+					float bare = 1 - (covered[i] / 255f);
+
+					if (water[i] == 0 && bare > 0 && (this.relief > 0 || this.variety > 0))
 					{
 						if (this.relief > 0)
 						{
@@ -1723,20 +1728,20 @@ namespace OpenCivOne.Graphics
 
 								if (snow > 0)
 								{
-									r[i] += (236 - r[i]) * snow;
-									g[i] += (238 - g[i]) * snow;
-									b[i] += (240 - b[i]) * snow;
+									r[i] += (236 - r[i]) * snow * bare;
+									g[i] += (238 - g[i]) * snow * bare;
+									b[i] += (240 - b[i]) * snow * bare;
 								}
 							}
 
 							// soft, not clipped: steep slopes approach their darkest and brightest gradually
-							shade *= 1 + (strength * 0.38f * MathF.Tanh((lit - 0.53f) * 2.9f));
+							shade *= 1 + (bare * strength * 0.38f * MathF.Tanh((lit - 0.53f) * 2.9f));
 						}
 
 						if (this.variety > 0)
 						{
 							// regions drift between lush and dry
-							float moist = ((this.Noise(wx, wy, 520 * k, 41) * 0.7f) + (this.Noise(wx, wy, 190 * k, 42) * 0.3f) - 0.5f) * 2 * this.variety;
+							float moist = ((this.Noise(wx, wy, 520 * k, 41) * 0.7f) + (this.Noise(wx, wy, 190 * k, 42) * 0.3f) - 0.5f) * 2 * this.variety * bare;
 							r[i] *= 1 - (0.09f * moist);
 							g[i] *= 1 + (0.02f * moist);
 							b[i] *= 1 - (0.05f * moist);
@@ -2581,7 +2586,7 @@ namespace OpenCivOne.Graphics
 		/// mountains into the ground, and builds forest and jungle from tree crowns packed edge to edge, wherever its
 		/// rounded terrain is forest or jungle, so the crowns make the scalloped edge of the wood.
 		/// </summary>
-		private void PaintScenery(int cx, int cy, float[] r, float[] g, float[] b, byte[] water, int size, TerrainGrid? grid = null, RiverCourses? rivers = null)
+		private void PaintScenery(int cx, int cy, float[] r, float[] g, float[] b, byte[] water, int size, TerrainGrid? grid = null, RiverCourses? rivers = null, byte[]? covered = null)
 		{
 			List<Placement> placements = new List<Placement>();
 			float k = this.cell / 64f;
@@ -2674,7 +2679,7 @@ namespace OpenCivOne.Graphics
 			}
 
 			foreach (Placement p in placements)
-				DrawSprite(p, r, g, b, water, size, x0, y0, (grid == null || !this.print) ? null : (x, y) => this.PrintTerrain(grid, x, y) == Water);
+				DrawSprite(p, r, g, b, water, size, x0, y0, (grid == null || !this.print) ? null : (x, y) => this.PrintTerrain(grid, x, y) == Water, covered);
 		}
 
 		/// <summary>
@@ -3325,7 +3330,7 @@ namespace OpenCivOne.Graphics
 		/// <param name="waterAt">In a print, whether a print's terrain is water at a point: a column of the sprite whose foot
 		/// stands in water is not drawn over water, so the sprite may rise against water behind it but not hang over water
 		/// beside or in front of it</param>
-		private static void DrawSprite(Placement p, float[] r, float[] g, float[] b, byte[] water, int size, int x0, int y0, Func<float, float, bool>? waterAt = null)
+		private static void DrawSprite(Placement p, float[] r, float[] g, float[] b, byte[] water, int size, int x0, int y0, Func<float, float, bool>? waterAt = null, byte[]? covered = null)
 		{
 			Sprite s = p.Sprite;
 			float top = p.Base - p.Height;
@@ -3393,6 +3398,10 @@ namespace OpenCivOne.Graphics
 					r[i] = sr + (r[i] * (1 - sa));
 					g[i] = sg + (g[i] * (1 - sa));
 					b[i] = sb + (b[i] * (1 - sa));
+
+					// how much of the pixel is a picture now, which the light on the ground then leaves alone
+					if (covered != null)
+						covered[i] = (byte)Math.Max(covered[i], Math.Clamp(sa * 255, 0, 255));
 
 					// water under a tree or peak stays still
 					if (sa > 0.35f)
