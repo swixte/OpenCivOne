@@ -1696,10 +1696,10 @@ namespace OpenCivOne.Graphics
 								float along = (ux * MathF.Cos(angle)) + (uy * MathF.Sin(angle));
 								float furrow = 1 + (0.06f * MathF.Sin(along / (1.1f * k)));
 								// hedgerows: dark green lines between the fields
-								float path = Smooth(0.1f, 0.03f, border);
-								pr = Lerp(pr * furrow, 58f, path * 0.85f);
-								pg = Lerp(pg * furrow, 70f, path * 0.85f);
-								pb = Lerp(pb * furrow, 38f, path * 0.85f);
+								float path = Smooth(0.06f, 0.015f, border);
+								pr = Lerp(pr * furrow, 62f, path * 0.7f);
+								pg = Lerp(pg * furrow, 74f, path * 0.7f);
+								pb = Lerp(pb * furrow, 42f, path * 0.7f);
 								fr = pr;
 								fg = pg;
 								fb = pb;
@@ -3324,7 +3324,7 @@ namespace OpenCivOne.Graphics
 						// a palm from above: a star of fronds from its crown, each frond's spine lit
 						float ang = MathF.Atan2(uy, ux);
 						frond = MathF.Abs(MathF.Cos((ang * 3.5f) + (p.Warmth * 3)));
-						edge = 0.3f + (0.85f * frond * frond) + (clumps * 0.12f);
+						edge = 0.45f + (0.65f * frond) + (clumps * 0.12f);
 					}
 
 					if (d >= edge)
@@ -3340,7 +3340,7 @@ namespace OpenCivOne.Graphics
 					float tone = (0.62f + (0.72f * lit)) * leafy * (1 + p.Shade) * (1 + (0.45f * lone));
 
 					if (palm)
-						tone *= (0.72f + (0.5f * frond * frond)) * (0.75f + (0.25f * Smooth(0.05f, 0.3f, d)));
+						tone *= (0.62f + (0.3f * frond)) * (0.75f + (0.25f * Smooth(0.05f, 0.3f, d)));
 					int ti = this.TextureIndex(leaves, (int)wx, (int)wy);
 					float lr = leaves.R[ti] * tone * (1 + (0.06f * p.Warmth)), lg = leaves.G[ti] * tone, lb = leaves.B[ti] * tone * (1 - (0.05f * p.Warmth));
 					r[i] += (lr - r[i]) * cover;
