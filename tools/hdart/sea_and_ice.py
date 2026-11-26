@@ -27,28 +27,32 @@ def fish(rng, size=160):
         r = rng.uniform(0.15, 0.38) * big
         x, y = big / 2 + math.cos(a) * r, big / 2 + math.sin(a) * r
         w = rng.uniform(10, 26)
-        d.arc([x - w, y - w * 0.4, x + w, y + w * 0.4], 200, 340, fill=(200, 236, 236, 90), width=3)
+        d.arc([x - w, y - w * 0.4, x + w, y + w * 0.4], 200, 340, fill=(214, 244, 244, 170), width=5)
     heading = rng.uniform(0, 2 * math.pi)
-    for _ in range(9):
+    for _ in range(7):
         a = rng.uniform(0, 2 * math.pi)
-        r = math.sqrt(rng.uniform(0, 1)) * big * 0.3
+        r = math.sqrt(rng.uniform(0, 1)) * big * 0.26
         x, y = big / 2 + math.cos(a) * r, big / 2 + math.sin(a) * r
         h = heading + rng.normal(0, 0.35)
-        L, Wd = rng.uniform(34, 48), rng.uniform(10, 14)
+        L, Wd = rng.uniform(70, 92), rng.uniform(20, 26)
         ca, sa = math.cos(h), math.sin(h)
         def P(u, v):
             return (x + ca * u - sa * v, y + sa * u + ca * v)
         body = [P(L * 0.55, 0), P(L * 0.2, Wd * 0.5), P(-L * 0.3, Wd * 0.32), P(-L * 0.45, 0), P(-L * 0.3, -Wd * 0.32), P(L * 0.2, -Wd * 0.5)]
         tail = [P(-L * 0.42, 0), P(-L * 0.7, Wd * 0.45), P(-L * 0.62, 0), P(-L * 0.7, -Wd * 0.45)]
         sd.polygon([(px + 8, py + 10) for px, py in body + tail], fill=120)
-        d.polygon(body, fill=(34, 62, 72, 235))
-        d.polygon(tail, fill=(34, 62, 72, 235))
+        d.polygon(body, fill=(150, 196, 204, 250))
+        d.polygon(tail, fill=(120, 170, 182, 250))
         # the back catches the light
-        d.line([P(L * 0.4, -Wd * 0.08), P(-L * 0.25, -Wd * 0.08)], fill=(150, 196, 200, 220), width=4)
+        d.line([P(L * 0.4, -Wd * 0.12), P(-L * 0.25, -Wd * 0.12)], fill=(236, 252, 252, 255), width=7)
+        d.line([P(L * 0.35, Wd * 0.2), P(-L * 0.25, Wd * 0.15)], fill=(60, 96, 110, 220), width=5)
     sh = Image.new('RGBA', (big, big), (8, 30, 40, 0))
     sh.putalpha(shade.filter(ImageFilter.GaussianBlur(5)))
     out = Image.alpha_composite(sh, img)
-    return out.resize((size, size), Image.LANCZOS)
+    # trimmed to the school, so the game sizes the fish and not empty water
+    out = out.crop(out.getchannel('A').point(lambda v: 255 if v > 40 else 0).getbbox())
+    out.thumbnail((size, size), Image.LANCZOS)
+    return out
 
 
 def ice(rng, n=512):

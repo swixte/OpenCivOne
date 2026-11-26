@@ -13,6 +13,8 @@ from PIL import Image
 PALETTES = {
     # shadow, mid, highlight (sampled from satellite views of temperate forest)
     'forest': ((22, 50, 54), (54, 104, 88), (122, 170, 130)),
+    # a natural dark green, for maps where forest must read apart from jungle and grass
+    'temperate': ((18, 36, 22), (44, 78, 40), (104, 140, 70)),
     'jungle': ((20, 52, 30), (62, 112, 56), (146, 184, 92)),
 }
 
