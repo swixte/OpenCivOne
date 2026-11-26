@@ -2805,7 +2805,7 @@ namespace OpenCivOne.Graphics
 							float x = left + (Range(random, 2, 62) * k), y = top + (Range(random, 2, 62) * k);
 
 							if (Distance(x, y, fx, fy) >= clear && (rivers == null || rivers.Distance(x, y) > 6 * k))
-								this.PlaceCrown(placements, random, x, y, Range(random, 3.4f, 4.8f) * k, Forest);
+								this.PlaceCrown(placements, random, x, y, Range(random, 2.6f, 3.8f) * k, Forest);
 						}
 
 						if (random.NextDouble() < (grass ? 0.35 : 0.15) && Distance(left + (32 * k), top + (32 * k), fx, fy) >= clear * 1.2f)
@@ -3198,7 +3198,7 @@ namespace OpenCivOne.Graphics
 			float k = this.cell / 64f;
 			bool forest = terrain == Forest;
 			// a dense canopy of many small crowns, as a forest looks from high above
-			int across = forest ? 8 : 7;
+			int across = forest ? 10 : 9;
 			float step = 64f / across;
 
 			for (int v = 0; v < across; v++)
@@ -3209,7 +3209,7 @@ namespace OpenCivOne.Graphics
 					float y = top + (((v + 0.5f) * step) + (Range(random, -0.4f, 0.4f) * step)) * k;
 
 					if (Distance(x, y, fx, fy) >= clear)
-						this.PlaceCrown(placements, random, x, y, Range(random, forest ? 4.2f : 4.8f, forest ? 6.5f : 7.2f) * k, terrain);
+						this.PlaceCrown(placements, random, x, y, Range(random, forest ? 3.4f : 3.8f, forest ? 5.2f : 5.8f) * k, terrain);
 				}
 			}
 
@@ -3299,7 +3299,7 @@ namespace OpenCivOne.Graphics
 					float lit = Math.Clamp((((-ux * 0.55f) - (uy * 0.6f)) + (z * 0.58f)) / 1.0f, 0, 1);
 					float leafy = 0.82f + (0.36f * this.Noise(wx, wy, 2.2f * k, 62));
 					// a lone small tree on open land is lit all through and reads lighter than a deep forest
-					float lone = Smooth(5.2f * k, 4.2f * k, radius);
+					float lone = Smooth(4.2f * k, 3.4f * k, radius);
 					float tone = (0.62f + (0.72f * lit)) * leafy * (1 + p.Shade) * (1 + (0.45f * lone));
 					int ti = this.TextureIndex(leaves, (int)wx, (int)wy);
 					float lr = leaves.R[ti] * tone * (1 + (0.06f * p.Warmth)), lg = leaves.G[ti] * tone, lb = leaves.B[ti] * tone * (1 - (0.05f * p.Warmth));

@@ -3,7 +3,8 @@
 Each crown is a small dome of the forest's leaves, lit from the top left, with a soft shadow to the lower right. The
 texture repeats, so crowns wrap around its edges and the result stays seamless.
 
-Usage: python3 sprinkle_trees.py GROUND_DIR NAME COUNT [--leaves forest] [--size 3.2,5.0] [--seed 1] [--out PATH]
+Usage: python3 sprinkle_trees.py GROUND_DIR NAME COUNT [--leaves forest] [--size 3.2,5.0] [--seed 1] [--out PATH] [--tone 1]
+  --tone      the crowns' brightness (below 1 for dark trees that stand out on light meadow)
   GROUND_DIR  a theme's hd/painted/ground folder
   NAME        the texture to sprinkle (grass, plains, ...)
   COUNT       how many crowns over the whole texture (it covers 8x8 cells)
@@ -17,7 +18,7 @@ from PIL import Image
 
 def main():
     args = sys.argv[1:]
-    opts = {'--leaves': 'forest', '--size': '3.2,5.0', '--seed': '1', '--out': None}
+    opts = {'--leaves': 'forest', '--size': '3.2,5.0', '--seed': '1', '--out': None, '--tone': '1'}
     for key in list(opts):
         if key in args:
             i = args.index(key)
@@ -65,7 +66,7 @@ def main():
             cover = np.clip((1.0 + jitter - d) / 0.25, 0, 1)
             z = np.sqrt(np.clip(1 - d ** 2, 0, 1))
             lit = np.clip(-ux * 0.55 - uy * 0.6 + z * 0.58, 0, 1)
-            tone = (0.7 + 0.75 * lit) * (1 + shade)
+            tone = (0.7 + 0.75 * lit) * (1 + shade) * float(opts['--tone'])
             leaf = leaves[yy % lh, xx % lw] * 0.6 + leaf_mean * 0.4
             col = leaf * tone[..., None] * np.array([1.05, 1.08, 0.9], np.float32)
             img[yy, xx] += (col - img[yy, xx]) * cover[..., None]
