@@ -13,7 +13,7 @@ import sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
-ROOFS = [(176, 64, 36), (190, 78, 40), (156, 54, 32), (200, 96, 52), (142, 62, 40), (170, 84, 50), (96, 92, 96)]
+ROOFS = [(178, 78, 46), (192, 94, 54), (160, 68, 42), (198, 112, 66), (148, 74, 50), (174, 98, 62), (104, 98, 98)]
 STONE = (206, 192, 160)
 STREET = (168, 140, 98)
 PLAZA = (226, 214, 186)
@@ -158,6 +158,20 @@ def town(step, walled, size, rng):
     return img
 
 
+def paint(img, rng):
+    """A painted finish: edges softened a touch, a light brush grain and broad variations of light, as gouache has."""
+    a = np.asarray(img, np.float32)
+    rgb, alpha = a[..., :3], a[..., 3:]
+    h, w = rgb.shape[:2]
+    soft = np.asarray(img.filter(ImageFilter.GaussianBlur(1.1)), np.float32)[..., :3]
+    rgb = rgb * 0.65 + soft * 0.35
+    broad = np.asarray(Image.fromarray((rng.random((h // 32, w // 32)) * 255).astype(np.uint8)).resize((w, h), Image.BICUBIC), np.float32) / 255 - 0.5
+    grain = rng.normal(0, 1, (h, w)).astype(np.float32)
+    grain = np.asarray(Image.fromarray(((grain * 40) + 128).clip(0, 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(0.8)), np.float32) / 128 - 1
+    rgb = rgb * (1 + broad[..., None] * 0.12 + grain[..., None] * 0.05)
+    return Image.fromarray(np.concatenate([rgb.clip(0, 255), alpha], -1).astype(np.uint8), 'RGBA')
+
+
 def main():
     args = sys.argv[1:]
     seed, size = 1, 512
@@ -173,7 +187,7 @@ def main():
         for walled in (False, True):
             rng = np.random.default_rng(seed * 100 + step)
             # paint large and scale down, for clean edges
-            img = town(step, walled, size * 2, rng).resize((size, size), Image.LANCZOS)
+            img = paint(town(step, walled, size * 2, rng), rng).resize((size, size), Image.LANCZOS)
             img.save(os.path.join(out, f't{step}_{"w" if walled else "o"}.png'))
     print('towns written to', out)
 
