@@ -216,6 +216,19 @@ namespace OpenCivOne.UI
 							lock (OpenCivOneGame.KeyboardAndMouseLock)
 								this.game.Keys.Enqueue(key);
 						}
+						else if (cmd.StartsWith("view:"))
+						{
+							// view:X_Y moves the map window so its top left cell is (X, Y), for photographing the whole world
+							string[] xy = cmd.Substring(5).Split('_');
+							if (xy.Length == 2 && int.TryParse(xy[0], out int vxs) && int.TryParse(xy[1], out int vys))
+							{
+								int human = this.game.GameData.HumanPlayerID;
+								this.game.Var_d4cc_MapViewX = this.game.MapManagement.AdjustXPosition(vxs);
+								this.game.Var_d75e_MapViewY = Math.Clamp(vys, 0, 38);
+								this.game.MapManagement.F0_2aea_0008_DrawVisibleMap(human, this.game.Var_d4cc_MapViewX, this.game.Var_d75e_MapViewY);
+								this.liveWaitUntil = this.liveClock.ElapsedMilliseconds + 600;
+							}
+						}
 						else if (cmd == "reveal")
 						{
 							int human = this.game.GameData.HumanPlayerID;
