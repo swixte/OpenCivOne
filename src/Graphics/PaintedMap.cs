@@ -2825,7 +2825,8 @@ namespace OpenCivOne.Graphics
 					{
 						// open land seen from high above: lone trees scattered over it and the odd copse
 						bool grass = terrain == Grassland;
-						int lone = grass ? 20 + random.Next(14) : 7 + random.Next(7);
+						// plains stay open: trees there only blur them with grassland
+						int lone = grass ? 8 + random.Next(6) : 0;
 
 						for (int n = 0; n < lone; n++)
 						{
@@ -2835,7 +2836,7 @@ namespace OpenCivOne.Graphics
 								this.PlaceCrown(placements, random, x, y, Range(random, 2.6f, 3.8f) * k, Grassland);
 						}
 
-						if (random.NextDouble() < (grass ? 0.35 : 0.15) && Distance(left + (32 * k), top + (32 * k), fx, fy) >= clear * 1.2f)
+						if (random.NextDouble() < (grass ? 0.25 : 0) && Distance(left + (32 * k), top + (32 * k), fx, fy) >= clear * 1.2f)
 						{
 							float copseX = left + (Range(random, 18, 46) * k), copseY = top + (Range(random, 18, 46) * k);
 
@@ -3236,7 +3237,7 @@ namespace OpenCivOne.Graphics
 					float y = top + (((v + 0.5f) * step) + (Range(random, -0.4f, 0.4f) * step)) * k;
 
 					// seen from above, a forest's own ground is its canopy: only a few crowns stand out of it
-					if (Distance(x, y, fx, fy) >= clear && (!forest || random.NextDouble() < 0.5))
+					if (Distance(x, y, fx, fy) >= clear && !this.topDown)
 						this.PlaceCrown(placements, random, x, y, Range(random, forest ? 3.4f : 3.8f, forest ? 5.2f : 5.8f) * k, terrain);
 				}
 			}
@@ -3263,7 +3264,7 @@ namespace OpenCivOne.Graphics
 
 					float x = left + ((dx != 0) ? (dx > 0 ? 64 + depth : -depth) : along) * k;
 					float y = top + ((dy != 0) ? (dy > 0 ? 64 + depth : -depth) : along) * k;
-					this.PlaceCrown(placements, random, x, y, Range(random, 3.5f, 5.5f) * (1 - (into * 0.3f)) * k, terrain);
+					this.PlaceCrown(placements, random, x, y, Range(random, 2.2f, 3.2f) * (1 - (into * 0.3f)) * k, terrain);
 				}
 			}
 		}

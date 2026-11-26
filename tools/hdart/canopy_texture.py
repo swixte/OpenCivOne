@@ -2,7 +2,8 @@
 merge into one surface, cool blue-green, each crown lit on its upper-left side, with dark shadowy gaps winding between
 clumps of trees. No ground shows through.
 
-Usage: python3 canopy_texture.py OUT.png [--size 512] [--seed 1] [--crown 7] [--palette forest|jungle]
+Usage: python3 canopy_texture.py OUT.png [--size 512] [--seed 1] [--crown 7] [--palette forest|jungle|temperate] [--gaps 1]
+  --gaps   how strong the shadowy gaps and broad variations between stands of trees are (lower for an even canopy)
 """
 
 import sys
@@ -30,7 +31,7 @@ def periodic_noise(rng, n, freq):
 
 def main():
     args = sys.argv[1:]
-    opts = {'--size': '512', '--seed': '1', '--crown': '7', '--palette': 'forest'}
+    opts = {'--size': '512', '--seed': '1', '--crown': '7', '--palette': 'forest', '--gaps': '1'}
     for key in list(opts):
         if key in args:
             i = args.index(key); opts[key] = args[i + 1]; del args[i:i + 2]
@@ -63,6 +64,7 @@ def main():
     # winding gaps: low places between clumps of trees, deep in shadow
     gaps = periodic_noise(rng, n, n / (cr * 9)) + periodic_noise(rng, n, n / (cr * 4)) * 0.5
     gap = np.clip((gaps - 0.6) / 1.1, 0, 1)
+    gap *= float(opts['--gaps'])
     height = height * (1 - 0.5 * gap)
 
     # lit from the top left
@@ -76,7 +78,7 @@ def main():
     t = tone[..., None]
     col = np.where(t < 0.5, dark + (mid - dark) * (t / 0.5), mid + (light - mid) * ((t - 0.5) / 0.5))
     # gentle variation between stands of trees
-    col *= (1 + periodic_noise(rng, n, n / (cr * 14)) * 0.07)[..., None]
+    col *= (1 + periodic_noise(rng, n, n / (cr * 14)) * 0.07 * float(opts['--gaps']))[..., None]
     # the gaps fall into deep blue shadow
     col = col * (1 - 0.45 * gap[..., None])
     Image.fromarray(col.clip(0, 255).astype(np.uint8)).save(args[0])
