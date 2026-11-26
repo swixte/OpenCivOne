@@ -13,8 +13,8 @@ import sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
-ROOFS = [(178, 78, 46), (192, 94, 54), (160, 68, 42), (198, 112, 66), (148, 74, 50), (174, 98, 62), (104, 98, 98)]
-STONE = (206, 192, 160)
+ROOFS = [(156, 94, 64), (168, 106, 72), (140, 84, 58), (176, 118, 80), (130, 86, 64), (150, 102, 74), (112, 102, 92)]
+STONE = (150, 142, 128)
 STREET = (168, 140, 98)
 PLAZA = (226, 214, 186)
 
@@ -59,20 +59,20 @@ def town(step, walled, size, rng):
     img.alpha_composite(base)
     d = ImageDraw.Draw(img)
 
-    if not walled or step == 0:
-        for _ in range(10 + step * 4):
+    if True:
+        for _ in range(14 + step * 5):
             a = rng.uniform(0, 2 * math.pi)
-            r = radius * rng.uniform(1.0, 1.25)
+            r = radius * rng.uniform(1.04, 1.32)
             fx, fy = cx + math.cos(a) * r, cy + math.sin(a) * r
             w, h = rng.uniform(0.07, 0.13) * s, rng.uniform(0.04, 0.08) * s
-            col = [(150, 150, 70), (176, 160, 80), (120, 136, 64), (186, 168, 96)][rng.integers(4)]
+            col = [(128, 128, 60), (150, 138, 70), (104, 118, 56), (164, 148, 84), (118, 104, 60)][rng.integers(5)]
             d.rectangle([fx - w / 2, fy - h / 2, fx + w / 2, fy + h / 2], fill=col + (235,))
             for k in range(1, 5):  # furrows
                 yy = fy - h / 2 + k * h / 5
                 d.line([fx - w / 2, yy, fx + w / 2, yy], fill=tuple(int(v * 0.85) for v in col) + (200,), width=1)
 
     # the town's own ground: dark trodden earth between the houses, solid so the land under it does not show through
-    d.ellipse([cx - radius * 0.97, cy - radius * 0.97, cx + radius * 0.97, cy + radius * 0.97], fill=(66, 54, 38, 255))
+    d.ellipse([cx - radius * 0.97, cy - radius * 0.97, cx + radius * 0.97, cy + radius * 0.97], fill=(92, 78, 58, 255))
 
     # streets: radial lanes from the square and one ring
     lanes = 0 if step == 0 else 3 + step // 2
@@ -138,22 +138,20 @@ def town(step, walled, size, rng):
         for (ax, ay, bx, by) in ((-pw, -pw * 0.18, pw, pw * 0.18), (-pw * 0.18, -pw, pw * 0.18, pw)):
             d.rectangle([cx + ax, cy + ay, cx + bx, cy + by], outline=(240, 236, 226, 255), width=max(2, int(s * 0.008)))
 
-    # the wall: a ring of pale stone with round towers, a gate on each main lane
+    # the wall: a many-sided ring of grey stone with round towers at its corners
     if walled and step > 0:
-        wall_w = max(3, int(s * (0.016 + 0.003 * step)))
+        wall_w = max(3, int(s * (0.014 + 0.003 * step)))
+        sides = 8 + step
         wr = radius * 1.0
-        d.ellipse([cx - wr + 3, cy - wr + 3, cx + wr + 3, cy + wr + 3], outline=(20, 16, 12, 140), width=wall_w + 2)
-        d.ellipse([cx - wr, cy - wr, cx + wr, cy + wr], outline=STONE + (255,), width=wall_w)
-        d.ellipse([cx - wr + wall_w * 0.5, cy - wr + wall_w * 0.5, cx + wr - wall_w * 0.5, cy + wr - wall_w * 0.5],
-                  outline=tuple(int(v * 0.78) for v in STONE) + (255,), width=max(1, wall_w // 3))
-        towers = 6 + step * 2
-        tr = wall_w * 0.85
-        for k in range(towers):
-            a = k * 2 * math.pi / towers + 0.2
-            tx, ty = cx + math.cos(a) * (wr - wall_w / 2), cy + math.sin(a) * (wr - wall_w / 2)
+        pts = [(cx + math.cos(k * 2 * math.pi / sides + 0.2) * wr, cy + math.sin(k * 2 * math.pi / sides + 0.2) * wr) for k in range(sides)]
+        d.line([(x + 3, y + 3) for x, y in pts + pts[:1]], fill=(20, 16, 12, 140), width=wall_w + 2, joint='curve')
+        d.line(pts + pts[:1], fill=STONE + (255,), width=wall_w, joint='curve')
+        d.line([(cx + (x - cx) * 0.985, cy + (y - cy) * 0.985) for x, y in pts + pts[:1]], fill=tuple(min(255, int(v * 1.2)) for v in STONE) + (255,), width=max(1, wall_w // 3))
+        tr = wall_w * 0.95
+        for tx, ty in pts:
             d.ellipse([tx - tr + 2, ty - tr + 2, tx + tr + 2, ty + tr + 2], fill=(20, 16, 12, 150))
             d.ellipse([tx - tr, ty - tr, tx + tr, ty + tr], fill=STONE + (255,))
-            d.ellipse([tx - tr * 0.75 - tr * 0.2, ty - tr * 0.75 - tr * 0.2, tx + tr * 0.55, ty + tr * 0.55], fill=(232, 222, 196, 255))
+            d.ellipse([tx - tr * 0.9, ty - tr * 0.9, tx + tr * 0.4, ty + tr * 0.4], fill=tuple(min(255, int(v * 1.22)) for v in STONE) + (255,))
 
     return img
 
