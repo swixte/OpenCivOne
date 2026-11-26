@@ -1,0 +1,11 @@
+One full game screen for a Civilization-like strategy game: the CITY SCREEN of a large, troubled city, seen straight on, filling the image edge to edge, in exactly the same layout as the first reference image (the city screen), redrawn as a true woodblock print with bold, even key lines and flat colour. No decorative band along the bottom.
+The city is LONDON of the English, medieval era, size 16, in 1420 AD, in CIVIL DISORDER. English subjects: stone walls, a church spire, timber houses, wool and mail.
+It has the same panels as the reference city screen, now crowded:
+The citizen row at the top holds 16 small figures: 4 happy, 5 content, 5 unhappy with fists raised, 1 tax collector with a purse and 1 scientist with a scroll. A vermilion seal-like banner across the title band reads "CIVIL DISORDER".
+The "City Resources" rows are long: 24 grain bundles; 15 shields with 3 crossed out as waste; 18 coins with 4 crossed out as corruption.
+"Units Supported" shows 6 tokens: pikemen, knights, a catapult, a trireme and two settlers.
+The city map in the centre shows 20 worked squares and 2 squares with pollution, drawn as a grey-brown stain.
+The info panel shows the HAPPY tab pressed. It holds four horizontal rows of tiny citizens, each row labelled with a small stamped icon for its cause (base, luxuries, buildings, martial law), and the faces turn from unhappy to content row by row.
+The improvements list on the right is full, with 10 entries and a small "MORE" button: Palace, Granary, Temple, Barracks, City Walls, Library, Marketplace, Aqueduct, Cathedral, Harbour. The Barracks entry is highlighted with a small "SELL" seal beside it.
+The Food Storage box is nearly empty. The production box shows "Cathedral" with a building picture, a nearly full shield bar and the buttons "CHANGE", "BUY" and "AUTO". The buttons "RENAME" and "EXIT" sit at the bottom.
+Even with this much on it, the screen stays calm and readable: aligned rows, consistent icon sizes, clear grouping.

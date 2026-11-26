@@ -1,0 +1,26 @@
+{
+ "eu_s0_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any city wall, towers or gate around it: the outer houses stand open on the ground with small gardens, fences and lanes leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s0_w.png"
+  ]
+ },
+ "eu_s2_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any city wall, towers or gate around it: the outer houses stand open on the ground with small gardens, fences and lanes leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s2_w.png"
+  ]
+ },
+ "eu_s3_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any city wall, towers or gate around it: the outer houses stand open on the ground with small gardens, fences and lanes leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s3_w.png"
+  ]
+ },
+ "eu_s4_o": {
+  "prompt": "Repaint the reference image exactly, the same settlement seen from the same angle in the same woodblock style and colours, with the same buildings, roofs and streets in the same places, but WITHOUT any city wall, towers or gate around it: the outer houses stand open on the ground with small gardens, fences and lanes leading out. Keep the same overall size and outline. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background, no ground plate, no shadow, no text.",
+  "refs": [
+   "/tmp/claude-0/-home-user/32e0f169-f38c-54dd-ab11-670981957112/scratchpad/gen/towns_eu/eu_s4_w.png"
+  ]
+ }
+}

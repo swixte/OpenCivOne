@@ -1,0 +1,3 @@
+A sheet of CITY WALL pieces drawn exactly like the city wall in the reference painting, isolated with wide magenta gaps:
+row 1: a long LOW straight crenellated mud-brick WALL SEGMENT running diagonally from upper-left to lower-right along the isometric axis, about eight times as long as it is high; the SAME SEGMENT running from upper-right to lower-left;
+row 2: a small square CORNER TOWER only a little taller than the wall; the CITY GATE as in the reference: two tall towers of blue-glazed brick with yellow animal reliefs around an arched opening, in a short stretch of wall running upper-right to lower-left.

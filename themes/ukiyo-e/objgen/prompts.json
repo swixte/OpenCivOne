@@ -1,0 +1,44 @@
+{
+ "fortress_a": {
+  "prompt": "A small square military fortress: thick pale grey stone walls with dark crenellated tops forming a square enclosure, a squat round tower at each corner, a dark wooden gate in the front wall, the inner courtyard empty, and one tall red pennant flag on a pole, seen from a high three-quarter top-down angle, in exactly the art style of the reference images (fine dark ink key lines, muted woodblock colours, light from the top left), centred and filling most of the image, with a bold, readable silhouette and strong light/dark contrast that stays clear when shrunk to a small 30-pixel game map icon. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground plate, no cast shadow, no text, no frame.",
+  "refs": [
+   "ref_hut.png",
+   "ref_knight.png"
+  ]
+ },
+ "mine_a": {
+  "prompt": "A mine dug into a small rocky outcrop: a black tunnel mouth framed by heavy timber posts and a lintel, a wooden headframe with a pulley wheel above it, a little mine cart heaped with ore on a short rail track coming out, and a heap of grey spoil stones beside it, seen from a high three-quarter top-down angle, in exactly the art style of the reference images (fine dark ink key lines, muted woodblock colours, light from the top left), centred and filling most of the image, with a bold, readable silhouette and strong light/dark contrast that stays clear when shrunk to a small 30-pixel game map icon. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground plate, no cast shadow, no text, no frame.",
+  "refs": [
+   "ref_hut.png",
+   "ref_knight.png"
+  ]
+ },
+ "pollution_a": {
+  "prompt": "A patch of polluted, poisoned ground, wider than tall: a pool of black oily sludge with an iridescent sheen, blackened dead grass and two dead charred tree stumps around it, and a low drifting cloud of sickly yellow-brown smog hanging over it, seen from a high three-quarter top-down angle, in exactly the art style of the reference images (fine dark ink key lines, muted woodblock colours, light from the top left), centred and filling most of the image, with a bold, readable silhouette and strong light/dark contrast that stays clear when shrunk to a small 30-pixel game map icon. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground plate, no cast shadow, no text, no frame.",
+  "refs": [
+   "ref_hut.png",
+   "ref_knight.png"
+  ]
+ },
+ "fortress_b": {
+  "prompt": "A small square military fortress: thick pale grey stone walls with dark crenellated tops forming a square enclosure, a squat round tower at each corner, a dark wooden gate in the front wall, the inner courtyard empty, and one tall red pennant flag on a pole, seen from a high three-quarter top-down angle, in exactly the art style of the reference images (fine dark ink key lines, muted woodblock colours, light from the top left), centred and filling most of the image, with a bold, readable silhouette and strong light/dark contrast that stays clear when shrunk to a small 30-pixel game map icon. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground plate, no cast shadow, no text, no frame.",
+  "refs": [
+   "ref_hut.png",
+   "ref_knight.png"
+  ]
+ },
+ "mine_b": {
+  "prompt": "A mine dug into a small rocky outcrop: a black tunnel mouth framed by heavy timber posts and a lintel, a wooden headframe with a pulley wheel above it, a little mine cart heaped with ore on a short rail track coming out, and a heap of grey spoil stones beside it, seen from a high three-quarter top-down angle, in exactly the art style of the reference images (fine dark ink key lines, muted woodblock colours, light from the top left), centred and filling most of the image, with a bold, readable silhouette and strong light/dark contrast that stays clear when shrunk to a small 30-pixel game map icon. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground plate, no cast shadow, no text, no frame.",
+  "refs": [
+   "ref_hut.png",
+   "ref_knight.png"
+  ]
+ },
+ "pollution_b": {
+  "prompt": "A patch of polluted, poisoned ground, wider than tall: a pool of black oily sludge with an iridescent sheen, blackened dead grass and two dead charred tree stumps around it, and a low drifting cloud of sickly yellow-brown smog hanging over it, seen from a high three-quarter top-down angle, in exactly the art style of the reference images (fine dark ink key lines, muted woodblock colours, light from the top left), centred and filling most of the image, with a bold, readable silhouette and strong light/dark contrast that stays clear when shrunk to a small 30-pixel game map icon. It is isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No ground plate, no cast shadow, no text, no frame.",
+  "refs": [
+   "ref_hut.png",
+   "ref_knight.png"
+  ]
+ }
+}

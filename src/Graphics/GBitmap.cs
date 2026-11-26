@@ -1,13 +1,33 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Avalonia.Media;
 using IRB.Collections.Generic;
 using OpenCivOne.Compression;
+using SkiaSharp;
 
 namespace OpenCivOne.Graphics
 {
 	public class GBitmap
 	{
+		/// <summary>
+		/// Scale of the optional HD layer, relative to the indexed pixels: 2 (32x32 tiles) or 4 (64x64 tiles).
+		/// It has to be set at start, before any HD art is loaded.
+		/// </summary>
+		public static int HDScale
+		{
+			get => _hdScale;
+			set
+			{
+				if (value != 2 && value != 4)
+					throw new ArgumentOutOfRangeException(nameof(value), "The HD scale has to be 2 or 4");
+
+				_hdScale = value;
+			}
+		}
+
+		private static int _hdScale = 2;
+
 		private int iWidth;
 		private int iHeight;
 		private GSize oSize;
@@ -17,6 +37,30 @@ namespace OpenCivOne.Graphics
 
 		private byte[] aPixels;
 		private GBitmapPalette oPalette;
+
+		// Optional HD layer. Each indexed pixel owns an HDScale x HDScale block of ARGB pixels,
+		// which is shown instead of the indexed pixel while its mask entry is set.
+		// The layer is allocated only when HD content is drawn into this bitmap.
+		private uint[]? _hdPixels = null;
+		private bool[]? _hdMask = null;
+
+		// HD art reaching above sprites (tall mountains, trees), by the sprite's top left corner in this bitmap
+		private Dictionary<(int X, int Y), HDOverflow>? _hdOverflow = null;
+		private GRectangle? _hdOverflowClip = null;
+		private static bool _hasHDOverflow = false;
+
+		private static readonly object _hdCacheLock = new object();
+		private static readonly Dictionary<string, HDImage?> _hdCache = new Dictionary<string, HDImage?>();
+		private static string? _hdTemplatePath = null;
+		private static string? _hdDirectory = null;
+
+		// Optional painted grain for flat fills on screens (hd/ui/material.png): shades around 128, one per HD pixel
+		private static byte[]? _uiMaterial = null;
+		private static int _uiMaterialSize = 0;
+		// Optional theme colors for the same screens (hd/ui/colors.txt): a color per palette index, or 0 to keep the tone
+		private static uint[]? _uiColors = null;
+		private bool _useUIMaterial = false;
+		private static bool _smoothUpscale = false;
 
 		#region Palette 1
 		public static Color[] Palette1 = new Color[] {
@@ -105,6 +149,241 @@ namespace OpenCivOne.Graphics
 			get => this.aPixels;
 		}
 
+		/// <summary>
+		/// HD pixels in ARGB format, (Width * HDScale) x (Height * HDScale), or null if this bitmap has no HD content
+		/// </summary>
+		internal uint[]? HDPixels
+		{
+			get => this._hdPixels;
+		}
+
+		/// <summary>
+		/// One entry per indexed pixel, true when that pixel is shown from the HD layer, or null if this bitmap has no HD content
+		/// </summary>
+		internal bool[]? HDMask
+		{
+			get => this._hdMask;
+		}
+
+		/// <summary>
+		/// Area where HD art reaching above sprites may be drawn in this bitmap, for example the map view, or null for anywhere
+		/// </summary>
+		public GRectangle? HDOverflowClip
+		{
+			get => this._hdOverflowClip;
+			set => this._hdOverflowClip = value;
+		}
+
+		/// <summary>
+		/// True once any loaded HD art reaches above its sprite, the map then has to be drawn so that such art is not overdrawn
+		/// </summary>
+		public static bool HasHDOverflow
+		{
+			get => _hasHDOverflow;
+		}
+
+		/// <summary>
+		/// When set, every loaded PIC file is also written to this folder as a 2x nearest-neighbour PNG,
+		/// which can be used as a starting point for HD art
+		/// </summary>
+		public static string? HDTemplatePath
+		{
+			get => _hdTemplatePath;
+			set => _hdTemplatePath = value;
+		}
+
+		/// <summary>
+		/// Folder of the HD art, for example a theme's folder; when null, the hd folder next to each PIC file
+		/// </summary>
+		public static string? HDDirectory
+		{
+			get => _hdDirectory;
+			set => _hdDirectory = value;
+		}
+
+		/// <summary>
+		/// Pixels without HD art are enlarged with Scale2x (Scale4x at 4x) instead of nearest-neighbour,
+		/// which rounds the steps in text, lines and leftover pixel art while keeping its colors
+		/// </summary>
+		public static bool SmoothUpscale
+		{
+			get => _smoothUpscale;
+			set => _smoothUpscale = value;
+		}
+
+		/// <summary>
+		/// Flat fills of at least 6x6 pixels on this bitmap get the painted grain of the UI material, see LoadUIMaterial
+		/// </summary>
+		public bool UseUIMaterial
+		{
+			get => this._useUIMaterial;
+			set => this._useUIMaterial = value;
+		}
+
+		/// <summary>
+		/// Loads a square grain texture for flat fills: its brightness shades the fill's palette color (mid grey keeps it),
+		/// as HD key pixels, so the fill still follows palette changes, color swaps and fades. Returns false without it.
+		/// </summary>
+		public static bool LoadUIMaterial(string path)
+		{
+			if (!File.Exists(path))
+				return false;
+
+			using SKBitmap? image = SKBitmap.Decode(path);
+
+			if (image == null || image.Width != image.Height)
+				return false;
+
+			byte[] shades = new byte[image.Width * image.Height];
+
+			for (int y = 0; y < image.Height; y++)
+			{
+				for (int x = 0; x < image.Width; x++)
+				{
+					SKColor c = image.GetPixel(x, y);
+					// 128 grey keeps the color, darker and lighter grain shade it
+					shades[(y * image.Width) + x] = (byte)Math.Clamp(((c.Red * 30) + (c.Green * 59) + (c.Blue * 11)) / 100, 1, 255);
+				}
+			}
+
+			_uiMaterial = shades;
+			_uiMaterialSize = image.Width;
+
+			return true;
+		}
+
+		/// <summary>
+		/// Loads a theme's interface colors: lines of a palette index and the color that replaces it as RRGGBB, with # comments.
+		/// On screens with the UI material, boxes, lines and text of those indexes take these colors as they are, instead
+		/// of the painted tone. Returns false without the file.
+		/// </summary>
+		public static bool LoadUIColors(string path)
+		{
+			_uiColors = null;
+
+			if (!File.Exists(path))
+				return false;
+
+			uint[] colors = new uint[256];
+
+			foreach (string line in File.ReadAllLines(path))
+			{
+				string[] parts = line.Split('#')[0].Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+
+				if (parts.Length >= 2 && int.TryParse(parts[0], out int index) && index >= 0 && index < 256 &&
+					uint.TryParse(parts[1], System.Globalization.NumberStyles.HexNumber, null, out uint rgb))
+					colors[index] = 0xff000000 | (rgb & 0xffffff);
+			}
+
+			_uiColors = colors;
+
+			return true;
+		}
+
+		/// <summary>
+		/// The theme's interface color for a palette index (see LoadUIColors), or null when it has none
+		/// </summary>
+		public static uint? UIColor(int index) => (_uiColors != null && _uiColors[index] != 0) ? _uiColors[index] : null;
+
+		// HD pixels of painted boxes: the shade in red and blue, like a key color, marked by this alpha
+		private const uint MaterialAlpha = 0xfe000000;
+
+		// Painted water: HD pixels the painted map marks as open water or river move when the screen is shown.
+		// Anything drawn over them replaces the mark, so units, cities and trees on the water stay still.
+		public const uint SeaAlpha = 0xfd000000;
+		public const uint RiverAlpha = 0xfc000000;
+
+		// one loop of the water's movement, in milliseconds (slow, peaceful tidal swell), and pollution smoke drift loop
+		private const float WaterPeriod = 9500f;
+		private const float SmokePeriod = 5400f;
+		private static readonly System.Diagnostics.Stopwatch _waterClock = System.Diagnostics.Stopwatch.StartNew();
+
+		/// <summary>
+		/// Painted water and pollution smoke animate when true; when false both stay still
+		/// </summary>
+		public static bool AnimateWater { get; set; } = true;
+
+		public static float CurrentSmokePhase => AnimateWater ? (float)((_waterClock.Elapsed.TotalMilliseconds % SmokePeriod) / SmokePeriod) : 0.28f;
+
+		/// <summary>
+		/// The last WriteScaledPixels showed painted water, so the screen has to be shown again for it to move
+		/// </summary>
+		public bool ShowsWater { get; private set; } = false;
+
+		/// <summary>
+		/// Color of a painted box pixel: the box's palette color, toned down to the painted look (half desaturated,
+		/// a little darker and warmer, so the bright EGA colors keep their hue but sit with the art), and shaded by the grain
+		/// </summary>
+		private static uint MaterialColor(uint color, uint indexColor, uint themed = 0)
+		{
+			if (themed != 0)
+				return ShadeColor(themed, color);
+
+			float shade = ((color >> 16) & 0xff) / 128f;
+			float r = (indexColor >> 16) & 0xff, g = (indexColor >> 8) & 0xff, b = indexColor & 0xff;
+			float grey = (r * 0.3f) + (g * 0.59f) + (b * 0.11f);
+			r = ((r + grey) * 0.5f * 0.82f + 6) * shade;
+			g = ((g + grey) * 0.5f * 0.82f + 3) * shade;
+			b = ((b + grey) * 0.5f * 0.82f - 2) * shade;
+
+			return 0xff000000 | ((uint)Math.Clamp(r, 0, 255) << 16) | ((uint)Math.Clamp(g, 0, 255) << 8) | (uint)Math.Clamp(b, 0, 255);
+		}
+
+		/// <summary>
+		/// Turns the UI material off again
+		/// </summary>
+		public static void ClearUIMaterial()
+		{
+			_uiMaterial = null;
+			_uiMaterialSize = 0;
+			_uiColors = null;
+		}
+
+		/// <summary>
+		/// A gentler version of the painted boxes' tone, for pixels without HD art: a third desaturated, a little warmer
+		/// </summary>
+		private static uint GradeColor(uint color)
+		{
+			float r = (color >> 16) & 0xff, g = (color >> 8) & 0xff, b = color & 0xff;
+			float grey = (r * 0.3f) + (g * 0.59f) + (b * 0.11f);
+			r = (r * 0.67f) + (grey * 0.33f) + 4;
+			g = (g * 0.67f) + (grey * 0.33f) + 2;
+			b = (b * 0.67f) + (grey * 0.33f) - 3;
+
+			return (color & 0xff000000) | ((uint)Math.Clamp(r, 0, 255) << 16) | ((uint)Math.Clamp(g, 0, 255) << 8) | (uint)Math.Clamp(b, 0, 255);
+		}
+
+		private void FillUIMaterial(GRectangle rect)
+		{
+			if (_uiMaterial == null || rect.Width < 6 || rect.Height < 6)
+				return;
+
+			this.EnsureHDLayer();
+
+			int hdWidth = this.iWidth * HDScale;
+			int size = _uiMaterialSize;
+			// boxes are darker toward their edges, over about three original pixels
+			float edge = 3f * HDScale;
+
+			for (int y = rect.Y * HDScale; y < (rect.Y + rect.Height) * HDScale; y++)
+			{
+				float dy = Math.Min(y - (rect.Y * HDScale), ((rect.Y + rect.Height) * HDScale) - 1 - y);
+
+				for (int x = rect.X * HDScale; x < (rect.X + rect.Width) * HDScale; x++)
+				{
+					float dx = Math.Min(x - (rect.X * HDScale), ((rect.X + rect.Width) * HDScale) - 1 - x);
+					float rim = Math.Clamp(Math.Min(dx, dy) / edge, 0, 1);
+					float shade = _uiMaterial[((y % size) * size) + (x % size)] * (0.8f + (0.2f * rim));
+					uint s = (uint)Math.Clamp(shade, 1, 255);
+
+					this._hdPixels![(y * hdWidth) + x] = MaterialAlpha | (s << 16) | s;
+				}
+			}
+
+			for (int y = rect.Y; y < rect.Y + rect.Height; y++)
+				Array.Fill(this._hdMask!, true, (y * this.iWidth) + rect.X, rect.Width);
+		}
+
 		public static Color Color18ToColor(int red, int green, int blue)
 		{
 			return Color.FromArgb(0, (byte)((255 * (red & 0x3f)) / 63), (byte)((255 * (green & 0x3f)) / 63), (byte)((255 * (blue & 0x3f)) / 63));
@@ -190,6 +469,7 @@ namespace OpenCivOne.Graphics
 			if (this.oRectangle.Contains(x, y))
 			{
 				this.aPixels[(y * this.iWidth) + x] = colorIndex;
+				this.ClearHDPixel((y * this.iWidth) + x);
 
 				this.bModified = true;
 			}
@@ -218,6 +498,7 @@ namespace OpenCivOne.Graphics
 						break;
 				}
 
+				this.ClearHDPixel((y * this.iWidth) + x);
 				this.bModified = true;
 			}
 		}
@@ -252,14 +533,14 @@ namespace OpenCivOne.Graphics
 			if (iWidth == 1 && iHeight == 1)
 			{
 				// a single point
-				this.SetPixel(x1, y1, colorIndex, mode);
+				this.SetLinePixel(x1, y1, colorIndex, mode);
 			}
 			else if (iWidth > 1 && iHeight == 1)
 			{
 				// a horizontal line
 				for (int i = 0; i < iWidth; i++)
 				{
-					this.SetPixel(x1 + i * iWidthDir, y1, colorIndex, mode);
+					this.SetLinePixel(x1 + i * iWidthDir, y1, colorIndex, mode);
 				}
 			}
 			else if (iWidth == 1 && iHeight > 1)
@@ -267,7 +548,7 @@ namespace OpenCivOne.Graphics
 				// a vertical line
 				for (int i = 0; i < iHeight; i++)
 				{
-					this.SetPixel(x1, y1 + i * iHeightDir, colorIndex, mode);
+					this.SetLinePixel(x1, y1 + i * iHeightDir, colorIndex, mode);
 				}
 			}
 			else if (iWidth > iHeight)
@@ -276,7 +557,7 @@ namespace OpenCivOne.Graphics
 
 				for (int i = 0; i < iWidth; i++)
 				{
-					this.SetPixel(x1 + i * iWidthDir, y1 + (int)(dYStep * i) * iHeightDir, colorIndex, mode);
+					this.SetLinePixel(x1 + i * iWidthDir, y1 + (int)(dYStep * i) * iHeightDir, colorIndex, mode);
 				}
 			}
 			else
@@ -285,8 +566,26 @@ namespace OpenCivOne.Graphics
 
 				for (int i = 0; i < iHeight; i++)
 				{
-					this.SetPixel(x1 + (int)(dXStep * i) * iWidthDir, y1 + i * iHeightDir, colorIndex, mode);
+					this.SetLinePixel(x1 + (int)(dXStep * i) * iWidthDir, y1 + i * iHeightDir, colorIndex, mode);
 				}
+			}
+		}
+
+		// Lines on a bitmap with the UI material take the toned colors of the painted boxes, without grain
+		private void SetLinePixel(int x, int y, byte colorIndex, PixelWriteModeEnum mode)
+		{
+			this.SetPixel(x, y, colorIndex, mode);
+
+			if (this._useUIMaterial && _uiMaterial != null && mode == PixelWriteModeEnum.Normal && this.oRectangle.Contains(x, y))
+			{
+				this.EnsureHDLayer();
+
+				int hdAddress = this.GetHDAddress(x, y);
+
+				for (int k = 0; k < HDScale; k++)
+					Array.Fill(this._hdPixels!, MaterialAlpha | (0x80u << 16) | 0x80u, hdAddress + (k * this.iWidth * HDScale), HDScale);
+
+				this._hdMask![(y * this.iWidth) + x] = true;
 			}
 		}
 
@@ -305,6 +604,7 @@ namespace OpenCivOne.Graphics
 					{
 						if (this.aPixels[iPixelAddress + j] == oldColorIndex)
 						{
+							// HD pixels are kept, HD key colors follow the new color index
 							this.aPixels[iPixelAddress + j] = newColorIndex;
 
 							this.bModified = true;
@@ -347,9 +647,21 @@ namespace OpenCivOne.Graphics
 								this.aPixels[iPixelAddress + j] ^= colorIndex;
 								break;
 						}
+
+						this.ClearHDPixel(iPixelAddress + j);
 					}
 
 					iPixelAddress += this.iWidth;
+				}
+
+				if (this._useUIMaterial && mode == PixelWriteModeEnum.Normal)
+				{
+					this.FillUIMaterial(newRect);
+				}
+
+				if (mode == PixelWriteModeEnum.Normal)
+				{
+					this.SuspendOverlay(newRect);
 				}
 
 				this.bModified = true;
@@ -371,8 +683,87 @@ namespace OpenCivOne.Graphics
 			DrawBitmap(new GPoint(x, y), srcBitmap, srcRect, transparent);
 		}
 
+		/// <summary>
+		/// Shows the painting of a map cell (see PaintedMap) over the 16x16 indexed pixels at (x, y)
+		/// </summary>
+		/// <summary>
+		/// Shows each pixel of an area in the colour colorOf gives for its palette index (RRGGBB), as solid HD pixels;
+		/// pixels it gives 0 for keep their palette colour. Drawing over a pixel later shows that drawing again.
+		/// </summary>
+		public void ColorHD(int left, int top, int width, int height, Func<byte, uint> colorOf)
+		{
+			this.EnsureHDLayer();
+			int hdWidth = this.iWidth * HDScale;
+
+			for (int y = Math.Max(0, top); y < Math.Min(this.iHeight, top + height); y++)
+			{
+				for (int x = Math.Max(0, left); x < Math.Min(this.iWidth, left + width); x++)
+				{
+					uint color = colorOf(this.aPixels[(y * this.iWidth) + x]);
+
+					if (color == 0)
+						continue;
+
+					int address = this.GetHDAddress(x, y);
+
+					for (int k = 0; k < HDScale; k++)
+						Array.Fill(this._hdPixels!, 0xff000000 | color, address + (k * hdWidth), HDScale);
+
+					this._hdMask![(y * this.iWidth) + x] = true;
+				}
+			}
+
+			this.bModified = true;
+		}
+
+		/// <summary>
+		/// Shows an unexplored cell of a print over the 16x16 indexed pixels at (x, y), see PaintedMap.CopyFogCell
+		/// </summary>
+		public void DrawPaintedFog(int x, int y, PaintedMap map, int mapX, int mapY)
+		{
+			if (map.CellSize != 16 * HDScale || x < 0 || y < 0 || x + 16 > this.iWidth || y + 16 > this.iHeight)
+				return;
+
+			this.EnsureHDLayer();
+			map.CopyFogCell(mapX, mapY, this._hdPixels!, this.GetHDAddress(x, y), this.iWidth * HDScale);
+
+			for (int i = 0; i < 16; i++)
+			{
+				Array.Fill(this._hdMask!, true, ((y + i) * this.iWidth) + x, 16);
+			}
+
+			this.bModified = true;
+		}
+
+		public void DrawPaintedCell(int x, int y, PaintedMap map, int mapX, int mapY)
+		{
+			if (map.CellSize != 16 * HDScale || x < 0 || y < 0 || x + 16 > this.iWidth || y + 16 > this.iHeight)
+				return;
+
+			this.EnsureHDLayer();
+			map.CopyCell(mapX, mapY, this._hdPixels!, this.GetHDAddress(x, y), this.iWidth * HDScale);
+
+			for (int i = 0; i < 16; i++)
+			{
+				Array.Fill(this._hdMask!, true, ((y + i) * this.iWidth) + x, 16);
+			}
+
+			this.bModified = true;
+		}
+
 		public void DrawBitmap(GPoint destPoint, GBitmap srcBitmap, GRectangle srcRect, bool transparent)
 		{
+			DrawBitmap(destPoint, srcBitmap, srcRect, transparent, false);
+		}
+
+		/// <param name="greyHD">HD pixels of the source are drawn in grey (transparent drawing only)</param>
+		public void DrawBitmap(GPoint destPoint, GBitmap srcBitmap, GRectangle srcRect, bool transparent, bool greyHD)
+		{
+			if (srcBitmap._hdOverflow != null || (!transparent && this._hdOverflow != null))
+			{
+				this.CopyOrDrawHDOverflow(destPoint, srcBitmap, srcRect, transparent, greyHD);
+			}
+
 			GRectangle srcRect1 = new GRectangle(srcRect.Location, srcRect.Size);
 			srcRect1.Intersect(srcBitmap.Rectangle);
 
@@ -398,14 +789,54 @@ namespace OpenCivOne.Graphics
 
 				int iSrcPosition = (srcRect1.Y * srcBitmap.iWidth) + srcRect1.X;
 				int iDestPosition = (destRect.Y * this.iWidth) + destRect.X;
+				bool[]? srcHDMask = srcBitmap._hdMask;
+
+				if (srcHDMask != null)
+				{
+					this.EnsureHDLayer();
+				}
 
 				for (int i = 0; i < destRect.Height; i++)
 				{
 					for (int j = 0; j < destRect.Width; j++)
 					{
-						if (srcBitmap.Pixels[iSrcPosition + j] != 0 || !transparent)
+						byte colorIndex = srcBitmap.Pixels[iSrcPosition + j];
+
+						if (srcHDMask != null && srcHDMask[iSrcPosition + j])
 						{
-							this.aPixels[iDestPosition + j] = srcBitmap.Pixels[iSrcPosition + j];
+							int srcX = srcRect1.X + j;
+							int srcY = srcRect1.Y + i;
+							int destX = destRect.X + j;
+							int destY = destRect.Y + i;
+
+							if (!transparent)
+							{
+								this.aPixels[iDestPosition + j] = colorIndex;
+								this.CopyHDBlock(destX, destY, srcBitmap, srcX, srcY);
+							}
+							else if (colorIndex != 0 || srcBitmap.HDBlockIsVisible(srcX, srcY))
+							{
+								// HD art may cover pixels that are transparent in the original sprite, and the other way around
+								this.MaterializeHDPixel(destX, destY);
+
+								if (colorIndex != 0)
+								{
+									// the indexed pixel changes, key colors already there keep the color they have now
+									this.ResolveHDKeys(destX, destY);
+								}
+
+								this.BlendHDBlock(destX, destY, srcBitmap, srcX, srcY, greyHD);
+
+								if (colorIndex != 0)
+								{
+									this.aPixels[iDestPosition + j] = colorIndex;
+								}
+							}
+						}
+						else if (colorIndex != 0 || !transparent)
+						{
+							this.aPixels[iDestPosition + j] = colorIndex;
+							this.ClearHDPixel(iDestPosition + j);
 						}
 					}
 
@@ -413,9 +844,1248 @@ namespace OpenCivOne.Graphics
 					iDestPosition += this.iWidth;
 				}
 
+				if (!transparent)
+				{
+					this.CheckOverlayCovered(destRect);
+				}
+
 				this.bModified = true;
 			}
 		}
+
+		/// <summary>
+		/// Copies a single pixel, together with its HD block, from the same position in another bitmap
+		/// </summary>
+		public void CopyPixel(int x, int y, GBitmap srcBitmap)
+		{
+			if (this.oRectangle.Contains(x, y) && srcBitmap.Rectangle.Contains(x, y))
+			{
+				int pixelAddress = (y * this.iWidth) + x;
+				int srcPixelAddress = (y * srcBitmap.iWidth) + x;
+
+				this.aPixels[pixelAddress] = srcBitmap.aPixels[srcPixelAddress];
+
+				if (srcBitmap._hdMask != null && srcBitmap._hdMask[srcPixelAddress])
+				{
+					this.EnsureHDLayer();
+					this.CopyHDBlock(x, y, srcBitmap, x, y);
+				}
+				else
+				{
+					this.ClearHDPixel(pixelAddress);
+				}
+
+				this.bModified = true;
+			}
+		}
+
+		#region HD layer
+		private class HDOverflow
+		{
+			/// <summary>Width, in original pixels</summary>
+			public int Width;
+			/// <summary>Rows above the sprite, in original pixels</summary>
+			public int Height;
+			/// <summary>ARGB pixels, (Width * HDScale) x (Height * HDScale)</summary>
+			public uint[] Pixels;
+
+			public HDOverflow(int width, int height)
+			{
+				this.Width = width;
+				this.Height = height;
+				this.Pixels = new uint[width * HDScale * height * HDScale];
+			}
+		}
+
+		/// <summary>
+		/// Draws only the HD art of a sprite that reaches above it, as drawing the sprite at destPoint would
+		/// </summary>
+		public void DrawHDOverflow(GPoint destPoint, GBitmap srcBitmap)
+		{
+			if (srcBitmap._hdOverflow != null)
+			{
+				this.CopyOrDrawHDOverflow(destPoint, srcBitmap, srcBitmap.Rectangle, true, false);
+			}
+		}
+
+		/// <summary>
+		/// Art reaching above sprites travels with the pixels it belongs to: an opaque copy (loading a sheet, cutting a sprite,
+		/// copying screens) carries it to the destination, a transparent copy (drawing a sprite) draws it above the sprite.
+		/// </summary>
+		private void CopyOrDrawHDOverflow(GPoint destPoint, GBitmap srcBitmap, GRectangle srcRect, bool transparent, bool grey)
+		{
+			if (!transparent && this._hdOverflow != null)
+			{
+				// what was in the overwritten area is gone
+				GRectangle destRect = new GRectangle(destPoint, srcRect.Size);
+
+				foreach ((int X, int Y) key in this._hdOverflow.Keys.Where(k => destRect.Contains(k.X, k.Y)).ToList())
+				{
+					this._hdOverflow.Remove(key);
+				}
+			}
+
+			if (srcBitmap._hdOverflow == null)
+				return;
+
+			foreach (KeyValuePair<(int X, int Y), HDOverflow> item in srcBitmap._hdOverflow.ToList())
+			{
+				if (!srcRect.Contains(item.Key.X, item.Key.Y))
+					continue;
+
+				int x = destPoint.X + item.Key.X - srcRect.X;
+				int y = destPoint.Y + item.Key.Y - srcRect.Y;
+
+				if (!transparent)
+				{
+					this._hdOverflow ??= new Dictionary<(int X, int Y), HDOverflow>();
+					this._hdOverflow[(x, y)] = item.Value;
+					continue;
+				}
+
+				HDOverflow overflow = item.Value;
+				int overflowWidth = overflow.Width * HDScale;
+
+				for (int i = 0; i < overflow.Height; i++)
+				{
+					int destY = y - overflow.Height + i;
+
+					for (int j = 0; j < overflow.Width; j++)
+					{
+						int destX = x + j;
+
+						if (!this.oRectangle.Contains(destX, destY) || (this._hdOverflowClip is not null && !this._hdOverflowClip.Contains(destX, destY)))
+							continue;
+
+						int srcAddress = (i * HDScale * overflowWidth) + (j * HDScale);
+						bool visible = false;
+
+						for (int k = 0; k < HDScale && !visible; k++)
+						{
+							for (int l = 0; l < HDScale && !visible; l++)
+							{
+								visible = (overflow.Pixels[srcAddress + (k * overflowWidth) + l] >> 24) != 0;
+							}
+						}
+
+						if (!visible)
+							continue;
+
+						this.EnsureHDLayer();
+						this.MaterializeHDPixel(destX, destY);
+						this.ResolveHDKeys(destX, destY);
+
+						int hdAddress = this.GetHDAddress(destX, destY);
+						uint indexColor = this.oPalette[this.aPixels[(destY * this.iWidth) + destX]].ToUInt32();
+
+						for (int k = 0; k < HDScale; k++)
+						{
+							for (int l = 0; l < HDScale; l++)
+							{
+								uint color = overflow.Pixels[srcAddress + (k * overflowWidth) + l];
+
+								if (IsKeyColor(color))
+								{
+									// above a sprite there is no original pixel of its own, a key color takes the color already there
+									color = ShadeColor(indexColor, color);
+								}
+
+								if (grey)
+								{
+									color = GreyColor(color);
+								}
+
+								if ((color >> 24) != 0)
+								{
+									this._hdPixels![hdAddress + (k * this.iWidth * HDScale) + l] =
+										BlendColor(color, this._hdPixels[hdAddress + (k * this.iWidth * HDScale) + l]);
+								}
+							}
+						}
+					}
+				}
+
+				this.bModified = true;
+			}
+		}
+
+		/// <summary>
+		/// Writes this bitmap, scaled by HDScale, to a 32 bit BGRA buffer.
+		/// Pixels with HD content are taken from the HD layer, all other pixels are scaled with nearest-neighbour.
+		/// </summary>
+		/// <param name="destination">Address of the top left pixel</param>
+		/// <param name="stride">Length of one destination row, in bytes</param>
+		public readonly struct SmokeSource
+		{
+			public readonly float X, Y, Cell;
+			public readonly int Seed;
+
+			public SmokeSource(float x, float y, float cell, int seed)
+			{
+				this.X = x;
+				this.Y = y;
+				this.Cell = cell;
+				this.Seed = seed;
+			}
+		}
+
+		private readonly struct SmokePuff
+		{
+			public readonly float X, Y, InvR2, R, G, B, Alpha;
+			public readonly int MinX, MaxX, MinY, MaxY;
+
+			public SmokePuff(float x, float y, float radius, float r, float g, float b, float alpha)
+			{
+				this.X = x;
+				this.Y = y;
+				this.InvR2 = 1f / Math.Max(1f, radius * radius);
+				this.R = r;
+				this.G = g;
+				this.B = b;
+				this.Alpha = alpha;
+				int rad = (int)MathF.Ceiling(radius);
+				this.MinX = (int)MathF.Floor(x) - rad;
+				this.MaxX = (int)MathF.Ceiling(x) + rad;
+				this.MinY = (int)MathF.Floor(y) - rad;
+				this.MaxY = (int)MathF.Ceiling(y) + rad;
+			}
+		}
+
+		private static float SmokeHash01(int seed, int k)
+		{
+			uint h = (uint)((seed * 374761393) ^ (k * 668265263));
+			h = (h ^ (h >> 13)) * 1274126177u;
+			return ((h ^ (h >> 16)) & 0xffff) / 65535f;
+		}
+
+		private static SmokePuff[]? BuildSmokePuffs(SmokeSource[]? sources, float phase)
+		{
+			if (sources == null || sources.Length == 0)
+				return null;
+
+			const int PuffsPerSource = 5;
+			var puffs = new SmokePuff[sources.Length * PuffsPerSource];
+			int idx = 0;
+
+			for (int s = 0; s < sources.Length; s++)
+			{
+				SmokeSource src = sources[s];
+				float c = src.Cell;
+
+				for (int p = 0; p < PuffsPerSource; p++)
+				{
+					float t = (phase + (p * 0.20f) + SmokeHash01(src.Seed, p)) % 1f;
+					float px = src.X + ((SmokeHash01(src.Seed, p + 10) - 0.5f) * 0.26f * c) + (0.14f * c * t) + (MathF.Sin((t * 6.283185f) + (p * 1.7f)) * 0.045f * c);
+					float py = src.Y - ((0.08f + (0.50f * t)) * c);
+					float r = (0.11f + (0.16f * t)) * c;
+					float alpha = (0.50f + (0.12f * SmokeHash01(src.Seed, p + 20))) * MathF.Sin(t * MathF.PI);
+					float col = 68f + (70f * t);
+					puffs[idx++] = new SmokePuff(px, py, r, col + 2f, col, col - 3f, alpha);
+				}
+			}
+
+			return puffs;
+		}
+
+		private static uint CompositeSmoke(uint pixel, SmokePuff[] puffs, int ox, int oy)
+		{
+			float r = (pixel >> 16) & 0xff, g = (pixel >> 8) & 0xff, b = pixel & 0xff;
+			float sr = 0f, sg = 0f, sb = 0f, sa = 0f;
+
+			for (int i = 0; i < puffs.Length; i++)
+			{
+				ref readonly SmokePuff pf = ref puffs[i];
+				if (ox < pf.MinX || ox > pf.MaxX || oy < pf.MinY || oy > pf.MaxY)
+					continue;
+
+				float dx = ox - pf.X, dy = oy - pf.Y;
+				float d2 = ((dx * dx) + (dy * dy)) * pf.InvR2;
+				if (d2 >= 1f)
+					continue;
+
+				float falloff = 1f - d2;
+				float a = pf.Alpha * falloff * (1f - (0.35f * d2));
+				if (a <= 0.002f)
+					continue;
+
+				float keep = 1f - a;
+				sr = (pf.R * a) + (sr * keep);
+				sg = (pf.G * a) + (sg * keep);
+				sb = (pf.B * a) + (sb * keep);
+				sa = a + (sa * keep);
+			}
+
+			if (sa <= 0.002f)
+				return pixel;
+
+			float underKeep = 1f - sa;
+			uint rr = (uint)Math.Clamp(sr + (r * underKeep), 0f, 255f);
+			uint gg = (uint)Math.Clamp(sg + (g * underKeep), 0f, 255f);
+			uint bb = (uint)Math.Clamp(sb + (b * underKeep), 0f, 255f);
+			return (pixel & 0xff000000u) | (rr << 16) | (gg << 8) | bb;
+		}
+
+		/// <summary>
+		/// Renders soft animated smoke wisps directly onto an ARGB pixel buffer for preview sheets and tests
+		/// </summary>
+		public static void ApplySmoke(uint[] buffer, int width, int height, SmokeSource[]? sources, float phase)
+		{
+			SmokePuff[]? puffs = BuildSmokePuffs(sources, phase);
+			if (puffs == null)
+				return;
+
+			for (int p = 0; p < puffs.Length; p++)
+			{
+				ref readonly SmokePuff pf = ref puffs[p];
+				int x0 = Math.Max(0, pf.MinX), x1 = Math.Min(width - 1, pf.MaxX);
+				int y0 = Math.Max(0, pf.MinY), y1 = Math.Min(height - 1, pf.MaxY);
+
+				for (int y = y0; y <= y1; y++)
+				{
+					float dy = y - pf.Y;
+					int row = y * width;
+
+					for (int x = x0; x <= x1; x++)
+					{
+						float dx = x - pf.X;
+						float d2 = ((dx * dx) + (dy * dy)) * pf.InvR2;
+						if (d2 >= 1f)
+							continue;
+
+						float falloff = 1f - d2;
+						float a = pf.Alpha * falloff * (1f - (0.35f * d2));
+						if (a <= 0.002f)
+							continue;
+
+						uint px = buffer[row + x];
+						float r = (px >> 16) & 0xff, g = (px >> 8) & 0xff, b = px & 0xff;
+						float keep = 1f - a;
+						uint rr = (uint)Math.Clamp((pf.R * a) + (r * keep), 0f, 255f);
+						uint gg = (uint)Math.Clamp((pf.G * a) + (g * keep), 0f, 255f);
+						uint bb = (uint)Math.Clamp((pf.B * a) + (b * keep), 0f, 255f);
+						buffer[row + x] = (px & 0xff000000u) | (rr << 16) | (gg << 8) | bb;
+					}
+				}
+			}
+		}
+
+		/// <summary>
+		/// An overlay shown over part of this bitmap when it is written out: a picture at HD resolution for an area of
+		/// original pixels, shown wherever the original pixels still hold what Snapshot recorded (anything drawn over the
+		/// area since, such as a dialog, shows instead)
+		/// </summary>
+		public sealed class Overlay
+		{
+			public GRectangle Area = new GRectangle(0, 0, 0, 0);
+			public uint[] Pixels = Array.Empty<uint>();
+			public byte[] Snapshot = Array.Empty<byte>();
+			public SmokeSource[]? Smoke;
+
+			/// <summary>
+			/// While the game redraws the whole map window (a new view), the overlay is shown everywhere in its area,
+			/// whatever the pixels under it, until the new view replaces it: so the classic map never shows through
+			/// in between
+			/// </summary>
+			public bool Hold;
+
+			/// <summary>
+			/// The overlay's pixels are premultiplied by alpha and drawn over the bitmap's own (the classic map shows where
+			/// the overlay is clear), rather than replacing them
+			/// </summary>
+			public bool Blend;
+		}
+
+		public Overlay? Over
+		{
+			get => this._over;
+			set
+			{
+				this._over = value;
+				this._suspendedOver = null;
+			}
+		}
+
+		private Overlay? _over;
+
+		/// <summary>
+		/// The overlay while a whole screen (a city, an advisor) covers its area: it comes back when the map pixels it
+		/// was taken over are copied back, and is not shown over the screen meanwhile
+		/// </summary>
+		private Overlay? _suspendedOver;
+
+		private void SuspendOverlay(GRectangle covered)
+		{
+			Overlay? over = this._over;
+
+			if (over != null && !over.Hold && covered.X <= over.Area.X && covered.Y <= over.Area.Y &&
+				covered.X + covered.Width >= over.Area.X + over.Area.Width && covered.Y + covered.Height >= over.Area.Y + over.Area.Height)
+			{
+				this._suspendedOver = over;
+				this._over = null;
+			}
+		}
+
+		/// <summary>
+		/// After a whole picture is copied over the overlay's area: the overlay stays (or comes back) if the picture is
+		/// the map it was taken over, and is suspended if it is another screen
+		/// </summary>
+		private void CheckOverlayCovered(GRectangle copied)
+		{
+			Overlay? over = this._suspendedOver ?? this._over;
+
+			if (over == null || over.Hold || copied.X > over.Area.X || copied.Y > over.Area.Y ||
+				copied.X + copied.Width < over.Area.X + over.Area.Width || copied.Y + copied.Height < over.Area.Y + over.Area.Height)
+				return;
+
+			int same = 0;
+
+			for (int y = 0; y < over.Area.Height; y++)
+			{
+				int row = ((over.Area.Y + y) * this.iWidth) + over.Area.X;
+
+				for (int x = 0; x < over.Area.Width; x++)
+				{
+					if (this.aPixels[row + x] == over.Snapshot[(y * over.Area.Width) + x])
+						same++;
+				}
+			}
+
+			// the map came back (with at most a dialog over part of it)
+			if (same * 10 >= over.Snapshot.Length * 7)
+			{
+				this._over = over;
+				this._suspendedOver = null;
+			}
+			else
+			{
+				this._suspendedOver = over;
+				this._over = null;
+			}
+		}
+
+		/// <summary>
+		/// The original pixels of an area, for an Overlay's Snapshot
+		/// </summary>
+		public byte[] CopyPixels(GRectangle area)
+		{
+			byte[] copy = new byte[area.Width * area.Height];
+
+			for (int y = 0; y < area.Height; y++)
+				Array.Copy(this.aPixels, ((area.Y + y) * this.iWidth) + area.X, copy, y * area.Width, area.Width);
+
+			return copy;
+		}
+
+		/// <summary>
+		/// Where an overlay shows, for each original pixel of its area: where the map it was taken over is still showing.
+		/// A pixel that still holds the map shows the painted view (hiding it would show the classic map instead), except a
+		/// stray pixel of a picture drawn over the map (the palace, the newspaper) that only happens to share the map's
+		/// colour index: one whose 5 x 5 block is almost all picture. So beside a unit, a new city, a dialog or a scrolled
+		/// strip the painted view always stays. Null for no overlay or a held one.
+		/// </summary>
+		private bool[]? OverlayShows(Overlay? over)
+		{
+			bool[]? shows = null;
+
+			if (over != null && !over.Hold && over.Snapshot.Length == over.Area.Width * over.Area.Height)
+			{
+				int aw = over.Area.Width, ah = over.Area.Height;
+				bool[] match = new bool[aw * ah];
+
+				for (int y = 0; y < ah; y++)
+				{
+					int row = ((over.Area.Y + y) * this.iWidth) + over.Area.X;
+
+					for (int x = 0; x < aw; x++)
+						match[(y * aw) + x] = over.Snapshot[(y * aw) + x] == this.aPixels[row + x];
+				}
+
+				bool[] showsNow = new bool[aw * ah];
+				shows = showsNow;
+
+				System.Threading.Tasks.Parallel.For(0, ah, y =>
+				{
+					for (int x = 0; x < aw; x++)
+					{
+						int around = 0;
+
+						if (match[(y * aw) + x])
+						{
+							for (int dy = -2; dy <= 2; dy++)
+								for (int dx = -2; dx <= 2; dx++)
+								{
+									int nx = x + dx, ny = y + dy;
+
+									if ((dx != 0 || dy != 0) && (nx < 0 || ny < 0 || nx >= aw || ny >= ah || match[(ny * aw) + nx]))
+										around++;
+								}
+						}
+
+						// a stray speck in a picture has almost no matching neighbours; anything beside real map has many
+						showsNow[(y * aw) + x] = around >= 4;
+					}
+				});
+			}
+
+			return shows;
+		}
+
+		/// <summary>
+		/// A second, smaller overlay: the painted towns and units of the city screen's map (see Over)
+		/// </summary>
+		public Overlay? Inset { get; set; }
+
+		/// <summary>
+		/// A premultiplied colour drawn over an opaque one, keeping the opaque one's alpha byte
+		/// </summary>
+		private static uint BlendPremultiplied(uint top, uint under)
+		{
+			uint a = top >> 24;
+
+			if (a == 0)
+				return under;
+
+			if (a == 255)
+				return (top & 0xffffff) | (under & 0xff000000);
+
+			uint keep = 255 - a;
+			uint r = ((top >> 16) & 0xff) + ((((under >> 16) & 0xff) * keep) + 127) / 255;
+			uint g = ((top >> 8) & 0xff) + ((((under >> 8) & 0xff) * keep) + 127) / 255;
+			uint b = (top & 0xff) + (((under & 0xff) * keep) + 127) / 255;
+
+			return (under & 0xff000000) | (Math.Min(r, 255u) << 16) | (Math.Min(g, 255u) << 8) | Math.Min(b, 255u);
+		}
+
+		public void WriteScaledPixels(IntPtr destination, int stride)
+		{
+			int hdWidth = this.iWidth * HDScale;
+			Overlay? over = this.Over;
+
+			bool[]? shows = this.OverlayShows(over);
+			Overlay? inset = this.Inset;
+			bool[]? insetShows = this.OverlayShows(inset);
+
+			byte[]? smooth = _smoothUpscale ? this.ScaleIndexes() : null;
+			// with the UI material, pixels without HD art (text, the minimap, pictures) get a gentler version of its tone
+			uint[] palette = new uint[256];
+
+			uint[]? themed = (this._useUIMaterial && _uiMaterial != null) ? _uiColors : null;
+
+			for (int c = 0; c < 256; c++)
+			{
+				uint original = this.oPalette[(byte)c].ToUInt32();
+
+				if (themed != null && themed[c] != 0)
+					palette[c] = (original & 0xff000000) | (themed[c] & 0xffffff);
+				else
+					palette[c] = (this._useUIMaterial && _uiMaterial != null) ? GradeColor(original) : original;
+			}
+
+			WaterFrame? water = (AnimateWater && this._hdPixels != null) ? new WaterFrame(hdWidth, this.iHeight * HDScale) : null;
+			float smokePhase = CurrentSmokePhase;
+			SmokePuff[]? overSmoke = BuildSmokePuffs(over?.Smoke, smokePhase);
+			SmokePuff[]? insetSmoke = BuildSmokePuffs(inset?.Smoke, smokePhase);
+			bool showsWater = overSmoke != null || insetSmoke != null;
+
+			// the rows are independent: they are worked out on all cores
+			System.Threading.Tasks.Parallel.For(0, this.iHeight, () => new int[hdWidth * HDScale], (i, _, rows) =>
+			{
+				int pixelAddress = i * this.iWidth;
+				IntPtr rowDestination = destination + (i * HDScale * stride);
+
+				for (int j = 0; j < this.iWidth; j++)
+				{
+					uint color = this.oPalette[this.aPixels[pixelAddress]].ToUInt32();
+					bool isHD = this._hdMask != null && this._hdMask[pixelAddress];
+					int hdAddress = this.GetHDAddress(j, i);
+
+					for (int k = 0; k < HDScale; k++)
+					{
+						for (int l = 0; l < HDScale; l++)
+						{
+							uint pixel = (smooth != null && !isHD) ? palette[smooth[hdAddress + (k * hdWidth) + l]] : (isHD ? color : palette[this.aPixels[pixelAddress]]);
+
+							if (isHD)
+							{
+								uint hd = this._hdPixels![hdAddress + (k * hdWidth) + l];
+								uint kind = hd & 0xff000000;
+
+								if (kind == SeaAlpha || kind == RiverAlpha)
+								{
+									showsWater = true;
+
+									if (water != null)
+										hd = water.Pixel(this._hdPixels, (j * HDScale) + l, (i * HDScale) + k, hd, kind);
+								}
+
+								// keep the alpha of the palette color, so HD pixels are presented the same way as indexed ones
+								pixel = (ResolveHDColor(hd, color, (themed != null) ? themed[this.aPixels[pixelAddress]] : 0) & 0xffffff) | (color & 0xff000000);
+							}
+
+							if (over != null && j >= over.Area.X && j < over.Area.X + over.Area.Width && i >= over.Area.Y && i < over.Area.Y + over.Area.Height &&
+								(over.Hold || (shows != null ? shows[((i - over.Area.Y) * over.Area.Width) + (j - over.Area.X)] :
+									over.Snapshot[((i - over.Area.Y) * over.Area.Width) + (j - over.Area.X)] == this.aPixels[pixelAddress])))
+							{
+								int ox = ((j - over.Area.X) * HDScale) + l, oy = ((i - over.Area.Y) * HDScale) + k;
+								uint top = over.Pixels[(oy * over.Area.Width * HDScale) + ox];
+								pixel = over.Blend ? BlendPremultiplied(top, pixel) : top;
+								if (overSmoke != null)
+									pixel = CompositeSmoke(pixel, overSmoke, ox, oy);
+							}
+
+							if (inset != null && j >= inset.Area.X && j < inset.Area.X + inset.Area.Width && i >= inset.Area.Y && i < inset.Area.Y + inset.Area.Height &&
+								(inset.Hold || (insetShows != null ? insetShows[((i - inset.Area.Y) * inset.Area.Width) + (j - inset.Area.X)] :
+									inset.Snapshot[((i - inset.Area.Y) * inset.Area.Width) + (j - inset.Area.X)] == this.aPixels[pixelAddress])))
+							{
+								int ix = ((j - inset.Area.X) * HDScale) + l, iy = ((i - inset.Area.Y) * HDScale) + k;
+								uint top = inset.Pixels[(iy * inset.Area.Width * HDScale) + ix];
+								pixel = inset.Blend ? BlendPremultiplied(top, pixel) : top;
+								if (insetSmoke != null)
+									pixel = CompositeSmoke(pixel, insetSmoke, ix, iy);
+							}
+
+							rows[(k * hdWidth) + (j * HDScale) + l] = (int)pixel;
+						}
+					}
+
+					pixelAddress++;
+				}
+
+				for (int k = 0; k < HDScale; k++)
+				{
+					Marshal.Copy(rows, k * hdWidth, rowDestination, hdWidth);
+					rowDestination += stride;
+				}
+
+				return rows;
+			}, _ => { });
+
+			this.ShowsWater = showsWater;
+		}
+
+		/// <summary>
+		/// One frame of moving water: a slow rolling swell on the open sea and a short ripple running along rivers, each
+		/// moving the painted water a few pixels, with a soft shimmer. The waves are sums of sines, kept in tables per
+		/// row, column and diagonal, so a frame costs little more than a still one.
+		/// </summary>
+		private class WaterFrame
+		{
+			private readonly int width, height;
+			private readonly int[] seaX, seaY, riverX, riverY;
+			private readonly float[] lightRowSin, lightRowCos, lightColumnSin, lightColumnCos, riverLight;
+
+			public WaterFrame(int width, int height)
+			{
+				this.width = width;
+				this.height = height;
+
+				float phase = (float)(_waterClock.Elapsed.TotalMilliseconds % WaterPeriod) / WaterPeriod * 2 * MathF.PI;
+				// the waves were drawn for 4x; at 2x they are half as big
+				float s = HDScale / 4f;
+
+				this.seaX = new int[height];
+				this.lightRowSin = new float[height];
+				this.lightRowCos = new float[height];
+
+				for (int y = 0; y < height; y++)
+				{
+					float yy = y / s;
+					this.seaX[y] = (int)MathF.Round(((1.3f * MathF.Sin((yy / 42f) + phase)) + (0.35f * MathF.Sin((yy / 19f) - phase))) * s);
+					this.lightRowSin[y] = MathF.Sin(yy / 44f);
+					this.lightRowCos[y] = MathF.Cos(yy / 44f);
+				}
+
+				this.seaY = new int[width];
+				this.lightColumnSin = new float[width];
+				this.lightColumnCos = new float[width];
+
+				for (int x = 0; x < width; x++)
+				{
+					float xx = x / s;
+					this.seaY[x] = (int)MathF.Round(((1.0f * MathF.Cos((xx / 52f) + phase)) + (0.25f * MathF.Cos((xx / 23f) - phase))) * s);
+					this.lightColumnSin[x] = MathF.Sin((xx / 34f) - phase);
+					this.lightColumnCos[x] = MathF.Cos((xx / 34f) - phase);
+				}
+
+				// rivers: indexed by x + y and by x - y + height (gentle slow current)
+				this.riverX = new int[width + height];
+				this.riverY = new int[width + height];
+				this.riverLight = new float[width + height];
+
+				for (int d = 0; d < width + height; d++)
+				{
+					float dd = d / s;
+					this.riverX[d] = (int)MathF.Round(MathF.Sin((dd / 11f) - phase) * s * 0.7f);
+					this.riverLight[d] = 0.965f + (0.045f * MathF.Sin((dd / 16f) - phase));
+				}
+
+				for (int d = 0; d < width + height; d++)
+					this.riverY[d] = (int)MathF.Round(MathF.Cos(((d - height) / s / 11f) - phase) * s * 0.7f);
+			}
+
+			/// <summary>
+			/// The water pixel at x, y in this frame: the pixel the wave has moved there, if that is the same kind of water
+			/// </summary>
+			public uint Pixel(uint[] pixels, int x, int y, uint own, uint kind)
+			{
+				int sx, sy;
+				float light;
+
+				if (kind == SeaAlpha)
+				{
+					sx = x + this.seaX[y];
+					sy = y + this.seaY[x];
+					// sin(a + b) from the row and column tables
+					light = 0.965f + (0.04f * ((this.lightColumnSin[x] * this.lightRowCos[y]) + (this.lightColumnCos[x] * this.lightRowSin[y])));
+				}
+				else
+				{
+					sx = x + this.riverX[x + y];
+					sy = y + this.riverY[x - y + this.height];
+					light = this.riverLight[x + y];
+				}
+
+				uint color = own;
+
+				if (sx >= 0 && sx < this.width && sy >= 0 && sy < this.height)
+				{
+					uint moved = pixels[(sy * this.width) + sx];
+
+					if ((moved & 0xff000000) == kind)
+						color = moved;
+				}
+
+				uint red = (uint)Math.Clamp(((color >> 16) & 0xff) * light, 0, 255);
+				uint green = (uint)Math.Clamp(((color >> 8) & 0xff) * light, 0, 255);
+				uint blue = (uint)Math.Clamp((color & 0xff) * light, 0, 255);
+
+				return 0xff000000 | (red << 16) | (green << 8) | blue;
+			}
+		}
+
+		/// <summary>
+		/// The indexed pixels enlarged to HD size with Scale2x, applied twice at 4x
+		/// </summary>
+		private byte[] ScaleIndexes()
+		{
+			byte[] source = this.aPixels;
+			int width = this.iWidth, height = this.iHeight;
+
+			for (int scale = 1; scale < HDScale; scale *= 2)
+			{
+				byte[] target = new byte[width * 2 * height * 2];
+				int targetWidth = width * 2;
+
+				for (int y = 0; y < height; y++)
+				{
+					for (int x = 0; x < width; x++)
+					{
+						byte p = source[(y * width) + x];
+						byte a = (y > 0) ? source[((y - 1) * width) + x] : p;
+						byte b = (x < width - 1) ? source[(y * width) + x + 1] : p;
+						byte c = (x > 0) ? source[(y * width) + x - 1] : p;
+						byte d = (y < height - 1) ? source[((y + 1) * width) + x] : p;
+						int t = (y * 2 * targetWidth) + (x * 2);
+
+						target[t] = (c == a && c != d && a != b) ? a : p;
+						target[t + 1] = (a == b && a != c && b != d) ? b : p;
+						target[t + targetWidth] = (d == c && d != b && c != a) ? c : p;
+						target[t + targetWidth + 1] = (b == d && b != a && d != c) ? d : p;
+					}
+				}
+
+				source = target;
+				width *= 2;
+				height *= 2;
+			}
+
+			return source;
+		}
+
+		private void EnsureHDLayer()
+		{
+			if (this._hdMask == null)
+			{
+				this._hdPixels = new uint[this.iWidth * HDScale * this.iHeight * HDScale];
+				this._hdMask = new bool[this.iWidth * this.iHeight];
+			}
+		}
+
+		private void ClearHDPixel(int pixelAddress)
+		{
+			if (this._hdMask != null)
+			{
+				this._hdMask[pixelAddress] = false;
+			}
+		}
+
+		private int GetHDAddress(int x, int y)
+		{
+			return (y * HDScale * this.iWidth * HDScale) + (x * HDScale);
+		}
+
+		/// <summary>
+		/// Fills the HD block of an indexed pixel with its palette color, so HD content can be blended over it
+		/// </summary>
+		private void MaterializeHDPixel(int x, int y)
+		{
+			int pixelAddress = (y * this.iWidth) + x;
+
+			if (!this._hdMask![pixelAddress])
+			{
+				uint color = this.oPalette[this.aPixels[pixelAddress]].ToUInt32() | 0xff000000;
+				int hdAddress = this.GetHDAddress(x, y);
+
+				for (int i = 0; i < HDScale; i++)
+				{
+					for (int j = 0; j < HDScale; j++)
+					{
+						this._hdPixels![hdAddress + j] = color;
+					}
+
+					hdAddress += this.iWidth * HDScale;
+				}
+
+				this._hdMask[pixelAddress] = true;
+			}
+		}
+
+		private void CopyHDBlock(int x, int y, GBitmap srcBitmap, int srcX, int srcY)
+		{
+			int hdAddress = this.GetHDAddress(x, y);
+			int srcHDAddress = srcBitmap.GetHDAddress(srcX, srcY);
+
+			for (int i = 0; i < HDScale; i++)
+			{
+				for (int j = 0; j < HDScale; j++)
+				{
+					this._hdPixels![hdAddress + j] = srcBitmap._hdPixels![srcHDAddress + j];
+				}
+
+				hdAddress += this.iWidth * HDScale;
+				srcHDAddress += srcBitmap.iWidth * HDScale;
+			}
+
+			this._hdMask![(y * this.iWidth) + x] = true;
+		}
+
+		private void BlendHDBlock(int x, int y, GBitmap srcBitmap, int srcX, int srcY, bool grey)
+		{
+			int hdAddress = this.GetHDAddress(x, y);
+			int srcHDAddress = srcBitmap.GetHDAddress(srcX, srcY);
+			uint indexColor = this.oPalette[this.aPixels[(y * this.iWidth) + x]].ToUInt32();
+			uint srcIndexColor = srcBitmap.oPalette[srcBitmap.aPixels[(srcY * srcBitmap.iWidth) + srcX]].ToUInt32();
+
+			for (int i = 0; i < HDScale; i++)
+			{
+				for (int j = 0; j < HDScale; j++)
+				{
+					uint color = srcBitmap._hdPixels![srcHDAddress + j];
+
+					if (grey)
+					{
+						color = GreyColor(IsKeyColor(color) ? ShadeColor(srcIndexColor, color) : color);
+					}
+
+					if (IsKeyColor(color))
+					{
+						// key colors stay unresolved, they take the color of the indexed pixel when shown
+						this._hdPixels![hdAddress + j] = color;
+					}
+					else if ((color >> 24) != 0)
+					{
+						this._hdPixels![hdAddress + j] = BlendColor(color, ResolveHDColor(this._hdPixels[hdAddress + j], indexColor));
+					}
+				}
+
+				hdAddress += this.iWidth * HDScale;
+				srcHDAddress += srcBitmap.iWidth * HDScale;
+			}
+		}
+
+		/// <summary>
+		/// Replaces key colors in the HD block of a pixel with the color they currently show
+		/// </summary>
+		private void ResolveHDKeys(int x, int y)
+		{
+			int hdAddress = this.GetHDAddress(x, y);
+			uint indexColor = this.oPalette[this.aPixels[(y * this.iWidth) + x]].ToUInt32();
+
+			for (int i = 0; i < HDScale; i++)
+			{
+				for (int j = 0; j < HDScale; j++)
+				{
+					if (IsKeyColor(this._hdPixels![hdAddress + j]))
+					{
+						this._hdPixels[hdAddress + j] = ShadeColor(indexColor, this._hdPixels[hdAddress + j]);
+					}
+				}
+
+				hdAddress += this.iWidth * HDScale;
+			}
+		}
+
+		private static uint GreyColor(uint color)
+		{
+			uint grey = ((((color >> 16) & 0xff) * 3) + (((color >> 8) & 0xff) * 6) + (color & 0xff)) / 10;
+
+			return (color & 0xff000000) | (grey << 16) | (grey << 8) | grey;
+		}
+
+		/// <summary>
+		/// HD key colors take the color of the indexed pixel under them, so palette color swaps (player colors) also apply to HD art.
+		/// Primary key: magenta shades (red == blue, no green); secondary key: cyan shades (green == blue, no red).
+		/// A channel value of 128 means the exact palette color, lower is darker, higher is lighter.
+		/// </summary>
+		private static bool IsKeyColor(uint color)
+		{
+			uint red = (color >> 16) & 0xff;
+			uint green = (color >> 8) & 0xff;
+			uint blue = color & 0xff;
+
+			return (color >> 24) == 0xff && ((green == 0 && red == blue && red != 0) || (red == 0 && green == blue && green != 0));
+		}
+
+		private static bool IsSecondaryKeyColor(uint color)
+		{
+			return IsKeyColor(color) && ((color >> 16) & 0xff) == 0;
+		}
+
+		private static uint ShadeColor(uint baseColor, uint keyColor)
+		{
+			uint shade = Math.Max((keyColor >> 16) & 0xff, keyColor & 0xff);
+			uint red = Math.Min(0xffu, (((baseColor >> 16) & 0xff) * shade) / 0x80);
+			uint green = Math.Min(0xffu, (((baseColor >> 8) & 0xff) * shade) / 0x80);
+			uint blue = Math.Min(0xffu, ((baseColor & 0xff) * shade) / 0x80);
+
+			return 0xff000000 | (red << 16) | (green << 8) | blue;
+		}
+
+		/// <summary>
+		/// Color shown for an HD pixel over the color of its indexed pixel
+		/// </summary>
+		private static uint ResolveHDColor(uint color, uint indexColor, uint themed = 0)
+		{
+			if ((color & 0xff000000) == MaterialAlpha)
+				return MaterialColor(color, indexColor, themed);
+
+			if ((color & 0xff000000) == SeaAlpha || (color & 0xff000000) == RiverAlpha)
+				return color | 0xff000000;
+
+			return IsKeyColor(color) ? ShadeColor(indexColor, color) : BlendColor(color, indexColor);
+		}
+
+		private bool HDBlockIsVisible(int x, int y)
+		{
+			int hdAddress = this.GetHDAddress(x, y);
+
+			for (int i = 0; i < HDScale; i++)
+			{
+				for (int j = 0; j < HDScale; j++)
+				{
+					if ((this._hdPixels![hdAddress + j] & 0xff000000) != 0)
+					{
+						return true;
+					}
+				}
+
+				hdAddress += this.iWidth * HDScale;
+			}
+
+			return false;
+		}
+
+		/// <summary>
+		/// Blends ARGB color over an opaque ARGB background color
+		/// </summary>
+		private static uint BlendColor(uint color, uint background)
+		{
+			uint alpha = color >> 24;
+
+			if (alpha == 0xff)
+				return color;
+
+			if (alpha == 0)
+				return background | 0xff000000;
+
+			uint inverseAlpha = 0xff - alpha;
+			uint red = ((((color >> 16) & 0xff) * alpha) + (((background >> 16) & 0xff) * inverseAlpha)) / 0xff;
+			uint green = ((((color >> 8) & 0xff) * alpha) + (((background >> 8) & 0xff) * inverseAlpha)) / 0xff;
+			uint blue = (((color & 0xff) * alpha) + ((background & 0xff) * inverseAlpha)) / 0xff;
+
+			return 0xff000000 | (red << 16) | (green << 8) | blue;
+		}
+
+		/// <summary>
+		/// Looks for HD versions of a PIC file in the 'hd' folder next to it and attaches them to this bitmap:
+		/// <list type="bullet">
+		/// <item>hd/NAME.png (or .jpg, for art without transparency), the whole image at HDScale times the size,</item>
+		/// <item>hd/NAME/X_Y.png, one region with its top left corner at X, Y in the original image, applied over the whole image.
+		/// The region also replaces the original pixels under it, so they match the HD art.
+		/// The name may end with _kP-S, the color indexes that primary and secondary key colors stand for (default 10 and 2).</item>
+		/// </list>
+		/// </summary>
+		private void LoadHDLayer(string picPath)
+		{
+			HDImage? hdImage;
+
+			lock (_hdCacheLock)
+			{
+				if (!_hdCache.TryGetValue(picPath, out hdImage))
+				{
+					hdImage = ReadHDImage(picPath, this);
+					_hdCache.Add(picPath, hdImage);
+				}
+			}
+
+			if (hdImage != null)
+			{
+				this.EnsureHDLayer();
+				Array.Copy(hdImage.Pixels, this._hdPixels!, hdImage.Pixels.Length);
+				Array.Copy(hdImage.Mask, this._hdMask!, hdImage.Mask.Length);
+
+				for (int i = 0; i < hdImage.Indexes.Length; i++)
+				{
+					if (hdImage.Indexes[i] >= 0)
+					{
+						this.aPixels[i] = (byte)hdImage.Indexes[i];
+					}
+				}
+
+				if (hdImage.Overflow.Count > 0)
+				{
+					this._hdOverflow = new Dictionary<(int X, int Y), HDOverflow>(hdImage.Overflow);
+					_hasHDOverflow = true;
+				}
+			}
+		}
+
+		private class HDImage
+		{
+			public uint[] Pixels;
+			public bool[] Mask;
+			public short[] Indexes;
+			public Dictionary<(int X, int Y), HDOverflow> Overflow = new Dictionary<(int X, int Y), HDOverflow>();
+
+			public HDImage(int width, int height)
+			{
+				this.Pixels = new uint[width * HDScale * height * HDScale];
+				this.Mask = new bool[width * height];
+				this.Indexes = new short[width * height];
+				Array.Fill(this.Indexes, (short)-1);
+			}
+		}
+
+		// X_Y.png, with optional _tN (N original rows of art above the region) and _kP-S (key color indexes); .jpg for opaque art
+		private static readonly System.Text.RegularExpressions.Regex _hdRegionName =
+			new System.Text.RegularExpressions.Regex(@"^(\d+)_(\d+)(?:_t(\d+))?(?:_k(\d+)-(\d+))?\.(?:png|jpg)$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+		private static HDImage? ReadHDImage(string picPath, GBitmap bitmap)
+		{
+			string? directory = Path.GetDirectoryName(picPath);
+			string name = Path.GetFileNameWithoutExtension(picPath);
+
+			string? hdDirectory = _hdDirectory ?? (directory == null ? null : Path.Combine(directory, "hd"));
+
+			if (hdDirectory == null || !Directory.Exists(hdDirectory))
+				return null;
+
+			string[] names = new string[] { name, name.ToUpperInvariant(), name.ToLowerInvariant() };
+			HDImage hdImage = new HDImage(bitmap.iWidth, bitmap.iHeight);
+			bool found = false;
+			int hdWidth = bitmap.iWidth * HDScale;
+
+			// the whole image
+			foreach (string candidate in names.SelectMany(n => new string[] { $"{n}.png", $"{n}.PNG", $"{n}.jpg", $"{n}.JPG" }).Distinct())
+			{
+				string hdPath = Path.Combine(hdDirectory, candidate);
+
+				if (File.Exists(hdPath))
+				{
+					using SKBitmap? image = SKBitmap.Decode(hdPath);
+
+					if (image == null || image.Width != hdWidth || image.Height != bitmap.iHeight * HDScale)
+					{
+						System.Diagnostics.Debug.WriteLine($"HD image '{hdPath}' is ignored, it has to be a {hdWidth}x{bitmap.iHeight * HDScale} PNG image");
+					}
+					else
+					{
+						for (int i = 0; i < image.Height; i++)
+						{
+							for (int j = 0; j < image.Width; j++)
+							{
+								hdImage.Pixels[(i * hdWidth) + j] = (uint)image.GetPixel(j, i);
+							}
+						}
+
+						Array.Fill(hdImage.Mask, true);
+						found = true;
+					}
+
+					break;
+				}
+			}
+
+			// regions
+			string? regionDirectory = names.Select(n => Path.Combine(hdDirectory, n)).FirstOrDefault(Directory.Exists);
+
+			if (regionDirectory != null)
+			{
+				foreach (string regionPath in Directory.GetFiles(regionDirectory).OrderBy(p => p, StringComparer.Ordinal))
+				{
+					System.Text.RegularExpressions.Match match = _hdRegionName.Match(Path.GetFileName(regionPath));
+
+					if (!match.Success)
+						continue;
+
+					int left = int.Parse(match.Groups[1].Value);
+					int top = int.Parse(match.Groups[2].Value);
+					int overflowRows = match.Groups[3].Success ? int.Parse(match.Groups[3].Value) : 0;
+					int primaryIndex = match.Groups[4].Success ? int.Parse(match.Groups[4].Value) : 10;
+					int secondaryIndex = match.Groups[5].Success ? int.Parse(match.Groups[5].Value) : 2;
+
+					using SKBitmap? image = SKBitmap.Decode(regionPath);
+					int regionWidth = (image?.Width ?? 0) / HDScale;
+					int regionHeight = (image?.Height ?? 0) / HDScale - overflowRows;
+
+					if (image == null || (image.Width % HDScale) != 0 || (image.Height % HDScale) != 0 || regionHeight <= 0 ||
+						left + regionWidth > bitmap.iWidth || top + regionHeight > bitmap.iHeight)
+					{
+						System.Diagnostics.Debug.WriteLine($"HD image '{regionPath}' is ignored, its size has to be a multiple of {HDScale} and it has to fit the original image");
+						continue;
+					}
+
+					// the top rows of a tall image are drawn above the sprite
+					if (overflowRows > 0)
+					{
+						HDOverflow overflow = new HDOverflow(regionWidth, overflowRows);
+
+						for (int i = 0; i < overflowRows * HDScale; i++)
+						{
+							for (int j = 0; j < regionWidth * HDScale; j++)
+							{
+								overflow.Pixels[(i * regionWidth * HDScale) + j] = (uint)image.GetPixel(j, i);
+							}
+						}
+
+						hdImage.Overflow[(left, top)] = overflow;
+					}
+
+					for (int i = 0; i < regionHeight; i++)
+					{
+						for (int j = 0; j < regionWidth; j++)
+						{
+							int x = left + j;
+							int y = top + i;
+							int hdAddress = (y * HDScale * hdWidth) + (x * HDScale);
+							uint visibleColor = 0;
+							int visibleCount = 0;
+							int primaryCount = 0;
+							int secondaryCount = 0;
+
+							for (int k = 0; k < HDScale; k++)
+							{
+								for (int l = 0; l < HDScale; l++)
+								{
+									uint color = (uint)image.GetPixel((j * HDScale) + l, ((i + overflowRows) * HDScale) + k);
+
+									hdImage.Pixels[hdAddress + (k * hdWidth) + l] = color;
+
+									if (IsSecondaryKeyColor(color))
+									{
+										secondaryCount++;
+									}
+									else if (IsKeyColor(color))
+									{
+										primaryCount++;
+									}
+									else if ((color >> 24) >= 0x80)
+									{
+										visibleColor = color;
+										visibleCount++;
+									}
+								}
+							}
+
+							// the original pixel under the region follows the majority of its HD pixels:
+							// a key color index, the closest palette color, or transparent. Any key pixel makes the original
+							// pixel the key's index: a key pixel shows the color of the original pixel under it, so in a
+							// block shared with a rim or a figure (most of a small unit's base) a palette color there would
+							// turn the key pixels that color instead of the player's. The other HD pixels keep their own colors.
+							int index = 0;
+
+							if (primaryCount + secondaryCount > 0)
+							{
+								index = (secondaryCount > primaryCount) ? secondaryIndex : primaryIndex;
+							}
+							else if (visibleCount > 0)
+							{
+								index = bitmap.GetClosestPaletteIndex(visibleColor);
+							}
+
+							hdImage.Indexes[(y * bitmap.iWidth) + x] = (short)index;
+							hdImage.Mask[(y * bitmap.iWidth) + x] = true;
+						}
+					}
+
+					found = true;
+				}
+			}
+
+			return found ? hdImage : null;
+		}
+
+		private int GetClosestPaletteIndex(uint color)
+		{
+			int closestIndex = 1;
+			int closestDistance = int.MaxValue;
+
+			// index 0 is transparent in sprites, so it is not used for visible pixels
+			for (int i = 1; i < 256; i++)
+			{
+				uint paletteColor = this.oPalette[(byte)i].ToUInt32();
+				int red = (int)((color >> 16) & 0xff) - (int)((paletteColor >> 16) & 0xff);
+				int green = (int)((color >> 8) & 0xff) - (int)((paletteColor >> 8) & 0xff);
+				int blue = (int)(color & 0xff) - (int)(paletteColor & 0xff);
+				int distance = (red * red) + (green * green) + (blue * blue);
+
+				if (distance < closestDistance)
+				{
+					closestDistance = distance;
+					closestIndex = i;
+				}
+			}
+
+			return closestIndex;
+		}
+
+		/// <summary>
+		/// Writes this bitmap as a nearest-neighbour upscaled PNG, color index 0 is written as transparent
+		/// </summary>
+		private void SaveHDTemplate(string path)
+		{
+			int width = this.iWidth * HDScale;
+			int height = this.iHeight * HDScale;
+
+			using SKBitmap image = new SKBitmap(width, height, SKColorType.Bgra8888, SKAlphaType.Unpremul);
+
+			for (int i = 0; i < height; i++)
+			{
+				for (int j = 0; j < width; j++)
+				{
+					byte colorIndex = this.aPixels[((i / HDScale) * this.iWidth) + (j / HDScale)];
+					uint color = (colorIndex == 0) ? 0 : (this.oPalette[colorIndex].ToUInt32() | 0xff000000);
+
+					image.SetPixel(j, i, new SKColor(color));
+				}
+			}
+
+			Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+
+			using FileStream stream = new FileStream(path, FileMode.Create);
+			image.Encode(stream, SKEncodedImageFormat.Png, 100);
+		}
+		#endregion
 
 		public void DrawString(string text, GFont font, GRectangle rect, byte frontColor, byte backColor, PixelWriteModeEnum writeMode)
 		{
@@ -444,8 +2114,9 @@ namespace OpenCivOne.Graphics
 					}
 					else
 					{
-						// unknown char, use '?'
-						fontCh = font.Characters.GetValueByKey('?');
+						// a letter the font lacks takes its other case (the headline font has no lowercase z), else '?'
+						char other = char.IsLower(ch) ? char.ToUpperInvariant(ch) : char.ToLowerInvariant(ch);
+						fontCh = font.Characters.ContainsKey(other) ? font.Characters.GetValueByKey(other) : font.Characters.GetValueByKey('?');
 					}
 
 					int iPixelAddress1 = iPixelAddress0;
@@ -476,6 +2147,8 @@ namespace OpenCivOne.Graphics
 										this.aPixels[iPixelAddress1 + k] ^= color;
 										break;
 								}
+
+								this.ClearHDPixel(iPixelAddress1 + k);
 							}
 						}
 
@@ -803,6 +2476,16 @@ namespace OpenCivOne.Graphics
 			}
 
 			stream.Close();
+
+			if (bitmap != null)
+			{
+				if (_hdTemplatePath != null)
+				{
+					bitmap.SaveHDTemplate(Path.Combine(_hdTemplatePath, $"{Path.GetFileNameWithoutExtension(path).ToUpperInvariant()}.png"));
+				}
+
+				bitmap.LoadHDLayer(path);
+			}
 
 			return bitmap;
 		}

@@ -73,7 +73,7 @@ namespace OpenCivOne
 			MouseEvent mouseEvent = this.parent.GetMouseEvent();
 
 			// Instruction address 0x0000:0x0329, size: 5
-			using (StreamReader reader = new($"{this.parent.ResourcePath}CREDITS.TXT"))
+			using (StreamReader reader = new(this.parent.GetTextFilePath("CREDITS.TXT")))
 			{
 				// Instruction address 0x0000:0x0334, size: 5
 				this.parent.CommonTools.ResetWaitTimer();
@@ -378,7 +378,7 @@ namespace OpenCivOne
 						this.parent.Var_19d4_Screen1_Rectangle, 320 - i, 176);
 				}
 
-				if ((i % 22) == 0 && contentIndex < content.Length)
+				if ((i % 22) == 0 && contentIndex < content.Length - 1)
 				{
 					contentIndex++;
 				}

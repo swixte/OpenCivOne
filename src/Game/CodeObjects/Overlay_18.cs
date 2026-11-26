@@ -298,7 +298,9 @@ namespace OpenCivOne
 			this.oParent.Graphics.F0_VGA_0c3e_DrawBitmapToScreen(this.oParent.Var_aa_Screen0_Rectangle,
 				(this.oCPU.ReadInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0xa)) * 16) - 16,
 				(this.oCPU.ReadInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0x10)) * 16) + 8,
-				this.oCPU.ReadUInt16(this.oCPU.DS.UInt16, (ushort)(this.oCPU.AX.UInt16 << 1 + 0x682a)));
+				// the part's bitmap, by the part kind read just above (the port had "AX << 1 + 0x682a", which C# reads
+				// as a shift by 0x682b, so no part was ever drawn)
+				this.oCPU.ReadUInt16(this.oCPU.DS.UInt16, (ushort)((this.oCPU.ReadUInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0x8)) << 1) + 0x682a)));
 
 		L03b7:
 			this.oCPU.CMP_UInt16(this.oCPU.ReadUInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0x8)), 0x6);
@@ -918,7 +920,10 @@ namespace OpenCivOne
 			this.oCPU.Log.EnterBlock($"F18_0000_0c11_GetSpaceShipData({playerID}, {xPos}, {yPos})");
 
 			// function body
-			sbyte sdata = this.oParent.GameData.Players[playerID].SpaceshipData[(12 * xPos) + yPos];
+			// a part's neighbour can lie off the ship's 15 x 12 grid (a large part at its edge): that cell is empty
+			int cell = (12 * xPos) + yPos;
+			sbyte[] shipData = this.oParent.GameData.Players[playerID].SpaceshipData;
+			sbyte sdata = (xPos < 0 || yPos < 0 || yPos >= 12 || cell >= shipData.Length) ? (sbyte)-1 : shipData[cell];
 
 			if (sdata == -1 || sdata >= 0x3)
 			{
@@ -1409,8 +1414,9 @@ namespace OpenCivOne
 			this.oCPU.CX.UInt16 = 0x3;
 			this.oCPU.IMUL_UInt16(this.oCPU.AX, this.oCPU.DX, this.oCPU.CX.UInt16);
 			this.oCPU.BX.UInt16 = this.oCPU.AX.UInt16;
-			this.oCPU.CMP_UInt8(this.oCPU.ReadUInt8(this.oCPU.ES.UInt16, (ushort)(this.oCPU.BX.UInt16 + 0x0)), 0xff);
-			if (this.oCPU.Flags.NE) goto L10d2;
+			// the end of the part table: its (-1, -1) entry (the original read it from the table in memory)
+			int nextCell = this.oCPU.ReadUInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0xc));
+			if (nextCell < this.oParent.GameData.SpaceshipCells.Length && this.oParent.GameData.SpaceshipCells[nextCell].XPos != -1) goto L10d2;
 			this.oCPU.AX.UInt16 = this.oCPU.ReadUInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0x8));
 			this.oCPU.AX.UInt16 = this.oCPU.SUB_UInt16(this.oCPU.AX.UInt16, this.oCPU.ReadUInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0x2)));
 			this.oCPU.CX.UInt16 = this.oCPU.ReadUInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0x6));
@@ -1462,6 +1468,11 @@ namespace OpenCivOne
 		L11cf:
 			this.oCPU.CMP_UInt16(this.oCPU.ReadUInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0xc)), 0xffff);
 			if (this.oCPU.Flags.E) goto L120c;
+
+			// a full ship: the search ended on the table's end entry, so there is no room for the part
+			int chosenCell = this.oCPU.ReadUInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0xc));
+			if (chosenCell >= this.oParent.GameData.SpaceshipCells.Length || this.oParent.GameData.SpaceshipCells[chosenCell].XPos < 0)
+				goto L120c;
 			
 			this.oCPU.AX.UInt16 = 0x3;
 			this.oCPU.IMUL_UInt16(this.oCPU.AX, this.oCPU.DX, this.oCPU.ReadUInt16(this.oCPU.SS.UInt16, (ushort)(this.oCPU.BP.UInt16 - 0xc)));

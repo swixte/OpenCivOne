@@ -128,7 +128,8 @@ namespace OpenCivOne
 
 			int selectedOption = this.parent.MenuBoxDialog.F0_2d05_0031_ShowMenuBox(
 				$" Tax Rate\n Luxuries Rate\n FindCity\n Preferences\n Save Game\n REVOLUTION!\n \n View Replay\n Retire\n QUIT\n",
-				16, 8, true, false, false);
+				// one pixel below the menu bar, so the box's frame (two pixels outside it) does not cut the bar's letters
+				16, 9, true, false, false);
 
 			// Instruction address 0x2c84:0x00ff, size: 5
 			this.parent.CommonTools.ClearKeyboardAndMouseEvents();
@@ -436,7 +437,7 @@ namespace OpenCivOne
 				orders[orderCount++] = 'D';
 
 				// Instruction address 0x2c84:0x05e6, size: 5
-				int selectedOrder = this.parent.MenuBoxDialog.F0_2d05_0031_ShowMenuBox(menuText.ToString(), 72, 8, true, false, false);
+				int selectedOrder = this.parent.MenuBoxDialog.F0_2d05_0031_ShowMenuBox(menuText.ToString(), 72, 9, true, false, false);
 
 				if (selectedOrder < 0 || selectedOrder >= orderCount)
 				{
@@ -459,7 +460,7 @@ namespace OpenCivOne
 			// function body
 			// Instruction address 0x2c84:0x0647, size: 5
 			int selectedOption = this.parent.MenuBoxDialog.F0_2d05_0031_ShowMenuBox(" City Status (F1)\n Military Advisor (F2)\n Intelligence Advisor (F3)\n" +
-				" Attitude Advisor (F4)\n Trade Advisor (F5)\n Science Advisor (F6)\n", 112, 8, true, false, false);
+				" Attitude Advisor (F4)\n Trade Advisor (F5)\n Science Advisor (F6)\n", 112, 9, true, false, false);
 
 			this.parent.Graphics.F0_VGA_07d8_DrawImage(this.parent.Var_19d4_Screen1_Rectangle, 0, 0, 320, 200, this.parent.Var_aa_Screen0_Rectangle, 0, 0);
 
@@ -509,7 +510,7 @@ namespace OpenCivOne
 
 			// Instruction address 0x2c84:0x0724, size: 5
 			int selectedOption = this.parent.MenuBoxDialog.F0_2d05_0031_ShowMenuBox(" Wonders of the World (F7)\n Top 5 Cities (F8)\n" +
-				" Civilization Score (F9)\n World Map (F10)\n Demographics\n SpaceShips\n", 144, 8, true, false, false);
+				" Civilization Score (F9)\n World Map (F10)\n Demographics\n SpaceShips\n", 144, 9, true, false, false);
 
 			this.parent.Graphics.F0_VGA_07d8_DrawImage(this.parent.Var_19d4_Screen1_Rectangle, 0, 0, 320, 200, this.parent.Var_aa_Screen0_Rectangle, 0, 0);
 
@@ -553,7 +554,7 @@ namespace OpenCivOne
 			// function body
 			// Instruction address 0x2c84:0x07e1, size: 5
 			int selectedOption = this.parent.MenuBoxDialog.F0_2d05_0031_ShowMenuBox(" Complete\n Technology Advances\n City Improvements\n" +
-				" Unit Types\n Terrain Types\n Miscellaneous\n", 182, 8, true, false, false);
+				" Unit Types\n Terrain Types\n Miscellaneous\n", 182, 9, true, false, false);
 
 			if (selectedOption < 0)
 			{

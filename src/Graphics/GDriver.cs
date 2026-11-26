@@ -25,6 +25,12 @@ namespace OpenCivOne.Graphics
 
 			this.screens.Add(0, new GBitmap()); // Main screen
 
+			// map cells are drawn in the map view, HD art reaching above a cell stays inside it
+			this.screens.GetValueByKey(0).HDOverflowClip = MapViewRectangle;
+
+			// flat boxes on the main screen get the painted UI grain, when hd/ui/material.png is there
+			this.screens.GetValueByKey(0).UseUIMaterial = true;
+
 			byte[] fonts = CommonResources.Fonts_xml;
 
 			Stream fonts1 = new GZipStream(new MemoryStream(fonts), CompressionMode.Decompress);
@@ -40,6 +46,37 @@ namespace OpenCivOne.Graphics
 		}
 
 		#region Properties
+		/// <summary>
+		/// The map view on the main screen
+		/// </summary>
+		public static GRectangle MapViewRectangle
+		{
+			get => new GRectangle(80, 8, 240, 192);
+		}
+
+		/// <summary>
+		/// Whether map cells are being drawn in the map view (not the city screen's small map)
+		/// </summary>
+		public bool DrawsMapWindow => this.screens.GetValueByKey(0).HDOverflowClip is GRectangle clip &&
+			clip.X == 80 && clip.Y == 8 && clip.Width == 240 && clip.Height == 192;
+
+		/// <summary>
+		/// Whether map cells are being drawn in the city screen's small map (5 x 5 cells at 128, 24)
+		/// </summary>
+		public bool DrawsCityMap => this.screens.GetValueByKey(0).HDOverflowClip is GRectangle clip &&
+			clip.X == 128 && clip.Y == 24 && clip.Width == 80 && clip.Height == 80;
+
+		/// <summary>
+		/// Area of the main screen where HD art reaching above map cells may be drawn, the map view by default
+		/// </summary>
+		public void SetHDOverflowClip(GRectangle rect)
+		{
+			lock (VCPU.GraphicsLock)
+			{
+				this.screens.GetValueByKey(0).HDOverflowClip = rect;
+			}
+		}
+
 		public BDictionary<int, GBitmap> Screens
 		{
 			get { return this.screens; }
@@ -296,7 +333,7 @@ namespace OpenCivOne.Graphics
 
 									aPixels[xPos, yPos] = true;
 									iCount++;
-									screen0.SetPixel(xPos, yPos, newScreen.GetPixel(xPos, yPos));
+									screen0.CopyPixel(xPos, yPos, newScreen);
 								}
 							}
 
@@ -431,6 +468,12 @@ namespace OpenCivOne.Graphics
 
 		public void F0_VGA_0c3e_DrawBitmapToScreen(CRectangle rect, int x, int y, int bitmapID)
 		{
+			F0_VGA_0c3e_DrawBitmapToScreen(rect, x, y, bitmapID, false);
+		}
+
+		/// <param name="greyHD">HD pixels of the bitmap are drawn in grey, the HD counterpart of greying out a unit by replacing its colors</param>
+		public void F0_VGA_0c3e_DrawBitmapToScreen(CRectangle rect, int x, int y, int bitmapID, bool greyHD)
+		{
 			// function body
 			if (this.screens.ContainsKey(rect.ScreenID))
 			{
@@ -441,7 +484,7 @@ namespace OpenCivOne.Graphics
 						GBitmap screen = this.screens.GetValueByKey(rect.ScreenID);
 						GBitmap bitmap = this.bitmaps.GetValueByKey(bitmapID);
 
-						screen.DrawBitmap(rect.Left + x, rect.Top + y, bitmap, true);
+						screen.DrawBitmap(new GPoint(rect.Left + x, rect.Top + y), bitmap, bitmap.Rectangle, true, greyHD);
 					}
 				}
 				else
@@ -452,6 +495,56 @@ namespace OpenCivOne.Graphics
 			else
 			{
 				throw new Exception($"The screen {rect.ScreenID} is not allocated");
+			}
+		}
+
+		/// <summary>
+		/// Draws only the HD art of a bitmap that reaches above it, if it has any
+		/// </summary>
+		/// <summary>
+		/// Shows the painted map's cell (mapX, mapY) over the 16x16 pixels at (x, y) of the rectangle's screen
+		/// </summary>
+		public void ColorHD(CRectangle rect, int x, int y, int width, int height, Func<byte, uint> colorOf)
+		{
+			if (this.screens.ContainsKey(rect.ScreenID))
+			{
+				lock (VCPU.GraphicsLock)
+				{
+					this.screens.GetValueByKey(rect.ScreenID).ColorHD(rect.Left + x, rect.Top + y, width, height, colorOf);
+				}
+			}
+		}
+
+		public void DrawPaintedFog(CRectangle rect, int x, int y, PaintedMap map, int mapX, int mapY)
+		{
+			if (this.screens.ContainsKey(rect.ScreenID))
+			{
+				lock (VCPU.GraphicsLock)
+				{
+					this.screens.GetValueByKey(rect.ScreenID).DrawPaintedFog(rect.Left + x, rect.Top + y, map, mapX, mapY);
+				}
+			}
+		}
+
+		public void DrawPaintedCell(CRectangle rect, int x, int y, PaintedMap map, int mapX, int mapY)
+		{
+			if (this.screens.ContainsKey(rect.ScreenID))
+			{
+				lock (VCPU.GraphicsLock)
+				{
+					this.screens.GetValueByKey(rect.ScreenID).DrawPaintedCell(rect.Left + x, rect.Top + y, map, mapX, mapY);
+				}
+			}
+		}
+
+		public void DrawBitmapHDOverflow(CRectangle rect, int x, int y, int bitmapID)
+		{
+			if (this.screens.ContainsKey(rect.ScreenID) && this.bitmaps.ContainsKey(bitmapID))
+			{
+				lock (VCPU.GraphicsLock)
+				{
+					this.screens.GetValueByKey(rect.ScreenID).DrawHDOverflow(new GPoint(rect.Left + x, rect.Top + y), this.bitmaps.GetValueByKey(bitmapID));
+				}
 			}
 		}
 
@@ -636,8 +729,9 @@ namespace OpenCivOne.Graphics
 				}
 				else
 				{
-					// unknown char, use '?'
-					fontCh = font.Characters.GetValueByKey('?');
+					// a letter the font lacks takes its other case (the headline font has no lowercase z), else '?'
+					char other = char.IsLower(ch) ? char.ToUpperInvariant(ch) : char.ToLowerInvariant(ch);
+					fontCh = font.Characters.ContainsKey(other) ? font.Characters.GetValueByKey(other) : font.Characters.GetValueByKey('?');
 				}
 				iWidth += fontCh.Width;
 				iHeight = Math.Max(iHeight, fontCh.Height + font.LineSpacing);

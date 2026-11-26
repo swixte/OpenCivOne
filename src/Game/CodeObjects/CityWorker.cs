@@ -227,6 +227,9 @@ namespace OpenCivOne
 					this.parent.Var_d4cc_MapViewX = city.Position.X - 5;
 					this.parent.Var_d75e_MapViewY = city.Position.Y - 3;
 
+					// the city map is the 5 x 5 cells around the city, HD art must not reach above it
+					this.parent.Graphics.SetHDOverflowClip(new GRectangle(128, 24, 80, 80));
+
 					// Instruction address 0x1d12:0x05cd, size: 5
 					this.parent.MapManagement.F0_2aea_03ba_DrawCell(city.Position.X, city.Position.Y);
 
@@ -260,6 +263,9 @@ namespace OpenCivOne
 							}
 						}
 					}
+
+					// a painted map view shows the town, foreign units and features over the small map, as on the map
+					this.parent.MapManagement.ShowCityInset(cityID);
 				}
 
 				if (flag == 0)
@@ -288,7 +294,7 @@ namespace OpenCivOne
 							this.parent.CommonTools.PlayTune(36, 0);
 
 							this.parent.News.F21_0000_0000_ShowNews(cityID,
-								$"Food storage exhausted\nin {this.parent.Segment_2459.F0_2459_08c6_GetCityName(cityID)}!\n{((lostUnitID != -1) ? "Settlers lost." : "Famine feared.")}\n");
+								$"Food storage exhausted\nin {this.parent.Segment_2459.F0_2459_08c6_GetCityName(cityID)}!\n{((lostUnitID != -1) ? $"{this.parent.GameData.Units[(int)UnitTypeEnum.Settler].Name} lost." : "Famine feared.")}\n");
 
 							// Instruction address 0x1d12:0x07f4, size: 5
 							this.parent.CommonTools.PlayTune(1, 0);
@@ -1527,12 +1533,15 @@ namespace OpenCivOne
 					this.parent.GameData.Players[this.Var_6548_PlayerID].GovernmentType == GovernmentTypeEnum.Communist)
 				{
 					int attackUnitCount = 0;
-					int activeUnitID = this.parent.MapManagement.F0_2aea_1458_GetCellActiveUnitID(cityX, cityY);
+					// the units in the city are the owner's: a unit of another player recorded on the city's square is not
+					// one of them (its number would point into the wrong player's list)
+					int activeUnitID = this.parent.MapManagement.F0_2aea_14e0_GetCellActiveUnitPlayerID(cityX, cityY) == this.Var_6548_PlayerID ?
+						this.parent.MapManagement.F0_2aea_1458_GetCellActiveUnitID(cityX, cityY) : -1;
 					int nextActiveUnitID = activeUnitID;
 
 					for (int i = 0; i < 32; i++)
 					{
-						if (nextActiveUnitID == -1)
+						if (nextActiveUnitID == -1 || this.parent.GameData.Players[this.Var_6548_PlayerID].Units[nextActiveUnitID].UnitType == UnitTypeEnum.None)
 							break;
 
 						if (this.parent.GameData.Units[(int)this.parent.GameData.Players[this.Var_6548_PlayerID].Units[nextActiveUnitID].UnitType].AttackStrength != 0)
@@ -3123,6 +3132,8 @@ namespace OpenCivOne
 				L5cc2:
 					this.parent.Var_d4cc_MapViewX = mapViewX;
 					this.parent.Var_d75e_MapViewY = mapViewY;
+					this.parent.Graphics.SetHDOverflowClip(GDriver.MapViewRectangle);
+					this.parent.MapManagement.ClearCityInset();
 				}
 
 				if (flag == 0)

@@ -869,7 +869,9 @@ namespace OpenCivOne
 				{
 					int miniPalaceLevel = this.parent.CommonTools.CheckValueRange(palaceBuildCount + 3, 3, 36);
 					int miniPalaceThreshold = miniPalaceLevel / 5;
-					int randomValue = playerID * this.parent.GameData.RandomSeed;
+					// the original works in 16-bit unsigned arithmetic: kept so, the sequence never turns negative (with an
+					// int it overflowed after enough steps and the section index went below zero)
+					int randomValue = (ushort)(playerID * this.parent.GameData.RandomSeed);
 
 					for (int i = 0; i < miniPalaceLevel; i++)
 					{
@@ -880,7 +882,7 @@ namespace OpenCivOne
 						{
 							bool palaceSectionFinished = true;
 
-							randomValue = randomValue * 5 + 1;
+							randomValue = (ushort)((randomValue * 5) + 1);
 							palaceSection = randomValue % 9;
 							palaceLevel = palaceLevels[palaceSection] + 1;
 
@@ -1591,7 +1593,8 @@ namespace OpenCivOne
 							if (F0_1ade_22b5_PlayerHasTechnology(playerID, this.parent.GameData.Units[i].RequiredTechnology) &&
 								!F0_1ade_22b5_PlayerHasTechnology(playerID, this.parent.GameData.Units[i].CancelTechnology))
 							{
-								if (this.parent.GameData.Units[i].MovementType == UnitMovementTypeEnum.Water && 
+								// a ship only in a city by the sea; any other unit anywhere
+								if (this.parent.GameData.Units[i].MovementType != UnitMovementTypeEnum.Water ||
 									(this.parent.GameData.Cities[cityID].Status & CityStatusEnum.WaterAccess) != CityStatusEnum.None)
 								{
 									// Instruction address 0x1ade:0x04f8, size: 5
@@ -2248,7 +2251,7 @@ namespace OpenCivOne
 									this.parent.MenuBoxDialog.F0_2d05_0031_ShowMenuBox(
 										$"Military Advisor:\n{this.parent.LanguageTools.F0_2f4d_0000_AdjustTextBlockWidth(
 											this.parent.LanguageTools.F0_2f4d_0471_ReplaceKeywords(
-											this.parent.LanguageTools.F0_2f4d_01ad_GetTextBySectionAndKey("PRODUCE", $"*{this.parent.Array_30b8[3]}")), 50)}",
+											this.parent.LanguageTools.F0_2f4d_01ad_GetTextBySectionAndKey("PRODUCE", $"*{GameNames.OriginalName(this.parent.Array_30b8[3])}")), 50)}",
 										8, 160, true, false, true);
 								}
 
@@ -2273,7 +2276,7 @@ namespace OpenCivOne
 									this.parent.MenuBoxDialog.F0_2d05_0031_ShowMenuBox(
 										this.parent.LanguageTools.F0_2f4d_0000_AdjustTextBlockWidth(
 										"Domestic Advisor:\n" + this.parent.LanguageTools.F0_2f4d_0471_ReplaceKeywords(this.parent.LanguageTools.F0_2f4d_01ad_GetTextBySectionAndKey("PRODUCE",
-										$"*{this.parent.Array_30b8[3]}")), 50), 164, 160, true, false, true);
+										$"*{GameNames.OriginalName(this.parent.Array_30b8[3])}")), 50), 164, 160, true, false, true);
 								}
 
 								firstPass = false;
@@ -2289,7 +2292,17 @@ namespace OpenCivOne
 						}
 
 						// Instruction address 0x1ade:0x1460, size: 5
-						local_134 = buildIDList[this.parent.MenuBoxDialog.F0_2d05_0031_ShowMenuBox(messageText.ToString(), 80, 8, true, true, true) - 1];
+						int choice = this.parent.MenuBoxDialog.F0_2d05_0031_ShowMenuBox(messageText.ToString(), 80, 8, true, true, true) - 1;
+
+						// the list closed with Escape: the city goes on building what it was (buildIDList[0])
+						if (choice < 0)
+						{
+							this.parent.Var_aa_Screen0_Rectangle.FontID = 1;
+
+							return buildIDList[0];
+						}
+
+						local_134 = buildIDList[choice];
 
 						if (local_134 != 99)
 						{
@@ -2807,7 +2820,7 @@ namespace OpenCivOne
 
 							// Instruction address 0x1ade:0x216c, size: 5
 							this.parent.MenuBoxDialog.ShowDialog(
-								$"Development of {this.parent.GameData.TechnologyAdvances[(int)technology].Name}\nmakes existing Barracks\nobsolete.\n", 80, 100);
+								$"Development of {this.parent.GameData.TechnologyAdvances[(int)technology].Name}\nmakes existing {this.parent.GameData.GetImprovementType((int)ImprovementEnum.Barracks).Name}\nobsolete.\n", 80, 100);
 						}
 					}
 

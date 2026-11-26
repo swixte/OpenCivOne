@@ -339,8 +339,10 @@ namespace OpenCivOne
 				goto Label151;
 			}
 
-			int mouseX = this.parent.MapManagement.AdjustXPosition(((mouseEvent.Position.X - 80) / 16) + this.parent.Var_d4cc_MapViewX);
-			int mouseY = ((mouseEvent.Position.Y - 8) / 16) + this.parent.Var_d75e_MapViewY;
+			// with the isometric view, the cell under the pointer is found on the iso picture
+			GPoint mapPoint = this.parent.MapManagement.MapClick(mouseEvent.Position);
+			int mouseX = this.parent.MapManagement.AdjustXPosition(((mapPoint.X - 80) / 16) + this.parent.Var_d4cc_MapViewX);
+			int mouseY = ((mapPoint.Y - 8) / 16) + this.parent.Var_d75e_MapViewY;
 
 			if (mouseEvent.Position.Y < 8)
 			{
@@ -424,8 +426,9 @@ namespace OpenCivOne
 						if (mouseEvent.Buttons == MouseButtonsEnum.None)
 						{
 							// Instruction address 0x1403:0x0882, size: 5
-							mouseX = this.parent.MapManagement.AdjustXPosition((mouseEvent.Position.X - 80) / 16 + this.parent.Var_d4cc_MapViewX);
-							mouseY = ((mouseEvent.Position.Y - 8) / 16) + this.parent.Var_d75e_MapViewY;
+							mapPoint = this.parent.MapManagement.MapClick(mouseEvent.Position);
+							mouseX = this.parent.MapManagement.AdjustXPosition((mapPoint.X - 80) / 16 + this.parent.Var_d4cc_MapViewX);
+							mouseY = ((mapPoint.Y - 8) / 16) + this.parent.Var_d75e_MapViewY;
 
 							// Instruction address 0x1403:0x08d0, size: 5
 							int distance = this.parent.MapManagement.GetDistance(

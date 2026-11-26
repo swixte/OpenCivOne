@@ -1,0 +1,23 @@
+A widescreen historical-strategy game screen photographed from directly overhead. Orthographic, straight down. No sky, no horizon, no vanishing point, no distant landscape. The map area is entirely ground.
+
+The map is ONE continuous painting, not a board of squares. Grass flows into grass as a single meadow: the same color and the same brushwork cross every place where a hidden square edge might have been. Forest is one canopy mass with a soft irregular treeline. Hills are real landforms rising out of the grass, not squares of hill texture. The sea is one body of water with a curving coastline. There are no tile borders, no grout lines, no dark seams, no chessboard, no graph paper, no rectangular patches, and no change in texture along straight horizontal or vertical lines. Do not draw a map grid.
+
+Layout of the painting, with irregular painted edges:
+- Upper left of the map: one deep forest, a single connected canopy, its edge a curved treeline melting into grass.
+- The broad center: one bright open meadow, continuous in every direction.
+- Upper right of the land, before the water: one tan hill ridge, a landform, blending into the meadow. A second smaller hill rises at the bottom edge and also blends into grass.
+- The right side: one saturated blue sea. The shoreline bows and curves. It is not a straight vertical cut.
+
+SCALE: Both sprites are small tokens on a huge meadow. The citadel is ONE short keep, about as tall as it is wide, with a single red roof. Not a tall spire. No side chapels, no outer courtyard, no town, no wings. The whole keep, roof included, is about the same size as the horse. The rider is one person on one horse, small, with no tall lance and no banner pole, seen from a slight high angle so both are readable.
+
+PLACEMENT: The exact center of the picture is empty grass. Counting only the map and not the sidebar, the short keep stands thirty percent of the way from the left edge of the map to the right edge, and one quarter of the way down from the top of the picture. It stands on open grass, not in the forest and not on the hill, with grass on every side. Counting only the map, the rider stands seventy percent of the way from the left edge of the map to the right edge, and seventy-five percent of the way down the picture, in open grass, far from the sea and far from the hills.
+
+A single thin bright yellow rectangle hugs the rider, with only a slim margin of grass between the horse and the rectangle. The rectangle is only a little larger than the horse. It does not touch the citadel. That yellow rectangle is the only straight outline on the map. No other rectangles, no lattice, no highlighted squares.
+
+The left sixth of the image is a sidebar outside the map, divided from the painting by one clean vertical edge. Top to bottom: a small world minimap with no labels and no grid; a portrait; four long horizontal bars stacked in this order: gold, crimson, blue, green. The bars contain no marks.
+
+Nowhere in the image is there any letter, number, word, caption, or watermark.
+
+Style: a daylight oil painting in the manner of Claude Lorrain and Nicolas Poussin. Honey-colored sunlight, fine smooth brushwork, clear air, one canvas. The meadow is a bright yellow-green, high and even, strokes traveling across the whole field. The forest is a deep green mass, much darker than the grass, with a feathery irregular edge. The sea is lapis lazuli, saturated and continuous. Hills are warm tan earth. The citadel is one short pale limestone keep, a single compact round tower with one terracotta roof, no spire and no side buildings, lit by the same honey light. The rider wears a red cloak on a light horse. The sidebar is pale stone-colored. The portrait is a marble-like classical profile in an oval medallion. No tile mosaic, no encaustic squares, no map graticule.
+
+Repeat, so it is not missed: the keep is a short block with one roof, placed at three tenths of the map's width and a quarter of the picture's height. The horse and rider are at seven tenths of the map's width and three quarters of the picture's height. No pole, no lance.

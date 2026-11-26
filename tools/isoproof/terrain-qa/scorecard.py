@@ -1,0 +1,380 @@
+"""Terrain QA scorecard: runs the data checks of the terrain QA framework over the fixture worlds (dumps written by the
+HD layer tests with ISO_GENWORLDS) and writes one markdown page: every check, per generator mode, worst case and median
+across the worlds, the target and PASS/FAIL.
+
+Usage: python3 scorecard.py DUMPS_DIR OUT.md [COMMIT] [RERUN_DUMPS_DIR]
+"""
+
+import json
+import os
+import statistics
+import sys
+
+DESERT, PLAINS, GRASS, FOREST, HILLS, MOUNTAINS, TUNDRA, ARCTIC, SWAMP, JUNGLE, WATER, RIVER = range(12)
+NAMES = ['Desert', 'Plains', 'Grassland', 'Forest', 'Hills', 'Mountains', 'Tundra', 'Arctic', 'Swamp', 'Jungle', 'Water', 'River']
+LAND = [t for t in range(12) if t != WATER]
+W, H = 80, 50
+FOUR = ((1, 0), (-1, 0), (0, 1), (0, -1))
+EIGHT = FOUR + ((1, 1), (1, -1), (-1, 1), (-1, -1))
+
+
+def load(path):
+    return [[int(c.split(':')[0]) for c in line.split()] for line in open(path)]
+
+
+def regions(g, same, steps=FOUR):
+    """Connected regions: lists of cells, grouping neighbouring cells for which same(a, b) holds."""
+    seen, out = set(), []
+    for y in range(H):
+        for x in range(W):
+            if (x, y) in seen:
+                continue
+            seen.add((x, y))
+            stack, cells = [(x, y)], []
+            while stack:
+                cx, cy = stack.pop()
+                cells.append((cx, cy))
+                for dx, dy in steps:
+                    nx, ny = (cx + dx) % W, cy + dy
+                    if 0 <= ny < H and (nx, ny) not in seen and same(g[cy][cx], g[ny][nx]):
+                        seen.add((nx, ny))
+                        stack.append((nx, ny))
+            out.append((g[y][x], cells))
+    return out
+
+
+def neighbours(g, x, y, steps=EIGHT):
+    return [g[y + dy][(x + dx) % W] for dx, dy in steps if 0 <= y + dy < H]
+
+
+def latitude(y):
+    return abs(y - (H - 1) / 2) / ((H - 1) / 2)
+
+
+def measure(g):
+    """Every check of sections 2A to 2D for one world: name -> value."""
+    m = {}
+    regs = regions(g, lambda a, b: a == b)
+    by_type = {t: [len(c) for tt, c in regs if tt == t] for t in LAND}
+    land_tiles = sum(1 for row in g for t in row if t != WATER)
+
+    # A. coherence
+    for t in LAND:
+        sizes = by_type[t]
+        # (Simon, round 3) a terrain with fewer than 12 tiles in a world is too few to judge
+        if not sizes or t == RIVER or sum(sizes) < 12:
+            continue
+        m[f'A1 median region size: {NAMES[t]}'] = statistics.median(sizes)
+        m[f'A2 single-tile regions: {NAMES[t]} (%)'] = 100 * sum(1 for s in sizes if s == 1) / len(sizes)
+    # (Simon, round 3) no region so large it reads as one colour, and no landmass of one terrain
+    lands = regions(g, lambda a, b: (a == WATER) == (b == WATER))
+    land_of = {}
+    for t, c in lands:
+        if t != WATER:
+            for cell in c:
+                land_of[cell] = len(c)
+    big = [(t, c) for t, c in regs if t not in (WATER, RIVER, ARCTIC) and land_of[c[0]] >= 8]
+    over = [1 for t, c in big if (len(c) > 30 and t != MOUNTAINS) or len(c) > 0.4 * land_of[c[0]]]
+    m['A4 regions over 30 tiles or 40% of their landmass (count)'] = len(over)
+    m['A4b largest region (tiles)'] = max((len(c) for t, c in big if t != MOUNTAINS), default=0)
+    land_cells = [c for t, c in lands if t != WATER and 3 <= c[0][1] <= H - 4]
+    kinds = lambda c: [g[y][x] for x, y in c if g[y][x] != RIVER]
+    m['A5 landmasses of 8+ tiles with one terrain, or 20+ with fewer than three (count)'] = sum(
+        1 for c in land_cells if (len(c) >= 8 and len(set(kinds(c))) < 2) or (len(c) >= 20 and len(set(kinds(c))) < 3))
+    m['A6 largest share of one terrain on a 20+ landmass (%)'] = max(
+        (100 * max(kinds(c).count(t) for t in set(kinds(c))) / max(1, len(kinds(c))) for c in land_cells if len(c) >= 20 and kinds(c)), default=0)
+    # cold land: poleward of 55 degrees (latitude > 55/90), the cap rows apart
+    cold = [g[y][x] for y in range(1, H - 1) for x in range(W) if latitude(y) > 55 / 90 and g[y][x] not in (WATER, RIVER, ARCTIC)]
+    n = max(1, len(cold))
+    m['H1 cold land (>55 deg) that is forest, tundra, hills or mountains (%)'] = 100 * sum(1 for t in cold if t in (FOREST, TUNDRA, HILLS, MOUNTAINS)) / n
+    m['H2 cold land (>55 deg) that is plains (%)'] = 100 * cold.count(PLAINS) / n
+    m['H3 single-terrain plains landmasses of 8+ tiles beyond 55 deg (count)'] = sum(
+        1 for c in land_cells if len(c) >= 8 and min(latitude(y) for x, y in c) > 55 / 90 and set(kinds(c)) == {PLAINS})
+    forest = [y for y in range(H) for x in range(W) if g[y][x] == FOREST]
+    for lo, hi in ((0, 25), (25, 55), (55, 90)):
+        m[f'I forest tiles at {lo}-{hi} deg (count, report only)'] = sum(1 for y in forest if lo / 90 <= latitude(y) < hi / 90 or (hi == 90 and latitude(y) >= lo / 90))
+    small = sum(len(c) for t, c in regs if t not in (WATER, RIVER) and len(c) <= 2)
+    m['A3 land tiles in regions of 1-2 tiles (%)'] = 100 * small / max(1, land_tiles)
+
+    # B. climate sense
+    m['B1 arctic tiles more than 3 rows from a pole'] = sum(1 for y in range(H) for x in range(W) if g[y][x] == ARCTIC and 3 <= y <= H - 4)
+    m['B2 desert or jungle beyond 60% latitude'] = sum(1 for y in range(H) for x in range(W) if g[y][x] in (DESERT, JUNGLE) and latitude(y) > 0.6)
+    bad = 0
+    for y in range(H):
+        for x in range(W):
+            n = neighbours(g, x, y)
+            if g[y][x] == JUNGLE and (DESERT in n or ARCTIC in n):
+                bad += 1
+            if g[y][x] == DESERT and (ARCTIC in n or SWAMP in n):
+                bad += 1
+    m['B3 forbidden neighbours (jungle by desert/arctic, desert by arctic/swamp)'] = bad
+    mean_lat = {t: statistics.mean([latitude(y) for y in range(H) for x in range(W) if g[y][x] == t] or [0]) for t in LAND}
+    order = [ARCTIC, TUNDRA, FOREST, (GRASS, PLAINS), (DESERT, JUNGLE)]
+    values = [max(mean_lat[a] for a in o) if isinstance(o, tuple) else mean_lat[o] for o in order]
+    lows = [min(mean_lat[a] for a in o) if isinstance(o, tuple) else mean_lat[o] for o in order]
+    m['B4 latitude ordering arctic > tundra > forest > grass/plains > desert/jungle (steps out of order)'] = sum(
+        1 for i in range(len(order) - 1) if lows[i] <= values[i + 1])
+
+    # C. relief: ranges are mountains joined across diagonals too
+    ranges = [c for t, c in regions(g, lambda a, b: a == b == MOUNTAINS, EIGHT) if t == MOUNTAINS]
+    mtn = sum(len(c) for c in ranges)
+    m['C1 mountain tiles in ranges of 3 or more (%)'] = 100 * sum(len(c) for c in ranges if len(c) >= 3) / max(1, mtn)
+    with_hills = sum(1 for c in ranges if any(HILLS in neighbours(g, x, y) for x, y in c))
+    m['C2 mountain ranges with hills beside them (%)'] = 100 * with_hills / max(1, len(ranges))
+
+    # D. rivers
+    systems = [c for t, c in regions(g, lambda a, b: a == b == RIVER) if t == RIVER]
+    reach = sum(1 for c in systems if any(WATER in neighbours(g, x, y, FOUR) for x, y in c))
+    m['D1 river systems reaching the sea or a lake (%)'] = 100 * reach / max(1, len(systems))
+    sources = [(x, y) for c in systems for x, y in c if sum(1 for n in neighbours(g, x, y, FOUR) if n == RIVER) <= 1
+               and WATER not in neighbours(g, x, y, FOUR)]
+    m['D2 river sources beside hills or mountains (%)'] = 100 * sum(
+        1 for x, y in sources if HILLS in neighbours(g, x, y) or MOUNTAINS in neighbours(g, x, y)) / max(1, len(sources))
+    m['D3 junctions joining more than three channels'] = sum(
+        1 for c in systems for x, y in c if sum(1 for n in neighbours(g, x, y, FOUR) if n == RIVER) > 3)
+    m['D4 river tiles within 3 rows of a pole'] = sum(1 for y in range(H) for x in range(W) if g[y][x] == RIVER and (y < 3 or y > H - 4))
+    return m
+
+
+# the classic game's yield of each terrain without improvements: food, shields, trade
+YIELD = {DESERT: (0, 1, 0), PLAINS: (1, 1, 0), GRASS: (2, 0, 0), FOREST: (1, 2, 0), HILLS: (1, 0, 0), MOUNTAINS: (0, 1, 0),
+         TUNDRA: (1, 0, 0), ARCTIC: (0, 0, 0), SWAMP: (1, 0, 0), JUNGLE: (1, 0, 0), RIVER: (2, 0, 1)}
+
+
+def load_features(path):
+    return [[int(c.split(':')[1]) for c in line.split()] for line in open(path)]
+
+
+def balance(classic, smoothed, cf, sf):
+    """Section E: the smoothed world against its classic twin. Name -> difference (0 or a percentage)."""
+    m = {}
+    land = lambda g: [(x, y) for y in range(H) for x in range(W) if g[y][x] != WATER]
+    m['E1 land tiles changed (count)'] = abs(len(land(classic)) - len(land(smoothed)))
+    coast = lambda g: sum(1 for x, y in land(g) if WATER in neighbours(g, x, y, FOUR))
+    m['E2 coastline tiles changed (count)'] = abs(coast(classic) - coast(smoothed))
+    rivers = lambda g: {(x, y) for y in range(H) for x in range(W) if g[y][x] == RIVER}
+    m['E3 river tiles changed (count)'] = len(rivers(classic) ^ rivers(smoothed))
+    # (Simon, round 1: balance is measured on non-arctic land, as clearing arctic away from the poles is a chosen
+    # change; the arctic difference is reported on its own line)
+    m['E0 arctic tiles changed (count, report only)'] = abs(sum(r.count(ARCTIC) for r in classic) - sum(r.count(ARCTIC) for r in smoothed))
+    # shares and average yields over each world's own non-arctic land
+    def mix(g):
+        # rivers are left out here: they never change (E3), and their trade would only measure the moved arctic
+        tiles = [g[y][x] for x, y in land(g) if g[y][x] not in (ARCTIC, RIVER)]
+        return tiles, max(1, len(tiles))
+    ct, cn = mix(classic)
+    st, sn = mix(smoothed)
+    m['E4 largest change in a terrain share of non-arctic land (points)'] = max(
+        abs(ct.count(t) * 100 / cn - st.count(t) * 100 / sn) for t in LAND if t != ARCTIC)
+    for i, what in enumerate(('food', 'shields', 'trade')):
+        a = sum(YIELD[t][i] for t in ct) / cn
+        b = sum(YIELD[t][i] for t in st) / sn
+        m[f'E5 average {what} per non-arctic land tile changed (%)'] = abs(a - b) * 100 / max(1e-9, a)
+    for bit, what in ((1, 'special resources'), (2, 'huts')):
+        count = lambda f: sum(1 for row in f for v in row if v & bit)
+        a, b = count(cf), count(sf)
+        m[f'E6 {what} changed (%)'] = abs(a - b) * 100 / max(1, a)
+    continents = lambda g: sum(1 for t, c in regions(g, lambda p, q: (p == WATER) == (q == WATER)) if t != WATER)
+    m['E7 continents changed (count)'] = abs(continents(classic) - continents(smoothed))
+    return m
+
+
+# a city's working area: the 21 cells of the classic fat cross
+FAT_CROSS = [(dx, dy) for dx in range(-2, 3) for dy in range(-2, 3) if abs(dx) + abs(dy) < 4]
+
+
+def site_score(g, x, y):
+    """A city site's worth: food, shields and trade of its working area (water counts as ocean), food weighted most."""
+    if g[y][x] not in (PLAINS, GRASS, RIVER, HILLS, DESERT):
+        return -1
+    total = 0
+    for dx, dy in FAT_CROSS:
+        ny = y + dy
+        if not 0 <= ny < H:
+            continue
+        t = g[ny][(x + dx) % W]
+        f, s, tr = (1, 0, 2) if t == WATER else YIELD[t]
+        total += (f * 3) + (s * 2) + tr
+    return total
+
+
+def starts(g, count=7, spacing=10):
+    """Starts as the game picks them: the best sites, at least spacing cells apart."""
+    sites = sorted(((site_score(g, x, y), x, y) for y in range(3, H - 3) for x in range(W)), reverse=True)
+    chosen = []
+    for score, x, y in sites:
+        if score < 0:
+            break
+        if all(min(abs(x - cx), W - abs(x - cx)) + abs(y - cy) >= spacing for _, cx, cy in chosen):
+            chosen.append((score, x, y))
+        if len(chosen) == count:
+            break
+    return chosen
+
+
+def playability(classic, smoothed):
+    """Section F: start quality, fairness and viable city sites, smoothed against classic."""
+    m = {}
+    sc, ss = starts(classic), starts(smoothed)
+    med_c = statistics.median(s for s, _, _ in sc)
+    m['F1 starts below the classic median start (count)'] = sum(1 for s, _, _ in ss if s < med_c)
+    spread = lambda st: max(s for s, _, _ in st) - min(s for s, _, _ in st)
+    m['F2 start spread best-worst, smoothed minus classic'] = spread(ss) - spread(sc)
+    good = lambda g: sum(1 for y in range(3, H - 3) for x in range(W) if site_score(g, x, y) >= 60)
+    a, b = good(classic), good(smoothed)
+    m['F3 viable city sites changed (%)'] = abs(a - b) * 100 / max(1, a)
+    return m
+
+
+def target(name):
+    """(description, test) for a check."""
+    if name.startswith('F1'):
+        return '<= 3 of 7', lambda v: v <= 3
+    if name.startswith('F2'):
+        return '<= 0', lambda v: v <= 0
+    if name.startswith('F3'):
+        return '<= 10', lambda v: v <= 10
+    if name.startswith('E0'):
+        return 'report only', lambda v: True
+    if name.startswith(('E1', 'E2', 'E3', 'E7')):
+        return '0', lambda v: v == 0
+    if name.startswith('E4'):
+        return '<= 2', lambda v: v <= 2
+    if name.startswith('E5'):
+        return '<= 3', lambda v: v <= 3
+    if name.startswith('E6'):
+        return '<= 10', lambda v: v <= 10
+    if name.startswith(('A4 ', 'A5')):
+        return '0', lambda v: v == 0
+    if name.startswith('A4b'):
+        return 'report', lambda v: True
+    if name.startswith('A6'):
+        return '<= 65', lambda v: v <= 65
+    if name.startswith('H1'):
+        return '>= 40 worst, >= 55 median', lambda v: v >= 40
+    if name.startswith('H2'):
+        return '<= 30', lambda v: v <= 30
+    if name.startswith('H3'):
+        return '0', lambda v: v == 0
+    if name.startswith('I '):
+        return 'report', lambda v: True
+    if name.startswith('A1'):
+        need = 3 if 'Mountains' in name else 2 if 'Swamp' in name else 4
+        return f'>= {need} (Simon round 3: 5-14 median)', lambda v: v >= need
+    if name.startswith('A2'):
+        return '<= 20', lambda v: v <= 20
+    if name.startswith('A3'):
+        return '<= 10', lambda v: v <= 10
+    if name.startswith(('B', 'D3', 'D4')):
+        return '0', lambda v: v == 0
+    if name.startswith('C1'):
+        return '>= 70', lambda v: v >= 70
+    if name.startswith('C2'):
+        return '>= 60', lambda v: v >= 60
+    if name.startswith('D1'):
+        return '100', lambda v: v >= 100
+    if name.startswith('D2'):
+        return '>= 50', lambda v: v >= 50
+    return '', lambda v: True
+
+
+def worst(name, values):
+    """The worst value across worlds: the lowest for checks that want a high value, the highest otherwise."""
+    high_good = name.startswith(('A1', 'C', 'D1', 'D2', 'H1'))
+    return min(values) if high_good else max(values)
+
+
+def is_default(world):
+    return all(world[k] == 1 for k in ('land', 'temperature', 'climate', 'age'))
+
+
+def gated(name, default):
+    """Whether a check is pass/fail for a world: climate (B) always; the rest only on the default worlds (Simon, round 1)."""
+    return name.startswith('B') or default
+
+
+def table(lines, title, fixtures, results, modes, checks, default, fails, totals):
+    lines += ['', f'## {title}', '', 'Each cell: worst case across the worlds / median' +
+              (', then PASS or FAIL on the worst case.' if default else '; climate checks (B) are PASS/FAIL, the rest report only.'), '',
+              '| Check | ' + ' | '.join(modes) + ' | Target |', '|' + '---|' * (len(modes) + 2)]
+    for name in checks:
+        desc, ok = target(name)
+        cells = []
+        for mode in modes:
+            values = [r[name] for r in results[mode] if name in r]
+            if not values:
+                cells.append('-')
+                continue
+            wv, med = worst(name, values), statistics.median(values)
+            verdict = ''
+            if gated(name, default):
+                passed = ok(wv)
+                fails[mode] += 0 if passed else 1
+                totals[mode] += 1
+                verdict = ' PASS' if passed else ' FAIL'
+            cells.append(f'{wv:.1f} / {med:.1f}{verdict}' if isinstance(wv, float) and wv != int(wv) else f'{wv:.0f} / {med:.0f}{verdict}')
+        lines.append(f'| {name} | ' + ' | '.join(cells) + f' | {desc} |')
+
+
+def pair_table(lines, title, rows, default, fails, totals, note=''):
+    lines += ['', f'## {title}', ''] + ([note, ''] if note else []) + ['| Check | worst / median | Target |', '|---|---|---|']
+    for name in rows[0]:
+        desc, ok = target(name)
+        values = [r[name] for r in rows]
+        wv = max(values)
+        verdict = ''
+        if default and not name.startswith('E0'):
+            passed = ok(wv)
+            fails['smoothed'] += 0 if passed else 1
+            totals['smoothed'] += 1
+            verdict = ' PASS' if passed else ' FAIL'
+        lines.append(f'| {name} | {wv:.1f} / {statistics.median(values):.1f}{verdict} | {desc if not name.startswith("E0") else "report only"} |')
+
+
+def main(dumps, out, commit='', rerun=''):
+    here = os.path.dirname(os.path.abspath(__file__))
+    fixtures = json.load(open(os.path.join(here, 'fixtures.json')))['worlds']
+    modes = [m for m in ('classic', 'previous', 'smoothed') if os.path.exists(os.path.join(dumps, f"{fixtures[0]['name']}-{m}.txt"))]
+    path = lambda w, mode: os.path.join(dumps, f"{w['name']}-{mode}.txt")
+    fails = {mode: 0 for mode in modes}
+    totals = {mode: 0 for mode in modes}
+    lines = ['# Terrain QA scorecard', '',
+             f'{len(fixtures)} fixture worlds (tools/isoproof/terrain-qa/fixtures.json), modes: {", ".join(modes)}' +
+             (f', commit {commit}' if commit else '') + '.', '', 'HEADLINE']
+    fails_x = {mode: 0 for mode in modes}
+    totals_x = {mode: 0 for mode in modes}
+    for default in (True, False):
+        f, t = (fails, totals) if default else (fails_x, totals_x)
+        group = [w for w in fixtures if is_default(w) == default]
+        results = {mode: [measure(load(path(w, mode))) for w in group] for mode in modes}
+        checks = list(results[modes[0]][0])
+        title = f'{"Default" if default else "Extreme-settings"} worlds ({len(group)}): data checks'
+        table(lines, title, group, results, modes, checks, default, f, t)
+        if 'smoothed' in modes:
+            bal = [balance(load(path(w, 'classic')), load(path(w, 'smoothed')), load_features(path(w, 'classic')), load_features(path(w, 'smoothed')))
+                   for w in group]
+            pair_table(lines, f'{"Default" if default else "Extreme-settings"} worlds: E. balance, smoothed against classic', bal, default, f, t,
+                       'Terrain shares and the average food, shields and trade per tile are measured over each world\'s non-arctic land, rivers apart (they never change, E3); the arctic difference is on its own line.')
+            play = [playability(load(path(w, 'classic')), load(path(w, 'smoothed'))) for w in group]
+            pair_table(lines, f'{"Default" if default else "Extreme-settings"} worlds: F. playability, smoothed against classic', play, default, f, t,
+                       'Starts are the 7 best city sites at least 10 cells apart, scored by the food (x3), shields (x2) and trade of '
+                       'their 21-cell working area; a viable site scores 60 or more.')
+    # G. regression and determinism, on every world
+    lines += ['', '## G. Regression and determinism (all worlds)', '', '| Check | Result | Target |', '|---|---|---|']
+    base = os.path.join(here, 'baseline')
+    changed = sum(1 for w in fixtures for mode in ('classic', 'young') if os.path.exists(path(w, mode))
+                  and open(path(w, mode)).read() != open(os.path.join(base, f"{w['name']}-{mode}.txt")).read())
+    lines.append(f'| G1 classic and youngest-age worlds differing from the baseline | {changed} {"PASS" if changed == 0 else "FAIL"} | 0 |')
+    if rerun:
+        differ = sum(1 for w in fixtures for mode in modes if open(path(w, mode)).read() != open(os.path.join(rerun, f"{w['name']}-{mode}.txt")).read())
+        lines.append(f'| G2 worlds differing between two runs of the same seeds and settings | {differ} {"PASS" if differ == 0 else "FAIL"} | 0 |')
+    headline = 'Default worlds (pass/fail): ' + ', '.join(f'{mode} {fails[mode]} of {totals[mode]} failed' for mode in modes) + \
+               '. Extreme-settings worlds (climate checks only): ' + ', '.join(f'{mode} {fails_x[mode]} of {totals_x[mode]} failed' for mode in modes) + \
+               '; their other checks are report only.'
+    lines[lines.index('HEADLINE')] = headline
+    open(out, 'w').write('\n'.join(lines) + '\n')
+    print(headline)
+
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

@@ -64,19 +64,19 @@ namespace OpenCivOne
 
 		L0070:
 			// Instruction address 0x0000:0x0078, size: 5
-			this.oParent.CAPI.strcpy(0xba06, "Empire");
+			this.oParent.CAPI.strcpy(0xba06, this.oParent.Array_RealmNames[0]);
 
 			goto L008c;
 
 		L0082:
 			// Instruction address 0x0000:0x0078, size: 5
-			this.oParent.CAPI.strcpy(0xba06, "Kingdom");
+			this.oParent.CAPI.strcpy(0xba06, this.oParent.Array_RealmNames[1]);
 
 			goto L008c;
 
 		L0087:
 			// Instruction address 0x0000:0x0078, size: 5
-			this.oParent.CAPI.strcpy(0xba06, "Republic");
+			this.oParent.CAPI.strcpy(0xba06, this.oParent.Array_RealmNames[2]);
 
 			goto L008c;
 

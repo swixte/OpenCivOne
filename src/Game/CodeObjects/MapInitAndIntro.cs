@@ -69,7 +69,9 @@ namespace OpenCivOne
 				#region Stage 1 - Generate continents
 				AdvanceAnimation();
 
-				int totalCellCount = this.parent.Var_7ef6_PlanetLandMass * 320 + 640;
+				// Huge (land mass 3, an addition to the classic Small, Normal and Large) grows land as a land mass of 6 would,
+				// about 45% of the world against Large's 29%
+				int totalCellCount = (this.parent.Var_7ef6_PlanetLandMass >= 3 ? 6 : this.parent.Var_7ef6_PlanetLandMass) * 320 + 640;
 
 				for (int i = 0; i < totalCellCount;)
 				{
@@ -566,6 +568,23 @@ namespace OpenCivOne
 					AdvanceAnimation();
 				}
 				#endregion
+
+				// the optional terrain smoothing, before continents, oceans and city sites are worked out from the terrain
+				if (ForceTerrainSmoothing ?? this.parent.GlobalPreferences.TerrainSmoothing)
+				{
+					int[,] terrain = new int[80, 50];
+
+					for (int sx = 0; sx < 80; sx++)
+						for (int sy = 0; sy < 50; sy++)
+							terrain[sx, sy] = (int)this.map.GetTerrainType(sx, sy);
+
+					TerrainRelayout.Apply(terrain);
+
+					for (int sx = 0; sx < 80; sx++)
+						for (int sy = 0; sy < 50; sy++)
+							if (terrain[sx, sy] != (int)this.map.GetTerrainType(sx, sy))
+								this.map.SetTerrainType(sx, sy, (TerrainTypeEnum)terrain[sx, sy]);
+				}
 			}
 
 			// !!! This needs to be reworked, map could have more than 14 groups
@@ -714,19 +733,28 @@ namespace OpenCivOne
 								L0bac:
 									newGroupID++;
 
-									switch (i)
+									// the tables hold 64 continents and 64 oceans: past the last, small pieces share it rather than
+									// reading outside the table (a map with very much land can have more lakes than that)
+									if (newGroupID >= this.parent.GameData.Oceans.Length - 1)
 									{
-										case 0:
-											if (this.parent.GameData.Continents[newGroupID].Size != 0)
-												goto L0bac;
+										newGroupID = this.parent.GameData.Oceans.Length - 1;
+									}
+									else
+									{
+										switch (i)
+										{
+											case 0:
+												if (this.parent.GameData.Continents[newGroupID].Size != 0)
+													goto L0bac;
 
-											break;
+												break;
 
-										case 1:
-											if (this.parent.GameData.Oceans[newGroupID].Size != 0)
-												goto L0bac;
+											case 1:
+												if (this.parent.GameData.Oceans[newGroupID].Size != 0)
+													goto L0bac;
 
-											break;
+												break;
+										}
 									}
 								}
 
@@ -1012,12 +1040,32 @@ namespace OpenCivOne
 			}
 			#endregion
 
+			// with terrain smoothing, the lone tundra specks the polar caps leave on the ice become ice too
+			if (!this.parent.Var_d76a_EarthMap && (ForceTerrainSmoothing ?? this.parent.GlobalPreferences.TerrainSmoothing))
+			{
+				int[,] terrain = new int[80, 50];
+
+				for (int sx = 0; sx < 80; sx++)
+					for (int sy = 0; sy < 50; sy++)
+						terrain[sx, sy] = (int)this.map.GetTerrainType(sx, sy);
+
+				TerrainSmoothing.CleanPolarRows(terrain);
+
+				for (int sx = 0; sx < 80; sx++)
+					for (int sy = 0; sy < 50; sy++)
+						if (terrain[sx, sy] != (int)this.map.GetTerrainType(sx, sy))
+							this.map.SetTerrainType(sx, sy, (TerrainTypeEnum)terrain[sx, sy]);
+			}
+
 			while (AdvanceAnimation())
 			{
 				Thread.Sleep(1);
 			}
 
-			this.parent.Graphics.F0_VGA_040a_FillRectangle(2, new GRectangle(0, 0, 320, 200), 0, 0);
+			if (!SkipAnimation)
+			{
+				this.parent.Graphics.F0_VGA_040a_FillRectangle(2, new GRectangle(0, 0, 320, 200), 0, 0);
+			}
 
 			this.parent.Var_aa_Screen0_Rectangle.FontID = 1;
 		}
@@ -1292,8 +1340,23 @@ namespace OpenCivOne
 		/// <summary>
 		/// Advances the story animation
 		/// </summary>
+		/// <summary>
+		/// Set by tools that generate worlds without a screen (the terrain QA fixtures): the story animation is skipped
+		/// </summary>
+		public static bool SkipAnimation = false;
+
+		/// <summary>
+		/// Set by tools to generate a map with or without terrain smoothing, whatever the preferences say; null follows them
+		/// </summary>
+		public static bool? ForceTerrainSmoothing = null;
+
 		public bool AdvanceAnimation()
 		{
+			if (SkipAnimation)
+			{
+				return false;
+			}
+
 			//this.oCPU.Log.EnterBlock("F7_0000_17cf()");
 
 			// function body
@@ -1309,7 +1372,7 @@ namespace OpenCivOne
 				if (this.animationStage == 0)
 				{
 					// Instruction address 0x0000:0x1869, size: 5
-					this.storyFile = new StreamReader($"{this.parent.ResourcePath}STORY.TXT");
+					this.storyFile = new StreamReader(this.parent.GetTextFilePath("STORY.TXT"));
 
 					this.animationStage = 1;
 					this.storyText = "";

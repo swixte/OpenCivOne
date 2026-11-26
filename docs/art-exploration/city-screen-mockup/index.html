@@ -1,0 +1,727 @@
+<meta charset="utf-8">
+<title>Babylon City Screen</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@700;800&family=IBM+Plex+Sans+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Layout: the Civ1 city screen at 4x (1280x800). Every panel sits at its original 320x200 rectangle times four, read
+   from CityWorker.cs. Colours are the ukiyo-e theme's re-mapping of the original palette (hd/ui/colors.txt).
+   Only the city view and the city map are painted; the rest is flat UI drawn in code. */
+:root {
+  color-scheme: dark;
+  --page: #0B0D12;
+  --screen: #1E1A16;     /* index 0, black: sumi */
+  --panel: #1B2740;      /* index 1, dark blue panels: deep indigo */
+  --panel-2: #22304D;
+  --bar: #4E688C;        /* index 9, light blue buttons and tabs: pale indigo */
+  --grey: #2E3446;       /* index 8, dark grey: indigo-grey */
+  --cream: #F4ECD8;      /* index 15, white text */
+  --mute: #A9B3C6;
+  --madder: #8E3324;     /* index 4, red */
+  --vermilion: #EE8C6E;  /* index 12, light red */
+  --gold: #C9A24A;       /* only around the paintings */
+  --food: #9CC95A; --shield: #D99347; --trade: #E8C04A; --lux: #D48BDD; --sci: #7CC0EE;
+  --display: "Shippori Mincho B1", Georgia, serif;
+  --ui: "IBM Plex Sans Condensed", "Arial Narrow", "Segoe UI", sans-serif;
+}
+[hidden] { display: none !important; }
+html, body { background: var(--page); color: var(--cream); }
+body { font: 15px/1.3 var(--ui); padding-block: 24px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.fit { width: 100%; max-width: 1280px; margin: 0 auto; position: relative; }
+.stage { width: 1280px; height: 800px; position: absolute; top: 0; left: 0; transform-origin: 0 0; background: var(--screen); box-shadow: 0 20px 60px #000a; }
+.caption { max-width: 1280px; margin: 18px auto 0; color: var(--mute); font-size: 14px; display: grid; gap: 6px; }
+.caption b { color: var(--cream); }
+
+/* a panel at its Civ1 rectangle x4 */
+.p { position: absolute; background: var(--panel) url(art/slate.jpg) 0 0 / 256px; border: 2px solid #0E1220; box-shadow: inset 0 0 0 1px #4E688C55; display: flex; flex-direction: column; overflow: hidden; }
+.bar { background: var(--bar); color: var(--cream); font: 700 14px/1 var(--ui); letter-spacing: .04em; padding: 6px 10px 5px; display: flex; justify-content: space-between; align-items: center; flex: none; }
+.bar .r { font-weight: 600; }
+.body { padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; flex: 1; min-height: 0; }
+.art { border-color: var(--gold); }
+
+/* citizens strip  (2,1)-(208,21) */
+#citz { left: 8px; top: 4px; width: 824px; height: 80px; }
+.cname { display: flex; align-items: baseline; gap: 12px; padding: 6px 12px 0; }
+.cname h1 { margin: 0; font: 800 22px/1 var(--display); letter-spacing: .05em; }
+.cname .pop { color: var(--mute); font-size: 14px; }
+.cname .sp { flex: 1; }
+.cname .st { font-weight: 600; display: flex; gap: 6px; align-items: center; }
+.badge { font: 700 11px/1 var(--ui); letter-spacing: .12em; text-transform: uppercase; padding: 4px 7px; }
+.badge.bad { background: var(--madder); color: var(--cream); }
+.people { display: flex; align-items: flex-end; gap: 2px; padding: 4px 12px 0; height: 44px; }
+.people .gap { width: 14px; }
+.cz { width: 19px; height: 38px; flex: none; image-rendering: auto; }
+button.czb { padding: 0; border: 0; background: none; cursor: pointer; position: relative; }
+button.czb:hover { background: var(--panel-2); }
+button.czb .tag { position: absolute; left: 0; top: 0; width: 12px; height: 12px; }
+
+/* resources  (2,23)-(124,65) */
+#res { left: 8px; top: 92px; width: 488px; height: 168px; }
+.rrow { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px; min-height: 22px; }
+.icons { display: flex; flex-wrap: nowrap; gap: 1px; overflow: hidden; }
+.ic { width: 18px; height: 18px; flex: none; }
+.ic.pale { opacity: .3; }
+.v { font-weight: 700; min-width: 40px; text-align: right; font-variant-numeric: tabular-nums; }
+.v.pos { color: var(--food); } .v.neg { color: var(--vermilion); }
+.split { display: flex; gap: 14px; padding-top: 4px; border-top: 1px solid var(--grey); }
+.split span { display: flex; gap: 5px; align-items: center; font-weight: 600; }
+.split small { color: var(--mute); font-weight: 500; }
+
+/* units supported  (2,67)-(124,104) */
+#sup { left: 8px; top: 268px; width: 488px; height: 148px; }
+.slots { display: flex; gap: 6px; }
+.slot { width: 56px; height: 56px; background: #0E122066; border: 1px solid var(--grey); display: grid; place-items: center; position: relative; }
+.slot svg { width: 38px; height: 38px; }
+.slot .t { position: absolute; right: 3px; bottom: 2px; font: 700 10px/1 var(--ui); color: var(--mute); }
+.slot.empty { background: none; border-style: dashed; }
+.note { color: var(--mute); font-size: 13px; }
+
+/* city map  (127,23)-(208,104) */
+#map { left: 508px; top: 92px; width: 324px; height: 324px; }
+#map .stagearea { position: relative; height: 210px; margin-top: 4px; }
+#map svg { position: absolute; left: 0; top: 0; width: 320px; height: 210px; }
+.cell { fill: transparent; stroke: #F4ECD833; stroke-width: 1.5; cursor: pointer; }
+.cell:hover { stroke: var(--cream); stroke-width: 3; fill: #F4ECD814; }
+.cell.worked { stroke: #F4ECD8AA; stroke-width: 2; }
+.cell.centre { stroke: var(--gold); stroke-width: 3; cursor: default; }
+.readout { padding: 2px 10px 8px; font-size: 14px; display: grid; gap: 3px; }
+.readout b { font-weight: 700; }
+
+/* improvements  (211,1)-(317,97) */
+#imp { left: 844px; top: 4px; width: 424px; height: 384px; }
+.list { display: flex; flex-direction: column; gap: 2px; }
+.item { display: grid; grid-template-columns: 30px 1fr auto auto; align-items: center; gap: 8px; padding: 4px 6px; background: none; border: 1px solid transparent; color: var(--cream); font: 600 15px/1.2 var(--ui); text-align: left; cursor: pointer; }
+.item:hover, .item.on { background: var(--panel-2); border-color: var(--cream); }
+.item .bi { width: 26px; height: 20px; background: var(--grey); border: 1px solid #0E1220; display: grid; place-items: center; }
+.item .bi svg { width: 16px; height: 16px; }
+.item .up { color: var(--mute); font-weight: 500; font-size: 13px; display: flex; gap: 3px; align-items: center; }
+.item .sell { font: 700 10px/1 var(--ui); letter-spacing: .1em; color: var(--vermilion); opacity: 0; }
+.item:hover .sell { opacity: 1; }
+
+/* food storage  (2,106)-(93,197) */
+#food { left: 8px; top: 424px; width: 364px; height: 364px; }
+.grid { display: grid; gap: 2px; align-content: start; }
+.grid svg { width: 100%; height: auto; aspect-ratio: 1; }
+.grid svg.empty { opacity: .16; }
+
+/* info panel  (95,106)-(227,197), tabs along the top */
+#info { left: 380px; top: 424px; width: 528px; height: 364px; }
+.tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; background: #0E1220; flex: none; }
+.tab { background: var(--grey); color: var(--mute); border: 0; font: 700 13px/1 var(--ui); letter-spacing: .1em; padding: 9px 0 8px; cursor: pointer; }
+.tab:hover { color: var(--cream); }
+.tab[aria-selected="true"] { background: var(--bar); color: var(--cream); }
+.pane { position: relative; flex: 1; min-height: 0; }
+.pane > div { position: absolute; inset: 0; }
+#v-view { border-top: 2px solid var(--gold); }
+#v-view svg { width: 100%; height: 100%; display: block; }
+#v-view.full { position: absolute; inset: 0; z-index: 15; border: 2px solid var(--gold); background: #2a2416; }
+.sizes { position: absolute; left: 8px; bottom: 8px; display: flex; gap: 4px; align-items: center; background: #1B2740E6; padding: 4px 6px; z-index: 3; }
+.sizes span { font: 700 11px/1 var(--ui); letter-spacing: .1em; text-transform: uppercase; color: var(--mute); margin-right: 4px; }
+.sizes .btn { padding: 5px 8px; font-size: 12px; background: var(--grey); }
+.sizes .btn.on { background: var(--bar); }
+.spot { fill: transparent; cursor: pointer; }
+.spot.on { fill: #F4ECD820; stroke: var(--cream); stroke-width: 5; }
+.spot.building { stroke-dasharray: 16 10; }
+.vlabel { position: absolute; pointer-events: none; transform: translate(-50%, -100%); background: var(--panel); border: 1px solid var(--cream); padding: 4px 8px; font: 700 13px/1.2 var(--ui); white-space: nowrap; }
+.vlabel small { display: block; font-weight: 500; color: var(--mute); }
+.happy { padding: 10px; display: grid; gap: 6px; align-content: start; }
+.hrow { display: grid; grid-template-columns: 110px 1fr; align-items: center; gap: 8px; border-bottom: 1px solid var(--grey); padding-bottom: 5px; }
+.hrow span { color: var(--mute); font-size: 13px; }
+.hrow .people { padding: 0; height: 30px; }
+.hrow .cz { width: 13px; height: 26px; }
+#v-map img { width: 100%; height: 100%; object-fit: cover; }
+#v-map .ph { position: absolute; left: 10px; bottom: 10px; background: var(--panel); padding: 4px 8px; font-size: 13px; color: var(--mute); }
+#v-info { padding: 10px; display: grid; gap: 10px; align-content: start; }
+
+/* production  (230,99)-(318,~187) */
+#prod { left: 920px; top: 396px; width: 352px; height: 356px; }
+.btnrow { display: flex; justify-content: space-between; gap: 6px; }
+.btn { background: var(--bar); color: var(--cream); border: 0; font: 700 13px/1 var(--ui); letter-spacing: .08em; padding: 8px 12px 7px; cursor: pointer; }
+.btn:hover { filter: brightness(1.15); }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn.red { background: var(--vermilion); color: var(--screen); }
+.pname { font: 800 19px/1 var(--display); text-align: center; padding: 2px 0; }
+.pmeta { text-align: center; color: var(--mute); font-size: 13px; }
+#rename { position: absolute; left: 924px; top: 760px; width: 164px; height: 32px; }
+#exit { position: absolute; left: 1136px; top: 760px; width: 128px; height: 32px; }
+button:focus-visible { outline: 2px solid var(--cream); outline-offset: 1px; }
+.menu { position: absolute; top: 40px; left: 8px; right: 8px; background: var(--panel); border: 2px solid var(--cream); z-index: 5; display: grid; padding: 3px; }
+.menu button { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; background: none; border: 0; color: var(--cream); text-align: left; font: 600 14px/1.2 var(--ui); padding: 6px 8px; cursor: pointer; }
+.menu button:hover { background: var(--bar); }
+.menu .c { color: var(--mute); font-weight: 500; }
+.card { position: absolute; right: 8px; top: 8px; width: 230px; background: var(--panel); border: 2px solid var(--cream); padding: 10px; display: grid; gap: 7px; z-index: 4; }
+.card h3 { margin: 0; font: 800 17px/1 var(--display); }
+.card p { margin: 0; font-size: 13px; color: var(--mute); }
+.toast { position: absolute; left: 50%; top: 92px; transform: translateX(-50%); background: var(--cream); color: var(--screen); font: 700 14px/1 var(--ui); padding: 9px 14px; z-index: 9; }
+@media (prefers-reduced-motion: no-preference) { .cell, .spot, .item, .tab { transition: stroke .12s, fill .12s, background .12s, border-color .12s; } }
+.slots.wrap { flex-wrap: wrap; }
+.slot .uimg { width: 40px; height: 40px; }
+.uimg { image-rendering: auto; }
+.uimg.sm, .bimg.sm { width: 26px; height: 26px; object-fit: contain; }
+.slot .upk { position: absolute; left: 2px; bottom: 1px; display: flex; gap: 1px; }
+.slot .upk .ic { width: 13px; height: 13px; }
+.slot .hc { position: absolute; left: 0; right: 0; bottom: 1px; text-align: center; font: 700 10px/1 var(--ui); color: var(--cream); text-shadow: 0 1px 0 #000; }
+button.slot { cursor: pointer; color: var(--cream); padding: 0; }
+button.slot:hover { border-color: var(--cream); }
+.icons .ic.used { opacity: .45; filter: grayscale(.6); position: relative; }
+.icons .ic.short { opacity: .9; outline: 1px solid var(--vermilion); outline-offset: -1px; filter: grayscale(1); }
+.icons { position: relative; }
+.icons .ic.used + .ic.used, .icons .ic.used { background: linear-gradient(to top right, transparent 46%, var(--vermilion) 46% 56%, transparent 56%); }
+.item .bimg { width: 30px; height: 22px; object-fit: contain; }
+.item { grid-template-columns: 34px 1fr auto auto; }
+.item.wonder { cursor: default; color: var(--gold); }
+.granline { grid-column: 1 / -1; height: 0; border-top: 2px dashed var(--cream); margin: 3px 0; }
+.sublbl { font: 700 11px/1 var(--ui); letter-spacing: .1em; text-transform: uppercase; color: var(--mute); }
+.routes { display: flex; gap: 12px; font-weight: 700; color: var(--trade); }
+.hrow { grid-template-columns: 96px 1fr auto; }
+.cause { display: flex; gap: 2px; align-items: center; }
+.cause .ic { width: 14px; height: 14px; }
+#v-map { display: grid; grid-template-rows: 1fr auto; background: #0B0F18; }
+#v-map canvas { width: 100%; height: 100%; image-rendering: pixelated; object-fit: contain; }
+#v-map .legend { display: flex; gap: 16px; padding: 6px 10px; font-size: 13px; color: var(--mute); }
+#v-map .legend i { display: inline-block; width: 10px; height: 10px; margin-right: 5px; vertical-align: -1px; }
+.pic { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 64px; }
+.pic img { width: 64px; height: 56px; object-fit: contain; }
+.btn.on { background: var(--vermilion); color: var(--screen); }
+.dlgback { position: absolute; inset: 0; background: #0006; display: grid; place-items: center; z-index: 20; }
+.dlg { background: var(--panel) url(art/slate.jpg) 0 0 / 256px; border: 2px solid var(--cream); padding: 14px 16px; min-width: 300px; display: grid; gap: 4px; }
+.dlg p { margin: 0 0 8px; white-space: pre-line; font: 600 15px/1.35 var(--ui); }
+.dlg .opt { background: none; border: 0; color: var(--cream); text-align: left; font: 600 15px/1.2 var(--ui); padding: 6px 8px; cursor: pointer; }
+.dlg .opt:hover, .dlg .opt:focus { background: var(--bar); outline: none; }
+.cell.cursor { stroke: var(--vermilion); stroke-width: 4; }
+.stage.readonly .p:not(#info) button, .stage.readonly #rename, .stage.readonly .cell, .stage.readonly .spot { pointer-events: none; }
+.stage.readonly .p:not(#info) button { opacity: .5; }
+.caption .btn { margin-left: 8px; }
+#sup .slots { gap: 3px; flex-wrap: nowrap; }
+#sup .slot { width: 42px; height: 46px; flex: none; }
+#sup .note { font-size: 12px; line-height: 1.3; }
+#sup .slot .uimg { width: 34px; height: 34px; margin-top: -8px; }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-food" viewBox="0 0 16 16"><image href="art/sp257/129_33.png" width="16" height="16"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 16 16"><image href="art/sp257/137_33.png" width="16" height="16"/></symbol>
+    <symbol id="i-trade" viewBox="0 0 16 16"><image href="art/sp257/145_33.png" width="16" height="16"/></symbol>
+    <symbol id="i-lux" viewBox="0 0 16 16"><image href="art/sp257/145_41.png" width="16" height="16"/></symbol>
+    <symbol id="i-gold" viewBox="0 0 16 16"><image href="art/sp257/153_33.png" width="16" height="16"/></symbol>
+    <symbol id="i-sci" viewBox="0 0 16 16"><image href="art/sp257/129_41.png" width="16" height="16"/></symbol>
+    <symbol id="i-person" viewBox="0 0 20 38"><circle cx="10" cy="8" r="5.5"/><path d="M1 37c0-13 4-21 9-21s9 8 9 21Z"/></symbol>
+    <symbol id="u-spear" viewBox="0 0 24 24"><path d="M5 22 19 2" stroke="#F4ECD8" stroke-width="1.8"/><path d="m17 2 3-1-1 3Z" fill="#F4ECD8"/><circle cx="9" cy="14" r="5" fill="none" stroke="#F4ECD8" stroke-width="1.8"/></symbol>
+    <symbol id="u-bow" viewBox="0 0 24 24"><path d="M7 2c9 4 9 16 0 20" fill="none" stroke="#F4ECD8" stroke-width="1.8"/><path d="M7 2v20M3 12h15" stroke="#F4ECD8" stroke-width="1.4"/><path d="m18 12-3-2v4Z" fill="#F4ECD8"/></symbol>
+    <symbol id="u-chariot" viewBox="0 0 24 24"><circle cx="9" cy="16" r="5" fill="none" stroke="#F4ECD8" stroke-width="1.8"/><path d="M9 16 13 8h7M9 11v10M4 16h10" stroke="#F4ECD8" stroke-width="1.4"/></symbol>
+    <symbol id="u-settler" viewBox="0 0 24 24"><path d="M3 21h18M6 21V11l6-6 6 6v10" fill="none" stroke="#F4ECD8" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 21v-5h4v5" stroke="#F4ECD8" stroke-width="1.4" fill="none"/></symbol>
+    <symbol id="b-house" viewBox="0 0 16 16"><path d="M2 14V7l6-5 6 5v7Z" fill="none" stroke="#F4ECD8" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<div class="fit" id="fit">
+<div class="stage" id="stage">
+
+  <section class="p" id="citz" aria-label="City and citizens">
+    <div class="cname">
+      <h1 id="cityname">BABYLON</h1><span class="pop" id="pop"></span>
+      <span id="mood"></span>
+      <span class="sp"></span>
+      <span class="st" id="govt">Despotism</span>
+      <span class="st">1250 BC</span>
+      <span class="st"><svg class="ic"><use href="#i-gold"/></svg><span id="treasury">340</span></span>
+    </div>
+    <div class="people" id="people"></div>
+  </section>
+
+  <section class="p" id="res" aria-label="City resources">
+    <div class="bar">City Resources<span class="r" id="resnote"></span></div>
+    <div class="body" id="resbody"></div>
+  </section>
+
+  <section class="p" id="sup" aria-label="Units supported">
+    <div class="bar">Units Supported<span class="r" id="supnote"></span></div>
+    <div class="body"><div class="slots wrap" id="supported"></div><div class="note" id="supinfo"></div></div>
+  </section>
+
+  <section class="p art" id="map" aria-label="City map">
+    <div class="bar">City Map<span class="r" id="workedn"></span></div>
+    <div class="stagearea"><img src="art/city-map-iso.png" alt="The land around Babylon in isometric diamonds" width="320" height="210" style="position:absolute;left:0;top:0"><svg id="mapsvg" viewBox="0 0 640 420"></svg></div>
+    <div class="readout" id="readout"><span class="note">Click a diamond to work it or free its citizen. P puts a cursor here; arrows move it.</span></div>
+  </section>
+
+  <section class="p" id="imp" aria-label="City improvements">
+    <div class="bar">City Improvements<span class="r" id="upkeep"></span></div>
+    <div class="body"><div class="list" id="list"></div>
+      <div style="margin-top:auto;display:flex;justify-content:flex-end"><button class="btn" id="more" disabled title="Only one page of improvements">MORE</button></div></div>
+  </section>
+
+  <section class="p" id="food" aria-label="Food storage">
+    <div class="bar">Food Storage<span class="r" id="foodn"></span></div>
+    <div class="body"><div class="grid" id="foodgrid" style="grid-template-columns:repeat(15,1fr)"></div><div class="note" id="growth" style="margin-top:auto"></div></div>
+  </section>
+
+  <section class="p" id="info" aria-label="City details">
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-t="info">INFO</button>
+      <button class="tab" role="tab" data-t="happy">HAPPY</button>
+      <button class="tab" role="tab" data-t="map">MAP</button>
+      <button class="tab" role="tab" data-t="view">VIEW</button>
+    </div>
+    <div class="pane">
+      <div id="v-info" hidden>
+        <div class="sublbl">Units in Babylon</div>
+        <div class="slots wrap" id="present"></div>
+        <div class="note">Click a unit, or press A, to activate it.</div>
+        <div class="sublbl">Trade routes</div>
+        <div id="routes" class="routes"></div>
+      </div>
+      <div id="v-happy" class="happy" hidden></div>
+      <div id="v-map" hidden><canvas id="world" width="160" height="100" aria-label="Map of the explored world with Babylon and its trade partners"></canvas><div class="legend" id="worldkey"></div></div>
+      <div id="v-view"></div>
+    </div>
+  </section>
+
+  <section class="p" id="prod" aria-label="Production">
+    <div class="body" style="position:relative">
+      <div class="btnrow"><button class="btn" id="change" title="Right-click or press Shift+A for AUTO">CHANGE</button><button class="btn" id="buy">BUY</button></div>
+      <div class="pic"><img id="pimg" alt=""><div class="pname" id="pname"></div></div>
+      <div class="grid" id="shieldgrid" style="grid-template-columns:repeat(10,1fr)"></div>
+      <div class="pmeta" id="pmeta" style="margin-top:auto"></div>
+    </div>
+  </section>
+
+  <button class="btn" id="rename">RENAME</button>
+  <button class="btn red" id="exit">EXIT</button>
+  <div class="dlgback" id="dlgback" hidden><div class="dlg" id="dlg" role="dialog" aria-modal="true"></div></div>
+</div>
+</div>
+
+<div class="caption">
+  <div><b>The OpenCivOne city screen, laid out as Civ1's.</b> Every panel sits at its original 320×200 position times four, read from <code>CityWorker.cs</code>, and its behaviour follows that file: unit upkeep, corruption, trade routes, the HAPPY rows, selling, buying, AUTO and the keys. Only the city view (VIEW tab) and the city map are art, in gold frames. The city view is a town screen seen from the front: a painted backdrop with each improvement as a cut-out at its own place and depth, and the city filling in as it grows: houses packed inside the walls, then suburbs on the plain, with more people, carts, stalls and boats.</div>
+  <div>Keys: C change · B buy · Shift+A auto · I / H / M / V tabs · A activate a unit · S sell · P map cursor (arrows move it, Space works the square) · R rename · Esc exit. <button class="btn" id="spy">Show a diplomat's report of this city</button></div>
+</div>
+
+<script>
+const $ = s => document.getElementById(s);
+const NS = 'http://www.w3.org/2000/svg';
+const el = (t, a = {}, ns) => { const e = ns ? document.createElementNS(NS, t) : document.createElement(t); for (const k in a) e.setAttribute(k, a[k]); return e; };
+const icon = (id, cls = 'ic') => { const s = el('svg', { class: cls }, true); s.appendChild(el('use', { href: '#' + id }, true)); return s; };
+
+// ---- state (rules from CityWorker.cs; costs and upkeep from GameData.cs) ------------------------------------
+const SIZE = 8, GOVT = 'Despotism', DIFFICULTY_CONTENT = 4;
+const RATES = { lux: 0.2, tax: 0.4 };                       // the rest goes to science
+// rows dy -2..2, columns dx -2..2: [name, food, shields, trade]; the city square counts as irrigated
+const TILES = [
+  [null, ['Irrigated grassland', 3, 0, 0], ['Irrigated grassland', 3, 0, 0], ['Palms, river', 1, 1, 1], null],
+  [['Grassland, river', 2, 0, 1], ['Irrigated grassland, river', 3, 0, 1], ['Irrigated grassland, river', 3, 0, 1], ['Palms', 1, 1, 0], ['Plains', 1, 1, 0]],
+  [['Forest', 1, 2, 0], ['Grassland', 2, 0, 0], ['Babylon', 3, 1, 1], ['Plains', 1, 1, 0], ['Plains', 1, 1, 0]],
+  [['Hills', 1, 0, 0], ['Hills', 1, 0, 0], ['Plains', 1, 1, 0], ['Shallows', 1, 0, 2], ['Ocean', 1, 0, 2]],
+  [null, ['Hills', 1, 0, 0], ['Shallows', 1, 0, 2], ['Ocean', 1, 0, 2], null],
+];
+const worked = new Set(['0,1', '0,2', '1,1', '1,2', '2,0', '2,3', '3,3']);
+let specialists = ['ent'];
+const SPEC = { ent: 'Entertainer', tax: 'Tax collector', sci: 'Scientist' };
+const BUILDINGS = [
+  { id: 'palace', name: 'Palace', cost: 200, up: 5, effect: 'Seat of government. No corruption in this city.' },
+  { id: 'barracks', name: 'Barracks', cost: 40, up: 0, effect: 'New land units start as veterans.' },
+  { id: 'granary', name: 'Granary', cost: 60, up: 1, effect: 'Keeps half the food when the city grows.' },
+  { id: 'temple', name: 'Temple', cost: 40, up: 1, effect: 'Makes 2 unhappy citizens content.' },
+  { id: 'library', name: 'Library', cost: 80, up: 1, effect: '+50% science in this city.' },
+  { id: 'walls', name: 'City Walls', cost: 120, up: 2, effect: 'Triples defence against land attack.' },
+];
+const WONDERS = [];                                            // wonders built in this city (none yet)
+const has = id => BUILDINGS.some(b => b.id === id);
+// units: type, home city, where, status (F fortified, S sentry); diplomats and caravans need no support
+const UNITTYPES = { settlers: ['Settlers', 0], phalanx: ['Phalanx', 1], legion: ['Legion', 3], catapult: ['Catapult', 6], chariot: ['Chariot', 4], diplomat: ['Diplomat', 0] };
+let UNITS = [
+  { t: 'phalanx', home: 'Babylon', inCity: true, st: 'F' }, { t: 'phalanx', home: 'Babylon', inCity: true, st: 'S' },
+  { t: 'legion', home: 'Ur', inCity: true, st: '' },
+  { t: 'legion', home: 'Babylon' }, { t: 'legion', home: 'Babylon' }, { t: 'chariot', home: 'Babylon' }, { t: 'chariot', home: 'Babylon' },
+  { t: 'catapult', home: 'Babylon' }, { t: 'phalanx', home: 'Babylon' }, { t: 'settlers', home: 'Babylon' }, { t: 'diplomat', home: 'Babylon' },
+];
+// trade routes: [city, its base trade, ours?]; own cities give (a + b + 4) / 16, foreign ones (a + b + 4) / 8
+const ROUTES = [['Ur', 12, true], ['Nineveh', 9, false]];
+const VIEWDATA = {"width":1536,"height":1024,"sizes":{"2":{"temple":[785,338,1051,602],"granary":[309,496,589,666],"library":[1069,552,1359,685],"palace":[557,522,977,734],"barracks":[121,619,478,861],"scaffold":[895,679,1185,868],"walls":[1051,811,1296,979]},"8":{"temple":[785,338,1051,602],"granary":[309,496,589,666],"library":[1069,552,1359,685],"palace":[557,522,977,734],"barracks":[121,619,478,861],"scaffold":[895,679,1185,868],"walls":[1051,811,1296,979]},"14":{"temple":[785,338,1051,602],"granary":[309,496,589,666],"library":[1069,552,1359,685],"palace":[557,522,977,734],"barracks":[121,619,478,861],"scaffold":[895,679,1185,868],"walls":[1051,811,1296,979]},"22":{"temple":[785,338,1051,602],"granary":[309,496,589,666],"library":[1069,552,1359,685],"palace":[557,522,977,734],"barracks":[121,619,478,861],"scaffold":[895,679,1185,868],"walls":[1051,811,1296,979]}},"order":["temple","granary","library","palace","barracks","scaffold","walls"]};
+let viewSize = 8;
+const BUILDABLE = [
+  { name: 'Marketplace', kind: 'imp', cost: 80, pic: 'art/bld2/market.png' }, { name: 'Aqueduct', kind: 'imp', cost: 120 },
+  { name: 'Colosseum', kind: 'imp', cost: 100 }, { name: 'Settlers', kind: 'unit', cost: 40, pic: 'art/units/settlers.png' },
+  { name: 'Phalanx', kind: 'unit', cost: 20, pic: 'art/units/phalanx.png' }, { name: 'Legion', kind: 'unit', cost: 20, pic: 'art/units/legion.png' },
+  { name: 'Catapult', kind: 'unit', cost: 40, pic: 'art/units/catapult.png' }, { name: 'Pyramids', kind: 'wonder', cost: 300 },
+];
+let prod = Object.assign({ have: 56 }, BUILDABLE[0]);
+let auto = false, foodStore = 60, treasury = 340, soldThisTurn = false, readonly = false;
+
+// ---- rules -------------------------------------------------------------------------------------------------
+function compute() {
+  let f = 0, s = 0, t = 0;
+  const add = ([, a, b, c]) => { f += a; s += b; t += c; };
+  add(TILES[2][2]);
+  worked.forEach(k => { const [r, c] = k.split(',').map(Number); add(TILES[r][c]); });
+  // support: units up to the city's size are free, each one beyond costs a shield; settlers eat 1 food under despotism
+  let counted = 0, supportShields = 0, settlerFood = 0;
+  UNITS.filter(u => u.home === 'Babylon').forEach(u => {
+    u.cost = { shield: 0, food: 0 };
+    if (u.t !== 'diplomat') { counted++; if (counted > SIZE) { u.cost.shield = 1; supportShields++; } }
+    if (u.t === 'settlers') { u.cost.food = 1; settlerFood++; }
+  });
+  const routes = ROUTES.map(([n, b, own]) => [n, Math.floor((t + b + 4) / (own ? 16 : 8))]);
+  const baseTrade = t; t += routes.reduce((a, r) => a + r[1], 0);
+  const corruption = has('palace') ? 0 : Math.floor(t / 3);
+  const net = t - corruption;
+  let lux = Math.round(net * RATES.lux), tax = Math.round(net * RATES.tax), sci = net - lux - tax;
+  specialists.forEach(k => { if (k === 'ent') lux += 2; if (k === 'tax') tax += 2; if (k === 'sci') sci += 2; });
+  if (has('library')) sci = Math.floor(sci * 1.5);
+  // happiness rows in Civ1's order: base, luxuries, buildings, martial law, wonders
+  const w = worked.size, rows = [];
+  let h = 0, c = Math.min(w, DIFFICULTY_CONTENT), u = w - c;
+  rows.push(['Base', h, c, u, []]);
+  let l = lux;
+  while (l >= 2 && c > 0) { c--; h++; l -= 2; }
+  while (l >= 2 && u > 0) { u--; c++; l -= 2; }
+  rows.push(['Luxuries', h, c, u, Array(lux).fill('lux')]);
+  if (has('temple')) { const k = Math.min(u, 2); u -= k; c += k; }
+  rows.push(['Buildings', h, c, u, has('temple') ? ['temple'] : []]);
+  const law = UNITS.filter(x => x.inCity && UNITTYPES[x.t][1] > 0).slice(0, 3);
+  { const k = Math.min(u, law.length); u -= k; c += k; }
+  rows.push(['Martial law', h, c, u, law.map(x => 'unit:' + x.t)]);
+  rows.push(['Wonders', h, c, u, WONDERS]);
+  const eat = SIZE * 2 + settlerFood;
+  return { f, s, net: s - supportShields, supportShields, settlerFood, baseTrade, t, corruption, routes, eat, surplus: f - eat,
+           lux, tax, sci, happy: h, content: c, unhappy: u, rows, disorder: u > h };
+}
+// Civ1's cost to complete: units r²/20 + 2r, improvements 2r, wonders 4r; doubled when no shields are in the box yet
+function buyCost() {
+  const r = Math.max(0, prod.cost - prod.have); if (!r) return 0;
+  let c = prod.kind === 'unit' ? Math.floor(r * r / 20) + 2 * r : prod.kind === 'wonder' ? 4 * r : 2 * r;
+  return prod.have === 0 ? c * 2 : c;
+}
+
+// ---- render ------------------------------------------------------------------------------------------------
+// Civ1's citizen figures (SP257 x = 8i, y = 128): happy, content, unhappy as man and woman, then the three specialists
+const FIG = { happy: [0, 8], content: [16, 24], unhappy: [32, 40], ent: [48], tax: [56], sci: [64] };
+let figN = 0;
+function person(kind, cls = 'cz') { const x = FIG[kind][figN++ % FIG[kind].length]; return el('img', { class: cls, src: `art/sp257/${x}_128.png`, alt: kind }); }
+const unitImg = (t, cls = 'uimg') => el('img', { class: cls, src: `art/units/${t}.png`, alt: UNITTYPES[t][0] });
+const bldImg = (id, cls = 'bimg') => el('img', { class: cls, src: `art/bld2/${id}.png`, alt: '' });
+
+function render() {
+  const c = compute();
+  $('pop').textContent = `Population ${(SIZE * (SIZE + 1) / 2 * 10000).toLocaleString('en')}`;
+  $('mood').innerHTML = c.disorder ? '<span class="badge bad">Civil disorder</span>' : '';
+  const pp = $('people'); pp.textContent = ''; figN = 0;
+  const many = (n, k) => { for (let i = 0; i < n; i++) pp.appendChild(person(k)); };
+  many(c.happy, 'happy'); many(c.content, 'content'); many(c.unhappy, 'unhappy');
+  if (specialists.length) pp.appendChild(el('span', { class: 'gap' }));
+  specialists.forEach((k, i) => {
+    const b = el('button', { class: 'czb', title: SPEC[k] + ' (click to change)', 'aria-label': SPEC[k] + ', click to change job' });
+    b.appendChild(person(k));
+    b.onclick = () => {
+      if (SIZE < 5) { say('A City must have five\npopulation units to support\ntaxmen or scientists.'); return; }
+      specialists[i] = { ent: 'tax', tax: 'sci', sci: 'ent' }[k]; render();
+    };
+    pp.appendChild(b);
+  });
+
+  // City Resources: what is made, then what is used up (eaten, support, corruption) as struck-out icons
+  const rb = $('resbody'); rb.textContent = '';
+  const row = (id, made, used, value, cls, usedLabel) => {
+    const r = el('div', { class: 'rrow' }), ic = el('div', { class: 'icons' });
+    const keep = Math.max(0, made - used);
+    for (let i = 0; i < made; i++) { const s = icon(id); if (i >= keep) s.classList.add('used'); ic.appendChild(s); }
+    for (let i = made; i < used; i++) { const s = icon(id); s.classList.add('short'); ic.appendChild(s); }   // a shortfall
+    r.appendChild(ic);
+    const v = el('span', { class: 'v ' + (cls || '') }); v.textContent = value; if (usedLabel) v.title = usedLabel; r.appendChild(v); rb.appendChild(r);
+  };
+  row('i-food', c.f, c.eat, (c.surplus >= 0 ? '+' : '') + c.surplus, c.surplus >= 0 ? 'pos' : 'neg', `${SIZE * 2} eaten by citizens, ${c.settlerFood} by settlers`);
+  row('i-shield', c.s, c.supportShields, (c.net >= 0 ? '+' : '') + c.net, c.net >= 0 ? '' : 'neg', `${c.supportShields} for unit support`);
+  row('i-trade', c.t, c.corruption, c.t - c.corruption, '', `${c.corruption} lost to corruption`);
+  const sp = el('div', { class: 'split' });
+  [['i-lux', c.lux, 'lux'], ['i-gold', c.tax, 'tax'], ['i-sci', c.sci, 'sci']].forEach(([id, v, n]) => {
+    const s = el('span'); s.appendChild(icon(id)); s.appendChild(document.createTextNode(v)); s.appendChild(Object.assign(el('small'), { textContent: n })); sp.appendChild(s); });
+  rb.appendChild(sp);
+  const key = el('div', { class: 'note' });
+  key.textContent = `Struck out: ${c.eat} food eaten, ${c.supportShields} shield${c.supportShields === 1 ? '' : 's'} for support, ${c.corruption ? c.corruption + ' trade lost to corruption' : 'no corruption (Palace)'}.`;
+  rb.appendChild(key);
+  $('resnote').textContent = `trade ${c.baseTrade} + routes ${c.t - c.baseTrade}`;
+
+  // Units Supported: each with its upkeep under it
+  const sup = $('supported'); sup.textContent = '';
+  const home = UNITS.filter(u => u.home === 'Babylon');
+  home.forEach(u => {
+    const s = el('div', { class: 'slot' }); s.title = UNITTYPES[u.t][0] + (u.inCity ? ' (in the city)' : ' (in the field)');
+    s.appendChild(unitImg(u.t));
+    const k = el('div', { class: 'upk' });
+    if (u.cost.shield) k.appendChild(icon('i-shield'));
+    if (u.cost.food) k.appendChild(icon('i-food'));
+    s.appendChild(k); sup.appendChild(s);
+  });
+  const free = home.filter(u => u.t !== 'diplomat').length;
+  $('supnote').textContent = `${home.length} units · ${Math.min(free, SIZE)} free`;
+  $('supinfo').textContent = c.net < 0
+    ? `Not enough shields: a unit will be disbanded at the end of the turn.`
+    : `${GOVT}: ${SIZE} units free (the city's size), then 1 shield each. Settlers eat 1 food; diplomats are free.`;
+
+  document.querySelectorAll('.cell').forEach(p => p.classList.toggle('worked', worked.has(p.dataset.k)));
+  document.querySelectorAll('.chip').forEach(p => p.style.display = (worked.has(p.dataset.k) || p.dataset.k === '2,2') ? '' : 'none');
+  $('workedn').textContent = `${worked.size} worked · ${specialists.length} specialist${specialists.length === 1 ? '' : 's'}`;
+
+  // Food Storage, with the Granary's halfway line
+  const cap = (SIZE + 1) * 10, fg = $('foodgrid'); fg.textContent = '';
+  for (let i = 0; i < cap; i++) {
+    if (has('granary') && i === cap / 2) fg.appendChild(el('div', { class: 'granline', title: 'Granary: keeps this much food when the city grows' }));
+    const s = icon('i-food', ''); if (i >= foodStore) s.classList.add('empty'); fg.appendChild(s);
+  }
+  $('foodn').textContent = `${foodStore} / ${cap}`;
+  $('growth').textContent = c.surplus > 0 ? `Grows in ${Math.ceil((cap - foodStore) / c.surplus)} turns${has('granary') ? ', keeping ' + cap / 2 + ' food' : ''}` : c.surplus === 0 ? 'Food balanced: not growing' : `Famine in ${Math.ceil(foodStore / -c.surplus)} turns`;
+
+  // Production
+  $('change').textContent = auto ? 'AUTO' : 'CHANGE';
+  $('change').classList.toggle('on', auto);
+  $('pname').textContent = prod.name;
+  if (prod.pic) { $('pimg').src = prod.pic; $('pimg').hidden = false; } else $('pimg').hidden = true;
+  const sg = $('shieldgrid'); sg.textContent = '';
+  for (let i = 0; i < prod.cost; i++) { const s = icon('i-shield', ''); if (i >= prod.have) s.classList.add('empty'); sg.appendChild(s); }
+  sg.style.gridTemplateColumns = `repeat(${prod.cost > 160 ? 25 : prod.cost > 60 ? 16 : 10},1fr)`;
+  const left = Math.max(0, prod.cost - prod.have);
+  $('pmeta').textContent = c.disorder ? 'Production halted by civil disorder' : `${prod.have} / ${prod.cost} shields · ${left ? (c.net > 0 ? Math.ceil(left / c.net) + ' turns' : 'no shields to spare') : 'done next turn'}`;
+  $('buy').disabled = !left;
+  $('treasury').textContent = treasury;
+
+  // INFO: units in the city with their home city, and the trade routes
+  const pr = $('present'); pr.textContent = '';
+  UNITS.filter(u => u.inCity).forEach(u => {
+    const b = el('button', { class: 'slot', title: `${UNITTYPES[u.t][0]} from ${u.home}${u.st ? (u.st === 'F' ? ', fortified' : ', sentry') : ''}` });
+    b.appendChild(unitImg(u.t));
+    if (u.st) b.appendChild(Object.assign(el('span', { class: 't' }), { textContent: u.st }));
+    b.appendChild(Object.assign(el('span', { class: 'hc' }), { textContent: u.home.length > 3 ? u.home.slice(0, 3) + '.' : u.home }));
+    b.onclick = () => activate(u);
+    pr.appendChild(b);
+  });
+  $('routes').innerHTML = c.routes.map(([n, v]) => `<span>{${n}:+${v}}</span>`).join('') || '<span class="note">None</span>';
+
+  // HAPPY: one row per cause, the cause's icons at the right
+  const hp = $('v-happy'); hp.textContent = ''; figN = 0;
+  c.rows.forEach(([label, h, ct, u, why]) => {
+    const r = el('div', { class: 'hrow' }); r.appendChild(Object.assign(el('span'), { textContent: label }));
+    const p = el('div', { class: 'people' });
+    for (let i = 0; i < h; i++) p.appendChild(person('happy')); for (let i = 0; i < ct; i++) p.appendChild(person('content')); for (let i = 0; i < u; i++) p.appendChild(person('unhappy'));
+    r.appendChild(p);
+    const cause = el('div', { class: 'cause' });
+    why.forEach(x => cause.appendChild(x === 'lux' ? icon('i-lux') : x.startsWith('unit:') ? unitImg(x.slice(5), 'uimg sm') : bldImg(x, 'bimg sm')));
+    if (label === 'Wonders' && !why.length) cause.appendChild(Object.assign(el('span', { class: 'note' }), { textContent: 'none' }));
+    r.appendChild(cause); hp.appendChild(r);
+  });
+
+  // improvements list, with the city's wonders after it
+  const list = $('list'); list.textContent = '';
+  BUILDINGS.forEach(b => {
+    const it = el('button', { class: 'item', 'data-id': b.id });
+    it.appendChild(bldImg(b.id));
+    it.appendChild(Object.assign(el('span'), { textContent: b.name }));
+    it.appendChild(Object.assign(el('span', { class: 'sell' }), { textContent: soldThisTurn ? '' : 'SELL' }));
+    const up = el('span', { class: 'up' }); up.textContent = b.up || '–'; up.appendChild(icon('i-gold')); it.appendChild(up);
+    it.onmouseenter = () => { selectTab('view'); highlight(b.id, true); };
+    it.onmouseleave = () => highlight(b.id, false);
+    it.onclick = () => sell(b);
+    list.appendChild(it);
+  });
+  WONDERS.forEach(w => list.appendChild(Object.assign(el('div', { class: 'item wonder' }), { textContent: w })));
+  $('upkeep').textContent = BUILDINGS.reduce((a, b) => a + b.up, 0) + ' gold / turn';
+  if (window.syncSpots) syncSpots();
+}
+
+// ---- city map: diamonds in the game's layout, matching citymap_iso.py; P gives a keyboard cursor --------------
+let cursor = null;
+function toggleTile(k) {
+  if (k === '2,2' || readonly) return;
+  if (worked.has(k)) { worked.delete(k); specialists.push('ent'); }
+  else if (specialists.length) { worked.add(k); specialists.pop(); }
+  else { toast('Every citizen is working. Free a diamond first.'); return; }
+  render();
+}
+function buildMap() {
+  const svg = $('mapsvg'), W = 160, H = 80, OX = 320, OY = 250;
+  TILES.forEach((row, r) => row.forEach((t, c) => {
+    if (!t) return;
+    const dx = c - 2, dy = r - 2, k = r + ',' + c, centre = dx === 0 && dy === 0;
+    const cx = OX + (dx - dy) * W / 2, cy = OY + (dx + dy) * H / 2;
+    const p = el('polygon', { class: 'cell' + (centre ? ' centre' : ''), points: `${cx},${cy - H / 2} ${cx + W / 2},${cy} ${cx},${cy + H / 2} ${cx - W / 2},${cy}`, 'data-k': k }, true);
+    svg.appendChild(p);
+    const chips = [['i-food', t[1]], ['i-shield', t[2]], ['i-trade', t[3]]].flatMap(([id, n]) => Array(n).fill(id));
+    const g = el('g', { class: 'chip', 'data-k': k, 'pointer-events': 'none' }, true);
+    const w = chips.length * 22 + 6;
+    g.appendChild(el('rect', { x: cx - w / 2, y: cy + 4, width: w, height: 28, rx: 4, fill: '#1B2740', opacity: .9 }, true));
+    chips.forEach((id, i) => g.appendChild(el('use', { href: '#' + id, x: cx - w / 2 + 4 + i * 22, y: cy + 7, width: 22, height: 22 }, true)));
+    svg.appendChild(g);
+    p.addEventListener('mouseenter', () => describe(k));
+    p.addEventListener('click', () => { toggleTile(k); describe(k); });
+  }));
+}
+function describe(k) {
+  const [r, c] = k.split(',').map(Number), t = TILES[r][c];
+  $('readout').innerHTML = `<b>${t[0]}</b><span>${t[1]} food · ${t[2]} shields · ${t[3]} trade${k === '2,2' ? ' · city square, always worked' : worked.has(k) ? ' · worked' : ''}</span>`;
+}
+function moveCursor(dr, dc) {
+  let [r, c] = (cursor || '2,2').split(',').map(Number);
+  const nr = r + dr, nc = c + dc;
+  if (TILES[nr] && TILES[nr][nc]) { r = nr; c = nc; }
+  cursor = r + ',' + c;
+  document.querySelectorAll('.cell').forEach(p => p.classList.toggle('cursor', p.dataset.k === cursor));
+  describe(cursor);
+}
+
+// ---- MAP tab: the explored world as 2x2-pixel cells, Babylon and its trade partners marked ---------------------
+function buildWorld() {
+  const cv = $('world'), g = cv.getContext('2d'), MW = 80, MH = 50;
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const blobs = Array.from({ length: 9 }, () => [15 + rnd() * 50, 8 + rnd() * 34, 5 + rnd() * 9]);
+  const land = (x, y) => blobs.some(([bx, by, r]) => (x - bx) ** 2 + ((y - by) * 1.3) ** 2 < r * r);
+  const BAB = [40, 26], cities = [['Babylon', BAB, '#F4ECD8'], ['Ur', [47, 31], '#F4ECD8'], ['Nineveh', [33, 18], '#EE8C6E']];
+  blobs.push([BAB[0], BAB[1], 9], [33, 18, 6]);
+  g.fillStyle = '#0B0F18'; g.fillRect(0, 0, 160, 100);
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
+    if ((x - BAB[0]) ** 2 + (y - BAB[1]) ** 2 > 380) continue;   // only what Babylon's people have explored
+    g.fillStyle = land(x, y) ? '#6E8F4A' : '#2D5C8C'; g.fillRect(x * 2, y * 2, 2, 2);
+  }
+  cities.forEach(([, [x, y], col]) => { g.fillStyle = col; g.fillRect(x * 2 - 1, y * 2 - 1, 4, 4); });
+  $('worldkey').innerHTML = '<span><i style="background:#F4ECD8"></i>Babylon and Ur (ours)</span><span><i style="background:#EE8C6E"></i>Nineveh (Assyrian trade partner)</span>';
+}
+
+// ---- VIEW tab: the assembled city with a hotspot on each improvement ------------------------------------------
+function buildView() {
+  const v = $('v-view');
+  const VW = VIEWDATA.width, VH = VIEWDATA.height;
+  const s = el('svg', { viewBox: `0 0 ${VW} ${VH}`, preserveAspectRatio: 'xMidYMid slice' }, true);
+  const img = el('image', { href: `art/grow-s${viewSize}.jpg`, x: 0, y: 0, width: VW, height: VH }, true);
+  s.appendChild(img); v.appendChild(s);
+  const sw = el('div', { class: 'sizes' }); sw.innerHTML = '<span>City size</span>' + [2, 8, 14, 22].map(n => `<button class="btn" data-n="${n}">${n}</button>`).join('') + '<button class="btn" id="full" title="Civ1 showed the city view full screen">FULL SCREEN</button>';
+  v.appendChild(sw);
+  const label = el('div', { class: 'vlabel' }); label.hidden = true; v.appendChild(label);
+  const place = (r, html) => {
+    const box = s.getBoundingClientRect(), k = 1280 / $('stage').getBoundingClientRect().width;
+    const sc = Math.max(box.width / VW, box.height / VH), ox = (box.width - VW * sc) / 2, oy = (box.height - VH * sc) / 2;
+    label.style.left = (ox + (r[0] + r[2]) / 2 * sc) * k + 'px'; label.style.top = (oy + r[1] * sc) * k - 4 + 'px';
+    label.innerHTML = html; label.hidden = false;
+  };
+  const spots = [];
+  const box = id => VIEWDATA.sizes[viewSize][id];
+  const fitr = (p, r) => { p.setAttribute('x', r[0]); p.setAttribute('y', r[1]); p.setAttribute('width', r[2] - r[0]); p.setAttribute('height', r[3] - r[1]); };
+  const add = (id, html, click, extra = '') => {
+    const p = el('rect', { class: 'spot' + extra, rx: 10, tabindex: 0, role: 'button', 'aria-label': id }, true); fitr(p, box(id));
+    const on = () => { highlight(id, true); place(box(id), typeof html === 'function' ? html() : html); }, off = () => { highlight(id, false); label.hidden = true; };
+    p.addEventListener('mouseenter', on); p.addEventListener('mouseleave', off); p.addEventListener('focus', on); p.addEventListener('blur', off);
+    p.addEventListener('click', click); s.appendChild(p); spots.push([id, p]);
+  };
+  // back to front, so the nearest building is on top where two overlap
+  VIEWDATA.order.forEach(id => {
+    if (id === 'scaffold') { add('scaffold', () => `${prod.name}<small>being built · ${Math.max(0, prod.cost - prod.have)} shields to go</small>`, () => $('change').click(), ' building'); return; }
+    const b = BUILDINGS.find(x => x.id === id);
+    if (b) add(b.id, `${b.name}<small>${b.effect} Upkeep ${b.up}.</small>`, () => sell(b));
+  });
+  const setSize = n => { viewSize = n; img.setAttribute('href', `art/grow-s${n}.jpg`); spots.forEach(([id, p]) => fitr(p, box(id))); sw.querySelectorAll('button').forEach(b => b.classList.toggle('on', +b.dataset.n === n)); };
+  sw.querySelectorAll('button[data-n]').forEach(b => b.onclick = () => setSize(+b.dataset.n)); setSize(viewSize);
+  // full screen, as Civ1's VIEW was: the same view moves over the whole screen, Esc or the button brings it back
+  const pane = v.parentElement;
+  window.toggleFull = on => {
+    on = on ?? !v.classList.contains('full');
+    if (on) { $('stage').appendChild(v); v.classList.add('full'); } else { v.classList.remove('full'); pane.appendChild(v); }
+    sw.querySelector('#full').textContent = on ? 'BACK TO CITY' : 'FULL SCREEN';
+  };
+  sw.querySelector('#full').onclick = () => toggleFull();
+  window.highlight = (id, on) => { spots.forEach(([b, p]) => p.classList.toggle('on', on && b === id)); document.querySelectorAll('.item').forEach(i => i.classList.toggle('on', on && i.dataset.id === id)); };
+  window.syncSpots = () => spots.forEach(([id, p]) => p.style.display = id === 'scaffold' || has(id) ? '' : 'none');
+}
+
+// ---- dialogs, in the shape of Civ1's menu boxes -----------------------------------------------------------------
+function ask(text, options) {
+  return new Promise(res => {
+    const d = $('dlg'); d.textContent = '';
+    d.appendChild(Object.assign(el('p'), { textContent: text }));
+    options.forEach((o, i) => { const b = el('button', { class: 'opt' }); b.textContent = o; b.onclick = () => { $('dlgback').hidden = true; res(i); }; d.appendChild(b); });
+    $('dlgback').hidden = false; d.querySelector('.opt').focus();
+  });
+}
+const say = text => ask(text, ['OK']);
+function toast(msg) { const t = el('div', { class: 'toast' }); t.textContent = msg; $('stage').appendChild(t); setTimeout(() => t.remove(), 2400); }
+
+async function sell(b) {
+  if (readonly) return;
+  if (soldThisTurn) { say('Only one improvement can be sold\nin a city each turn.'); return; }
+  const price = b.cost;   // Civ1 pays the improvement's full cost in coins
+  if (await ask(`Do you want to sell\nyour ${b.name} for\n${price} coins?`, ['No.', 'Yes.']) === 1) {
+    BUILDINGS.splice(BUILDINGS.indexOf(b), 1); treasury += price; soldThisTurn = true; render(); toast(`${b.name} sold for ${price} coins.`);
+  }
+}
+async function sellMenu() {
+  if (soldThisTurn) { say('Only one improvement can be sold\nin a city each turn.'); return; }
+  const i = await ask('Sell which improvement?', [...BUILDINGS.map(b => `${b.name} (${b.cost})`), 'Cancel']);
+  if (i < BUILDINGS.length) sell(BUILDINGS[i]);
+}
+async function buy() {
+  if (readonly) return;
+  const cost = buyCost(); if (!cost) return;
+  if (compute().disorder) { say(`CIVIL DISORDER in Babylon!\nProduction can not be bought.`); return; }
+  const text = `Cost to complete\n${prod.name} is ${cost} coins.\nOur treasury has ${treasury} coins.`;
+  if (cost > treasury) { say(text); return; }
+  if (await ask(text, ['Yes', 'No']) === 0) { treasury -= cost; prod.have = prod.cost; render(); toast(`${prod.name} will be completed next turn.`); }
+}
+function changeMenu(e) {
+  if (e) e.stopPropagation();
+  if (readonly) return;
+  const old = document.querySelector('.menu'); if (old) { old.remove(); return; }
+  const m = el('div', { class: 'menu' }), sh = Math.max(1, compute().net);
+  BUILDABLE.forEach(it => {
+    const b = el('button');
+    b.innerHTML = `<span>${it.name}${it.kind === 'wonder' ? ' (wonder)' : ''}</span><span class="c">${it.cost}</span><span class="c">${Math.ceil(Math.max(0, it.cost - prod.have) / sh)} turns</span>`;
+    b.onclick = () => { prod = Object.assign({ have: Math.min(prod.have, it.cost) }, it); auto = false; m.remove(); render(); };
+    m.appendChild(b);
+  });
+  $('change').closest('.body').appendChild(m);
+}
+function toggleAuto() {
+  if (readonly) return;
+  auto = !auto;
+  if (auto) { const c = compute(); prod = Object.assign({ have: prod.have }, BUILDABLE.find(b => b.name === (c.unhappy ? 'Colosseum' : 'Marketplace'))); toast(`AUTO: Babylon chooses its own production (${prod.name}).`); }
+  render();
+}
+function activate(u) {
+  if (readonly) return;
+  u.st = ''; render(); toast(`${UNITTYPES[u.t][0]} from ${u.home} is active and leaves the city screen.`);
+}
+let activeIdx = 0;
+function activateNext() { const list = UNITS.filter(u => u.inCity); if (list.length) activate(list[activeIdx++ % list.length]); }
+
+function selectTab(t) {
+  document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.t === t));
+  ['info', 'happy', 'map', 'view'].forEach(x => $('v-' + x).hidden = x !== t && !(x === 'view' && $('v-view').classList.contains('full')));
+}
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => selectTab(b.dataset.t));
+$('change').onclick = changeMenu;
+$('change').oncontextmenu = e => { e.preventDefault(); toggleAuto(); };
+document.addEventListener('click', () => { const m = document.querySelector('.menu'); if (m) m.remove(); });
+$('buy').onclick = buy;
+$('rename').onclick = () => { if (!readonly) toast('Rename opens the city name box.'); };
+$('exit').onclick = () => toast('Exit returns to the map.');
+
+// the keys CityWorker.cs reads
+document.addEventListener('keydown', e => {
+  if (!$('dlgback').hidden || e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key;
+  const arrows = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1], Home: [-1, -1], PageUp: [-1, 1], End: [1, -1], PageDown: [1, 1] };
+  if (cursor && arrows[k]) { moveCursor(...arrows[k]); e.preventDefault(); return; }
+  if (cursor && (k === ' ' || k === 'Enter')) { toggleTile(cursor); describe(cursor); e.preventDefault(); return; }
+  const act = { c: () => changeMenu(), b: buy, A: toggleAuto, i: () => selectTab('info'), h: () => selectTab('happy'), m: () => selectTab('map'), v: () => selectTab('view'),
+                a: activateNext, s: () => !readonly && sellMenu(), p: () => moveCursor(0, 0), r: () => $('rename').click(), Escape: () => $('v-view').classList.contains('full') ? toggleFull(false) : $('exit').click() }[k];
+  if (act) { act(); e.preventDefault(); }
+});
+
+// a diplomat's report: the same screen of a foreign city, read only
+$('spy').onclick = () => {
+  readonly = !readonly;
+  $('stage').classList.toggle('readonly', readonly);
+  $('cityname').textContent = readonly ? 'Diplomats report: BABYLON' : 'BABYLON';
+  $('spy').textContent = readonly ? 'Back to your own city screen' : "Show a diplomat's report of this city";
+};
+
+function fit() { const w = $('fit').clientWidth, k = Math.min(1, w / 1280); $('stage').style.transform = `scale(${k})`; $('fit').style.height = 800 * k + 'px'; }
+addEventListener('resize', fit);
+buildMap(); buildView(); buildWorld(); selectTab('view'); render(); fit();
+</script>

@@ -1,0 +1,26 @@
+{
+ "town_s0_w": {
+  "prompt": "{STYLE} Repaint the reference image exactly: the same settlement from the same angle, in the same gouache style and colours, with the same houses, roofs and lanes in the same places, but now ENCLOSED by a ring of light cream stone city walls with small square corner towers and a gate, following the edge of the houses in a roughly square shape. Keep the same overall size, the faded gardens outside the walls. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../raw-towns/town_s0_o.png"
+  ]
+ },
+ "town_s1_w": {
+  "prompt": "{STYLE} Repaint the reference image exactly: the same settlement from the same angle, in the same gouache style and colours, with the same houses, roofs and lanes in the same places, but now ENCLOSED by a ring of light cream stone city walls with small square corner towers and a gate, following the edge of the houses in a roughly square shape. Keep the same overall size, the faded gardens outside the walls. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../raw-towns/town_s1_o.png"
+  ]
+ },
+ "town_s2_w": {
+  "prompt": "{STYLE} Repaint the reference image exactly: the same settlement from the same angle, in the same gouache style and colours, with the same houses, roofs and lanes in the same places, but now ENCLOSED by a ring of light cream stone city walls with small square corner towers and a gate, following the edge of the houses in a roughly square shape. Keep the same overall size, the faded gardens outside the walls. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../raw-towns/town_s2_o.png"
+  ]
+ },
+ "town_s3_w": {
+  "prompt": "{STYLE} Repaint the reference image exactly: the same settlement from the same angle, in the same gouache style and colours, with the same houses, roofs and lanes in the same places, but now ENCLOSED by a ring of light cream stone city walls with small square corner towers and a gate, following the edge of the houses in a roughly square shape. Keep the same overall size, the faded gardens outside the walls. Isolated on a perfectly flat, uniform pure magenta (#FF00FF) background. No shadow, no text, no frame, no pink or purple in the painting.",
+  "refs": [
+   "../raw-towns/town_s3_o.png"
+  ]
+ }
+}

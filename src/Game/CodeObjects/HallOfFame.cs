@@ -40,6 +40,10 @@ namespace OpenCivOne
 			// function body
 			F3_0000_0000_InitHallOfFame();
 
+			// a first game has no Hall of Fame yet: its entries stay empty, and the file is written when the game ends
+			if (!File.Exists($"{this.parent.ResourcePath}FAME.DTA"))
+				return;
+
 			// Instruction address 0x0000:0x0041, size: 5
 			FileStream file = new FileStream($"{this.parent.ResourcePath}FAME.DTA", FileMode.Open, FileAccess.Read);
 

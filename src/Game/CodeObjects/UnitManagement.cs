@@ -503,6 +503,9 @@ namespace OpenCivOne
 
 			//MouseEvent mouseState;
 
+			// a painted map view rings the unit while it blinks
+			this.parent.MapManagement.BlinkUnit = (unitID < 128) ? (playerID, unitID) : null;
+
 			do
 			{
 				if (unitID >= 128)
@@ -597,6 +600,8 @@ namespace OpenCivOne
 				}
 			}
 			while (this.parent.CAPI.kbhit() == 0 && !this.parent.HasNewMouseEvent());
+
+			this.parent.MapManagement.BlinkUnit = null;
 		}
 
 		/// <summary>
@@ -1790,6 +1795,10 @@ namespace OpenCivOne
 				// Instruction address 0x1866:0x1e7f, size: 5
 				this.parent.Graphics.F0_VGA_07d8_DrawImage(this.parent.Var_aa_Screen0_Rectangle, 80, 0, 240, 200, this.parent.Var_19d4_Screen1_Rectangle, 80, 0);
 
+				// with the isometric map the painted unit slides there instead, and the classic sprite is not drawn
+				if (this.parent.MapManagement.PlayIsoMove(this.parent.GameData.Players[playerID].Units[unitID].Position, direction))
+					return;
+
 				// Instruction address 0x1866:0x1ea2, size: 5
 				int mapX = this.parent.MapManagement.AdjustXPosition(this.parent.GameData.Players[playerID].Units[unitID].Position.X - this.parent.Var_d4cc_MapViewX) * 16 + 80;
 				int mapY = (this.parent.GameData.Players[playerID].Units[unitID].Position.Y - this.parent.Var_d75e_MapViewY) * 16 + 8;
@@ -1811,6 +1820,9 @@ namespace OpenCivOne
 
 						// Instruction address 0x1866:0x1f4a, size: 5
 						this.parent.Graphics.F0_VGA_07d8_DrawImage(this.parent.Var_19d4_Screen1_Rectangle, newX, newY, 16, 16, this.parent.Var_aa_Screen0_Rectangle, newX, newY);
+
+						// the ground put back behind the unit is map: the isometric view stays over it
+						this.parent.MapManagement.SyncIsoSnapshot(newX, newY, 16, 16);
 					}
 				}
 				else
@@ -1830,6 +1842,9 @@ namespace OpenCivOne
 
 						// Instruction address 0x1866:0x1f4a, size: 5
 						this.parent.Graphics.F0_VGA_07d8_DrawImage(this.parent.Var_19d4_Screen1_Rectangle, newX, newY, 16, 16, this.parent.Var_aa_Screen0_Rectangle, newX, newY);
+
+						// the ground put back behind the unit is map: the isometric view stays over it
+						this.parent.MapManagement.SyncIsoSnapshot(newX, newY, 16, 16);
 					}
 				}
 			}

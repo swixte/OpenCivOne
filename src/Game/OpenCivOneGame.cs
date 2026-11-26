@@ -29,6 +29,8 @@ namespace OpenCivOne
 		private ImageTools imageTools;
 		private LanguageTools languageTools;
 		private MapManagement mapManagement;
+		private PaintedMap? paintedMap = null;
+		private IMapView? mapView = null;
 		private UnitManagement unitManagement;
 		private UnitGoTo unitGoTo;
 		private Actions oSegment_2459;
@@ -137,6 +139,67 @@ namespace OpenCivOne
 
 			this.globalPreferences = GlobalPreferences.DeSerializeFromJSON(this, this.gameMainPath);
 
+			// The HD art is in the hd folder, or in themes/NAME when the preferences name a theme that is there
+			string hdPath = $"{this.gameResourcePath}hd";
+			string? theme = this.globalPreferences.Theme;
+
+			if (!string.IsNullOrWhiteSpace(theme) && Directory.Exists($"{this.gameResourcePath}themes{separator}{theme}"))
+			{
+				hdPath = $"{this.gameResourcePath}themes{separator}{theme}";
+				GBitmap.HDDirectory = hdPath;
+			}
+
+			// HD art declares its scale in scale.txt (4 for 64x64 tiles); without it the scale is 2
+			string hdScalePath = $"{hdPath}{separator}scale.txt";
+
+			if (File.Exists(hdScalePath) && int.TryParse(File.ReadAllText(hdScalePath).Trim(), out int hdScale) && (hdScale == 2 || hdScale == 4))
+			{
+				GBitmap.HDScale = hdScale;
+			}
+
+			if (this.globalPreferences.Debug.ExportHDTemplates)
+			{
+				GBitmap.HDTemplatePath = $"{this.gameMainPath}{separator}hd-templates";
+			}
+
+			// Optional painted grain for flat interface boxes, and smooth enlargement of pixel art without HD versions
+			GBitmap.LoadUIMaterial($"{hdPath}{separator}ui{separator}material.png");
+			GBitmap.LoadUIColors($"{hdPath}{separator}ui{separator}colors.txt");
+			string upscalePath = $"{hdPath}{separator}upscale.txt";
+			GBitmap.SmoothUpscale = File.Exists(upscalePath) && File.ReadAllText(upscalePath).Trim().ToLowerInvariant() == "scale2x";
+
+			GBitmap.AnimateWater = this.globalPreferences.AnimateWater;
+
+			// a theme's own sounds, in place of the made ones
+			OpenCivOne.Sound.AudioOut.SoundDirectory = $"{hdPath}{separator}sounds";
+
+			// A painted map (hd/painted) replaces the terrain tiles of map cells with one painting of the whole world
+			this.paintedMap = PaintedMap.Load($"{hdPath}{separator}painted", 16 * GBitmap.HDScale,
+				(x, y) => (int)this.mapManagement!.GetTerrainType(x, y));
+
+			// a theme with isometric art (hd/iso) shows the map window as an isometric view, at the HD size of the window
+			if (GBitmap.HDScale > 1)
+				this.mapView = IsoView.Load(hdPath, 240 * GBitmap.HDScale, 192 * GBitmap.HDScale);
+
+			// a painted map with painted towns and units shows them top-down over the classic map, as the theme's map
+			// renders do
+			if (this.mapView == null && this.paintedMap != null && GBitmap.HDScale > 1)
+				this.mapView = TopView.Load(hdPath, 240 * GBitmap.HDScale, 192 * GBitmap.HDScale, 16 * GBitmap.HDScale, $"{this.gameResourcePath}hd");
+
+			// a print paints resources and huts into the ground, with its trees and peaks
+			if (this.paintedMap != null)
+			{
+				// with the top-down view's painted towns, the ground opens a clearing round each city the human knows,
+				// wider for a larger town
+				bool clearings = this.mapView is TopView;
+
+				this.paintedMap.FeatureAt = (x, y) =>
+					(this.mapManagement!.F0_2aea_1836_CellHasSpecialResource(x, y) ? PaintedMap.SpecialResource : 0) |
+					(this.mapManagement.F0_2aea_1894_CellHasMinorTribeHut(x, y, this.mapManagement.GetTerrainType(x, y)) ? PaintedMap.MinorTribeHut : 0) |
+					((((int)this.mapManagement.F0_2aea_1585_GetVisibleTerrainImprovements(x, y) & 0x18) != 0) ? PaintedMap.RoadCorridor : 0) |
+					(clearings ? this.mapManagement.CityClearing(x, y) : 0);
+			}
+
 			#region Initialize Segments
 			this.CApi = new CAPI(this);
 			this.graphics = new GDriver(this);
@@ -181,6 +244,11 @@ namespace OpenCivOne
 			this.showDebugDetails = new ShowDebugDetails(this);
 			this.secession = new Secession(this);
 			#endregion
+
+			// New names for units, advances, nations and the rest, from the theme's names.json or the game folder's
+			string namesPath = GBitmap.HDDirectory != null ? $"{hdPath}{separator}names.json" : $"{this.gameResourcePath}names.json";
+			GameNames.Load(namesPath)?.Apply(this.gameData, this.Array_1966_GovernmentNames, this.Encyclopedia.GameConcepts,
+				this.Array_19b2_GovernmentTypeNames, this.Array_RealmNames, this.Array_33a2_GameDifficultyNames);
 
 			/*string[] aFiles = Directory.GetFiles(this.oParent.ResourcePath, "*.pic");
 
@@ -473,6 +541,22 @@ namespace OpenCivOne
 
 		public string ResourcePath { get => this.gameResourcePath; }
 
+		/// <summary>
+		/// Path of a game text file (HELP.TXT, KING.TXT, ...): the theme's own copy when it has one, otherwise the game's
+		/// </summary>
+		public string GetTextFilePath(string fileName)
+		{
+			if (GBitmap.HDDirectory != null)
+			{
+				string themePath = Path.Combine(GBitmap.HDDirectory, fileName);
+
+				if (File.Exists(themePath))
+					return themePath;
+			}
+
+			return $"{this.gameResourcePath}{fileName}";
+		}
+
 		public string MainPath { get => this.gameMainPath; }
 
 		public string SavePath { get => this.gameSavePath; }
@@ -552,6 +636,19 @@ namespace OpenCivOne
 		public LanguageTools LanguageTools
 		{
 			get { return this.languageTools; }
+		}
+
+		/// <summary>
+		/// The painted world map, or null when the map is drawn from terrain tiles
+		/// </summary>
+		/// <summary>
+		/// The isometric view of the map window, when the theme has isometric art
+		/// </summary>
+		public IMapView? MapView => this.mapView;
+
+		public PaintedMap? PaintedMap
+		{
+			get => this.paintedMap;
 		}
 
 		public MapManagement MapManagement

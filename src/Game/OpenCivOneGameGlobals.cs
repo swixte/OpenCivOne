@@ -75,6 +75,9 @@ namespace OpenCivOne
 
 		public string[] Array_19b2_GovernmentTypeNames = ["Mr.", "Emperor", "King", "Comrade", "President", "President"];
 
+		// realm titles by government: despotism and anarchy, monarchy and communism, republic and democracy
+		public string[] Array_RealmNames = ["Empire", "Kingdom", "Republic"];
+
 		// Convert pixel value to actual TerrainTypeEnum value
 		public TerrainTypeEnum[] PixelValuesToTerrainTypes = {
 			TerrainTypeEnum.Invalid,	// Undefined0 = 0
