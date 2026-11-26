@@ -119,6 +119,11 @@ namespace OpenCivOne.Graphics
 
 		public const int SpecialResource = 1, MinorTribeHut = 2, City = 4, RoadCorridor = 8;
 
+		/// <summary>
+		/// A mine or a fortress on the cell: the scenery leaves room for it
+		/// </summary>
+		public const int MineSite = 256, FortressSite = 512;
+
 		// a city's size step (0 for a hamlet up to 5 for a great capital) in the feature bits above City: its clearing
 		// grows with it
 		public const int CityStepShift = 4, CityStepMask = 7 << CityStepShift;
@@ -252,7 +257,7 @@ namespace OpenCivOne.Graphics
 				}
 			}
 
-			foreach (string set in new[] { "trees", "jungle", "hills", "mountains", "mountains_gold", "hills_coal", "jungle_gems" })
+			foreach (string set in new[] { "trees", "jungle", "hills", "mountains", "mountains_gold", "hills_coal", "jungle_gems", "peaks" })
 			{
 				List<Sprite> list = new List<Sprite>();
 				string setFolder = Path.Combine(folder, set);
@@ -716,7 +721,7 @@ namespace OpenCivOne.Graphics
 					hash = (hash * 31) + this.Terrain(x, y);
 
 					// a city's clearing, special minerals, and road corridors are painted whatever the map's style
-					hash = (hash * 7) + (this.PaintsFeatures ? this.Feature(x, y) : (this.Feature(x, y) & (City | CityStepMask | SpecialResource | RoadCorridor)));
+					hash = (hash * 7) + (this.PaintsFeatures ? this.Feature(x, y) : (this.Feature(x, y) & (City | CityStepMask | SpecialResource | RoadCorridor | MineSite | FortressSite)));
 				}
 			}
 
@@ -1794,9 +1799,10 @@ namespace OpenCivOne.Graphics
 								// mountains seen from above are their relief: ridges and valleys lit much more strongly, and
 								// snow on the highest crests
 								float height = this.HeightAt(grid, wx, wy, k);
-								float high = Smooth(0.45f, 0.95f, height);
-								strength *= 1 + (1.3f * high);
-								float snow = Smooth(1.42f, 1.6f, height + ((this.Noise(wx, wy, 9 * k, 36) - 0.5f) * 0.12f)) * 0.85f;
+								// mountains and hills carry their own painted light and snow: the ground's relief stays off them,
+								// or it smears over their ridges
+								strength *= 1 - (0.9f * Smooth(0.3f, 0.6f, height));
+								float snow = 0;
 
 								if (snow > 0)
 								{
@@ -2815,6 +2821,9 @@ namespace OpenCivOne.Graphics
 						break;
 
 					case Mountains:
+						if (!goldMt && this.HasSpriteSet("peaks"))
+							this.PlacePeaks(placements, random, i, j, left, top, lower * shore);
+
 						if (goldMt)
 							this.Place(placements, "mountains_gold", random, left + (Range(random, 29, 35) * k) + pushX, top + (Range(random, 58, 62) * k) + pushY,
 								Range(random, 62, 68) * k * Math.Max(lower, 0.90f) * shore, true, Range(random, -0.02f, 0.03f), Range(random, -0.04f, 0.03f), false, maxWidth: 78 * k);
@@ -3360,6 +3369,60 @@ namespace OpenCivOne.Graphics
 					g[i] += (lg - g[i]) * cover;
 					b[i] += (lb - b[i]) * cover;
 				}
+			}
+		}
+
+		/// <summary>
+		/// The peaks of a mountain cell seen from above, painted pictures from the theme's peaks set placed as one system with
+		/// what is built on the cell: they stand clear of a road or railroad through it (which then runs along the valley
+		/// between them), leave the flank where a mine goes in, and stand back round a fortress; and they reach a little
+		/// over the cell's edges, so neighbouring mountain cells join into a range
+		/// </summary>
+		private void PlacePeaks(List<Placement> placements, Random random, int i, int j, float left, float top, float scale)
+		{
+			float k = this.cell / 64f;
+			int feature = this.Feature(i, j);
+			bool road = (feature & RoadCorridor) != 0, mine = (feature & MineSite) != 0, fort = (feature & FortressSite) != 0;
+			// spots kept free: the mine's mouth and the fortress, where the map window draws them
+			var keep = new List<(float X, float Y, float R)>();
+
+			if (mine)
+				keep.Add((left + (36 * k), top + (36 * k), 15 * k));
+
+			if (fort)
+				keep.Add((left + (32 * k), top + (36 * k), 27 * k));
+
+			// candidate summits on a jittered grid across the cell, the biggest first
+			var spots = new List<(float X, float Y)>();
+			for (int v = 0; v < 3; v++)
+				for (int u = 0; u < 3; u++)
+					spots.Add((left + ((10 + (u * 22) + Range(random, -5, 5)) * k), top + ((10 + (v * 22) + Range(random, -5, 5)) * k)));
+
+			spots = spots.OrderBy(sp => Distance(sp.X, sp.Y, left + (32 * k), top + (32 * k)) + Range(random, 0, 10 * k)).ToList();
+			var placed = new List<(float X, float Y, float R)>();
+			bool open = !road && !mine && !fort;
+
+			foreach ((float x, float y) in spots)
+			{
+				// one big massif fills an open cell; with something built on it, smaller peaks gather round it
+				// a big peak and smaller ones overlapping it, so the cell's mountains and its neighbours' join into a range
+				float radius = (placed.Count == 0 ? (open ? Range(random, 28, 33) : Range(random, 19, 24)) : Range(random, 16, 22)) * k * scale;
+				float roadRoom = road ? this.RoadDistance(x, y, i, j) : float.MaxValue;
+
+				if (roadRoom < radius * 0.7f)
+					radius = roadRoom / 0.7f;
+
+				if (keep.Any(kp => Distance(x, y, kp.X, kp.Y) < kp.R + (radius * 0.55f)))
+					continue;
+
+				if (radius < 9 * k || placed.Any(pp => Distance(x, y, pp.X, pp.Y) < (pp.R + radius) * 0.4f))
+					continue;
+
+				this.Place(placements, "peaks", random, x, y + radius, radius * 2, allowFlip: false);
+				placed.Add((x, y, radius));
+
+				if (placed.Count >= (open ? 3 : 4))
+					break;
 			}
 		}
 

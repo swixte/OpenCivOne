@@ -197,6 +197,8 @@ namespace OpenCivOne
 					(this.mapManagement!.F0_2aea_1836_CellHasSpecialResource(x, y) ? PaintedMap.SpecialResource : 0) |
 					(this.mapManagement.F0_2aea_1894_CellHasMinorTribeHut(x, y, this.mapManagement.GetTerrainType(x, y)) ? PaintedMap.MinorTribeHut : 0) |
 					((((int)this.mapManagement.F0_2aea_1585_GetVisibleTerrainImprovements(x, y) & 0x18) != 0) ? PaintedMap.RoadCorridor : 0) |
+					((((int)this.mapManagement.F0_2aea_1585_GetVisibleTerrainImprovements(x, y) & 0x4) != 0) ? PaintedMap.MineSite : 0) |
+					((((int)this.mapManagement.F0_2aea_1585_GetVisibleTerrainImprovements(x, y) & 0x20) != 0) ? PaintedMap.FortressSite : 0) |
 					(clearings ? this.mapManagement.CityClearing(x, y) : 0);
 			}
 
