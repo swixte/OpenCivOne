@@ -13,7 +13,7 @@ Drawing things in code is fine. What matters is that whatever is drawn, painted 
 
 For every element the change touches, and every element next to it on screen:
 
-1. **Reference:** the theme's reference renders (for gouache: `themes/gouache/preview/compose.py` output, `*-map.jpg`, `*-zoom.jpg`, or a fresh `compose.py` run). If none show the element, use the nearest element the art does show (e.g. the large walled towns for small walled ones).
+1. **Reference:** the theme's reference. For gouache that is `themes/gouache/concept.png`: a naturalistic painted aerial view, everything seen strictly from straight above (mountains too), the land calm and blended, towns and resources standing out. The older renders in `themes/gouache/preview/` (`compose.py` output, `*-map.jpg`, `*-zoom.jpg`, `topview/`) and `concept-boardgame.png` show the board-game look the theme has left: use them for what elements exist and where they go, never for style. If the reference does not show an element, use the nearest element it does show.
 2. **In the real game:** a screenshot from the running game, not only the test harness. Get the state there with a save edit if play won't reach it quickly. Note the exceptions you hit, e.g. units added by editing the save stay invisible until they move.
 3. **Crops:** each element at **1x** (what a player sees) and at **3x** (nearest or Lanczos), set **side by side with the reference** in one image, then look at that image.
 4. **Every case:** sizes, states and colours, e.g. every town step walled and open, every player colour, sentry/fortified/active, land and sea, start, middle and end of an animation.
