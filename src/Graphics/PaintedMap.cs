@@ -79,6 +79,20 @@ namespace OpenCivOne.Graphics
 		// surf, how strong the broken white line off the coast is (1); beachtone, 1 for a beach of sand lightened to
 		// cream, 0 for one in the desert's own sand
 		private float surf = 1, beachTone = 1;
+
+		// relief, how strongly the land is lit as a landscape with height (0, flat); variety, how much the land's colour
+		// drifts from region to region, lusher in one place and drier in another (0, none)
+		private float relief = 0, variety = 0;
+
+		// topdown, 1 to see everything from straight above: woods as tree crowns seen from overhead, hills and mountains
+		// as relief in the ground instead of standing pictures; mix, how far terrains reach into each other at their
+		// borders, in painterly patches (0, a plain fade)
+		private bool topDown = false;
+		private float mix = 0;
+
+		// the height each terrain stands at, and how rough its ground is
+		private static readonly float[] TerrainHeight = { 0.14f, 0.10f, 0.08f, 0.22f, 0.52f, 1.0f, 0.16f, 0.3f, 0.02f, 0.18f, -0.25f, 0.02f };
+		private static readonly float[] TerrainRoughness = { 0.05f, 0.035f, 0.035f, 0.06f, 0.22f, 0.55f, 0.06f, 0.08f, 0.015f, 0.06f, 0f, 0.01f };
 		// how wide land terrains blend into each other (groundblend, 1 as before; more hides cell corners)
 		private float groundBlend = 1;
 
@@ -171,6 +185,8 @@ namespace OpenCivOne.Graphics
 			// subtle per-placement colour variation for mountain ranges (0 = unchanged)
 			public float Warmth;
 			public float Shade;
+			// a tree crown seen from above (topdown): centred on (X, Base), Width its radius, Height its terrain
+			public bool Crown;
 		}
 
 		/// <param name="terrainAt">Terrain id (TerrainTypeEnum) of a map cell, x already wrapped and y inside the map</param>
@@ -309,11 +325,15 @@ namespace OpenCivOne.Graphics
 						case "trees": map.treeScale = Math.Clamp(value, 0.15f, 2); break;
 						case "jungle": map.jungleScale = Math.Clamp(value, 0.15f, 2); break;
 						case "coastwarp": map.coastWarp = Math.Clamp(value, 0.5f, 2); break;
-						case "groundblend": map.groundBlend = Math.Clamp(value, 0.5f, 2.2f); break;
+						case "groundblend": map.groundBlend = Math.Clamp(value, 0.5f, 4.5f); break;
 						case "pattern": map.pattern = Math.Clamp(value, 0.25f, 8); break;
 						case "seapattern": map.seaPattern = Math.Clamp(value, 0.25f, 8); break;
 						case "paper": map.paper = Math.Clamp(value, 0, 1); break;
 						case "surf": map.surf = Math.Clamp(value, 0, 1.5f); break;
+						case "relief": map.relief = Math.Clamp(value, 0, 3); break;
+						case "topdown": map.topDown = value != 0; break;
+						case "mix": map.mix = Math.Clamp(value, 0, 2); break;
+						case "variety": map.variety = Math.Clamp(value, 0, 3); break;
 						case "beachtone": map.beachTone = Math.Clamp(value, 0, 1); break;
 					}
 				}
@@ -833,6 +853,51 @@ namespace OpenCivOne.Graphics
 		/// <summary>
 		/// Smooth value noise in [0, 1] with features about `size` pixels across, repeating around the world horizontally
 		/// </summary>
+		/// <summary>
+		/// The height of the land at a world position: the heights of the cells around it, blended smoothly, with
+		/// painterly noise on top (ridges in mountains, rolling ground in hills, a gentle swell on open land). A function
+		/// of the position only, so it joins up across chunks.
+		/// </summary>
+		private float HeightAt(TerrainGrid grid, float wx, float wy, float k)
+		{
+			// the cells' heights, joined by a smooth cubic B-spline through their centres (no steps at cell borders), read
+			// at a position wandered a little so nothing lines up with the grid
+			float fx = (wx / this.cell) - 0.5f + ((this.Noise(wx, wy, 90 * k, 34) - 0.5f) * 0.9f);
+			float fy = (wy / this.cell) - 0.5f + ((this.Noise(wx, wy, 90 * k, 35) - 0.5f) * 0.9f);
+			int ix = (int)MathF.Floor(fx), iy = (int)MathF.Floor(fy);
+			float tx = fx - ix, ty = fy - iy;
+			Span<float> bx = stackalloc float[4], by = stackalloc float[4];
+			Spline(tx, bx);
+			Spline(ty, by);
+			float height = 0, rough = 0;
+
+			for (int j = 0; j < 4; j++)
+			{
+				for (int i = 0; i < 4; i++)
+				{
+					int terrain = grid.At(ix - 1 + i, Math.Clamp(iy - 1 + j, 0, MapHeight - 1));
+					float w = bx[i] * by[j];
+					height += w * TerrainHeight[terrain];
+					rough += w * TerrainRoughness[terrain];
+				}
+			}
+
+			// ridged noise for crests, and softer noise for rolling ground
+			float ridge = 1 - MathF.Abs((this.Noise(wx, wy, 34 * k, 31) * 2) - 1);
+			float roll = (this.Noise(wx, wy, 70 * k, 32) * 0.6f) + (this.Noise(wx, wy, 18 * k, 33) * 0.4f);
+			return height + (rough * ((ridge * ridge * 0.7f) + (roll * 0.6f)));
+		}
+
+		// the weights of a uniform cubic B-spline for the four points around t (0 to 1)
+		private static void Spline(float t, Span<float> w)
+		{
+			float t2 = t * t, t3 = t2 * t;
+			w[0] = (1 - (3 * t) + (3 * t2) - t3) / 6;
+			w[1] = (4 - (6 * t2) + (3 * t3)) / 6;
+			w[2] = (1 + (3 * t) + (3 * t2) - (3 * t3)) / 6;
+			w[3] = t3 / 6;
+		}
+
 		private float Noise(float x, float y, float size, int seed)
 		{
 			int period = Math.Max(1, (int)MathF.Round(this.worldWidth / size));
@@ -902,6 +967,7 @@ namespace OpenCivOne.Graphics
 			// a wandering coast also gets a fine, craggy edge
 			float crag = this.coastWarp > 1 ? 0.3f * warpAmount : 0;
 			float riverWidth = 3.6f * k, bankWidth = 6.5f * k;
+			int reach = (Math.Max(groundRadius, surfRadius) > this.cell / 2f) ? 2 : 1;
 
 			Texture ocean = this.TextureOr("ocean"), shallow = this.TextureOr("shallow"), sand = this.TextureOr("desert"), fields = this.TextureOr("plains");
 			(Texture Texture, float Weight)[][] ground = Array.ConvertAll(this.groundParts, parts => Array.ConvertAll(parts, part => (this.TextureOr(part.Name), part.Weight)));
@@ -935,23 +1001,29 @@ namespace OpenCivOne.Graphics
 					float qx = wx + ox, qy = wy + oy;
 					int ci = (int)MathF.Floor(qx / this.cell), cj = (int)MathF.Floor(qy / this.cell);
 
-					// ground and coast from the 3x3 cells around the warped position
-					float gr = 0, gg = 0, gb = 0, land = 0, surfLand = 0;
+					// ground and coast from the 3x3 cells around the warped position (5x5 when the ground blends over more than
+					// half a cell)
+					float gr = 0, gg = 0, gb = 0, land = 0, surfLand = 0, groundWeight = 0;
 
-					for (int dj = -1; dj <= 1; dj++)
+					for (int dj = -reach; dj <= reach; dj++)
 					{
 						float wyG = this.Weight(qy, cj + dj, groundRadius);
 						float wyC = this.Weight(qy, cj + dj, coastRadius);
 						float wyS = this.Weight(qy, cj + dj, surfRadius);
 
-						for (int di = -1; di <= 1; di++)
+						for (int di = -reach; di <= reach; di++)
 						{
 							int terrain = grid.At(ci + di, cj + dj);
 							bool isLand = terrain != Water;
 							float w = wyG * this.Weight(qx, ci + di, groundRadius);
 
+							// terrains reach into each other in patches where they meet, as a painter mixes them
+							if (w > 0 && this.mix > 0 && isLand)
+								w *= MathF.Exp(this.mix * 3.2f * ((this.Noise(wx, wy, 34 * k, 50 + terrain) * 0.65f) + (this.Noise(wx, wy, 11 * k, 70 + terrain) * 0.35f) - 0.5f));
+
 							if (w > 0)
 							{
+								groundWeight += w;
 								foreach ((Texture t, float weight) in ground[terrain])
 								{
 									int ti = this.TextureIndex(t, wx, wy);
@@ -967,6 +1039,13 @@ namespace OpenCivOne.Graphics
 								surfLand += wyS * this.Weight(qx, ci + di, surfRadius);
 							}
 						}
+					}
+
+					if (this.mix > 0 && groundWeight > 0)
+					{
+						gr /= groundWeight;
+						gg /= groundWeight;
+						gb /= groundWeight;
 					}
 
 					if (land >= 0.5f)
@@ -1146,6 +1225,51 @@ namespace OpenCivOne.Graphics
 					int wx = x0 + px, wy = y0 + py;
 					float cloud = Math.Clamp(((this.Noise(wx, wy, 160 * k, 7) * 0.7f) + (this.Noise(wx, wy, 60 * k, 8) * 0.3f) - 0.45f) * 2.2f, 0, 1);
 					float shade = 1 - (cloud * 0.35f * this.clouds);
+
+					if (water[i] == 0 && (this.relief > 0 || this.variety > 0))
+					{
+						if (this.relief > 0)
+						{
+							// lit from the top left: slopes facing the light brighter, the far sides in shadow
+							float e = 3 * k;
+							float dx = this.HeightAt(grid, wx + e, wy, k) - this.HeightAt(grid, wx - e, wy, k);
+							float dy = this.HeightAt(grid, wx, wy + e, k) - this.HeightAt(grid, wx, wy - e, k);
+							float slope = 46 / k;
+							float nx = -dx * slope, ny = -dy * slope;
+							float lit = ((nx * -0.6f) + (ny * -0.6f) + 0.53f) / MathF.Sqrt((nx * nx) + (ny * ny) + 1);
+							float strength = this.relief;
+
+							if (this.topDown)
+							{
+								// mountains seen from above are their relief: ridges and valleys lit much more strongly, and
+								// snow on the highest crests
+								float height = this.HeightAt(grid, wx, wy, k);
+								float high = Smooth(0.45f, 0.95f, height);
+								strength *= 1 + (1.3f * high);
+								float snow = Smooth(1.42f, 1.6f, height + ((this.Noise(wx, wy, 9 * k, 36) - 0.5f) * 0.12f)) * 0.85f;
+
+								if (snow > 0)
+								{
+									r[i] += (236 - r[i]) * snow;
+									g[i] += (238 - g[i]) * snow;
+									b[i] += (240 - b[i]) * snow;
+								}
+							}
+
+							// soft, not clipped: steep slopes approach their darkest and brightest gradually
+							shade *= 1 + (strength * 0.38f * MathF.Tanh((lit - 0.53f) * 2.9f));
+						}
+
+						if (this.variety > 0)
+						{
+							// regions drift between lush and dry
+							float moist = ((this.Noise(wx, wy, 520 * k, 41) * 0.7f) + (this.Noise(wx, wy, 190 * k, 42) * 0.3f) - 0.5f) * 2 * this.variety;
+							r[i] *= 1 - (0.09f * moist);
+							g[i] *= 1 + (0.02f * moist);
+							b[i] *= 1 - (0.05f * moist);
+							shade *= 1 - (0.06f * moist);
+						}
+					}
 					float l = (r[i] + g[i] + b[i]) / 765f;
 					float scale = shade * (1 + (this.grade * (-0.08f + (0.16f * l))));
 					float rr = (r[i] * scale) + (this.grade * ((6 * l) - (2 * (1 - l))));
@@ -2068,6 +2192,20 @@ namespace OpenCivOne.Graphics
 
 			placements.Sort((a, c) => a.Base.CompareTo(c.Base));
 
+			// tree crowns seen from above: all their shadows first, then the crowns, back to front
+			if (placements.Any(p => p.Crown))
+			{
+				foreach (Placement p in placements)
+					if (p.Crown)
+						this.DrawCrownShadow(p, r, g, b, water, size, x0, y0);
+
+				foreach (Placement p in placements)
+					if (p.Crown)
+						this.DrawCrown(p, r, g, b, water, size, x0, y0);
+
+				placements.RemoveAll(p => p.Crown);
+			}
+
 			foreach (Placement p in placements)
 				DrawSprite(p, r, g, b, water, size, x0, y0, (grid == null || !this.print) ? null : (x, y) => this.PrintTerrain(grid, x, y) == Water);
 		}
@@ -2102,7 +2240,33 @@ namespace OpenCivOne.Graphics
 			float awayX = ((waterLeft ? 9 : 0) - (waterRight ? 9 : 0)) * k, awayY = waterBelow ? -9 * k : 0;
 			float shore = (waterLeft || waterRight || waterBelow) ? 0.82f : 1;
 
-			switch (terrain)
+			if (this.topDown)
+			{
+				switch (terrain)
+				{
+					case Forest:
+					case Jungle:
+						this.PlaceCrowns(placements, random, i, j, terrain, left, top, fx, fy, clear);
+						break;
+
+					case Grassland:
+						// an occasional copse on open land
+						if (random.NextDouble() < 0.22 && Distance(left + (32 * k), top + (32 * k), fx, fy) >= clear * 1.2f)
+						{
+							float copseX = left + (Range(random, 18, 46) * k), copseY = top + (Range(random, 18, 46) * k);
+
+							for (int n = 3 + random.Next(4); n >= 0; n--)
+							{
+								float x = copseX + (Range(random, -9, 9) * k), y = copseY + (Range(random, -9, 9) * k);
+
+								if (rivers == null || rivers.Distance(x, y) > 7 * k)
+									this.PlaceCrown(placements, random, x, y, Range(random, 5.5f, 8) * k, Forest);
+							}
+						}
+						break;
+				}
+			}
+			else switch (terrain)
 			{
 				case Forest:
 				case Jungle:
@@ -2389,6 +2553,129 @@ namespace OpenCivOne.Graphics
 		/// rounded terrain under its crown is the same wood, and none within `clear` of (fx, fy), where a resource or hut
 		/// stands in a clearing
 		/// </summary>
+		/// <summary>
+		/// A wood seen from above: its cell filled with overlapping tree crowns, and where it meets open land, crowns that
+		/// thin out over the border into the land beside it, so a wood ends in scattered trees instead of an edge
+		/// </summary>
+		private void PlaceCrowns(List<Placement> placements, Random random, int i, int j, int terrain, float left, float top, float fx, float fy, float clear)
+		{
+			float k = this.cell / 64f;
+			bool forest = terrain == Forest;
+			int across = forest ? 5 : 4;
+			float step = 64f / across;
+
+			for (int v = 0; v < across; v++)
+			{
+				for (int u = 0; u < across; u++)
+				{
+					float x = left + (((u + 0.5f) * step) + (Range(random, -0.4f, 0.4f) * step)) * k;
+					float y = top + (((v + 0.5f) * step) + (Range(random, -0.4f, 0.4f) * step)) * k;
+
+					if (Distance(x, y, fx, fy) >= clear)
+						this.PlaceCrown(placements, random, x, y, Range(random, forest ? 7 : 8, forest ? 10 : 11.5f) * k, terrain);
+				}
+			}
+
+			// over each border with open land, trees thinning out
+			(int Dx, int Dy)[] sides = { (1, 0), (-1, 0), (0, 1), (0, -1) };
+
+			foreach ((int dx, int dy) in sides)
+			{
+				int beside = this.Terrain(i + dx, j + dy);
+
+				if (beside == terrain || beside == Water || beside == Mountains || beside == Forest || beside == Jungle ||
+					(this.Feature(i + dx, j + dy) & City) != 0)
+					continue;
+
+				for (int n = 0; n < 7; n++)
+				{
+					float along = Range(random, 4, 60), into = Range(random, 0, 1);
+					into *= into;
+					float depth = into * 26;
+
+					if (random.NextDouble() > 1 - (into * 0.85f))
+						continue;
+
+					float x = left + ((dx != 0) ? (dx > 0 ? 64 + depth : -depth) : along) * k;
+					float y = top + ((dy != 0) ? (dy > 0 ? 64 + depth : -depth) : along) * k;
+					this.PlaceCrown(placements, random, x, y, Range(random, 5, 8.5f) * (1 - (into * 0.3f)) * k, terrain);
+				}
+			}
+		}
+
+		// a crown's soft shadow on the ground, cast down and to the right by the light from the top left
+		private void DrawCrownShadow(Placement p, float[] r, float[] g, float[] b, byte[] water, int size, int x0, int y0)
+		{
+			float radius = p.Width, sx = p.X + (radius * 0.45f), sy = p.Base + (radius * 0.55f), reach = radius * 1.15f;
+			int left = Math.Max(0, (int)(sx - reach) - x0), right = Math.Min(size - 1, (int)(sx + reach) - x0);
+			int top = Math.Max(0, (int)(sy - reach) - y0), bottom = Math.Min(size - 1, (int)(sy + reach) - y0);
+
+			for (int py = top; py <= bottom; py++)
+			{
+				for (int px = left; px <= right; px++)
+				{
+					int i = (py * size) + px;
+
+					if (water[i] == 1)
+						continue;
+
+					float d = Distance(px + x0, py + y0, sx, sy) / reach;
+					float dark = 0.34f * Smooth(1, 0.55f, d);
+					r[i] *= 1 - dark;
+					g[i] *= 1 - (dark * 0.9f);
+					b[i] *= 1 - (dark * 0.75f);
+				}
+			}
+		}
+
+		// a tree crown seen from above: a leafy dome lit from the top left, its edge broken into clumps of leaves
+		private void DrawCrown(Placement p, float[] r, float[] g, float[] b, byte[] water, int size, int x0, int y0)
+		{
+			float k = this.cell / 64f;
+			float radius = p.Width, reach = radius * 1.25f;
+			Texture leaves = this.TextureOr((int)p.Height == Jungle ? "jungle" : "forest");
+			int left = Math.Max(0, (int)(p.X - reach) - x0), right = Math.Min(size - 1, (int)(p.X + reach) - x0);
+			int top = Math.Max(0, (int)(p.Base - reach) - y0), bottom = Math.Min(size - 1, (int)(p.Base + reach) - y0);
+
+			for (int py = top; py <= bottom; py++)
+			{
+				for (int px = left; px <= right; px++)
+				{
+					int i = (py * size) + px;
+
+					if (water[i] == 1)
+						continue;
+
+					float wx = px + x0, wy = py + y0;
+					float ux = (wx - p.X) / radius, uy = (wy - p.Base) / radius;
+					float d = MathF.Sqrt((ux * ux) + (uy * uy));
+					// clumps of leaves break the outline
+					float clumps = this.Noise(wx, wy, 3.2f * k, 61) - 0.5f;
+					float edge = 1 + (clumps * 0.38f);
+
+					if (d >= edge)
+						continue;
+
+					float cover = Smooth(edge, edge - 0.12f, d);
+					// a dome: lit where it faces the top left, darker round its far side, a little darker at its rim
+					float z = MathF.Sqrt(Math.Max(0, 1 - Math.Min(1, d * d)));
+					float lit = Math.Clamp((((-ux * 0.55f) - (uy * 0.6f)) + (z * 0.58f)) / 1.0f, 0, 1);
+					float leafy = 0.82f + (0.36f * this.Noise(wx, wy, 2.2f * k, 62));
+					float tone = (0.62f + (0.72f * lit)) * leafy * (1 + p.Shade);
+					int ti = this.TextureIndex(leaves, (int)wx, (int)wy);
+					float lr = leaves.R[ti] * tone * (1 + (0.06f * p.Warmth)), lg = leaves.G[ti] * tone, lb = leaves.B[ti] * tone * (1 - (0.05f * p.Warmth));
+					r[i] += (lr - r[i]) * cover;
+					g[i] += (lg - g[i]) * cover;
+					b[i] += (lb - b[i]) * cover;
+				}
+			}
+		}
+
+		private void PlaceCrown(List<Placement> placements, Random random, float x, float y, float radius, int terrain)
+		{
+			placements.Add(new Placement { Crown = true, X = x, Base = y, Width = radius, Height = terrain, Shade = Range(random, -0.12f, 0.12f), Warmth = Range(random, -1, 1) });
+		}
+
 		private void PlaceCanopy(List<Placement> placements, TerrainGrid grid, Random random, int terrain, float left, float top, float fx, float fy, float clear)
 		{
 			float k = this.cell / 64f;
