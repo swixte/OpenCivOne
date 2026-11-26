@@ -1020,12 +1020,18 @@ namespace OpenCivOne.Graphics
 			public readonly float X, Y, Cell;
 			public readonly int Seed;
 
-			public SmokeSource(float x, float y, float cell, int seed)
+			/// <summary>
+			/// What rises from the source: 0 smoke, 1 the glints of gold, 2 the glints of gems
+			/// </summary>
+			public readonly int Kind;
+
+			public SmokeSource(float x, float y, float cell, int seed, int kind = 0)
 			{
 				this.X = x;
 				this.Y = y;
 				this.Cell = cell;
 				this.Seed = seed;
+				this.Kind = kind;
 			}
 		}
 
@@ -1034,8 +1040,12 @@ namespace OpenCivOne.Graphics
 			public readonly float X, Y, InvR2, R, G, B, Alpha;
 			public readonly int MinX, MaxX, MinY, MaxY;
 
-			public SmokePuff(float x, float y, float radius, float r, float g, float b, float alpha)
+			// a glint: a bright four-pointed star instead of a soft round puff
+			public readonly bool Star;
+
+			public SmokePuff(float x, float y, float radius, float r, float g, float b, float alpha, bool star = false)
 			{
+				this.Star = star;
 				this.X = x;
 				this.Y = y;
 				this.InvR2 = 1f / Math.Max(1f, radius * radius);
@@ -1072,6 +1082,25 @@ namespace OpenCivOne.Graphics
 				SmokeSource src = sources[s];
 				float c = src.Cell;
 
+				if (src.Kind != 0)
+				{
+					// glints over gold or gems: each flashes briefly at its own moment, several times a cycle, so the
+					// treasure twinkles
+					for (int p = 0; p < PuffsPerSource; p++)
+					{
+						float t = ((phase * 6f) + SmokeHash01(src.Seed, p + 30)) % 1f;
+						float flash = MathF.Max(0f, 1f - (MathF.Abs(t - 0.5f) * 4.5f));
+						float gx = src.X + ((SmokeHash01(src.Seed, p + 40) - 0.5f) * 0.5f * c);
+						float gy = src.Y + ((SmokeHash01(src.Seed, p + 50) - 0.5f) * 0.36f * c);
+						float gr = (0.17f + (0.1f * SmokeHash01(src.Seed, p + 60))) * c * (0.5f + (0.5f * flash));
+						(float cr, float cg, float cb) = src.Kind == 1 ? (255f, 255f, 236f)
+							: (p % 3) switch { 0 => (200f, 240f, 255f), 1 => (255f, 210f, 240f), _ => (230f, 255f, 230f) };
+						puffs[idx++] = new SmokePuff(gx, gy, gr, cr, cg, cb, flash, true);
+					}
+
+					continue;
+				}
+
 				for (int p = 0; p < PuffsPerSource; p++)
 				{
 					float t = (phase + (p * 0.20f) + SmokeHash01(src.Seed, p)) % 1f;
@@ -1087,6 +1116,24 @@ namespace OpenCivOne.Graphics
 			return puffs;
 		}
 
+		private static float PuffCover(in SmokePuff pf, float dx, float dy)
+		{
+			float d2 = ((dx * dx) + (dy * dy)) * pf.InvR2;
+			if (d2 >= 1f)
+				return 0f;
+
+			if (pf.Star)
+			{
+				// a bright core and four thin rays along the axes
+				float ax = dx * dx * pf.InvR2, ay = dy * dy * pf.InvR2;
+				float rays = MathF.Max(MathF.Max(0f, 1f - ax - (ay * 40f)), MathF.Max(0f, 1f - ay - (ax * 40f)));
+				float core = MathF.Max(0f, 1f - (d2 * 9f));
+				return pf.Alpha * Math.Min(1f, (rays * rays) + core);
+			}
+
+			return pf.Alpha * (1f - d2) * (1f - (0.35f * d2));
+		}
+
 		private static uint CompositeSmoke(uint pixel, SmokePuff[] puffs, int ox, int oy)
 		{
 			float r = (pixel >> 16) & 0xff, g = (pixel >> 8) & 0xff, b = pixel & 0xff;
@@ -1098,13 +1145,7 @@ namespace OpenCivOne.Graphics
 				if (ox < pf.MinX || ox > pf.MaxX || oy < pf.MinY || oy > pf.MaxY)
 					continue;
 
-				float dx = ox - pf.X, dy = oy - pf.Y;
-				float d2 = ((dx * dx) + (dy * dy)) * pf.InvR2;
-				if (d2 >= 1f)
-					continue;
-
-				float falloff = 1f - d2;
-				float a = pf.Alpha * falloff * (1f - (0.35f * d2));
+				float a = PuffCover(pf, ox - pf.X, oy - pf.Y);
 				if (a <= 0.002f)
 					continue;
 
@@ -1147,13 +1188,7 @@ namespace OpenCivOne.Graphics
 
 					for (int x = x0; x <= x1; x++)
 					{
-						float dx = x - pf.X;
-						float d2 = ((dx * dx) + (dy * dy)) * pf.InvR2;
-						if (d2 >= 1f)
-							continue;
-
-						float falloff = 1f - d2;
-						float a = pf.Alpha * falloff * (1f - (0.35f * d2));
+						float a = PuffCover(pf, x - pf.X, dy);
 						if (a <= 0.002f)
 							continue;
 

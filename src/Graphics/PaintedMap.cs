@@ -80,6 +80,9 @@ namespace OpenCivOne.Graphics
 		// cream, 0 for one in the desert's own sand
 		private float surf = 1, beachTone = 1;
 
+		// crag, how rough the coast's fine edge is (1); lower for smooth sandy curves
+		private float cragginess = 1;
+
 		// relief, how strongly the land is lit as a landscape with height (0, flat); variety, how much the land's colour
 		// drifts from region to region, lusher in one place and drier in another (0, none)
 		private float relief = 0, variety = 0;
@@ -340,6 +343,7 @@ namespace OpenCivOne.Graphics
 						case "sea": map.sea = Math.Clamp(value, 0, 2); break;
 						case "variety": map.variety = Math.Clamp(value, 0, 3); break;
 						case "beachtone": map.beachTone = Math.Clamp(value, 0, 1); break;
+						case "crag": map.cragginess = Math.Clamp(value, 0, 1.5f); break;
 					}
 				}
 			}
@@ -800,7 +804,7 @@ namespace OpenCivOne.Graphics
 		{
 			float k = this.cell / 64f;
 			float warpAmount = 14 * k * this.coastWarp, coastRadius = 5 * k * this.coastWarp;
-			float crag = this.coastWarp > 1 ? 0.3f * warpAmount : 0;
+			float crag = this.coastWarp > 1 ? 0.3f * warpAmount * this.cragginess : 0;
 			float ox = ((this.Noise(wx, wy, 24 * k, 1) - 0.5f) * 2 * warpAmount) + ((this.Noise(wx, wy, 8 * k, 2) - 0.5f) * 0.6f * warpAmount);
 			float oy = ((this.Noise(wx, wy, 24 * k, 3) - 0.5f) * 2 * warpAmount) + ((this.Noise(wx, wy, 8 * k, 4) - 0.5f) * 0.6f * warpAmount);
 			float cragX = 0, cragY = 0;
@@ -1213,7 +1217,7 @@ namespace OpenCivOne.Graphics
 			float warpAmount = 14 * k * this.coastWarp, groundRadius = 13 * k * this.groundBlend, coastRadius = 5 * k * this.coastWarp, surfRadius = 24 * k, depthRadius = 70 * k * this.shallows;
 			float hillRadius = 15 * k;
 			// a wandering coast also gets a fine, craggy edge
-			float crag = this.coastWarp > 1 ? 0.3f * warpAmount : 0;
+			float crag = this.coastWarp > 1 ? 0.3f * warpAmount * this.cragginess : 0;
 			float riverWidth = 3.6f * k, bankWidth = 6.8f * k;
 			bool hasGemGlades = !this.print && this.layout && this.HasSpriteSet("jungle_gems") && this.FeatureAt != null;
 			int reach = (Math.Max(groundRadius, surfRadius) > this.cell / 2f) ? 2 : 1;
@@ -1495,6 +1499,17 @@ namespace OpenCivOne.Graphics
 						}
 
 						float shallowness = Smooth(0.02f, 0.45f, near);
+						float far = seaDistances != null
+							? this.SeaDistanceAt(seaDistances, cx, cy, wx + ((this.Noise(wx, wy, 60 * k, 94) - 0.5f) * 30 * k), wy + ((this.Noise(wx, wy, 60 * k, 95) - 0.5f) * 30 * k))
+							: 0;
+
+						if (seaDistances != null)
+						{
+							// water hemmed in by land (lakes, inlets) is pale only along its shores and clear teal in the middle,
+							// so it reads as water and not as a milky blot
+							shallowness *= 1 - (0.7f * Smooth(0.7f, 1.8f, far) * this.sea);
+						}
+
 						int oi = this.TextureIndex(ocean, wx, wy), si = this.TextureIndex(shallow, wx, wy);
 						float wr = ocean.R[oi] + ((shallow.R[si] - ocean.R[oi]) * shallowness);
 						float wg = ocean.G[oi] + ((shallow.G[si] - ocean.G[oi]) * shallowness);
@@ -1502,8 +1517,7 @@ namespace OpenCivOne.Graphics
 
 						if (seaDistances != null)
 						{
-							// the open sea deepens away from land, with swells running along the coast and glints of light
-							float far = this.SeaDistanceAt(seaDistances, cx, cy, wx + ((this.Noise(wx, wy, 60 * k, 94) - 0.5f) * 30 * k), wy + ((this.Noise(wx, wy, 60 * k, 95) - 0.5f) * 30 * k));
+							// the open sea deepens away from land, with swells running along the coast
 							float deep = Smooth(1.1f, 4.2f, far) * 0.42f * this.sea;
 							wr *= 1 - (deep * 1.05f);
 							wg *= 1 - (deep * 0.85f);
@@ -1524,9 +1538,14 @@ namespace OpenCivOne.Graphics
 						float surf = Smooth(0.2f, 0.34f, surfLand) * Smooth(0.5f, 0.4f, land) * Smooth(0.4f, 0.7f, foamNoise);
 						surf += Smooth(0.08f, 0.14f, surfLand) * Smooth(0.2f, 0.14f, surfLand) * Smooth(0.6f, 0.8f, foamNoise) * 0.35f;
 						surf = Math.Min(surf, 1) * 0.7f * this.surf;
-						r[i] = (wr * (1 - surf)) + (210 * surf);
-						g[i] = (wg * (1 - surf)) + (216 * surf);
-						b[i] = (wb * (1 - surf)) + (205 * surf);
+						// the foam is the water's own colour lightened (sea 1), so a shore reads as surf and not as a chalk line
+						float foamR = Lerp(210, Math.Min(255, (wr * 1.25f) + 70), this.sea);
+						float foamG = Lerp(216, Math.Min(255, (wg * 1.2f) + 66), this.sea);
+						float foamB = Lerp(205, Math.Min(255, (wb * 1.15f) + 60), this.sea);
+						surf *= 1 - (0.3f * this.sea);
+						r[i] = (wr * (1 - surf)) + (foamR * surf);
+						g[i] = (wg * (1 - surf)) + (foamG * surf);
+						b[i] = (wb * (1 - surf)) + (foamB * surf);
 						water[i] = 1;
 					}
 
@@ -2749,20 +2768,34 @@ namespace OpenCivOne.Graphics
 						break;
 
 					case Grassland:
-						// an occasional copse on open land
-						if (random.NextDouble() < 0.22 && Distance(left + (32 * k), top + (32 * k), fx, fy) >= clear * 1.2f)
+					case Plains:
+					{
+						// open land seen from high above: lone trees scattered over it and the odd copse
+						bool grass = terrain == Grassland;
+						int lone = grass ? 20 + random.Next(14) : 7 + random.Next(7);
+
+						for (int n = 0; n < lone; n++)
+						{
+							float x = left + (Range(random, 2, 62) * k), y = top + (Range(random, 2, 62) * k);
+
+							if (Distance(x, y, fx, fy) >= clear && (rivers == null || rivers.Distance(x, y) > 6 * k))
+								this.PlaceCrown(placements, random, x, y, Range(random, 3.4f, 4.8f) * k, Forest);
+						}
+
+						if (random.NextDouble() < (grass ? 0.35 : 0.15) && Distance(left + (32 * k), top + (32 * k), fx, fy) >= clear * 1.2f)
 						{
 							float copseX = left + (Range(random, 18, 46) * k), copseY = top + (Range(random, 18, 46) * k);
 
-							for (int n = 3 + random.Next(4); n >= 0; n--)
+							for (int n = 5 + random.Next(6); n >= 0; n--)
 							{
 								float x = copseX + (Range(random, -9, 9) * k), y = copseY + (Range(random, -9, 9) * k);
 
 								if (rivers == null || rivers.Distance(x, y) > 7 * k)
-									this.PlaceCrown(placements, random, x, y, Range(random, 5.5f, 8) * k, Forest);
+									this.PlaceCrown(placements, random, x, y, Range(random, 3.5f, 5.5f) * k, Forest);
 							}
 						}
 						break;
+					}
 				}
 			}
 			else switch (terrain)
@@ -3138,7 +3171,8 @@ namespace OpenCivOne.Graphics
 		{
 			float k = this.cell / 64f;
 			bool forest = terrain == Forest;
-			int across = forest ? 5 : 4;
+			// a dense canopy of many small crowns, as a forest looks from high above
+			int across = forest ? 8 : 7;
 			float step = 64f / across;
 
 			for (int v = 0; v < across; v++)
@@ -3149,7 +3183,7 @@ namespace OpenCivOne.Graphics
 					float y = top + (((v + 0.5f) * step) + (Range(random, -0.4f, 0.4f) * step)) * k;
 
 					if (Distance(x, y, fx, fy) >= clear)
-						this.PlaceCrown(placements, random, x, y, Range(random, forest ? 7 : 8, forest ? 10 : 11.5f) * k, terrain);
+						this.PlaceCrown(placements, random, x, y, Range(random, forest ? 4.2f : 4.8f, forest ? 6.5f : 7.2f) * k, terrain);
 				}
 			}
 
@@ -3175,7 +3209,7 @@ namespace OpenCivOne.Graphics
 
 					float x = left + ((dx != 0) ? (dx > 0 ? 64 + depth : -depth) : along) * k;
 					float y = top + ((dy != 0) ? (dy > 0 ? 64 + depth : -depth) : along) * k;
-					this.PlaceCrown(placements, random, x, y, Range(random, 5, 8.5f) * (1 - (into * 0.3f)) * k, terrain);
+					this.PlaceCrown(placements, random, x, y, Range(random, 3.5f, 5.5f) * (1 - (into * 0.3f)) * k, terrain);
 				}
 			}
 		}
@@ -3197,7 +3231,7 @@ namespace OpenCivOne.Graphics
 						continue;
 
 					float d = Distance(px + x0, py + y0, sx, sy) / reach;
-					float dark = 0.34f * Smooth(1, 0.55f, d);
+					float dark = (p.Width < 5 * this.cell / 64f ? 0.24f : 0.34f) * Smooth(1, 0.55f, d);
 					r[i] *= 1 - dark;
 					g[i] *= 1 - (dark * 0.9f);
 					b[i] *= 1 - (dark * 0.75f);
@@ -3227,7 +3261,7 @@ namespace OpenCivOne.Graphics
 					float ux = (wx - p.X) / radius, uy = (wy - p.Base) / radius;
 					float d = MathF.Sqrt((ux * ux) + (uy * uy));
 					// clumps of leaves break the outline
-					float clumps = this.Noise(wx, wy, 3.2f * k, 61) - 0.5f;
+					float clumps = this.Noise(wx, wy, Math.Min(3.2f * k, radius * 0.7f), 61) - 0.5f;
 					float edge = 1 + (clumps * 0.38f);
 
 					if (d >= edge)
@@ -3238,7 +3272,9 @@ namespace OpenCivOne.Graphics
 					float z = MathF.Sqrt(Math.Max(0, 1 - Math.Min(1, d * d)));
 					float lit = Math.Clamp((((-ux * 0.55f) - (uy * 0.6f)) + (z * 0.58f)) / 1.0f, 0, 1);
 					float leafy = 0.82f + (0.36f * this.Noise(wx, wy, 2.2f * k, 62));
-					float tone = (0.62f + (0.72f * lit)) * leafy * (1 + p.Shade);
+					// a lone small tree on open land is lit all through and reads lighter than a deep forest
+					float lone = Smooth(5.2f * k, 4.2f * k, radius);
+					float tone = (0.62f + (0.72f * lit)) * leafy * (1 + p.Shade) * (1 + (0.45f * lone));
 					int ti = this.TextureIndex(leaves, (int)wx, (int)wy);
 					float lr = leaves.R[ti] * tone * (1 + (0.06f * p.Warmth)), lg = leaves.G[ti] * tone, lb = leaves.B[ti] * tone * (1 - (0.05f * p.Warmth));
 					r[i] += (lr - r[i]) * cover;

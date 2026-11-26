@@ -1964,6 +1964,10 @@ namespace OpenCivOne.Graphics
 						}
 
 						bool skipRes = terrain >= 0 && terrain < this.integratedResources.Length && this.integratedResources[terrain];
+
+						// gold in the mountains and gems in the jungle catch the light: glints twinkle over them
+						if ((feature & 1) != 0 && (terrain == 5 || terrain == 9))
+							smokeList.Add(new GBitmap.SmokeSource(cellX + (c * 0.5f), cellY + (c * (terrain == 5 ? 0.4f : 0.58f)), c, (wx * 131) ^ (y * 977), terrain == 5 ? 1 : 2));
 						SKBitmap? art = (feature & 2) != 0 ? this.hut : (feature & 1) != 0 && !skipRes && terrain >= 0 && terrain < this.resources.Length ? this.resources[terrain] : null;
 
 						if (art != null)
