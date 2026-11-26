@@ -2832,7 +2832,7 @@ namespace OpenCivOne.Graphics
 							float x = left + (Range(random, 2, 62) * k), y = top + (Range(random, 2, 62) * k);
 
 							if (Distance(x, y, fx, fy) >= clear && (rivers == null || rivers.Distance(x, y) > 6 * k))
-								this.PlaceCrown(placements, random, x, y, Range(random, 2.6f, 3.8f) * k, Forest);
+								this.PlaceCrown(placements, random, x, y, Range(random, 2.6f, 3.8f) * k, Grassland);
 						}
 
 						if (random.NextDouble() < (grass ? 0.35 : 0.15) && Distance(left + (32 * k), top + (32 * k), fx, fy) >= clear * 1.2f)
@@ -2844,7 +2844,7 @@ namespace OpenCivOne.Graphics
 								float x = copseX + (Range(random, -9, 9) * k), y = copseY + (Range(random, -9, 9) * k);
 
 								if (rivers == null || rivers.Distance(x, y) > 7 * k)
-									this.PlaceCrown(placements, random, x, y, Range(random, 3.5f, 5.5f) * k, Forest);
+									this.PlaceCrown(placements, random, x, y, Range(random, 3.5f, 5.5f) * k, Grassland);
 							}
 						}
 						break;
@@ -3235,7 +3235,8 @@ namespace OpenCivOne.Graphics
 					float x = left + (((u + 0.5f) * step) + (Range(random, -0.4f, 0.4f) * step)) * k;
 					float y = top + (((v + 0.5f) * step) + (Range(random, -0.4f, 0.4f) * step)) * k;
 
-					if (Distance(x, y, fx, fy) >= clear)
+					// seen from above, a forest's own ground is its canopy: only a few crowns stand out of it
+					if (Distance(x, y, fx, fy) >= clear && (!forest || random.NextDouble() < 0.5))
 						this.PlaceCrown(placements, random, x, y, Range(random, forest ? 3.4f : 3.8f, forest ? 5.2f : 5.8f) * k, terrain);
 				}
 			}
@@ -3342,7 +3343,18 @@ namespace OpenCivOne.Graphics
 					if (palm)
 						tone *= (0.62f + (0.3f * frond)) * (0.75f + (0.25f * Smooth(0.05f, 0.3f, d)));
 					int ti = this.TextureIndex(leaves, (int)wx, (int)wy);
+					if (this.topDown)
+						tone *= 0.82f;
+
 					float lr = leaves.R[ti] * tone * (1 + (0.06f * p.Warmth)), lg = leaves.G[ti] * tone, lb = leaves.B[ti] * tone * (1 - (0.05f * p.Warmth));
+
+					if ((int)p.Height == Grassland)
+					{
+						// a lone tree on open land: a warmer olive green than the deep forest
+						lr = (lr * 1.25f) + (14 * tone);
+						lg *= 1.02f;
+						lb *= 0.62f;
+					}
 					r[i] += (lr - r[i]) * cover;
 					g[i] += (lg - g[i]) * cover;
 					b[i] += (lb - b[i]) * cover;
