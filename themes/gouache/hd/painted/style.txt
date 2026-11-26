@@ -11,10 +11,10 @@ softrivers 1
 trees 0.3
 jungle 0.18
 coastwarp 1.7
-groundblend 3
+groundblend 0.9
 relief 0.5
 variety 1
 topdown 1
-mix 1.2
+mix 0.5
 sea 1
 crag 0.2
