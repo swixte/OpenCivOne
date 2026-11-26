@@ -232,8 +232,8 @@ namespace OpenCivOne.Graphics
 						string res = ResourceNames[i];
 						using SKBitmap toned = !own && res == "fish" ? Graded(toned0, 0.25f, 1.12f, 0.98f, 0.8f) :
 							!own && res is "coal" or "peat" ? Graded(toned0, 0.38f, 1.14f, 1.0f, 0.82f) : toned0.Copy();
-						using SKBitmap sized = Resize(toned, c * (res == "fish" ? (own ? 0.42f : 0.36f) : 0.46f) / Math.Max(toned.Width, toned.Height));
-						view.resources[i] = (own && res == "fish") ? CrispTown(sized, 0.25f) : sized.Copy();
+						using SKBitmap sized = Resize(toned, c * (res == "fish" ? (own ? 0.72f : 0.36f) : 0.46f) / Math.Max(toned.Width, toned.Height));
+						view.resources[i] = sized.Copy();
 					}
 				}
 			}
