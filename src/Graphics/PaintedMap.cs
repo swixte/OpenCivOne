@@ -1014,12 +1014,14 @@ namespace OpenCivOne.Graphics
 					float ciVal = Smooth(1.10f, 0.72f, reachIn);
 
 					// Larger cities cultivate an irregular garden & orchard fringe that blends softly into surrounding grass
-					// seen from above, a town's farmland reaches well out into the country round it
-					float halfOut = this.cell * 0.5f * (0.82f + (0.10f * step)) * (this.topDown ? 1.45f : 1f);
+					// seen from above, a town and its fields fill its own tile and no more, so which tile it stands on is clear
+					float halfOut = this.topDown ? this.cell * 0.5f * 0.96f : this.cell * 0.5f * (0.82f + (0.10f * step));
 					float exOut = MathF.Abs(x - ccx) / halfOut, eyOut = MathF.Abs(y - ccy) / halfOut;
-					float wobOut = (0.30f * (this.Noise(x, y, 11 * k, 21) - 0.5f)) + (0.12f * (this.Noise(x, y, 3.8f * k, 22) - 0.5f));
-					float reachOut = MathF.Pow(MathF.Pow(exOut, 2.6f) + MathF.Pow(eyOut, 2.6f), 1f / 2.6f) + wobOut;
-					float coVal = Smooth(1.18f, 0.72f, reachOut);
+					float wobOut = this.topDown ? 0.04f * (this.Noise(x, y, 6 * k, 21) - 0.5f)
+						: (0.30f * (this.Noise(x, y, 11 * k, 21) - 0.5f)) + (0.12f * (this.Noise(x, y, 3.8f * k, 22) - 0.5f));
+					float shape = this.topDown ? 6f : 2.6f;
+					float reachOut = MathF.Pow(MathF.Pow(exOut, shape) + MathF.Pow(eyOut, shape), 1f / shape) + wobOut;
+					float coVal = this.topDown ? Smooth(1.0f, 0.88f, reachOut) : Smooth(1.18f, 0.72f, reachOut);
 
 					if (coVal > outerVerge)
 					{
@@ -1829,7 +1831,7 @@ namespace OpenCivOne.Graphics
 
 							// seen from above, the fields round a town are a part of the land in their own right
 							if (this.topDown)
-								vergeWeight = Math.Min(1, vergeWeight * 2.6f);
+								vergeWeight = 0.85f;
 							float rawMask = Math.Max(innerApron, outerVerge * vergeWeight);
 							float shoreKeep = (this.beach && water[i] != 2) ? 0.25f + (0.75f * Smooth(0.54f, 0.88f, land)) : 1f;
 							float blend = (water[i] == 2 ? Smooth(0.68f, 0.94f, innerApron) : rawMask) * shoreKeep;
