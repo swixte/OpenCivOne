@@ -613,6 +613,28 @@ namespace OpenCivOne.Graphics
 		/// </summary>
 		private static void PaintShield(SKCanvas canvas, float x, float y, int c)
 		{
+			// seen from above, the bonus of a grassland is its hay: three round stacks in a small mown patch
+			{
+				float uu = c / 64f;
+				using SKPaint mown = new SKPaint { IsAntialias = true, Color = new SKColor(170, 162, 84, 110), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 2.5f * uu) };
+				canvas.DrawOval(new SKRect(x - (9 * uu), y - (7 * uu), x + (9 * uu), y + (7 * uu)), mown);
+				(float dx, float dy)[] stacks = { (-4.2f, -1.8f), (3.6f, -2.6f), (0.2f, 3.4f) };
+				using SKPaint sh = new SKPaint { IsAntialias = true, Color = new SKColor(20, 24, 10, 150), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 0.9f * uu) };
+				using SKPaint hay = new SKPaint { IsAntialias = true, Color = new SKColor(196, 158, 70, 250) };
+				using SKPaint hayDark = new SKPaint { IsAntialias = true, Color = new SKColor(142, 106, 44, 250) };
+				using SKPaint hayLit = new SKPaint { IsAntialias = true, Color = new SKColor(240, 214, 128, 240), MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 0.4f * uu) };
+				foreach ((float dx, float dy) in stacks)
+				{
+					float sx = x + (dx * uu), sy = y + (dy * uu), r = 3.1f * uu;
+					canvas.DrawCircle(sx + (1.3f * uu), sy + (1.5f * uu), r, sh);
+					canvas.DrawCircle(sx, sy, r, hayDark);
+					canvas.DrawCircle(sx - (0.4f * uu), sy - (0.4f * uu), r * 0.82f, hay);
+					canvas.DrawCircle(sx - (1.0f * uu), sy - (1.0f * uu), r * 0.38f, hayLit);
+				}
+
+				return;
+			}
+#pragma warning disable CS0162
 			float u = c / 64f, w = 10.2f * u, h = 11.4f * u;
 
 			SKPath Outline(float dx, float dy, float k)
@@ -637,6 +659,7 @@ namespace OpenCivOne.Graphics
 			canvas.DrawPath(rim, rimPaint);
 			canvas.DrawPath(body, bodyPaint);
 			canvas.DrawPath(lit, litPaint);
+#pragma warning restore CS0162
 		}
 
 		private static float Hash01(int x, int y, int seed)
