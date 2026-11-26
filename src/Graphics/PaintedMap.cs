@@ -1656,6 +1656,28 @@ namespace OpenCivOne.Graphics
 							float fg = Lerp(gardenG, apronG, apronMix);
 							float fb = Lerp(gardenB, apronB, apronMix);
 
+							if (this.topDown)
+							{
+								// seen from above, a town sits in a patchwork of small fields with earth paths between them
+								float fieldSize = 11 * k;
+								float ux = (wx * 0.94f) + (wy * 0.34f), uy = (wy * 0.94f) - (wx * 0.34f);
+								ux += (this.Noise(wx, wy, 30 * k, 71) - 0.5f) * 6 * k;
+								uy += (this.Noise(wx, wy, 30 * k, 72) - 0.5f) * 6 * k;
+								int pu = (int)MathF.Floor(ux / fieldSize), pv = (int)MathF.Floor(uy / (fieldSize * 0.75f));
+								float su = (ux / fieldSize) - pu, sv = (uy / (fieldSize * 0.75f)) - pv;
+								float pick = Hash(pu, pv, 73);
+								(float pr, float pg, float pb) = pick < 0.25f ? (122f, 130f, 54f) : pick < 0.5f ? (170f, 150f, 70f) : pick < 0.72f ? (92f, 110f, 44f) : pick < 0.88f ? (184f, 160f, 88f) : (140f, 120f, 70f);
+								float furrow = 1 + (0.06f * MathF.Sin(((Hash(pu, pv, 74) > 0.5f ? su : sv) * 14) * MathF.PI));
+								// hedgerows: dark green lines between the fields
+								float path = Smooth(0.1f, 0.02f, Math.Min(Math.Min(su, 1 - su), Math.Min(sv, 1 - sv)));
+								pr = Lerp(pr * furrow, 58f, path * 0.85f);
+								pg = Lerp(pg * furrow, 70f, path * 0.85f);
+								pb = Lerp(pb * furrow, 38f, path * 0.85f);
+								fr = pr;
+								fg = pg;
+								fb = pb;
+							}
+
 							int localT = grid.At((int)MathF.Floor((wx + cragX) / this.cell), (int)MathF.Floor((wy + cragY) / this.cell));
 							if (water[i] != 2)
 							{
@@ -1689,6 +1711,10 @@ namespace OpenCivOne.Graphics
 							}
 
 							float vergeWeight = maxStep <= 1 ? 0.16f : maxStep == 2 ? 0.24f : maxStep == 3 ? 0.30f : 0.38f;
+
+							// seen from above, the fields round a town are a part of the land in their own right
+							if (this.topDown)
+								vergeWeight = Math.Min(1, vergeWeight * 2.6f);
 							float rawMask = Math.Max(innerApron, outerVerge * vergeWeight);
 							float shoreKeep = (this.beach && water[i] != 2) ? 0.25f + (0.75f * Smooth(0.54f, 0.88f, land)) : 1f;
 							float blend = (water[i] == 2 ? Smooth(0.68f, 0.94f, innerApron) : rawMask) * shoreKeep;
