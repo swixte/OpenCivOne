@@ -40,6 +40,11 @@ namespace OpenCivOne.Graphics
 		bool DrawsFeatures { get; }
 
 		/// <summary>
+		/// Whether the view draws terrain improvements (irrigation, mines, fortresses, pollution) itself
+		/// </summary>
+		bool DrawsImprovements { get; }
+
+		/// <summary>
 		/// Renders the view centred on a point in map cells; false when nothing it shows changed
 		/// </summary>
 		bool Render(float cx, float cy, IsoView.Scene scene);

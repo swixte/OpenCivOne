@@ -25,6 +25,8 @@ namespace OpenCivOne.Graphics
 
 		public bool DrawsFeatures => false;
 
+		public bool DrawsImprovements => false;
+
 		public const int TileWidth = 80, TileHeight = 40;
 		private const int MapWidth = 80, MapHeight = 50, TextureSize = 400;
 		// sizes are given for 192-pixel tiles, as the art was laid out
@@ -116,6 +118,11 @@ namespace OpenCivOne.Graphics
 			/// Distance in cell units from a coastal cell's centre along cardinal (dx, dy) to the painted shoreline
 			/// </summary>
 			public Func<int, int, int, int, float> ShoreDistance = (x, y, dx, dy) => 0.48f;
+
+			/// <summary>
+			/// Water mask kind at fractional map cell coordinates (mx, my): 0 = dry land, 1 = ocean/wet shore, 2 = river/bank
+			/// </summary>
+			public Func<float, float, int> WaterKindAt = (mx, my) => 0;
 		}
 
 		private IsoView(int width, int height, uint[] grass, uint[] sand, uint[] snow, uint[] sea, uint[] shallow)
