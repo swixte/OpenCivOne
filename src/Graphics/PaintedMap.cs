@@ -1009,7 +1009,8 @@ namespace OpenCivOne.Graphics
 					float ciVal = Smooth(1.10f, 0.72f, reachIn);
 
 					// Larger cities cultivate an irregular garden & orchard fringe that blends softly into surrounding grass
-					float halfOut = this.cell * 0.5f * (0.82f + (0.10f * step));
+					// seen from above, a town's farmland reaches well out into the country round it
+					float halfOut = this.cell * 0.5f * (0.82f + (0.10f * step)) * (this.topDown ? 1.45f : 1f);
 					float exOut = MathF.Abs(x - ccx) / halfOut, eyOut = MathF.Abs(y - ccy) / halfOut;
 					float wobOut = (0.30f * (this.Noise(x, y, 11 * k, 21) - 0.5f)) + (0.12f * (this.Noise(x, y, 3.8f * k, 22) - 0.5f));
 					float reachOut = MathF.Pow(MathF.Pow(exOut, 2.6f) + MathF.Pow(eyOut, 2.6f), 1f / 2.6f) + wobOut;
