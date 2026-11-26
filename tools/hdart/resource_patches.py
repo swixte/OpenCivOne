@@ -43,6 +43,32 @@ def ridged(rng, ranges=2.0):
     return (h - h.min()) / (h.max() - h.min())
 
 
+def gold_on(texture_path, rng):
+    """Gold seen from above on a crop of the theme's own mountain texture: glinting veins along the ridges and bright
+    nuggets with white highlights, so it shines out of the range it belongs to."""
+    tex = Image.open(texture_path).convert('RGB')
+    x0, y0 = rng.integers(0, tex.width - W), rng.integers(0, tex.height - H)
+    base = np.asarray(tex.crop((x0, y0, x0 + W, y0 + H)), np.float32)
+    luma = base @ np.array([0.299, 0.587, 0.114], np.float32)
+    # veins: winding seams, strongest on the lit (upper-left facing) rock
+    seam = periodic_noise(rng, 256, 9)[:H, :W]
+    vein = np.clip((0.22 - np.abs(seam)) / 0.22, 0, 1) ** 1.5 * np.clip((luma - 60) / 80, 0.3, 1)
+    metal = np.array([255, 196, 52], np.float32)[None, None] * (0.75 + 0.45 * np.clip(luma / 200, 0, 1))[..., None]
+    col = base * (1 - vein[..., None] * 0.9) + metal * vein[..., None] * 0.9
+    img = Image.fromarray(col.clip(0, 255).astype(np.uint8))
+    d = ImageDraw.Draw(img)
+    cx, cy = W / 2, H / 2
+    for _ in range(26):
+        a, r = rng.uniform(0, 2 * np.pi), rng.uniform(0, 0.36) * W
+        x, y = cx + np.cos(a) * r, cy + np.sin(a) * r * 0.85
+        n = rng.uniform(4, 8)
+        d.ellipse([x - n + 2, y - n + 2, x + n + 2, y + n + 2], fill=(40, 28, 10))
+        d.ellipse([x - n, y - n, x + n, y + n], fill=(232, 164, 30))
+        d.ellipse([x - n * 0.75, y - n * 0.75, x + n * 0.25, y + n * 0.25], fill=(255, 220, 90))
+        d.ellipse([x - n * 0.55, y - n * 0.55, x - n * 0.1, y - n * 0.1], fill=(255, 252, 226))
+    return img, soft_mask(rng, 0.35)
+
+
 def gold(rng):
     h = ridged(rng, 3)[:H, :W]
     shade = light(h, 140)
@@ -124,8 +150,10 @@ def main():
     if len(args) != 1:
         sys.exit(__doc__)
     folder = args[0]
+    mountains = os.path.join(folder, 'ground', 'mountains.png')
     for k in range(2):
-        save(*gold(np.random.default_rng(seed * 10 + k)), os.path.join(folder, 'mountains_gold', f'{k}.png'))
+        g = gold_on(mountains, np.random.default_rng(seed * 10 + k)) if os.path.exists(mountains) else gold(np.random.default_rng(seed * 10 + k))
+        save(*g, os.path.join(folder, 'mountains_gold', f'{k}.png'))
         save(*coal(np.random.default_rng(seed * 20 + k)), os.path.join(folder, 'hills_coal', f'{k}.png'))
     save(*gems(np.random.default_rng(seed * 30)), os.path.join(folder, 'jungle_gems', '0.png'))
     print('resource patches written to', folder)
