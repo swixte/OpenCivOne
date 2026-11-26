@@ -3298,6 +3298,7 @@ namespace OpenCivOne.Graphics
 			float k = this.cell / 64f;
 			float radius = p.Width, reach = radius * 1.25f;
 			Texture leaves = this.TextureOr((int)p.Height == Jungle ? "jungle" : "forest");
+			bool palm = this.topDown && (int)p.Height == Jungle;
 			int left = Math.Max(0, (int)(p.X - reach) - x0), right = Math.Min(size - 1, (int)(p.X + reach) - x0);
 			int top = Math.Max(0, (int)(p.Base - reach) - y0), bottom = Math.Min(size - 1, (int)(p.Base + reach) - y0);
 
@@ -3316,6 +3317,15 @@ namespace OpenCivOne.Graphics
 					// clumps of leaves break the outline
 					float clumps = this.Noise(wx, wy, Math.Min(3.2f * k, radius * 0.7f), 61) - 0.5f;
 					float edge = 1 + (clumps * 0.38f);
+					float frond = 0;
+
+					if (palm)
+					{
+						// a palm from above: a star of fronds from its crown, each frond's spine lit
+						float ang = MathF.Atan2(uy, ux);
+						frond = MathF.Abs(MathF.Cos((ang * 3.5f) + (p.Warmth * 3)));
+						edge = 0.3f + (0.85f * frond * frond) + (clumps * 0.12f);
+					}
 
 					if (d >= edge)
 						continue;
@@ -3328,6 +3338,9 @@ namespace OpenCivOne.Graphics
 					// a lone small tree on open land is lit all through and reads lighter than a deep forest
 					float lone = Smooth(4.2f * k, 3.4f * k, radius);
 					float tone = (0.62f + (0.72f * lit)) * leafy * (1 + p.Shade) * (1 + (0.45f * lone));
+
+					if (palm)
+						tone *= (0.72f + (0.5f * frond * frond)) * (0.75f + (0.25f * Smooth(0.05f, 0.3f, d)));
 					int ti = this.TextureIndex(leaves, (int)wx, (int)wy);
 					float lr = leaves.R[ti] * tone * (1 + (0.06f * p.Warmth)), lg = leaves.G[ti] * tone, lb = leaves.B[ti] * tone * (1 - (0.05f * p.Warmth));
 					r[i] += (lr - r[i]) * cover;
