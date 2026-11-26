@@ -1590,6 +1590,54 @@ namespace OpenCivOne.Graphics
 						}
 					}
 
+					// a mine is cut into a mountain or hill: a levelled terrace round a dark adit, and a fan of pale spoil tipped
+					// down the slope below it; a fortress stands on a levelled earth platform inside a dark ditch
+					if (land >= 0.5f && this.topDown && this.FeatureAt != null)
+					{
+						int sci = (int)MathF.Floor((float)wx / this.cell), scj = (int)MathF.Floor((float)wy / this.cell);
+						int site = this.Feature(sci, scj), siteT = grid.At(sci, scj);
+						float cx0 = sci * this.cell, cy0 = scj * this.cell;
+
+						if ((site & MineSite) != 0 && (siteT == Mountains || siteT == Hills))
+						{
+							float mx = cx0 + (0.57f * this.cell), my = cy0 + (0.56f * this.cell);
+							float dx = wx - mx, dy = wy - my;
+							float wob = (this.Noise(wx, wy, 4 * k, 79) - 0.5f) * 3 * k;
+							// spoil: downhill (to the lower right), widening as it goes
+							float along = ((dx + dy) * 0.707f) + wob, across = MathF.Abs((dx - dy) * 0.707f);
+							float spoil = Smooth(-2 * k, 3 * k, along) * Smooth(28 * k, 18 * k, along) * Smooth(4.5f * k + (along * 0.5f), 1.5f * k + (along * 0.35f), across);
+							float speck = 0.85f + (0.3f * this.Noise(wx, wy, 1.6f * k, 80));
+							r[i] += ((196 * speck) - r[i]) * spoil * 0.92f;
+							g[i] += ((180 * speck) - g[i]) * spoil * 0.92f;
+							b[i] += ((150 * speck) - b[i]) * spoil * 0.92f;
+							// the terrace and the adit's dark mouth
+							float dist = MathF.Sqrt((dx * dx) + (dy * dy)) + wob;
+							float terrace = Smooth(12 * k, 8 * k, dist);
+							r[i] += (156 - r[i]) * terrace * 0.75f;
+							g[i] += (140 - g[i]) * terrace * 0.75f;
+							b[i] += (108 - b[i]) * terrace * 0.75f;
+							float mouth = Smooth(5 * k, 3.4f * k, MathF.Sqrt((dx * dx) + ((dy + (0.6f * k)) * (dy + (0.6f * k)) * 1.6f)));
+							r[i] += (24 - r[i]) * mouth;
+							g[i] += (20 - g[i]) * mouth;
+							b[i] += (18 - b[i]) * mouth;
+						}
+
+						if ((site & FortressSite) != 0)
+						{
+							float fx2 = cx0 + (0.5f * this.cell), fy2 = cy0 + (0.56f * this.cell);
+							float ex = (wx - fx2) / (0.37f * this.cell), ey = (wy - fy2) / (0.26f * this.cell);
+							float e = MathF.Sqrt((ex * ex) + (ey * ey)) + ((this.Noise(wx, wy, 5 * k, 83) - 0.5f) * 0.12f);
+							float platform = Smooth(1.05f, 0.9f, e);
+							r[i] += (132 - r[i]) * platform * 0.75f;
+							g[i] += (118 - g[i]) * platform * 0.75f;
+							b[i] += (86 - b[i]) * platform * 0.75f;
+							float ditch = Smooth(1.05f, 1.15f, e) * Smooth(1.45f, 1.2f, e) * 0.45f;
+							r[i] *= 1 - ditch;
+							g[i] *= 1 - (ditch * 0.9f);
+							b[i] *= 1 - (ditch * 0.8f);
+						}
+					}
+
 					// rivers wind through river cells and on into the sea
 					if (land >= 0.5f)
 					{
