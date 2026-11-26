@@ -812,15 +812,28 @@ namespace OpenCivOne.Graphics
 
 							bool isDesert = terrain == DesertTerrain || desertSource;
 
-							// Staggered brick-bond crop plots in warped coordinates (~2.15 plots across a cell)
-							const float Freq = 2.15f;
-							float pyScaled = sy * Freq;
-							int pv = (int)MathF.Floor(pyScaled);
-							float pxScaled = (sx * Freq) + ((pv & 1) != 0 ? 0.38f : 0f);
-							int pu = (int)MathF.Floor(pxScaled);
+							// irregular fields: each the ground nearest one of a scatter of points (about 2.4 across a cell),
+							// with hedgerows where two fields meet, as round the painted map's towns
+							const float Freq = 2.4f;
+							float vx = sx * Freq, vy = sy * Freq;
+							int gi0 = (int)MathF.Floor(vx), gj0 = (int)MathF.Floor(vy);
+							float f1 = float.MaxValue, f2 = float.MaxValue;
+							int pu = 0, pv = 0;
+							for (int nj = -1; nj <= 1; nj++)
+							{
+								for (int ni = -1; ni <= 1; ni++)
+								{
+									int ci2 = gi0 + ni, cj2 = gj0 + nj, wci = ((ci2 % 192) + 192) % 192;
+									float seedX = ci2 + 0.12f + (0.76f * Hash01(wci, cj2, 61)), seedY = cj2 + 0.12f + (0.76f * Hash01(wci, cj2, 62));
+									float dd = ((vx - seedX) * (vx - seedX)) + ((vy - seedY) * (vy - seedY));
+									if (dd < f1) { f2 = f1; f1 = dd; pu = ci2; pv = cj2; }
+									else if (dd < f2) { f2 = dd; }
+								}
+							}
 
-							float fu = pxScaled - pu, fv = pyScaled - pv;
-							float distBorder = MathF.Min(MathF.Min(fu, 1f - fu), MathF.Min(fv, 1f - fv));
+							float distBorder = (MathF.Sqrt(f2) - MathF.Sqrt(f1)) * 0.5f;
+							float angle = Hash01(((pu % 192) + 192) % 192, pv, 63) * MathF.PI;
+							float fu = (vx * MathF.Cos(angle)) + (vy * MathF.Sin(angle)), fv = fu;
 
 							int wpu = ((pu % 172) + 172) % 172;
 							float pick = Hash01(wpu, pv, 51);
@@ -843,11 +856,9 @@ namespace OpenCivOne.Graphics
 							}
 
 							// Brushed directional crop furrows inside each plot
-							bool horiz = Hash01(wpu, pv, 53) < 0.5f;
-							float fCoord = horiz ? fv : fu;
-							float wave = MathF.Sin((fCoord * 28f) + (terrain == HillsTerrain ? MathF.Sin(fu * MathF.PI) * 3.5f : 0f));
-							rCol += wave * (isDesert ? 13f : 16f);
-							gCol += wave * (isDesert ? 11f : 14f);
+							float wave = MathF.Sin(fu * 24f);
+							rCol += wave * (isDesert ? 9f : 10f);
+							gCol += wave * (isDesert ? 8f : 9f);
 							bCol += wave * 6f;
 
 							// Soft hedgerow & earthen lane along plot dividers
