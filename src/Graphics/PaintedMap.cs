@@ -2807,8 +2807,7 @@ namespace OpenCivOne.Graphics
 				{
 					case Forest:
 					case Jungle:
-						this.PlaceCrowns(placements, random, i, j, terrain, left, top, fx, fy, clear);
-
+						// the canopy is the terrain's own painted ground; only a resource's picture stands on it
 						// a resource painted into the terrain's own picture still has its picture, or it would not show
 						if (gemJungle)
 							this.Place(placements, "jungle_gems", random, fx + (pushX * 0.4f), top + (48 * k) + (pushY * 0.4f), Range(random, 42, 48) * k * shore, true, 0, 0, false);
@@ -2835,7 +2834,7 @@ namespace OpenCivOne.Graphics
 						// open land seen from high above: lone trees scattered over it and the odd copse
 						bool grass = terrain == Grassland;
 						// plains stay open: trees there only blur them with grassland
-						int lone = grass ? 8 + random.Next(6) : 0;
+						int lone = 0;
 
 						for (int n = 0; n < lone; n++)
 						{
@@ -2845,7 +2844,7 @@ namespace OpenCivOne.Graphics
 								this.PlaceCrown(placements, random, x, y, Range(random, 2.6f, 3.8f) * k, Grassland);
 						}
 
-						if (random.NextDouble() < (grass ? 0.25 : 0) && Distance(left + (32 * k), top + (32 * k), fx, fy) >= clear * 1.2f)
+						if (!grass && random.NextDouble() < 0 && Distance(left + (32 * k), top + (32 * k), fx, fy) >= clear * 1.2f)
 						{
 							float copseX = left + (Range(random, 18, 46) * k), copseY = top + (Range(random, 18, 46) * k);
 
