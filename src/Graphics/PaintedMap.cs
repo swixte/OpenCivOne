@@ -90,6 +90,10 @@ namespace OpenCivOne.Graphics
 		private bool topDown = false;
 		private float mix = 0;
 
+		// sea, how strongly the open sea is painted with depth (deepening away from land), swells along the coasts and
+		// glints of light (0, plain)
+		private float sea = 0;
+
 		// the height each terrain stands at, and how rough its ground is
 		private static readonly float[] TerrainHeight = { 0.14f, 0.10f, 0.08f, 0.22f, 0.52f, 1.0f, 0.16f, 0.3f, 0.02f, 0.18f, -0.25f, 0.02f };
 		private static readonly float[] TerrainRoughness = { 0.05f, 0.035f, 0.035f, 0.06f, 0.22f, 0.55f, 0.06f, 0.08f, 0.015f, 0.06f, 0f, 0.01f };
@@ -333,6 +337,7 @@ namespace OpenCivOne.Graphics
 						case "relief": map.relief = Math.Clamp(value, 0, 3); break;
 						case "topdown": map.topDown = value != 0; break;
 						case "mix": map.mix = Math.Clamp(value, 0, 2); break;
+						case "sea": map.sea = Math.Clamp(value, 0, 2); break;
 						case "variety": map.variety = Math.Clamp(value, 0, 3); break;
 						case "beachtone": map.beachTone = Math.Clamp(value, 0, 1); break;
 					}
@@ -950,6 +955,67 @@ namespace OpenCivOne.Graphics
 
 		#region Painting
 
+		/// <summary>
+		/// How far each cell of a chunk (and its margin) is from land, in cells: 0 on land, about 1 just off a coast,
+		/// more out at sea (counted out to the margin, which is as far as the chunk can see)
+		/// </summary>
+		private static float[] SeaDistances(TerrainGrid grid, int cx, int cy)
+		{
+			int width = ChunkCells + (2 * TerrainGrid.Margin), left = (cx * ChunkCells) - TerrainGrid.Margin, top = (cy * ChunkCells) - TerrainGrid.Margin;
+			float[] d = new float[width * width];
+
+			for (int j = 0; j < width; j++)
+				for (int i = 0; i < width; i++)
+					d[(j * width) + i] = grid.At(left + i, Math.Clamp(top + j, 0, MapHeight - 1)) == Water ? 99 : 0;
+
+			// two chamfer passes: straight steps 1, diagonal 1.41
+			for (int pass = 0; pass < 2; pass++)
+			{
+				for (int jj = 0; jj < width; jj++)
+				{
+					for (int ii = 0; ii < width; ii++)
+					{
+						int j = pass == 0 ? jj : width - 1 - jj, i = pass == 0 ? ii : width - 1 - ii, s = pass == 0 ? -1 : 1;
+						int at = (j * width) + i;
+						float best = d[at];
+
+						if (i + s >= 0 && i + s < width) best = Math.Min(best, d[at + s] + 1);
+						if (j + s >= 0 && j + s < width) best = Math.Min(best, d[at + (s * width)] + 1);
+						if (i + s >= 0 && i + s < width && j + s >= 0 && j + s < width) best = Math.Min(best, d[at + (s * width) + s] + 1.41f);
+						if (i - s >= 0 && i - s < width && j + s >= 0 && j + s < width) best = Math.Min(best, d[at + (s * width) - s] + 1.41f);
+						d[at] = best;
+					}
+				}
+			}
+
+			for (int n = 0; n < d.Length; n++)
+				d[n] = Math.Min(d[n], TerrainGrid.Margin);
+
+			return d;
+		}
+
+		/// <summary>
+		/// The distance from land at a world position, in cells, smoothly through the cells' distances (a cubic B-spline
+		/// over their centres), so depth and swells follow the coast without showing the grid
+		/// </summary>
+		private float SeaDistanceAt(float[] distances, int cx, int cy, float wx, float wy)
+		{
+			int width = ChunkCells + (2 * TerrainGrid.Margin);
+			float fx = (wx / this.cell) - 0.5f - ((cx * ChunkCells) - TerrainGrid.Margin);
+			float fy = (wy / this.cell) - 0.5f - ((cy * ChunkCells) - TerrainGrid.Margin);
+			int ix = (int)MathF.Floor(fx), iy = (int)MathF.Floor(fy);
+			Span<float> bx = stackalloc float[4], by = stackalloc float[4];
+			Spline(fx - ix, bx);
+			Spline(fy - iy, by);
+			float sum = 0;
+
+			for (int j = 0; j < 4; j++)
+				for (int i = 0; i < 4; i++)
+					sum += bx[i] * by[j] * distances[(Math.Clamp(iy - 1 + j, 0, width - 1) * width) + Math.Clamp(ix - 1 + i, 0, width - 1)];
+
+			return sum;
+		}
+
 		/// <param name="parallel">Paint rows on all cores, for a chunk the game is waiting for</param>
 		private uint[] Paint(int cx, int cy, bool parallel)
 		{
@@ -972,6 +1038,7 @@ namespace OpenCivOne.Graphics
 			Texture ocean = this.TextureOr("ocean"), shallow = this.TextureOr("shallow"), sand = this.TextureOr("desert"), fields = this.TextureOr("plains");
 			(Texture Texture, float Weight)[][] ground = Array.ConvertAll(this.groundParts, parts => Array.ConvertAll(parts, part => (this.TextureOr(part.Name), part.Weight)));
 			TerrainGrid grid = new TerrainGrid(this, cx, cy);
+			float[]? seaDistances = this.sea > 0 ? SeaDistances(grid, cx, cy) : null;
 
 			// rows are independent, so they can be painted in parallel
 			Rows(size, parallel, py =>
@@ -1107,6 +1174,25 @@ namespace OpenCivOne.Graphics
 						float wr = ocean.R[oi] + ((shallow.R[si] - ocean.R[oi]) * shallowness);
 						float wg = ocean.G[oi] + ((shallow.G[si] - ocean.G[oi]) * shallowness);
 						float wb = ocean.B[oi] + ((shallow.B[si] - ocean.B[oi]) * shallowness);
+
+						if (seaDistances != null)
+						{
+							// the open sea deepens away from land, with swells running along the coast and glints of light
+							float far = this.SeaDistanceAt(seaDistances, cx, cy, wx + ((this.Noise(wx, wy, 60 * k, 94) - 0.5f) * 30 * k), wy + ((this.Noise(wx, wy, 60 * k, 95) - 0.5f) * 30 * k));
+							float deep = Smooth(1.1f, 4.2f, far) * 0.42f * this.sea;
+							wr *= 1 - (deep * 1.05f);
+							wg *= 1 - (deep * 0.85f);
+							wb *= 1 - (deep * 0.55f);
+
+							// swells: soft bands of lighter water following the coast, long and broken here and there
+							float phase = (far * 1.6f) + ((this.Noise(wx, wy, 48 * k, 90) - 0.5f) * 0.7f);
+							float wave = Smooth(0.2f, 0.04f, MathF.Abs(phase - MathF.Floor(phase) - 0.5f));
+							float broken = Smooth(0.3f, 0.58f, this.Noise(wx, wy, 30 * k, 91));
+							float swell = wave * broken * Smooth(0.45f, 0.85f, far) * Smooth(3.2f, 1.6f, far) * 0.17f * this.sea;
+							wr += ((wr * 1.45f) + 26 - wr) * swell;
+							wg += ((wg * 1.35f) + 30 - wg) * swell;
+							wb += ((wb * 1.2f) + 30 - wb) * swell;
+						}
 
 						// surf: a broken white line just off the coast, and fainter foam further out
 						float foamNoise = (this.Noise(wx, wy, 12 * k, 5) * 0.7f) + (this.Noise(wx, wy, 4 * k, 6) * 0.3f);

@@ -16,3 +16,4 @@ relief 0.5
 variety 1
 topdown 1
 mix 1.2
+sea 1
