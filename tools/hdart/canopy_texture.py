@@ -12,8 +12,8 @@ from PIL import Image
 
 PALETTES = {
     # shadow, mid, highlight (sampled from satellite views of temperate forest)
-    'forest': ((14, 38, 46), (40, 84, 74), (100, 146, 112)),
-    'jungle': ((14, 42, 30), (44, 92, 52), (118, 160, 84)),
+    'forest': ((22, 50, 54), (54, 104, 88), (122, 170, 130)),
+    'jungle': ((20, 52, 30), (62, 112, 56), (146, 184, 92)),
 }
 
 
